@@ -20,6 +20,10 @@ export default function ScrollRestoration() {
       return;
     }
 
+    if (target.hasAttribute('data-governance-policy')) {
+      return;
+    }
+
     window.requestAnimationFrame(() => {
       const top = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
       window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });

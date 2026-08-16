@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import {
   ArrowUpRight,
   Check,
@@ -6,44 +5,126 @@ import {
   Eye,
   FileText,
   Gem,
+  HandHeart,
   Landmark,
-  PlayCircle,
   Target,
+  TrendingUp,
+  type LucideIcon,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
-import PageHero from '@/components/internal/PageHero';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
+import CreditTiltCard from '@/components/effects/CreditTiltCard';
+import FadeContent from '@/components/effects/FadeContent';
+import ScrollMask from '@/components/effects/ScrollMask';
+import ScrollStack from '@/components/effects/ScrollStack';
+import SpotlightCard from '@/components/effects/SpotlightCard';
+import ParticipationCTA from '@/components/sections/ParticipationCTA';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
 
-const smoothEase = [0.22, 1, 0.36, 1] as const;
+const phaseIcons: LucideIcon[] = [Landmark, TrendingUp, HandHeart];
+const factIcons: LucideIcon[] = [FileText, Landmark, FileText, Check];
+const sectionReveal = {
+  duration: 520,
+  easing: 'ease-out',
+  initialOpacity: 0,
+  yOffset: 10,
+  threshold: 0.22,
+} as const;
 
-function FadeIn({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.18 }}
-      transition={{ duration: 0.58, delay, ease: smoothEase }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
+const softStagger = (index: number) => index * 35;
 
 export default function WaqfAboutPage() {
   const { locale, isRtl } = useI18n();
   const page = getAboutContent(locale).waqf;
+  const introVideoRef = useRef<HTMLDivElement>(null);
+  const introVideoIframeRef = useRef<HTMLIFrameElement>(null);
+  const introVideoInViewRef = useRef(false);
+  const [introVideoStarted, setIntroVideoStarted] = useState(false);
+  const embedOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const introVideoSrc = `https://www.youtube-nocookie.com/embed/${
+    page.video.videoId
+  }?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&controls=1&enablejsapi=1${
+    embedOrigin ? `&origin=${encodeURIComponent(embedOrigin)}` : ''
+  }`;
+
+  const identityCards: {
+    title: string;
+    icon: LucideIcon;
+    body?: string;
+    bullets?: string[];
+    featured?: boolean;
+  }[] = [
+    {
+      title: page.identity.visionTitle,
+      icon: Eye,
+      body: page.identity.vision,
+      featured: true,
+    },
+    {
+      title: page.identity.missionTitle,
+      icon: Target,
+      body: page.identity.mission,
+    },
+    {
+      title: page.goals.title,
+      icon: Landmark,
+      bullets: page.goals.items,
+    },
+    {
+      title: page.identity.valuesTitle,
+      icon: Gem,
+      bullets: page.identity.values,
+    },
+  ];
+
+  const sendIntroVideoCommand = useCallback((command: 'playVideo' | 'pauseVideo') => {
+    const iframeWindow = introVideoIframeRef.current?.contentWindow;
+    if (!iframeWindow) return;
+
+    iframeWindow.postMessage(
+      JSON.stringify({
+        event: 'command',
+        func: command,
+        args: [],
+      }),
+      'https://www.youtube-nocookie.com'
+    );
+  }, []);
+
+  useEffect(() => {
+    const element = introVideoRef.current;
+    if (!element) return;
+
+    if (!('IntersectionObserver' in window)) {
+      introVideoInViewRef.current = true;
+      setIntroVideoStarted(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        introVideoInViewRef.current = entry.isIntersecting;
+
+        if (entry.isIntersecting) {
+          setIntroVideoStarted(true);
+          window.setTimeout(() => sendIntroVideoCommand('playVideo'), 160);
+          return;
+        }
+
+        sendIntroVideoCommand('pauseVideo');
+      },
+      {
+        threshold: 0.42,
+        rootMargin: '0px 0px -10% 0px',
+      }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [sendIntroVideoCommand]);
 
   return (
     <>
@@ -54,170 +135,215 @@ export default function WaqfAboutPage() {
         type="article"
       />
       <main className="bg-white">
-        <PageHero
-          title={page.hero.title}
-          description={page.hero.description}
-          image={page.hero.image}
-          breadcrumbs={page.breadcrumbs}
-        />
+        <ScrollMask
+          src={page.hero.image}
+          alt=""
+          variant="wipe"
+          angle={108}
+          originY={52}
+          zoom={1}
+          fit="contain"
+          radius={0}
+          overlay={0.48}
+          revealContent
+          calm
+        >
+          <div className="mb-5">
+            <Breadcrumbs items={page.breadcrumbs} light />
+          </div>
+          <div className="max-w-3xl text-start">
+            <h1 className="text-balance text-2xl font-bold leading-tight text-white sm:text-3xl md:text-5xl lg:text-5xl">
+              {page.intro.title}
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/85 md:text-lg">
+              {page.hero.description}
+            </p>
+          </div>
+        </ScrollMask>
 
         <section className="bg-white py-20 md:py-28">
-          <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-start">
-            <FadeIn>
-              <div className="mb-4 flex items-center gap-2 text-start">
-                <span className="h-px w-8 bg-gold-400" />
-                <span className="text-sm font-semibold text-gold-600">{page.intro.eyebrow}</span>
-              </div>
-              <h2 className="text-3xl font-bold text-dark-900 md:text-4xl">{page.intro.title}</h2>
-              <div className="mt-6 space-y-4 text-start text-base leading-relaxed text-dark-600">
-                {page.intro.paragraphs.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-              <a
-                href={page.intro.downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-              >
-                <Download className="h-4 w-4" />
-                {page.intro.downloadLabel}
-                <ArrowUpRight className={`h-4 w-4 ${isRtl ? '-scale-x-100' : ''}`} />
-              </a>
-            </FadeIn>
-
-            <FadeIn delay={0.08} className="grid gap-4 sm:grid-cols-2">
-              {page.intro.facts.map((fact, index) => (
-                <motion.div
-                  key={fact.label}
-                  whileHover={{ y: -4 }}
-                  transition={{ duration: 0.24 }}
-                  className="rounded-2xl border border-primary-100 bg-warm p-5 text-start shadow-sm"
+          <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <FadeContent {...sectionReveal}>
+              <div className="text-start">
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="h-px w-8 bg-primary-200" />
+                  <span className="text-sm font-semibold text-primary-700">{page.intro.eyebrow}</span>
+                </div>
+                <h2 className="text-3xl font-bold text-dark-900 md:text-4xl">{page.intro.title}</h2>
+                <div className="mt-6 space-y-4 text-base leading-relaxed text-dark-600">
+                  {page.intro.paragraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
+                <a
+                  href={page.intro.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-800 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-700"
                 >
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                    {index === 0 ? <FileText className="h-5 w-5" /> : <Landmark className="h-5 w-5" />}
-                  </div>
-                  <p className="text-sm font-medium text-dark-500">{fact.label}</p>
-                  <p className="mt-2 text-lg font-bold text-dark-900">{fact.value}</p>
-                </motion.div>
-              ))}
-            </FadeIn>
-          </div>
-        </section>
+                  <Download className="h-4 w-4" />
+                  {page.intro.downloadLabel}
+                  <ArrowUpRight className={`h-4 w-4 ${isRtl ? '-scale-x-100' : ''}`} />
+                </a>
+              </div>
+            </FadeContent>
 
-        <section className="bg-warm py-20 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
-              <FadeIn>
-                <SectionHeading
-                  align="right"
-                  eyebrow={page.video.title}
-                  title={page.video.title}
-                  description={page.video.description}
-                />
-              </FadeIn>
-
-              <FadeIn delay={0.08}>
-                <div className="relative overflow-hidden rounded-2xl border border-primary-100 bg-dark-950 shadow-2xl">
+            <FadeContent {...sectionReveal} delay={70}>
+              <div
+                ref={introVideoRef}
+                data-video-trigger="waqf-intro"
+                className="relative aspect-video w-full overflow-hidden rounded-[18px] border border-primary-100 bg-dark-950 text-start shadow-[0_22px_70px_rgba(35,15,20,0.18)]"
+              >
+                {introVideoStarted ? (
                   <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${page.video.videoId}?rel=0&modestbranding=1`}
+                    ref={introVideoIframeRef}
+                    src={introVideoSrc}
                     title={page.video.title}
                     loading="lazy"
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; compute-pressure"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                    className="aspect-video w-full"
+                    onLoad={() => {
+                      if (introVideoInViewRef.current) {
+                        window.setTimeout(() => sendIntroVideoCommand('playVideo'), 160);
+                      }
+                    }}
+                    className="absolute inset-0 h-full w-full"
                   />
-                  <div className="pointer-events-none absolute start-4 top-4 flex items-center gap-2 rounded-full bg-dark-950/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-                    <PlayCircle className="h-4 w-4 text-primary-300" />
-                    {page.video.title}
-                  </div>
-                </div>
-              </FadeIn>
-            </div>
+                ) : (
+                  <>
+                    <img
+                      src={page.hero.image}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover opacity-80"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-dark-950/72 via-dark-950/30 to-dark-950/12" />
+                  </>
+                )}
+              </div>
+            </FadeContent>
+          </div>
+        </section>
+
+        <section className="bg-warm py-16 md:py-20">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <FadeContent {...sectionReveal}>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {page.intro.facts.map((fact, index) => {
+                  const FactIcon = factIcons[index] ?? FileText;
+
+                  return (
+                    <CreditTiltCard
+                      key={fact.label}
+                      rotationIntensity={5.5}
+                      scaleOnHover={1.012}
+                      shineColor="rgba(255, 235, 238, 0.78)"
+                      className="rounded-[18px] border border-primary-100 bg-white p-5 text-start shadow-[0_14px_38px_rgba(35,15,20,0.06)] hover:border-primary-200 hover:shadow-[0_22px_54px_rgba(35,15,20,0.12)]"
+                    >
+                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                        <FactIcon className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-medium text-dark-500">{fact.label}</p>
+                      <p className="mt-2 text-lg font-bold text-dark-900">{fact.value}</p>
+                    </CreditTiltCard>
+                  );
+                })}
+              </div>
+            </FadeContent>
           </div>
         </section>
 
         <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <SectionHeading title={page.goals.title} />
-            <div className="mt-12 grid gap-5 md:grid-cols-3">
-              {page.goals.items.map((goal, index) => (
-                <FadeIn key={goal} delay={index * 0.06}>
-                  <div className="h-full rounded-2xl border border-primary-100 bg-white p-6 text-start shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-lg">
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                      <Target className="h-5 w-5" />
-                    </div>
-                    <p className="text-base font-semibold leading-relaxed text-dark-800">{goal}</p>
-                  </div>
-                </FadeIn>
-              ))}
+            <FadeContent {...sectionReveal}>
+              <SectionHeading title={page.goals.title} />
+            </FadeContent>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {identityCards.map((card, index) => {
+                const Icon = card.icon;
+
+                return (
+                  <FadeContent key={card.title} {...sectionReveal} delay={softStagger(index)}>
+                    <SpotlightCard
+                      spotlightColor="rgba(180, 35, 58, 0.12)"
+                      className={`h-full rounded-[18px] border p-6 text-start shadow-[0_14px_38px_rgba(35,15,20,0.07)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_18px_42px_rgba(35,15,20,0.10)] motion-reduce:hover:translate-y-0 ${
+                        card.featured
+                          ? 'border-primary-100 bg-primary-700 text-white'
+                          : 'border-primary-100 bg-white text-dark-900'
+                      }`}
+                    >
+                      <div
+                        className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${
+                          card.featured ? 'bg-white/10 text-white' : 'bg-primary-50 text-primary-700'
+                        }`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <h2 className={`text-xl font-bold ${card.featured ? 'text-white' : 'text-dark-900'}`}>
+                        {card.title}
+                      </h2>
+                      {card.body && (
+                        <p className={`mt-4 leading-relaxed ${card.featured ? 'text-white/80' : 'text-dark-600'}`}>
+                          {card.body}
+                        </p>
+                      )}
+                      {card.bullets && (
+                        <ul className="mt-5 space-y-3">
+                          {card.bullets.map((item) => (
+                            <li
+                              key={item}
+                              className={`flex gap-2 text-sm leading-relaxed ${
+                                card.featured ? 'text-white/80' : 'text-dark-600'
+                              }`}
+                            >
+                              <Check
+                                className={`mt-1 h-4 w-4 shrink-0 ${
+                                  card.featured ? 'text-white' : 'text-primary-700'
+                                }`}
+                              />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </SpotlightCard>
+                  </FadeContent>
+                );
+              })}
             </div>
           </div>
         </section>
 
         <section className="bg-warm py-20 md:py-28">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <div className="grid gap-5 lg:grid-cols-3">
-              <FadeIn>
-                <div className="h-full rounded-2xl bg-primary-700 p-7 text-start text-white shadow-xl">
-                  <Eye className="mb-5 h-8 w-8 text-gold-200" />
-                  <h2 className="text-2xl font-bold">{page.identity.visionTitle}</h2>
-                  <p className="mt-4 leading-relaxed text-white/78">{page.identity.vision}</p>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.08}>
-                <div className="h-full rounded-2xl border border-primary-100 bg-white p-7 text-start shadow-sm">
-                  <Target className="mb-5 h-8 w-8 text-primary-600" />
-                  <h2 className="text-2xl font-bold text-dark-900">{page.identity.missionTitle}</h2>
-                  <p className="mt-4 leading-relaxed text-dark-600">{page.identity.mission}</p>
-                </div>
-              </FadeIn>
-              <FadeIn delay={0.16}>
-                <div className="h-full rounded-2xl border border-primary-100 bg-white p-7 text-start shadow-sm">
-                  <Gem className="mb-5 h-8 w-8 text-primary-600" />
-                  <h2 className="text-2xl font-bold text-dark-900">{page.identity.valuesTitle}</h2>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {page.identity.values.map((value) => (
-                      <span
-                        key={value}
-                        className="rounded-full bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700"
-                      >
-                        {value}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </FadeIn>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white py-20 md:py-28">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
             <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr]">
-              <FadeIn>
+              <FadeContent {...sectionReveal}>
                 <SectionHeading align="right" title={page.methodology.title} />
-              </FadeIn>
-              <div className="grid gap-4">
-                {page.methodology.items.map((item, index) => (
-                  <FadeIn key={item} delay={index * 0.04}>
-                    <div className="flex gap-4 rounded-2xl border border-primary-100 bg-white p-5 text-start shadow-sm">
-                      <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+              </FadeContent>
+              <FadeContent {...sectionReveal} delay={70}>
+                <div className="grid gap-4">
+                  {page.methodology.items.map((item) => (
+                    <div
+                      key={item}
+                      className="flex gap-4 rounded-[18px] border border-primary-100 bg-white p-5 text-start shadow-[0_12px_30px_rgba(35,15,20,0.05)]"
+                    >
+                      <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-700">
                         <Check className="h-4 w-4" />
                       </div>
                       <p className="leading-relaxed text-dark-600">{item}</p>
                     </div>
-                  </FadeIn>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </FadeContent>
             </div>
           </div>
         </section>
 
         <section className="bg-dark-950 py-20 text-white md:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
-            <FadeIn>
-              <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+            <FadeContent {...sectionReveal}>
+              <div className="relative overflow-hidden rounded-[18px] shadow-2xl">
                 <img
                   src={page.president.image}
                   alt={page.president.name}
@@ -226,50 +352,84 @@ export default function WaqfAboutPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-dark-950/60 to-transparent" />
               </div>
-            </FadeIn>
-            <FadeIn delay={0.08}>
+            </FadeContent>
+            <FadeContent {...sectionReveal} delay={70}>
               <div className="text-start">
-                <p className="mb-3 text-sm font-semibold text-gold-300">{page.president.title}</p>
+                <p className="mb-3 text-sm font-semibold text-primary-200">{page.president.title}</p>
                 <h2 className="text-3xl font-bold md:text-4xl">{page.president.name}</h2>
                 <p className="mt-2 text-primary-200">{page.president.role}</p>
-                <div className="mt-8 space-y-4 text-base leading-relaxed text-white/72">
+                <div className="mt-8 space-y-4 text-base leading-relaxed text-white/75">
                   {page.president.paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
               </div>
-            </FadeIn>
+            </FadeContent>
           </div>
         </section>
 
         <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <SectionHeading title={page.cycle.title} description={page.cycle.description} />
-            <div className="mt-14 grid gap-6 lg:grid-cols-3">
-              {page.cycle.phases.map((phase, index) => (
-                <FadeIn key={phase.title} delay={index * 0.08}>
-                  <article className="h-full rounded-2xl border border-primary-100 bg-warm p-6 text-start shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-                    <div className="mb-5 inline-flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-4 text-sm font-bold text-white">
-                      {index + 1}
+            <FadeContent {...sectionReveal}>
+              <SectionHeading title={page.cycle.title} description={page.cycle.description} />
+            </FadeContent>
+
+            <ScrollStack
+              variant="stack"
+              scrollLength={0.62}
+              peek={14}
+              scaleStep={0.02}
+              blur={0}
+              dim={0.08}
+              smooth={0.22}
+              depth={3}
+              cardWidth={960}
+              cardHeight={0.52}
+              borderRadius={22}
+              perspective={1400}
+              showProgress
+              showCounter
+            >
+              {page.cycle.phases.map((phase, index) => {
+                const PhaseIcon = phaseIcons[index] ?? Landmark;
+
+                return (
+                  <article
+                    key={phase.title}
+                    className="h-full min-h-[inherit] rounded-[22px] border border-primary-100 bg-white p-6 text-start shadow-[0_18px_48px_rgba(35,15,20,0.09)] md:p-8"
+                  >
+                    <div className="grid h-full gap-6 lg:grid-cols-[0.34fr_0.66fr] lg:items-start">
+                      <div>
+                        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+                          <PhaseIcon className="h-7 w-7" />
+                        </div>
+                        <p className="text-sm font-bold tracking-wide text-primary-700">
+                          {String(index + 1).padStart(2, '0')} / 03
+                        </p>
+                        <h3 className="mt-3 text-2xl font-bold leading-tight text-dark-900">{phase.title}</h3>
+                      </div>
+                      <div>
+                        <p className="text-base leading-relaxed text-dark-600">{phase.description}</p>
+                        {phase.bullets && (
+                          <ul className="mt-6 space-y-3">
+                            {phase.bullets.map((bullet) => (
+                              <li key={bullet} className="flex gap-3 text-sm leading-relaxed text-dark-600">
+                                <Check className="mt-1 h-4 w-4 shrink-0 text-primary-700" />
+                                <span>{bullet}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-dark-900">{phase.title}</h3>
-                    <p className="mt-4 leading-relaxed text-dark-600">{phase.description}</p>
-                    {phase.bullets && (
-                      <ul className="mt-5 space-y-3">
-                        {phase.bullets.map((bullet) => (
-                          <li key={bullet} className="flex gap-2 text-sm leading-relaxed text-dark-600">
-                            <Check className="mt-1 h-4 w-4 shrink-0 text-primary-600" />
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </article>
-                </FadeIn>
-              ))}
-            </div>
+                );
+              })}
+            </ScrollStack>
           </div>
         </section>
+
+        <ParticipationCTA />
       </main>
     </>
   );

@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, FileText } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import SectionHeading from '@/components/ui/SectionHeading';
@@ -40,9 +40,54 @@ function PolicyBody({ policy }: { policy: Policy }) {
 export default function GovernancePage() {
   const { locale } = useI18n();
   const location = useLocation();
+  const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
   const page = getAboutContent(locale).governance;
   const policyIds = useMemo(() => page.policies.map((policy) => policy.id), [page.policies]);
   const [openPolicy, setOpenPolicy] = useState(page.policies[0]?.id ?? '');
+  const policyRefs = useRef<Record<string, HTMLElement | null>>({});
+  const scrollTimersRef = useRef<number[]>([]);
+
+  const clearPolicyScrollTimers = useCallback(() => {
+    scrollTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    scrollTimersRef.current = [];
+  }, []);
+
+  const scrollToPolicyStart = useCallback(
+    (policyId: string) => {
+      clearPolicyScrollTimers();
+
+      const runScroll = () => {
+        const target = policyRefs.current[policyId] ?? document.getElementById(policyId);
+        if (!target) return;
+
+        const header = document.querySelector('header');
+        const headerHeight = header instanceof HTMLElement ? header.getBoundingClientRect().height : 80;
+        const offset = headerHeight + 24;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({
+          top: Math.max(top, 0),
+          behavior: shouldReduceMotion ? 'auto' : 'smooth',
+        });
+      };
+
+      window.requestAnimationFrame(runScroll);
+      scrollTimersRef.current = [window.setTimeout(runScroll, shouldReduceMotion ? 0 : 80)];
+    },
+    [clearPolicyScrollTimers, shouldReduceMotion]
+  );
+
+  const openPolicyFromNav = useCallback(
+    (policyId: string) => {
+      setOpenPolicy(policyId);
+      navigate({ pathname: location.pathname, hash: `#${policyId}` }, { replace: false });
+
+      if (policyId === openPolicy) {
+        scrollToPolicyStart(policyId);
+      }
+    },
+    [location.pathname, navigate, openPolicy, scrollToPolicyStart]
+  );
 
   useEffect(() => {
     const hashId = decodeURIComponent(location.hash.replace('#', ''));
@@ -50,6 +95,15 @@ export default function GovernancePage() {
       setOpenPolicy(hashId);
     }
   }, [location.hash, policyIds]);
+
+  useEffect(() => {
+    const hashId = decodeURIComponent(location.hash.replace('#', ''));
+    if (hashId && hashId === openPolicy && policyIds.includes(hashId)) {
+      scrollToPolicyStart(hashId);
+    }
+  }, [location.hash, openPolicy, policyIds, scrollToPolicyStart]);
+
+  useEffect(() => clearPolicyScrollTimers, [clearPolicyScrollTimers]);
 
   return (
     <>
@@ -92,8 +146,12 @@ export default function GovernancePage() {
                       <a
                         key={policy.id}
                         href={`#${policy.id}`}
-                        onClick={() => setOpenPolicy(policy.id)}
-                        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openPolicyFromNav(policy.id);
+                        }}
+                        aria-current={active ? 'true' : undefined}
+                        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                           active
                             ? 'bg-primary-600 text-white shadow-sm'
                             : 'bg-white text-dark-700 hover:bg-primary-50 hover:text-primary-700'
@@ -116,6 +174,10 @@ export default function GovernancePage() {
                     <motion.article
                       key={policy.id}
                       id={policy.id}
+                      data-governance-policy
+                      ref={(element) => {
+                        policyRefs.current[policy.id] = element;
+                      }}
                       initial={{ opacity: 0, y: 24 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.08 }}
@@ -126,7 +188,14 @@ export default function GovernancePage() {
                         type="button"
                         aria-expanded={open}
                         aria-controls={contentId}
-                        onClick={() => setOpenPolicy(open ? '' : policy.id)}
+                        onClick={() => {
+                          if (open) {
+                            setOpenPolicy('');
+                            return;
+                          }
+
+                          openPolicyFromNav(policy.id);
+                        }}
                         className="flex min-h-[64px] w-full items-center justify-between gap-4 px-5 py-4 text-start transition-colors hover:bg-primary-50/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 md:px-7"
                       >
                         <span>
@@ -138,19 +207,14 @@ export default function GovernancePage() {
                         </span>
                       </button>
 
-                      <AnimatePresence initial={false}>
-                        {open && (
-                          <motion.div
-                            id={contentId}
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.22, ease: smoothEase }}
-                          >
-                            <PolicyBody policy={policy} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <div
+                        id={contentId}
+                        hidden={!open}
+                        aria-hidden={!open}
+                        className="overflow-hidden"
+                      >
+                        <PolicyBody policy={policy} />
+                      </div>
                     </motion.article>
                   );
                 })}
