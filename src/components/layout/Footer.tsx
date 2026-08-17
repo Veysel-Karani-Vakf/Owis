@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Facebook, Twitter, Instagram, Youtube, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
 export default function Footer() {
   const { ref, inView } = useInView<HTMLElement>();
   const { content, t, isRtl } = useI18n();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const siteConfig = content.siteConfig;
@@ -31,6 +34,11 @@ export default function Footer() {
 
   const handleNavClick = (href: string) => {
     if (!href.startsWith('#')) return;
+
+    if (location.pathname !== '/') {
+      navigate({ pathname: '/', hash: href });
+      return;
+    }
 
     const el = document.querySelector(href);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
