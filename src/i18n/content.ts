@@ -1,3 +1,7 @@
+import blessedTreeImage from '@/assets/projects/blessed-tree.jpg';
+import goldPortfolioImage from '@/assets/projects/gold-portfolio.jpeg';
+import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
+
 export type Locale = 'ar' | 'tr' | 'en';
 export type Direction = 'rtl' | 'ltr';
 
@@ -69,11 +73,15 @@ export type SiteContent = {
     tabs: {
       vision: string;
       mission: string;
+      methodology: string;
       values: string;
+      sectors: string;
     };
     vision: string;
-    mission: string;
+    mission: string[];
+    methodology: string[];
     values: string[];
+    sectors: string[];
     goals: string[];
     image: string;
   };
@@ -154,6 +162,7 @@ export type SiteContent = {
       closeVideo: string;
       scrollDown: string;
       videoTitle: string;
+      loadingVideo: string;
       videoBackgroundTitle: string;
       languageSwitcher: string;
       languageMenu: string;
@@ -197,9 +206,9 @@ const shared = {
     youtube: 'https://www.youtube.com/@veysvakfi',
   },
   projectImages: {
-    waqfShare: 'https://veysvakfi.org/wp-content/uploads/2023/06/WhatsApp-Image-2024-03-19-at-13.01.54.jpeg',
-    blessedTree: 'https://veysvakfi.org/wp-content/uploads/2024/05/DSC09194-1-scaled-1-150x150.jpg',
-    goldPortfolio: 'https://veysvakfi.org/wp-content/uploads/2023/06/WhatsApp-Image-2024-03-19-at-13.01.54-1.jpeg',
+    waqfShare: waqfShareImage,
+    blessedTree: blessedTreeImage,
+    goldPortfolio: goldPortfolioImage,
   },
   programImages: {
     futureLeaders: 'https://veysvakfi.org/wp-content/uploads/2025/10/برنامج-رواد-اليمن-وقف-أويس-القرني.jpg',
@@ -273,15 +282,28 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'عن المؤسسة',
       title: 'وقف أويس القرني',
       description:
-        'مؤسسة وقفية تسعى إلى إيجاد أوعية استثمارية مبتكرة ومستدامة، والتكامل مع الشركاء في بناء القدرات وتنفيذ البرامج المساندة التي تخدم نهوض اليمن.',
+        'مؤسسة تنموية ذات طبيعة وقفية لإيجاد أكبر وقف نوعي تشاركي في تاريخ اليمن، يعود ريعه على برامج النهوض الحضاري ومساراته، ويسهم في إيجاده وتنميته كافة اليمنيين ومحبي اليمن في العالم، بوصفه مؤسسة مالية استثمارية وقفية.',
       tabs: {
-        vision: 'الرؤية',
-        mission: 'الرسالة',
-        values: 'القيم',
+        vision: 'رؤيتنا',
+        mission: 'رسالتنا',
+        methodology: 'منهجيتنا',
+        values: 'قيمنا',
+        sectors: 'قطاعات الوقف',
       },
       vision: 'رواد الوقف التشاركي التخصصي في نهوض اليمن الحضاري.',
-      mission: 'صناعة أوعية وقفية استثمارية مبتكرة تؤمّن موارد مستدامة لبرامج النهوض.',
+      mission: [
+        'نصنع أوعية وقفية استثمارية مبتكرة تؤمّن موارد النهوض الحضاري لليمن.',
+        'نتكامل مع شركائنا في بناء القدرات، والبرامج المساندة، والتشبيك التخصصي.',
+      ],
+      methodology: [
+        'الانفتاح والشمول',
+        'حقوق المساهمين والشفافية',
+        'الاستثمار المدروس',
+        'الاستدامة وتنمية الموارد',
+        'الشراكات الفاعلة',
+      ],
       values: ['المؤسسية', 'الشراكة', 'الطموح', 'الشفافية', 'المبادرة', 'الاستدامة'],
+      sectors: ['قطاع البرامج والشراكات', 'قطاع الوقف'],
       goals: [
         'إيجاد الوقف بمساهمة كل اليمنيين ومحبي اليمن حول العالم، وتنمية موارده كمؤسسة مالية استثمارية وقفية.',
         'تعزيز الروح الوطنية لدى اليمنيين كشركاء في إيجاد أكبر وقف في تاريخ اليمن بمساهمتهم جميعًا.',
@@ -485,6 +507,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         closeVideo: 'إغلاق الفيديو',
         scrollDown: 'تمرير للأسفل',
         videoTitle: 'فيديو وقف أويس القرني',
+        loadingVideo: 'جارٍ تحميل الفيديو',
         videoBackgroundTitle: 'خلفية فيديو وقف أويس القرني',
         languageSwitcher: 'تغيير اللغة',
         languageMenu: 'قائمة اللغات',
@@ -542,15 +565,28 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'Kurum Hakkında',
       title: 'Veysel Karani Vakfı',
       description:
-        'Yenilikçi ve sürdürülebilir yatırım araçları geliştiren; kapasite inşası ve Yemenin kalkınmasına hizmet eden destek programlarını paydaşlarıyla birlikte uygulayan bir vakıf kurumudur.',
+        "Yemen tarihindeki en büyük nitelikli ve katılımcı vakfı oluşturmayı amaçlayan; gelirlerini Yemen'in medeniyet kalkınması programlarına yönlendiren, dünyanın dört bir yanındaki Yemenliler ile Yemen dostlarının kuruluşuna ve gelişimine katkıda bulunduğu finansal ve yatırım odaklı bir kalkınma vakfıdır.",
       tabs: {
-        vision: 'Vizyon',
-        mission: 'Misyon',
-        values: 'Değerler',
+        vision: 'Vizyonumuz',
+        mission: 'Misyonumuz',
+        methodology: 'Metodolojimiz',
+        values: 'Değerlerimiz',
+        sectors: 'Sektörlerimiz',
       },
       vision: 'Yemenin medeniyet kalkınmasında katılımcı ve uzmanlaşmış vakıf modelinin öncüleri olmak.',
-      mission: 'Kalkınma programları için sürdürülebilir kaynak sağlayan yenilikçi vakıf yatırım araçları üretmek.',
+      mission: [
+        "Yemen'in medeniyet kalkınmasına kaynak sağlayan yenilikçi vakıf yatırım araçları oluşturuyoruz.",
+        'Kapasite geliştirme, destek programları ve uzmanlık temelli ağ kurma alanlarında ortaklarımızla bütünleşiyoruz.',
+      ],
+      methodology: [
+        'Açıklık ve kapsayıcılık',
+        'Haklar ve şeffaflık',
+        'Planlı yatırım',
+        'Sürdürülebilir büyüme',
+        'Etkin ortaklıklar',
+      ],
       values: ['Kurumsallık', 'Ortaklık', 'Azim', 'Şeffaflık', 'Girişimcilik', 'Sürdürülebilirlik'],
+      sectors: ['Programlar ve Ortaklıklar Birimi', 'Vakıf Birimi'],
       goals: [
         'Dünyanın dört bir yanındaki Yemenliler ve Yemen dostlarının katkısıyla vakfı büyütmek ve kaynaklarını vakıf yatırım kurumu olarak geliştirmek.',
         'Yemenlileri, Yemen tarihinin en büyük vakfının inşasında ortak kılan ulusal ruhu güçlendirmek.',
@@ -754,6 +790,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         closeVideo: 'Videoyu kapat',
         scrollDown: 'Aşağı kaydır',
         videoTitle: 'Veysel Karani Vakfı videosu',
+        loadingVideo: 'Video yükleniyor',
         videoBackgroundTitle: 'Veysel Karani Vakfı video arka planı',
         languageSwitcher: 'Dili değiştir',
         languageMenu: 'Dil menüsü',
@@ -811,15 +848,28 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'About the Institution',
       title: 'Veysel Karani Waqf',
       description:
-        'A waqf institution seeking to create innovative and sustainable investment vehicles, working with partners to build capacities and implement support programs that serve Yemen’s advancement.',
+        'A development institution of a waqf nature established to create the largest specialized participatory waqf in Yemen’s history. Its returns support the programs and pathways of Yemen’s civilizational advancement, and Yemenis and friends of Yemen worldwide contribute to building and growing it as a financial investment waqf institution.',
       tabs: {
-        vision: 'Vision',
-        mission: 'Mission',
-        values: 'Values',
+        vision: 'Our Vision',
+        mission: 'Our Mission',
+        methodology: 'Our Approach',
+        values: 'Our Values',
+        sectors: 'Our Divisions',
       },
       vision: 'To pioneer a participatory and specialized waqf model for Yemen’s civilizational advancement.',
-      mission: 'To create innovative waqf investment vehicles that secure sustainable resources for advancement programs.',
+      mission: [
+        'We create innovative waqf investment vehicles that secure resources for Yemen’s civilizational advancement.',
+        'We work with our partners in capacity building, supporting programs, and specialized networking.',
+      ],
+      methodology: [
+        'Openness and inclusion',
+        'Rights and transparency',
+        'Informed investment',
+        'Sustainable growth',
+        'Effective partnerships',
+      ],
       values: ['Institutionalism', 'Partnership', 'Ambition', 'Transparency', 'Initiative', 'Sustainability'],
+      sectors: ['Programs and Partnerships Sector', 'Endowment Sector'],
       goals: [
         'Establish and grow the waqf through contributions from Yemenis and friends of Yemen around the world as a financial and investment waqf institution.',
         'Strengthen the national spirit among Yemenis as partners in creating the largest waqf in Yemen’s history.',
@@ -1023,6 +1073,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         closeVideo: 'Close video',
         scrollDown: 'Scroll down',
         videoTitle: 'Veysel Karani Waqf video',
+        loadingVideo: 'Loading video',
         videoBackgroundTitle: 'Veysel Karani Waqf video background',
         languageSwitcher: 'Change language',
         languageMenu: 'Language menu',

@@ -15,10 +15,19 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+
+    const desktopMediaQuery = window.matchMedia('(min-width: 1280px)');
+    const handleDesktopViewport = (event: MediaQueryListEvent) => {
+      if (event.matches) onClose();
+    };
+
+    desktopMediaQuery.addEventListener('change', handleDesktopViewport);
+
     return () => {
       document.body.style.overflow = '';
+      desktopMediaQuery.removeEventListener('change', handleDesktopViewport);
     };
-  }, []);
+  }, [onClose]);
 
   return (
     <motion.div
@@ -26,7 +35,8 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
       animate={{ x: 0 }}
       exit={{ x: isRtl ? '100%' : '-100%' }}
       transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
-      className="fixed inset-0 z-[200] flex flex-col bg-dark-950 lg:hidden"
+      id="mobile-navigation"
+      className="fixed inset-0 z-[200] flex flex-col bg-dark-950 xl:hidden"
     >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
         <img

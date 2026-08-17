@@ -329,3 +329,33 @@
   border: 0;
   filter: saturate(1.05) contrast(1.05);
 }
+
+/* Elements whose size is computed from measurements (e.g. the auto-fitted Hero title) must never
+   transition — otherwise measurements can pair a new font-size with text still laid out at the old one.
+   Also beats the reduced-motion "transition-duration: 0.01ms !important" rule above. */
+.no-transitions,
+.no-transitions * {
+  transition: none !important;
+}
+
+/* Typewriter caret (Hero title) */
+.typewriter-caret {
+  display: inline-block;
+  width: 0.08em;
+  height: 0.9em;
+  margin-inline-start: 0.1em;
+  vertical-align: -0.08em;
+  border-radius: 1px;
+  background-color: currentColor;
+  animation: typewriter-caret-blink 0.85s steps(1, end) infinite;
+}
+
+@keyframes typewriter-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

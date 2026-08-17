@@ -1,15 +1,17 @@
-import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion';
-import { Eye, Target, Gem, ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion, type Variants } from 'framer-motion';
+import { Eye, Target, Compass, Gem, Landmark, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
-type TabKey = 'vision' | 'mission' | 'values';
+type TabKey = 'vision' | 'mission' | 'methodology' | 'values' | 'sectors';
 
 const tabIcons = {
   vision: Eye,
   mission: Target,
+  methodology: Compass,
   values: Gem,
+  sectors: Landmark,
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
@@ -92,18 +94,51 @@ const checkVariants: Variants = {
 };
 
 const tabPanelVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: (direction = 1) => ({
+    opacity: 0,
+    x: direction * 18,
+    scale: 0.985,
+  }),
+  show: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.28, ease: smoothEase },
+  },
+  exit: (direction = 1) => ({
+    opacity: 0,
+    x: direction * -14,
+    scale: 0.99,
+    transition: { duration: 0.14, ease: smoothEase },
+  }),
+  reduced: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.01 } },
+};
+
+const tabItemsContainerVariants: Variants = {
+  hidden: {},
+  show: {
+    transition: {
+      delayChildren: 0.05,
+      staggerChildren: 0.035,
+    },
+  },
+  reduced: {
+    transition: {
+      delayChildren: 0,
+      staggerChildren: 0,
+    },
+  },
+};
+
+const tabItemVariants: Variants = {
+  hidden: { opacity: 0, y: 8, scale: 0.97 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.28, ease: smoothEase },
+    scale: 1,
+    transition: { duration: 0.2, ease: smoothEase },
   },
-  exit: {
-    opacity: 0,
-    y: -8,
-    transition: { duration: 0.18, ease: smoothEase },
-  },
-  reduced: { opacity: 1, y: 0, transition: { duration: 0.01 } },
+  reduced: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.01 } },
 };
 
 function useIsMobile() {
@@ -124,6 +159,7 @@ function useIsMobile() {
 export default function About() {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.25 });
   const [activeTab, setActiveTab] = useState<TabKey>('vision');
+  const [tabDirection, setTabDirection] = useState(1);
   const shouldReduceMotion = useReducedMotion();
   const isMobile = useIsMobile();
   const { content, t, isRtl } = useI18n();
@@ -133,18 +169,95 @@ export default function About() {
   const tabs = [
     { key: 'vision' as TabKey, label: aboutContent.tabs.vision, icon: tabIcons.vision },
     { key: 'mission' as TabKey, label: aboutContent.tabs.mission, icon: tabIcons.mission },
+    { key: 'methodology' as TabKey, label: aboutContent.tabs.methodology, icon: tabIcons.methodology },
     { key: 'values' as TabKey, label: aboutContent.tabs.values, icon: tabIcons.values },
+    { key: 'sectors' as TabKey, label: aboutContent.tabs.sectors, icon: tabIcons.sectors },
   ];
 
   const tabContent: Record<TabKey, string | string[]> = {
     vision: aboutContent.vision,
     mission: aboutContent.mission,
+    methodology: aboutContent.methodology,
     values: aboutContent.values,
+    sectors: aboutContent.sectors,
   };
 
-  const focusTabAt = (index: number) => {
+  const renderTabContent = (tabKey: TabKey) => {
+    const currentContent = tabContent[tabKey];
+
+    if (tabKey === 'methodology') {
+      return (
+        <motion.div
+          variants={tabItemsContainerVariants}
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+        >
+          {(currentContent as string[]).map((value) => (
+            <motion.span
+              key={value}
+              variants={tabItemVariants}
+              className="flex items-center justify-center rounded-full bg-primary-50 px-2 py-2 text-center text-xs font-medium leading-snug text-primary-700 sm:px-3 sm:text-sm"
+            >
+              {value}
+            </motion.span>
+          ))}
+        </motion.div>
+      );
+    }
+
+    if (tabKey === 'values' || tabKey === 'sectors') {
+      return (
+        <motion.div variants={tabItemsContainerVariants} className="flex flex-wrap gap-2">
+          {(currentContent as string[]).map((value) => (
+            <motion.span
+              key={value}
+              variants={tabItemVariants}
+              className="rounded-full bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700"
+            >
+              {value}
+            </motion.span>
+          ))}
+        </motion.div>
+      );
+    }
+
+    if (Array.isArray(currentContent)) {
+      return (
+        <motion.ul variants={tabItemsContainerVariants} className="space-y-3">
+          {currentContent.map((item) => (
+            <motion.li
+              key={item}
+              variants={tabItemVariants}
+              className="flex items-start gap-3 text-sm leading-relaxed text-dark-600 md:text-base"
+            >
+              <Check className="mt-1 h-4 w-4 flex-shrink-0 text-primary-600" aria-hidden="true" />
+              <span>{item}</span>
+            </motion.li>
+          ))}
+        </motion.ul>
+      );
+    }
+
+    return (
+      <motion.p variants={tabItemVariants} className="text-sm leading-relaxed text-dark-600 md:text-base">
+        {currentContent}
+      </motion.p>
+    );
+  };
+
+  const selectTab = (nextKey: TabKey, indexDirection?: number) => {
+    if (nextKey === activeTab) return;
+
+    const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
+    const nextIndex = tabs.findIndex((tab) => tab.key === nextKey);
+    const direction = indexDirection ?? (nextIndex > currentIndex ? 1 : -1);
+
+    setTabDirection(direction * (isRtl ? -1 : 1));
+    setActiveTab(nextKey);
+  };
+
+  const focusTabAt = (index: number, indexDirection?: number) => {
     const nextTab = tabs[(index + tabs.length) % tabs.length];
-    setActiveTab(nextTab.key);
+    selectTab(nextTab.key, indexDirection);
     window.requestAnimationFrame(() => {
       document.getElementById(`about-tab-${nextTab.key}`)?.focus();
     });
@@ -317,106 +430,113 @@ export default function About() {
               animate={animateState}
               variants={makeFadeUp(1.3)}
             >
-              <div
-                role="tablist"
-                aria-label={t('accessibility.aboutTabs')}
-                className="mb-4 flex flex-wrap gap-2"
-              >
-                {tabs.map((tab, index) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.key;
+              <LayoutGroup id="about-tabs">
+                <div
+                  role="tablist"
+                  aria-label={t('accessibility.aboutTabs')}
+                  className="mb-4 flex flex-wrap gap-2"
+                >
+                  {tabs.map((tab, index) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.key;
 
-                  return (
-                    <button
-                      key={tab.key}
-                      id={`about-tab-${tab.key}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      aria-controls={`about-panel-${tab.key}`}
-                      tabIndex={isActive ? 0 : -1}
-                      onClick={() => setActiveTab(tab.key)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
-                          event.preventDefault();
-                          focusTabAt(index + 1);
-                        }
+                    return (
+                      <motion.button
+                        key={tab.key}
+                        id={`about-tab-${tab.key}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-controls="about-panel"
+                        tabIndex={isActive ? 0 : -1}
+                        whileHover={shouldReduceMotion ? undefined : { y: -1 }}
+                        whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
+                        onClick={() => selectTab(tab.key)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowLeft') {
+                            event.preventDefault();
+                            const step = isRtl ? 1 : -1;
+                            focusTabAt(index + step, step);
+                          }
 
-                        if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
-                          event.preventDefault();
-                          focusTabAt(index - 1);
-                        }
+                          if (event.key === 'ArrowRight') {
+                            event.preventDefault();
+                            const step = isRtl ? -1 : 1;
+                            focusTabAt(index + step, step);
+                          }
 
-                        if (event.key === 'Home') {
-                          event.preventDefault();
-                          focusTabAt(0);
-                        }
+                          if (event.key === 'ArrowDown') {
+                            event.preventDefault();
+                            focusTabAt(index + 1, 1);
+                          }
 
-                        if (event.key === 'End') {
-                          event.preventDefault();
-                          focusTabAt(tabs.length - 1);
-                        }
-                      }}
-                      className={`relative flex items-center gap-2 overflow-hidden rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
-                        isActive
-                          ? 'text-white'
-                          : 'bg-white text-dark-600 hover:bg-primary-50 hover:text-primary-700'
-                      }`}
+                          if (event.key === 'ArrowUp') {
+                            event.preventDefault();
+                            focusTabAt(index - 1, -1);
+                          }
+
+                          if (event.key === 'Home') {
+                            event.preventDefault();
+                            focusTabAt(0);
+                          }
+
+                          if (event.key === 'End') {
+                            event.preventDefault();
+                            focusTabAt(tabs.length - 1);
+                          }
+                        }}
+                        className={`relative isolate flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-300 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+                          isActive
+                            ? 'z-10 text-white'
+                            : 'bg-white text-dark-600 hover:bg-primary-50 hover:text-primary-700'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="about-active-tab"
+                            className="pointer-events-none absolute inset-0 rounded-lg bg-primary-600 shadow-md"
+                            transition={
+                              shouldReduceMotion
+                                ? { duration: 0.01 }
+                                : { type: 'spring', stiffness: 420, damping: 34 }
+                            }
+                          />
+                        )}
+                        <span className="relative z-10 flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {tab.label}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                <motion.div
+                  initial="hidden"
+                  animate={animateState}
+                  variants={makeFadeUp(1.44)}
+                  layout={shouldReduceMotion ? false : 'size'}
+                  transition={{ layout: { duration: 0.28, ease: smoothEase } }}
+                  role="tabpanel"
+                  id="about-panel"
+                  aria-labelledby={`about-tab-${activeTab}`}
+                  className="min-h-[92px] overflow-hidden rounded-xl border border-primary-100 bg-white p-5 shadow-sm sm:min-h-[10rem]"
+                >
+                  <AnimatePresence custom={tabDirection} mode="wait" initial={false}>
+                    <motion.div
+                      key={activeTab}
+                      custom={tabDirection}
+                      variants={tabPanelVariants}
+                      layout={shouldReduceMotion ? false : true}
+                      initial={shouldReduceMotion ? 'reduced' : 'hidden'}
+                      animate={shouldReduceMotion ? 'reduced' : 'show'}
+                      exit={shouldReduceMotion ? undefined : 'exit'}
                     >
-                      {isActive && (
-                        <motion.span
-                          layoutId="about-active-tab"
-                          className="absolute inset-0 rounded-lg bg-primary-600 shadow-md"
-                          transition={{ duration: shouldReduceMotion ? 0.01 : 0.28, ease: smoothEase }}
-                        />
-                      )}
-                      <span className="relative z-10 flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {tab.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <motion.div
-                initial="hidden"
-                animate={animateState}
-                variants={makeFadeUp(1.44)}
-                layout
-                role="tabpanel"
-                id={`about-panel-${activeTab}`}
-                aria-labelledby={`about-tab-${activeTab}`}
-                className="min-h-[92px] rounded-xl border border-primary-100 bg-white p-5 shadow-sm"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={activeTab}
-                    variants={tabPanelVariants}
-                    initial={shouldReduceMotion ? 'reduced' : 'hidden'}
-                    animate={shouldReduceMotion ? 'reduced' : 'show'}
-                    exit={shouldReduceMotion ? undefined : 'exit'}
-                    layout
-                  >
-                    {activeTab === 'values' ? (
-                      <div className="flex flex-wrap gap-2">
-                        {(tabContent[activeTab] as string[]).map((value, i) => (
-                          <span
-                            key={i}
-                            className="rounded-full bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700"
-                          >
-                            {value}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed text-dark-600 md:text-base">
-                        {tabContent[activeTab] as string}
-                      </p>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              </motion.div>
+                      {renderTabContent(activeTab)}
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
+              </LayoutGroup>
             </motion.div>
 
             <motion.button

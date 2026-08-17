@@ -8,7 +8,7 @@ export default function Preloader() {
   const siteConfig = content.siteConfig;
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1800);
+    const timer = setTimeout(() => setLoading(false), 700);
     return () => clearTimeout(timer);
   }, []);
 
@@ -18,14 +18,14 @@ export default function Preloader() {
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: 'easeInOut' }}
+          transition={{ duration: 0.25, ease: 'easeInOut' }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-dark-950"
         >
           <div className="flex flex-col items-center gap-6">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
               className="relative"
             >
               <img
@@ -48,7 +48,7 @@ export default function Preloader() {
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: '0%' }}
-                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
                 className="absolute inset-0 bg-gradient-to-l from-primary-400 to-gold-400"
               />
             </div>

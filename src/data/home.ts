@@ -1,6 +1,10 @@
 // All site content sourced from https://veysvakfi.org/
 // Centralized here for easy maintenance and future updates.
 
+import blessedTreeImage from '@/assets/projects/blessed-tree.jpg';
+import goldPortfolioImage from '@/assets/projects/gold-portfolio.jpeg';
+import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
+
 export const siteConfig = {
   name: 'وقف أويس القرني',
   logo: 'https://veysvakfi.org/wp-content/uploads/2023/06/cropped-cropped-شعار-الوقف-170x57-1.png',
@@ -67,7 +71,7 @@ export const projects: Project[] = [
     description:
       'سهم وقفي استثماري يتيح لكل يمني ومحبي اليمن المشاركة في بناء أكبر وقف في تاريخ اليمن، بقيمة مساهمة متاحة تسهم في صناعة موارد وقفية مستدامة.',
     contribution: '100 دولار',
-    image: 'https://veysvakfi.org/wp-content/uploads/2023/06/WhatsApp-Image-2024-03-19-at-13.01.54.jpeg',
+    image: waqfShareImage,
     detailsUrl: '#projects',
   },
   {
@@ -76,7 +80,7 @@ export const projects: Project[] = [
     description:
       'مشروع وقفي استثماري دائم في تركيا من خلال شراء واستثمار أشجار الزيتون المنتجة لا يقل عمرها عن عشر سنين، على مساحة 33 متر مربع من الأرض للشجرة الواحدة.',
     contribution: '300 دولار',
-    image: 'https://veysvakfi.org/wp-content/uploads/2024/05/DSC09194-1-scaled-1-150x150.jpg',
+    image: blessedTreeImage,
     detailsUrl: 'https://blessedtree.veysvakfi.org/',
   },
   {
@@ -85,7 +89,7 @@ export const projects: Project[] = [
     description:
       'محفظة وقفية استثمارية مبنية على الذهب، تؤمّن موارد مستدامة لبرامج الوقف وتحافظ على قيمة الأصول الوقفية عبر الزمن.',
     contribution: '100 دولار',
-    image: 'https://veysvakfi.org/wp-content/uploads/2023/06/WhatsApp-Image-2024-03-19-at-13.01.54-1.jpeg',
+    image: goldPortfolioImage,
     detailsUrl: '#projects',
   },
 ];

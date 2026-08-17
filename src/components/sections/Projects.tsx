@@ -15,6 +15,13 @@ type CoverflowMetrics = {
 };
 
 const ease = [0.22, 1, 0.36, 1] as const;
+const projectTransitionEase = [0.45, 0, 0.55, 1] as const;
+const projectTransitionDuration = 0.65;
+const projectImagePositions: Record<string, string> = {
+  'waqf-share': '50% 27%',
+  'blessed-tree': '50% 25%',
+  'gold-portfolio': '50% 24%',
+};
 
 function normalizeIndex(index: number, length: number) {
   return ((index % length) + length) % length;
@@ -147,26 +154,27 @@ function ProjectCard({
           opacity: isFar ? 0 : opacity,
         }}
         transition={{
-          duration: reduceMotion ? 0.01 : 0.58,
-          ease,
+          duration: projectTransitionDuration,
+          ease: projectTransitionEase,
         }}
         style={{
           transformStyle: 'preserve-3d',
           filter: isActive ? 'saturate(1) brightness(1)' : 'saturate(0.82) brightness(0.78)',
           pointerEvents: isFar ? 'none' : 'auto',
         }}
-        className={`flex h-[34rem] w-[min(82vw,22rem)] select-none flex-col overflow-hidden rounded-[1.6rem] border bg-white text-start shadow-2xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[34rem] sm:w-[24rem] md:w-[26rem] lg:h-[35rem] lg:w-[31rem] ${
+        className={`flex h-[34rem] w-[min(82vw,22rem)] select-none flex-col overflow-hidden rounded-[1.6rem] border bg-white text-start shadow-2xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[34rem] sm:w-[24rem] md:h-[35rem] md:w-[26rem] lg:h-[39rem] lg:w-[31rem] ${
           isActive
             ? 'border-primary-200 shadow-dark-950/25'
             : 'cursor-pointer border-dark-950/10 shadow-dark-950/10'
         }`}
       >
-        <div className="relative h-[45%] min-h-[13rem] overflow-hidden bg-dark-950">
+        <div className="relative aspect-[3/2] min-h-[12rem] w-full shrink-0 overflow-hidden bg-[#eaeaea]">
           <img
             src={project.image}
             alt={project.name}
             loading={isActive ? 'eager' : 'lazy'}
             className="h-full w-full object-cover"
+            style={{ objectPosition: projectImagePositions[project.id] ?? '50% 26%' }}
             draggable={false}
             onError={(event) => {
               const target = event.target as HTMLImageElement;
@@ -174,7 +182,6 @@ function ProjectCard({
                 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 520"%3E%3Crect fill="%23111111" width="700" height="520"/%3E%3Cpath fill="%23da0812" opacity=".45" d="M0 0h700v150H0z"/%3E%3C/svg%3E';
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-950/60 via-dark-950/8 to-transparent" />
           <div className="absolute start-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-xs font-black text-primary-700 shadow-lg md:px-4">
             <DollarSign className="h-4 w-4" />
             {project.contribution}
@@ -314,7 +321,7 @@ export default function Projects() {
 
     wheelTimeoutRef.current = window.setTimeout(() => {
       wheelTimeoutRef.current = undefined;
-    }, 540);
+    }, projectTransitionDuration * 1000);
   };
 
   return (
@@ -357,7 +364,7 @@ export default function Projects() {
             dragStart.current = null;
           }}
           onWheel={handleWheel}
-          className="relative mx-auto h-[38rem] max-w-[86rem] touch-pan-y select-none overflow-hidden rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[39rem] lg:h-[40rem]"
+          className="relative mx-auto h-[38rem] max-w-[86rem] touch-pan-y select-none overflow-hidden rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[39rem] lg:h-[44rem]"
           style={{
             perspective: reduceMotion ? 900 : metrics.perspective,
           }}

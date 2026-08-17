@@ -6,7 +6,7 @@ import { useI18n } from '@/i18n/useI18n';
 
 type LanguageSwitcherProps = {
   scrolled?: boolean;
-  tone?: 'auto' | 'dark';
+  tone?: 'auto' | 'dark' | 'light';
   compact?: boolean;
   onChange?: () => void;
 };
@@ -23,7 +23,7 @@ export default function LanguageSwitcher({
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const shouldReduceMotion = useReducedMotion();
   const activeLanguage = languages.find((language) => language.code === locale) ?? languages[0];
-  const darkSurface = tone === 'dark' || !scrolled;
+  const darkSurface = tone === 'dark' || (tone === 'auto' && !scrolled);
 
   useEffect(() => {
     if (!open) return;

@@ -21,8 +21,8 @@ function App() {
 
       <main>
         <Hero />
-        <About />
         <Projects />
+        <About />
         <Programs />
         <YemenPioneers />
         <Statistics />
