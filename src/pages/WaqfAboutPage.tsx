@@ -11,7 +11,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
 import CreditTiltCard from '@/components/effects/CreditTiltCard';
@@ -35,6 +35,9 @@ const sectionReveal = {
 } as const;
 
 const softStagger = (index: number) => index * 35;
+const creditLayerStyle = (factor: number, depth: number): CSSProperties => ({
+  transform: `translate3d(calc(var(--credit-parallax-x, 0px) * ${factor}), calc(var(--credit-parallax-y, 0px) * ${factor}), ${depth}px)`,
+});
 
 export default function WaqfAboutPage() {
   const { locale, isRtl } = useI18n();
@@ -235,16 +238,26 @@ export default function WaqfAboutPage() {
                   return (
                     <CreditTiltCard
                       key={fact.label}
-                      rotationIntensity={5.5}
-                      scaleOnHover={1.012}
-                      shineColor="rgba(255, 235, 238, 0.78)"
-                      className="rounded-[18px] border border-primary-100 bg-white p-5 text-start shadow-[0_14px_38px_rgba(35,15,20,0.06)] hover:border-primary-200 hover:shadow-[0_22px_54px_rgba(35,15,20,0.12)]"
+                      hoverShadow="0 26px 62px rgba(35, 15, 20, 0.14)"
+                      parallaxIntensity={1.08}
+                      rotationIntensity={8}
+                      scaleOnHover={1.026}
+                      shadowColor="rgba(35, 15, 20, 0.16)"
+                      shineColor="rgba(180, 35, 58, 0.16)"
+                      className="min-h-[172px] rounded-[18px] border border-primary-100 bg-white p-5 text-start ring-1 ring-white/80 hover:border-primary-200"
                     >
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                        <FactIcon className="h-5 w-5" />
+                      <div className="flex h-full min-h-[132px] flex-col justify-between">
+                        <div
+                          className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-700 will-change-transform group-hover:bg-primary-100"
+                          style={creditLayerStyle(0.72, 46)}
+                        >
+                          <FactIcon className="h-5 w-5" />
+                        </div>
+                        <div className="will-change-transform" style={creditLayerStyle(0.36, 32)}>
+                          <p className="text-sm font-medium text-dark-500">{fact.label}</p>
+                          <p className="mt-2 text-lg font-bold leading-tight text-dark-900">{fact.value}</p>
+                        </div>
                       </div>
-                      <p className="text-sm font-medium text-dark-500">{fact.label}</p>
-                      <p className="mt-2 text-lg font-bold text-dark-900">{fact.value}</p>
                     </CreditTiltCard>
                   );
                 })}
