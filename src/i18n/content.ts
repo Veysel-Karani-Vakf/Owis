@@ -212,9 +212,10 @@ const shared = {
   },
   programImages: {
     futureLeaders: 'https://veysvakfi.org/wp-content/uploads/2025/10/برنامج-رواد-اليمن-وقف-أويس-القرني.jpg',
-    capacityBuilding: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-5.png',
-    institutionalDevelopment: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-6.png',
-    communityAwareness: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-4.png',
+    capacityBuilding: 'https://veysvakfi.org/wp-content/uploads/2020/07/IMG_8018-1024x683.jpg',
+    institutionalDevelopment:
+      'https://veysvakfi.org/wp-content/gallery/d8a7d984d981d8b9d8a7d984d98ad8a7d8aa/413871824_776644024501184_8029070847178980447_n.jpg',
+    communityAwareness: 'https://veysvakfi.org/wp-content/uploads/2019/10/DSC_7222.jpg',
   },
   newsImages: {
     condolencesSheikhHamad: 'https://veysvakfi.org/wp-content/uploads/2026/07/تعزية-امير-قطر.JPG-scaled.jpeg',

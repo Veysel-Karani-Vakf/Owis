@@ -3,17 +3,24 @@ import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
-export default function ParticipationCTA() {
+type ParticipationCTAProps = {
+  standalone?: boolean;
+};
+
+export default function ParticipationCTA({ standalone = false }: ParticipationCTAProps) {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, isRtl } = useI18n();
   const participationContent = content.participation;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const arrowHoverClass = isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1';
+  const sectionClassName = standalone
+    ? 'relative flex min-h-[100svh] items-center overflow-hidden bg-dark-900 py-24 md:py-28'
+    : 'relative overflow-hidden bg-dark-900 py-20 md:py-28';
 
   return (
     <section
       id="participate"
-      className="relative overflow-hidden bg-dark-900 py-20 md:py-28"
+      className={sectionClassName}
     >
       <div className="absolute inset-0">
         <img
@@ -31,7 +38,7 @@ export default function ParticipationCTA() {
 
       <div className="geometric-pattern absolute inset-0 opacity-20" />
 
-      <div ref={ref} className="relative mx-auto max-w-4xl px-4 text-center md:px-8">
+      <div ref={ref} className="relative mx-auto w-full max-w-4xl px-4 text-center md:px-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={inView ? { opacity: 1, scale: 1 } : {}}

@@ -82,6 +82,11 @@ export default function WaqfAboutPage() {
       bullets: page.identity.values,
     },
   ];
+  const cycleStepLabels = page.cycle.phases.map((phase) => {
+    const [, ...labelParts] = phase.title.split(/[:：]/);
+    const label = labelParts.join(':').trim();
+    return label || phase.title;
+  });
 
   const sendIntroVideoCommand = useCallback((command: 'playVideo' | 'pauseVideo') => {
     const iframeWindow = introVideoIframeRef.current?.contentWindow;
@@ -280,14 +285,14 @@ export default function WaqfAboutPage() {
                   <FadeContent key={card.title} {...sectionReveal} delay={softStagger(index)}>
                     <SpotlightCard
                       spotlightColor="rgba(180, 35, 58, 0.12)"
-                      className={`h-full rounded-[18px] border p-6 text-start shadow-[0_14px_38px_rgba(35,15,20,0.07)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_18px_42px_rgba(35,15,20,0.10)] motion-reduce:hover:translate-y-0 ${
+                      className={`waqf-identity-card h-full rounded-[18px] border p-6 text-start shadow-[0_14px_38px_rgba(35,15,20,0.07)] ${
                         card.featured
-                          ? 'border-primary-100 bg-primary-700 text-white'
-                          : 'border-primary-100 bg-white text-dark-900'
+                          ? 'waqf-identity-card--red border-primary-100 bg-primary-700 text-white'
+                          : 'waqf-identity-card--light border-primary-100 bg-white text-dark-900'
                       }`}
                     >
                       <div
-                        className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${
+                        className={`waqf-identity-icon mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${
                           card.featured ? 'bg-white/10 text-white' : 'bg-primary-50 text-primary-700'
                         }`}
                       >
@@ -381,25 +386,55 @@ export default function WaqfAboutPage() {
           </div>
         </section>
 
-        <section className="bg-white py-20 md:py-28">
+        <section className="bg-white pt-20 pb-0 md:pt-28">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <FadeContent {...sectionReveal}>
-              <SectionHeading title={page.cycle.title} description={page.cycle.description} />
-            </FadeContent>
-
             <ScrollStack
-              variant="stack"
-              scrollLength={0.62}
-              peek={14}
+              header={
+                <div className="mx-auto max-w-3xl text-center">
+                  <FadeContent
+                    blur={false}
+                    duration={650}
+                    initialOpacity={0}
+                    yOffset={16}
+                    threshold={0.2}
+                    once
+                  >
+                    <h2 className="text-3xl font-bold leading-tight text-dark-900 md:text-4xl lg:text-5xl">
+                      {page.cycle.title}
+                    </h2>
+                  </FadeContent>
+                  <FadeContent
+                    blur={false}
+                    duration={650}
+                    initialOpacity={0}
+                    yOffset={16}
+                    delay={85}
+                    threshold={0.2}
+                    once
+                  >
+                    <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-dark-500 md:text-lg">
+                      {page.cycle.description}
+                    </p>
+                  </FadeContent>
+                </div>
+              }
+              variant="fade"
+              scrollLength={0.75}
+              peek={0}
               scaleStep={0.02}
               blur={0}
               dim={0.08}
-              smooth={0.22}
-              depth={3}
-              cardWidth={960}
-              cardHeight={0.52}
-              borderRadius={22}
+              smooth={0.14}
+              depth={1}
+              cardWidth={1040}
+              cardHeight={0.42}
+              borderRadius={24}
               perspective={1400}
+              stepLabels={cycleStepLabels}
+              indicatorLabel={page.cycle.title}
+              topSpacing="clamp(20px, 3vw, 36px)"
+              stickyTop={128}
+              className="waqf-cycle-scroll-stack"
               showProgress
               showCounter
             >
@@ -409,24 +444,48 @@ export default function WaqfAboutPage() {
                 return (
                   <article
                     key={phase.title}
-                    className="h-full min-h-[inherit] rounded-[22px] border border-primary-100 bg-white p-6 text-start shadow-[0_18px_48px_rgba(35,15,20,0.09)] md:p-8"
+                    className="waqf-cycle-card text-start"
                   >
-                    <div className="grid h-full gap-6 lg:grid-cols-[0.34fr_0.66fr] lg:items-start">
-                      <div>
-                        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-                          <PhaseIcon className="h-7 w-7" />
+                    <div className="waqf-cycle-card-grid">
+                      <div className="waqf-cycle-stage-side">
+                        <div
+                          className="waqf-cycle-reveal flex items-center gap-4"
+                          style={{ '--cycle-reveal-delay': '0ms' } as CSSProperties}
+                        >
+                          <div className="waqf-cycle-icon">
+                            <PhaseIcon className="h-7 w-7" />
+                          </div>
+                          <p className="waqf-cycle-counter" dir="ltr">
+                            {String(index + 1).padStart(2, '0')} /{' '}
+                            {String(page.cycle.phases.length).padStart(2, '0')}
+                          </p>
                         </div>
-                        <p className="text-sm font-bold tracking-wide text-primary-700">
-                          {String(index + 1).padStart(2, '0')} / 03
-                        </p>
-                        <h3 className="mt-3 text-2xl font-bold leading-tight text-dark-900">{phase.title}</h3>
+                        <h3
+                          className="waqf-cycle-reveal mt-5 text-2xl font-bold leading-tight text-dark-900 md:text-3xl"
+                          style={{ '--cycle-reveal-delay': '70ms' } as CSSProperties}
+                        >
+                          {phase.title}
+                        </h3>
                       </div>
-                      <div>
-                        <p className="text-base leading-relaxed text-dark-600">{phase.description}</p>
+                      <div className="waqf-cycle-detail-side">
+                        <p
+                          className="waqf-cycle-reveal text-base leading-relaxed text-dark-600 md:text-lg"
+                          style={{ '--cycle-reveal-delay': '140ms' } as CSSProperties}
+                        >
+                          {phase.description}
+                        </p>
                         {phase.bullets && (
                           <ul className="mt-6 space-y-3">
-                            {phase.bullets.map((bullet) => (
-                              <li key={bullet} className="flex gap-3 text-sm leading-relaxed text-dark-600">
+                            {phase.bullets.map((bullet, bulletIndex) => (
+                              <li
+                                key={bullet}
+                                className="waqf-cycle-reveal flex gap-3 text-sm leading-relaxed text-dark-600 md:text-base"
+                                style={
+                                  {
+                                    '--cycle-reveal-delay': `${210 + Math.min(bulletIndex, 4) * 30}ms`,
+                                  } as CSSProperties
+                                }
+                              >
                                 <Check className="mt-1 h-4 w-4 shrink-0 text-primary-700" />
                                 <span>{bullet}</span>
                               </li>
@@ -442,7 +501,7 @@ export default function WaqfAboutPage() {
           </div>
         </section>
 
-        <ParticipationCTA />
+        <ParticipationCTA standalone />
       </main>
     </>
   );

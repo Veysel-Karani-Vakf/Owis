@@ -116,7 +116,7 @@ export const programs: Program[] = [
     title: 'بناء القدرات',
     description:
       'المساهمة في تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم ورفع كفاءتهم.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-5.png',
+    image: 'https://veysvakfi.org/wp-content/uploads/2020/07/IMG_8018-1024x683.jpg',
     url: 'https://veysvakfi.org/بناء-القدرات/',
   },
   {
@@ -124,7 +124,8 @@ export const programs: Program[] = [
     title: 'التطوير المؤسسي',
     description:
       'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجياتها.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-6.png',
+    image:
+      'https://veysvakfi.org/wp-content/gallery/d8a7d984d981d8b9d8a7d984d98ad8a7d8aa/413871824_776644024501184_8029070847178980447_n.jpg',
     url: 'https://veysvakfi.org/التطوير-المؤسسي/',
   },
   {
@@ -132,7 +133,7 @@ export const programs: Program[] = [
     title: 'التوعية المجتمعية',
     description:
       'إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2024/10/تصميم-بدون-عنوان-4.png',
+    image: 'https://veysvakfi.org/wp-content/uploads/2019/10/DSC_7222.jpg',
     url: 'https://veysvakfi.org/التوعية-المجتمعية-2/',
   },
 ];

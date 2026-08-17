@@ -313,18 +313,7 @@ export default function About() {
   });
 
   return (
-    <section id="about" className="relative overflow-hidden bg-cream py-20 md:py-28">
-      <motion.div
-        className="pattern-bg absolute inset-0"
-        initial="hidden"
-        animate={animateState}
-        variants={{
-          hidden: { opacity: 0 },
-          show: { opacity: 0.5, transition: { duration: 0.9, ease: smoothEase } },
-          reduced: { opacity: 0.5, transition: { duration: 0.01 } },
-        }}
-      />
-
+    <section id="about" className="relative overflow-hidden bg-white py-20 md:py-28">
       <div ref={ref} className="relative mx-auto max-w-7xl px-4 md:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <motion.div
@@ -352,13 +341,13 @@ export default function About() {
               initial="hidden"
               animate={animateState}
               variants={ornamentVariants(-5, 0.74)}
-              className="pointer-events-none absolute -bottom-4 -left-4 h-24 w-24 rounded-2xl border-2 border-gold-400/30 bg-cream/50 backdrop-blur-sm"
+              className="pointer-events-none absolute -bottom-4 -left-4 h-24 w-24 rounded-2xl border-2 border-gold-400/30 bg-white/70 backdrop-blur-sm"
             />
             <motion.div
               initial="hidden"
               animate={animateState}
               variants={ornamentVariants(5, 0.86)}
-              className="pointer-events-none absolute -top-4 -right-4 h-20 w-20 rounded-full border-2 border-primary-400/20 bg-cream/50 backdrop-blur-sm"
+              className="pointer-events-none absolute -top-4 -right-4 h-20 w-20 rounded-full border-2 border-primary-400/20 bg-white/70 backdrop-blur-sm"
             />
           </motion.div>
 

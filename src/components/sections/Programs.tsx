@@ -11,6 +11,13 @@ import { useRef } from 'react';
 import { type Program } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 
+function smoothStep(value: number, start: number, end: number) {
+  if (end <= start) return value >= end ? 1 : 0;
+
+  const progress = Math.min(1, Math.max(0, (value - start) / (end - start)));
+  return progress * progress * (3 - 2 * progress);
+}
+
 function ProgramActions({
   program,
   label,
@@ -112,23 +119,27 @@ function StackedProgramCard({
   const enterEnd = index === 0 ? 0.001 : index * segment;
   const dimStart = index * segment;
   const dimEnd = index < total - 1 ? (index + 1) * segment : 1;
-  const enterY = useTransform(progress, [enterStart, enterEnd], ['105%', '0%']);
-  const scale = useTransform(
-    progress,
-    index < total - 1 ? [dimStart, dimEnd] : [0, 1],
-    index < total - 1 ? [1, 0.965] : [1, 1]
-  );
-  const opacity = useTransform(
-    progress,
-    index < total - 1 ? [dimStart, dimEnd] : [0, 1],
-    index < total - 1 ? [1, 0.76] : [1, 1]
-  );
-  const y = index === 0 ? 0 : enterY;
+  const y = useTransform(progress, (value) => {
+    if (index > 0) {
+      const entered = smoothStep(value, enterStart, enterEnd);
+
+      if (entered < 1) {
+        return `${(1 - entered) * 112}%`;
+      }
+    }
+
+    const lifted = index < total - 1 ? smoothStep(value, dimStart, dimEnd) : 0;
+    return `${lifted * -2.2}%`;
+  });
+  const scale = useTransform(progress, (value) => {
+    const lifted = index < total - 1 ? smoothStep(value, dimStart, dimEnd) : 0;
+    return 1 - lifted * 0.018;
+  });
 
   return (
     <motion.article
       data-program-card={program.id}
-      style={{ y, scale, opacity, zIndex: index + 1 }}
+      style={{ y, scale, zIndex: index + 1 }}
       className="absolute inset-0 origin-center overflow-hidden bg-dark-950 will-change-transform"
     >
       <ProgramCardContent
@@ -215,10 +226,11 @@ export default function Programs() {
     offset: ['start start', 'end end'],
   });
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 28,
-    mass: 0.6,
+    stiffness: 72,
+    damping: 26,
+    mass: 0.82,
   });
+  const cardProgress = useTransform(smoothProgress, [0, 0.86, 1], [0, 1, 1]);
 
   if (shouldReduceMotion) {
     return (
@@ -284,7 +296,7 @@ export default function Programs() {
           ref={stackRef}
           data-programs-stack
           className="relative hidden md:block"
-          style={{ height: `calc(${programs.length * 90}svh)` }}
+          style={{ height: `calc(${programs.length * 108}svh)` }}
         >
           <div
             className="sticky top-20 lg:top-24"
@@ -297,7 +309,7 @@ export default function Programs() {
                   program={program}
                   index={index}
                   total={programs.length}
-                  progress={smoothProgress}
+                  progress={cardProgress}
                   actionLabel={actionLabel}
                   isRtl={isRtl}
                 />
