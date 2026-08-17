@@ -1,6 +1,7 @@
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Eye, Target, Compass, Gem, Landmark, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -158,6 +159,7 @@ function useIsMobile() {
 
 export default function About() {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.25 });
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('vision');
   const [tabDirection, setTabDirection] = useState(1);
   const shouldReduceMotion = useReducedMotion();
@@ -541,10 +543,7 @@ export default function About() {
                 reduced: { opacity: 1, x: 0, transition: { duration: 0.01 } },
               }}
               type="button"
-              onClick={() => {
-                const el = document.querySelector('#projects');
-                if (el) el.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-              }}
+              onClick={() => navigate('/projects')}
               className="group mt-6 flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               {t('common.learnMore')}

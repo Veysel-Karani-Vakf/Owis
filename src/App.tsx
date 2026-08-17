@@ -7,6 +7,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
 import WaqfAboutPage from '@/pages/WaqfAboutPage';
 import GovernancePage from '@/pages/GovernancePage';
+import ProjectsPage from '@/pages/ProjectsPage';
+import ProjectDetailPage from '@/pages/ProjectDetailPage';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/about/waqf" element={<WaqfAboutPage />} />
         <Route path="/about/governance" element={<GovernancePage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/:slug" element={<ProjectDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

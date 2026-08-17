@@ -136,6 +136,8 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
             );
           }
 
+          const active = link.href.startsWith('/') && location.pathname.startsWith(link.href);
+
           return (
             <motion.a
               key={link.href}
@@ -147,7 +149,9 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                 event.preventDefault();
                 onNavClick(link.href);
               }}
-              className="flex min-h-14 items-center justify-between rounded-xl px-4 py-4 text-lg font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+              className={`flex min-h-14 items-center justify-between rounded-xl px-4 py-4 text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                active ? 'bg-primary-600 text-white' : 'text-white/90 hover:bg-white/10 hover:text-white'
+              }`}
             >
               {link.label}
             </motion.a>

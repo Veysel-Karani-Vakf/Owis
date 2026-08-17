@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { type Project } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 import { useInView } from '@/hooks/useInView';
@@ -109,7 +110,8 @@ function ProjectCard({
   const signedDirection = offset === 0 ? 0 : offset > 0 ? 1 : -1;
   const visualDirection = isRtl ? -signedDirection : signedDirection;
   const isFar = absoluteOffset > 2;
-  const isExternal = !project.detailsUrl.startsWith('#');
+  const isInternalDetails = project.detailsUrl.startsWith('/');
+  const isExternalDetails = project.detailsUrl.startsWith('http');
   const scale = isActive ? 1 : absoluteOffset === 1 ? metrics.sideScale : metrics.farScale;
   const opacity = isActive ? 1 : absoluteOffset === 1 ? 0.72 : 0.34;
   const rotateY =
@@ -202,27 +204,51 @@ function ProjectCard({
             }`}
             aria-hidden={!isActive}
           >
-            <a
-              href={project.detailsUrl}
-              target={isExternal ? '_blank' : undefined}
-              rel={isExternal ? 'noopener noreferrer' : undefined}
-              tabIndex={isActive ? 0 : -1}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
-            >
-              {labels.viewDetails}
-              <ArrowIcon className="h-4 w-4" />
-            </a>
-            <button
-              type="button"
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => {
-                const el = document.querySelector('#participate');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-5 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
-            >
-              {labels.donateWithUs}
-            </button>
+            {isInternalDetails ? (
+              <Link
+                to={project.detailsUrl}
+                tabIndex={isActive ? 0 : -1}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
+              >
+                {labels.viewDetails}
+                <ArrowIcon className="h-4 w-4" />
+              </Link>
+            ) : (
+              <a
+                href={project.detailsUrl}
+                target={isExternalDetails ? '_blank' : undefined}
+                rel={isExternalDetails ? 'noopener noreferrer' : undefined}
+                tabIndex={isActive ? 0 : -1}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
+              >
+                {labels.viewDetails}
+                <ArrowIcon className="h-4 w-4" />
+              </a>
+            )}
+
+            {project.contributionUrl ? (
+              <a
+                href={project.contributionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                tabIndex={isActive ? 0 : -1}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-5 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
+              >
+                {labels.donateWithUs}
+              </a>
+            ) : (
+              <button
+                type="button"
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => {
+                  const el = document.querySelector('#participate');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-5 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
+              >
+                {labels.donateWithUs}
+              </button>
+            )}
           </div>
         </div>
       </motion.article>

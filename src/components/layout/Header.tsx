@@ -254,6 +254,8 @@ export default function Header() {
                 );
               }
 
+              const active = link.href.startsWith('/') && location.pathname.startsWith(link.href);
+
               return (
                 <a
                   key={link.href}
@@ -262,7 +264,7 @@ export default function Header() {
                     event.preventDefault();
                     handleNavClick(link.href);
                   }}
-                  className={navItemClass(false)}
+                  className={navItemClass(active)}
                 >
                   {link.label}
                 </a>

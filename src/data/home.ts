@@ -23,7 +23,7 @@ export const siteConfig = {
 export const navLinks = [
   { label: 'الرئيسية', href: '#hero' },
   { label: 'عن الوقف', href: '#about' },
-  { label: 'المشاريع الوقفية', href: '#projects' },
+  { label: 'المشاريع الوقفية', href: '/projects' },
   { label: 'البرامج', href: '#programs' },
   { label: 'الأخبار', href: '#news' },
   { label: 'المكتبة', href: '#library' },
@@ -62,6 +62,7 @@ export type Project = {
   contribution: string;
   image: string;
   detailsUrl: string;
+  contributionUrl?: string;
 };
 
 export const projects: Project[] = [
@@ -72,16 +73,18 @@ export const projects: Project[] = [
       'سهم وقفي استثماري يتيح لكل يمني ومحبي اليمن المشاركة في بناء أكبر وقف في تاريخ اليمن، بقيمة مساهمة متاحة تسهم في صناعة موارد وقفية مستدامة.',
     contribution: '100 دولار',
     image: waqfShareImage,
-    detailsUrl: '#projects',
+    detailsUrl: '/projects/waqf-share',
+    contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
   },
   {
     id: 'blessed-tree',
     name: 'مشروع الشجرة المباركة',
     description:
       'مشروع وقفي استثماري دائم في تركيا من خلال شراء واستثمار أشجار الزيتون المنتجة لا يقل عمرها عن عشر سنين، على مساحة 33 متر مربع من الأرض للشجرة الواحدة.',
-    contribution: '300 دولار',
+    contribution: '100 دولار',
     image: blessedTreeImage,
-    detailsUrl: 'https://blessedtree.veysvakfi.org/',
+    detailsUrl: '/projects/blessed-tree',
+    contributionUrl: 'https://blessedtree.veysvakfi.org/',
   },
   {
     id: 'gold-portfolio',
@@ -90,7 +93,8 @@ export const projects: Project[] = [
       'محفظة وقفية استثمارية مبنية على الذهب، تؤمّن موارد مستدامة لبرامج الوقف وتحافظ على قيمة الأصول الوقفية عبر الزمن.',
     contribution: '100 دولار',
     image: goldPortfolioImage,
-    detailsUrl: '#projects',
+    detailsUrl: '/projects/gold-wallet',
+    contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
   },
 ];
 
@@ -247,7 +251,7 @@ export const footerContent = {
     'مؤسسة وقفية تسعى إلى إيجاد أوعية استثمارية مبتكرة ومستدامة، وتوجيه عوائدها نحو التعليم وبناء القدرات وبرامج نهوض اليمن.',
   quickLinks: [
     { label: 'عن الوقف', href: '#about' },
-    { label: 'المشاريع الوقفية', href: '#projects' },
+    { label: 'المشاريع الوقفية', href: '/projects' },
     { label: 'البرامج', href: '#programs' },
     { label: 'الأخبار', href: '#news' },
     { label: 'تواصل معنا', href: '#contact' },

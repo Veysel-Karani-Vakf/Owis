@@ -12,6 +12,7 @@ export type Project = {
   contribution: string;
   image: string;
   detailsUrl: string;
+  contributionUrl?: string;
 };
 
 export type Program = {
@@ -264,7 +265,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     navLinks: [
       { label: 'الرئيسية', href: '#hero' },
       { label: 'عن الوقف', href: '#about' },
-      { label: 'المشاريع الوقفية', href: '#projects' },
+      { label: 'المشاريع الوقفية', href: '/projects' },
       { label: 'البرامج', href: '#programs' },
       { label: 'الأخبار', href: '#news' },
       { label: 'المكتبة', href: '#library' },
@@ -325,16 +326,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'سهم وقفي استثماري يتيح لكل يمني ومحبي اليمن المشاركة في بناء أكبر وقف في تاريخ اليمن، بقيمة مساهمة متاحة تسهم في صناعة موارد وقفية مستدامة.',
           contribution: '100 دولار',
           image: shared.projectImages.waqfShare,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/waqf-share',
+          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
         },
         {
           id: 'blessed-tree',
           name: 'مشروع الشجرة المباركة',
           description:
             'مشروع وقفي استثماري دائم في تركيا من خلال شراء واستثمار أشجار الزيتون المنتجة لا يقل عمرها عن عشر سنوات، على مساحة 33 متر مربع من الأرض للشجرة الواحدة.',
-          contribution: '300 دولار',
+          contribution: '100 دولار',
           image: shared.projectImages.blessedTree,
-          detailsUrl: 'https://blessedtree.veysvakfi.org/',
+          detailsUrl: '/projects/blessed-tree',
+          contributionUrl: 'https://blessedtree.veysvakfi.org/',
         },
         {
           id: 'gold-portfolio',
@@ -343,7 +346,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'محفظة وقفية استثمارية مبنية على الذهب، تؤمّن موارد مستدامة لبرامج الوقف وتحافظ على قيمة الأصول الوقفية عبر الزمن.',
           contribution: '100 دولار',
           image: shared.projectImages.goldPortfolio,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/gold-wallet',
+          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
         },
       ],
     },
@@ -472,7 +476,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'مؤسسة وقفية تسعى إلى إيجاد أوعية استثمارية مبتكرة ومستدامة، وتوجيه عوائدها نحو التعليم وبناء القدرات وبرامج نهوض اليمن.',
       quickLinks: [
         { label: 'عن الوقف', href: '#about' },
-        { label: 'المشاريع الوقفية', href: '#projects' },
+        { label: 'المشاريع الوقفية', href: '/projects' },
         { label: 'البرامج', href: '#programs' },
         { label: 'الأخبار', href: '#news' },
         { label: 'تواصل معنا', href: '#contact' },
@@ -547,7 +551,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     navLinks: [
       { label: 'Ana Sayfa', href: '#hero' },
       { label: 'Vakıf Hakkında', href: '#about' },
-      { label: 'Vakıf Projeleri', href: '#projects' },
+      { label: 'Vakıf Projeleri', href: '/projects' },
       { label: 'Programlar', href: '#programs' },
       { label: 'Haberler', href: '#news' },
       { label: 'Kütüphane', href: '#library' },
@@ -608,16 +612,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'Her Yemenli ve Yemen dostunun, sürdürülebilir vakıf kaynakları oluşturarak Yemen tarihinin en büyük vakfına katkı sunmasını sağlayan yatırım amaçlı vakıf hissesi.',
           contribution: '100 USD',
           image: shared.projectImages.waqfShare,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/waqf-share',
+          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
         },
         {
           id: 'blessed-tree',
           name: 'Bereketli Ağaç Projesi',
           description:
             'Türkiyede, her biri en az on yaşında olan verimli zeytin ağaçlarının satın alınması ve işletilmesine dayanan kalıcı bir vakıf yatırım projesi.',
-          contribution: '300 USD',
+          contribution: '100 USD',
           image: shared.projectImages.blessedTree,
-          detailsUrl: 'https://blessedtree.veysvakfi.org/',
+          detailsUrl: '/projects/blessed-tree',
+          contributionUrl: 'https://blessedtree.veysvakfi.org/',
         },
         {
           id: 'gold-portfolio',
@@ -626,7 +632,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'Altına dayalı, vakıf programları için sürdürülebilir kaynak sağlayan ve vakıf varlıklarının değerini zaman içinde koruyan yatırım portföyü.',
           contribution: '100 USD',
           image: shared.projectImages.goldPortfolio,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/gold-wallet',
+          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
         },
       ],
     },
@@ -755,7 +762,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'Yenilikçi ve sürdürülebilir vakıf yatırım araçları geliştiren; getirilerini eğitim, kapasite geliştirme ve Yemenin kalkınma programlarına yönlendiren bir vakıf kurumudur.',
       quickLinks: [
         { label: 'Vakıf Hakkında', href: '#about' },
-        { label: 'Vakıf Projeleri', href: '#projects' },
+        { label: 'Vakıf Projeleri', href: '/projects' },
         { label: 'Programlar', href: '#programs' },
         { label: 'Haberler', href: '#news' },
         { label: 'Bize Ulaşın', href: '#contact' },
@@ -830,7 +837,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     navLinks: [
       { label: 'Home', href: '#hero' },
       { label: 'About', href: '#about' },
-      { label: 'Waqf Projects', href: '#projects' },
+      { label: 'Waqf Projects', href: '/projects' },
       { label: 'Programs', href: '#programs' },
       { label: 'News', href: '#news' },
       { label: 'Library', href: '#library' },
@@ -891,16 +898,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'An investment waqf share that enables every Yemeni and friend of Yemen to participate in building the largest waqf in Yemen’s history through an accessible contribution that creates sustainable waqf resources.',
           contribution: '100 USD',
           image: shared.projectImages.waqfShare,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/waqf-share',
+          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
         },
         {
           id: 'blessed-tree',
           name: 'Blessed Tree Project',
           description:
             'A permanent waqf investment project in Türkiye based on purchasing and investing in productive olive trees at least ten years old, with 33 square meters allocated per tree.',
-          contribution: '300 USD',
+          contribution: '100 USD',
           image: shared.projectImages.blessedTree,
-          detailsUrl: 'https://blessedtree.veysvakfi.org/',
+          detailsUrl: '/projects/blessed-tree',
+          contributionUrl: 'https://blessedtree.veysvakfi.org/',
         },
         {
           id: 'gold-portfolio',
@@ -909,7 +918,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
             'A gold-based waqf investment portfolio that provides sustainable resources for waqf programs and preserves the value of waqf assets over time.',
           contribution: '100 USD',
           image: shared.projectImages.goldPortfolio,
-          detailsUrl: '#projects',
+          detailsUrl: '/projects/gold-wallet',
+          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
         },
       ],
     },
@@ -1038,7 +1048,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'A waqf institution creating innovative and sustainable investment vehicles and directing their returns toward education, capacity building, and Yemen advancement programs.',
       quickLinks: [
         { label: 'About', href: '#about' },
-        { label: 'Waqf Projects', href: '#projects' },
+        { label: 'Waqf Projects', href: '/projects' },
         { label: 'Programs', href: '#programs' },
         { label: 'News', href: '#news' },
         { label: 'Contact', href: '#contact' },

@@ -33,6 +33,11 @@ export default function Footer() {
   };
 
   const handleNavClick = (href: string) => {
+    if (href.startsWith('/')) {
+      navigate(href);
+      return;
+    }
+
     if (!href.startsWith('#')) return;
 
     if (location.pathname !== '/') {
@@ -124,7 +129,7 @@ export default function Footer() {
                   <a
                     href={link.href}
                     onClick={(e) => {
-                      if (link.href.startsWith('#')) {
+                      if (link.href.startsWith('#') || link.href.startsWith('/')) {
                         e.preventDefault();
                         handleNavClick(link.href);
                       }
