@@ -9,6 +9,7 @@ type VideoModalProps = {
   onExitComplete: () => void;
   videoId: string;
   posterImage: string;
+  title?: string;
 };
 
 type VideoPlayerProps = {
@@ -70,10 +71,12 @@ export default function VideoModal({
   onExitComplete,
   videoId,
   posterImage,
+  title,
 }: VideoModalProps) {
   const { t, isRtl } = useI18n();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const videoTitle = title ?? t('accessibility.videoTitle');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -150,7 +153,7 @@ export default function VideoModal({
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label={t('accessibility.videoTitle')}
+            aria-label={videoTitle}
             ref={dialogRef}
           >
             <button
@@ -168,7 +171,7 @@ export default function VideoModal({
             <VideoPlayer
               videoId={videoId}
               posterImage={posterImage}
-              title={t('accessibility.videoTitle')}
+              title={videoTitle}
               loadingLabel={t('accessibility.loadingVideo')}
             />
           </motion.div>

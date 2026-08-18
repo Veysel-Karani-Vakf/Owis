@@ -9,6 +9,15 @@ import WaqfAboutPage from '@/pages/WaqfAboutPage';
 import GovernancePage from '@/pages/GovernancePage';
 import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
+import ProgramPage from '@/pages/ProgramPage';
+import DonatePage from '@/pages/DonatePage';
+import NewsIndexPage from '@/pages/NewsIndexPage';
+import NewsArticlePage from '@/pages/NewsArticlePage';
+import ParticipatePage from '@/pages/ParticipatePage';
+import LibraryIndexPage from '@/pages/library/LibraryIndexPage';
+import LibraryCollectionPage from '@/pages/library/LibraryCollectionPage';
+import LibraryTextPage from '@/pages/library/LibraryTextPage';
+import LibraryGalleryPage from '@/pages/library/LibraryGalleryPage';
 
 function App() {
   return (
@@ -24,6 +33,22 @@ function App() {
         <Route path="/about/governance" element={<GovernancePage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+        <Route path="/programs/:slug" element={<ProgramPage />} />
+        <Route path="/news" element={<NewsIndexPage />} />
+        <Route path="/news/:slug" element={<NewsArticlePage />} />
+        <Route path="/participate" element={<Navigate to="/participate/share-ideas" replace />} />
+        <Route path="/participate/:slug" element={<ParticipatePage />} />
+        <Route path="/library" element={<LibraryIndexPage />} />
+        <Route path="/library/forum" element={<LibraryCollectionPage collection="forum" />} />
+        <Route path="/library/forum/:slug" element={<LibraryTextPage type="forum" />} />
+        <Route path="/library/periodic-reports" element={<LibraryCollectionPage collection="periodic-reports" />} />
+        <Route path="/library/waqf-books" element={<LibraryCollectionPage collection="waqf-books" />} />
+        <Route path="/library/waqf-literature" element={<LibraryCollectionPage collection="waqf-literature" />} />
+        <Route path="/library/yemeni-figures" element={<LibraryCollectionPage collection="yemeni-figures" />} />
+        <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
+        <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
+        <Route path="/library/gallery" element={<LibraryGalleryPage />} />
+        <Route path="/donate" element={<DonatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

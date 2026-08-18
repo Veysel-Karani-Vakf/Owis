@@ -6,12 +6,13 @@ type PageHeroProps = {
   title: string;
   description: string;
   image: string;
+  imageAlt?: string;
   breadcrumbs: BreadcrumbItem[];
 };
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
 
-export default function PageHero({ title, description, image, breadcrumbs }: PageHeroProps) {
+export default function PageHero({ title, description, image, imageAlt, breadcrumbs }: PageHeroProps) {
   const shouldReduceMotion = useReducedMotion();
   const duration = shouldReduceMotion ? 0.01 : 0.7;
 
@@ -19,8 +20,8 @@ export default function PageHero({ title, description, image, breadcrumbs }: Pag
     <section className="relative isolate flex min-h-[420px] items-end overflow-hidden bg-dark-950 pt-28 md:min-h-[460px] md:pt-32">
       <motion.img
         src={image}
-        alt=""
-        aria-hidden="true"
+        alt={imageAlt ?? ''}
+        aria-hidden={imageAlt ? undefined : true}
         initial={{ scale: shouldReduceMotion ? 1 : 1.04, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: shouldReduceMotion ? 0.01 : 1.1, ease: heroEase }}
@@ -43,12 +44,12 @@ export default function PageHero({ title, description, image, breadcrumbs }: Pag
           initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration, delay: shouldReduceMotion ? 0 : 0.12, ease: heroEase }}
-          className="max-w-3xl text-start"
+          className="max-w-full text-start md:max-w-3xl"
         >
-          <h1 className="text-balance text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+          <h1 className="max-w-full text-balance break-words text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
             {title}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/75 md:text-lg">
+          <p className="mt-5 max-w-full break-words text-base leading-relaxed text-white/75 md:max-w-2xl md:text-lg">
             {description}
           </p>
         </motion.div>

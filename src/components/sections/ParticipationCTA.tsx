@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { participateRoutes } from '@/data/participate';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -72,21 +74,21 @@ export default function ParticipationCTA({ standalone = false }: ParticipationCT
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
-          <button
-            type="button"
+          <Link
+            to="/donate"
             className="group flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-sm font-semibold text-dark-900 shadow-xl transition-all duration-300 hover:bg-gold-300 hover:shadow-2xl"
           >
             {participationContent.primaryButton}
             <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
-          </button>
+          </Link>
 
-          <button
-            type="button"
+          <Link
+            to={participateRoutes.volunteer}
             className="group flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10"
           >
             {participationContent.secondaryButton}
             <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
-          </button>
+          </Link>
         </motion.div>
       </div>
     </section>

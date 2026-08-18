@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
+import { donateRoute } from '@/data/donate';
 
 export default function Footer() {
   const { ref, inView } = useInView<HTMLElement>();
@@ -183,7 +184,7 @@ export default function Footer() {
 
             <button
               type="button"
-              onClick={() => handleNavClick('#participate')}
+              onClick={() => handleNavClick(donateRoute)}
               className="mt-4 w-full rounded-full border border-gold-400/30 bg-gold-400/10 px-4 py-2.5 text-sm font-semibold text-gold-300 transition-all hover:bg-gold-400/20"
             >
               {t('common.donateNow')}

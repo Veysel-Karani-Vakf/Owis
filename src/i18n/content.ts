@@ -264,12 +264,13 @@ export const localizedContent: Record<Locale, SiteContent> = {
     },
     navLinks: [
       { label: 'الرئيسية', href: '#hero' },
-      { label: 'عن الوقف', href: '#about' },
-      { label: 'المشاريع الوقفية', href: '/projects' },
+      { label: 'من نحن', href: '#about' },
+      { label: 'المشاريع', href: '/projects' },
+      { label: 'المتجر', href: '/donate' },
       { label: 'البرامج', href: '#programs' },
-      { label: 'الأخبار', href: '#news' },
-      { label: 'المكتبة', href: '#library' },
-      { label: 'تواصل معنا', href: '#contact' },
+      { label: 'المكتبة', href: '/library' },
+      { label: 'الأخبار', href: '/news' },
+      { label: 'شاركنا', href: '/participate' },
     ],
     hero: {
       title: 'وقفٌ يبني الإنسان ويصنع المستقبل',
@@ -363,7 +364,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'الاهتمام بأوائل الطلاب والموهوبين والمبدعين المتميزين وإعدادهم قادة للمستقبل عبر برنامج رواد اليمن.',
           image: shared.programImages.futureLeaders,
-          url: 'https://veysvakfi.org/برنامج-رواد-اليمن/',
+          url: '/programs/yemen-pioneers',
         },
         {
           id: 'capacity-building',
@@ -371,7 +372,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'المساهمة في تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم ورفع كفاءتهم.',
           image: shared.programImages.capacityBuilding,
-          url: 'https://veysvakfi.org/بناء-القدرات/',
+          url: '/programs/capacity-building',
         },
         {
           id: 'institutional-development',
@@ -379,7 +380,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجياتها.',
           image: shared.programImages.institutionalDevelopment,
-          url: 'https://veysvakfi.org/التطوير-المؤسسي/',
+          url: '/programs/institutional-development',
         },
         {
           id: 'community-awareness',
@@ -387,7 +388,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
           image: shared.programImages.communityAwareness,
-          url: 'https://veysvakfi.org/التوعية-المجتمعية-2/',
+          url: '/programs/community-awareness',
         },
       ],
     },
@@ -478,7 +479,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'عن الوقف', href: '#about' },
         { label: 'المشاريع الوقفية', href: '/projects' },
         { label: 'البرامج', href: '#programs' },
-        { label: 'الأخبار', href: '#news' },
+        { label: 'المكتبة', href: '/library' },
+        { label: 'الأخبار', href: '/news' },
         { label: 'تواصل معنا', href: '#contact' },
       ],
       contactInfo: {
@@ -551,11 +553,12 @@ export const localizedContent: Record<Locale, SiteContent> = {
     navLinks: [
       { label: 'Ana Sayfa', href: '#hero' },
       { label: 'Vakıf Hakkında', href: '#about' },
-      { label: 'Vakıf Projeleri', href: '/projects' },
+      { label: 'Projeler', href: '/projects' },
+      { label: 'Mağaza', href: '/donate' },
       { label: 'Programlar', href: '#programs' },
-      { label: 'Haberler', href: '#news' },
-      { label: 'Kütüphane', href: '#library' },
-      { label: 'Bize Ulaşın', href: '#contact' },
+      { label: 'Kütüphane', href: '/library' },
+      { label: 'Haberler', href: '/news' },
+      { label: 'Katıl', href: '/participate' },
     ],
     hero: {
       title: 'İnsanı inşa eden, geleceği kuran vakıf',
@@ -649,7 +652,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Yemen Öncüleri programı aracılığıyla başarılı, yetenekli ve yaratıcı öğrencileri destekleyerek geleceğin liderleri olarak hazırlamak.',
           image: shared.programImages.futureLeaders,
-          url: 'https://veysvakfi.org/برنامج-رواد-اليمن/',
+          url: '/programs/yemen-pioneers',
         },
         {
           id: 'capacity-building',
@@ -657,7 +660,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Kamu ve sivil kurumların lider kadrolarını güçlendirmek, performanslarını geliştirmek ve yetkinliklerini artırmak.',
           image: shared.programImages.capacityBuilding,
-          url: 'https://veysvakfi.org/بناء-القدرات/',
+          url: '/programs/capacity-building',
         },
         {
           id: 'institutional-development',
@@ -665,7 +668,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Kamu ve sivil kurumların performansını geliştirmek; programlarını, mekanizmalarını, planlarını ve stratejilerini yenilemek.',
           image: shared.programImages.institutionalDevelopment,
-          url: 'https://veysvakfi.org/التطوير-المؤسسي/',
+          url: '/programs/institutional-development',
         },
         {
           id: 'community-awareness',
@@ -673,7 +676,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Kamuoyunu ve kapsayıcı ulusal kimliği yeniden inşa etmek; kalkınma ve birlikte yaşama kültürünü güçlendirmek.',
           image: shared.programImages.communityAwareness,
-          url: 'https://veysvakfi.org/التوعية-المجتمعية-2/',
+          url: '/programs/community-awareness',
         },
       ],
     },
@@ -764,7 +767,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Vakıf Hakkında', href: '#about' },
         { label: 'Vakıf Projeleri', href: '/projects' },
         { label: 'Programlar', href: '#programs' },
-        { label: 'Haberler', href: '#news' },
+        { label: 'Kütüphane', href: '/library' },
+        { label: 'Haberler', href: '/news' },
         { label: 'Bize Ulaşın', href: '#contact' },
       ],
       contactInfo: {
@@ -837,11 +841,12 @@ export const localizedContent: Record<Locale, SiteContent> = {
     navLinks: [
       { label: 'Home', href: '#hero' },
       { label: 'About', href: '#about' },
-      { label: 'Waqf Projects', href: '/projects' },
+      { label: 'Projects', href: '/projects' },
+      { label: 'Store', href: '/donate' },
       { label: 'Programs', href: '#programs' },
-      { label: 'News', href: '#news' },
-      { label: 'Library', href: '#library' },
-      { label: 'Contact', href: '#contact' },
+      { label: 'Library', href: '/library' },
+      { label: 'News', href: '/news' },
+      { label: 'Participate', href: '/participate' },
     ],
     hero: {
       title: 'A waqf that builds people and shapes the future',
@@ -935,7 +940,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Supporting top, talented, and creative students and preparing them as future leaders through the Yemen Pioneers program.',
           image: shared.programImages.futureLeaders,
-          url: 'https://veysvakfi.org/برنامج-رواد-اليمن/',
+          url: '/programs/yemen-pioneers',
         },
         {
           id: 'capacity-building',
@@ -943,7 +948,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Contributing to the development of leaders in public and civil institutions, improving performance, and raising institutional competence.',
           image: shared.programImages.capacityBuilding,
-          url: 'https://veysvakfi.org/بناء-القدرات/',
+          url: '/programs/capacity-building',
         },
         {
           id: 'institutional-development',
@@ -951,7 +956,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Developing the performance of public and civil institutions and updating their programs, mechanisms, plans, and strategies.',
           image: shared.programImages.institutionalDevelopment,
-          url: 'https://veysvakfi.org/التطوير-المؤسسي/',
+          url: '/programs/institutional-development',
         },
         {
           id: 'community-awareness',
@@ -959,7 +964,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           description:
             'Reshaping public opinion and the inclusive national identity while promoting a culture of advancement and coexistence.',
           image: shared.programImages.communityAwareness,
-          url: 'https://veysvakfi.org/التوعية-المجتمعية-2/',
+          url: '/programs/community-awareness',
         },
       ],
     },
@@ -1050,7 +1055,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'About', href: '#about' },
         { label: 'Waqf Projects', href: '/projects' },
         { label: 'Programs', href: '#programs' },
-        { label: 'News', href: '#news' },
+        { label: 'Library', href: '/library' },
+        { label: 'News', href: '/news' },
         { label: 'Contact', href: '#contact' },
       ],
       contactInfo: {

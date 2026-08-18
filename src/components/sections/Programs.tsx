@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import { ArrowUpLeft, ArrowUpRight } from 'lucide-react';
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { type Program } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -30,15 +31,13 @@ function ProgramActions({
   const ArrowIcon = isRtl ? ArrowUpLeft : ArrowUpRight;
 
   return (
-    <a
-      href={program.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      to={program.url}
       className="inline-flex h-12 items-center justify-center gap-3 rounded-full bg-primary-500 px-6 text-sm font-black text-white shadow-xl shadow-dark-950/25 transition-all hover:bg-primary-600 focus-visible:outline-white"
     >
       {label}
       <ArrowIcon className="h-4 w-4" />
-    </a>
+    </Link>
   );
 }
 

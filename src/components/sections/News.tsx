@@ -1,15 +1,18 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { formatNewsDate, getLatestNews, newsLabels, newsRoutes } from '@/data/news';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
 export default function News() {
   const { ref, inView } = useInView<HTMLDivElement>();
-  const { content, t, isRtl } = useI18n();
+  const { content, t, isRtl, locale } = useI18n();
   const newsContent = content.news;
-  const news = newsContent.items;
-  const featured = news.find((n) => n.featured) ?? news[0];
-  const others = news.filter((n) => n.id !== featured.id).slice(0, 2);
+  const labels = newsLabels[locale];
+  const news = getLatestNews(locale, 3);
+  const featured = news[0];
+  const others = news.slice(1, 3);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const arrowHoverClass = isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1';
 
@@ -30,22 +33,26 @@ export default function News() {
           <h2 className="mb-4 font-brand text-3xl font-bold text-dark-900 md:text-4xl lg:text-5xl">
             {newsContent.title}
           </h2>
+          <Link
+            to={newsRoutes.index}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+          >
+            {labels.allNews}
+            <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} aria-hidden="true" />
+          </Link>
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-          <motion.a
-            href={featured.url}
-            target="_blank"
-            rel="noopener noreferrer"
+          <motion.article
             initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7 }}
             className="group relative flex flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-lg"
           >
-            <div className="relative aspect-[16/10] overflow-hidden">
+            <Link to={featured.route} className="relative aspect-[16/10] overflow-hidden">
               <img
                 src={featured.image}
-                alt={featured.title}
+                alt={featured.imageAlt}
                 loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={(e) => {
@@ -57,42 +64,44 @@ export default function News() {
               <span className="absolute start-4 top-4 rounded-full bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-md">
                 {featured.category}
               </span>
-            </div>
+            </Link>
 
             <div className="flex flex-1 flex-col p-6 md:p-7">
               <div className="mb-3 flex items-center gap-2 text-xs text-dark-400">
                 <Calendar className="h-4 w-4" />
-                {featured.date}
+                <time dateTime={featured.publishedAt}>{formatNewsDate(locale, featured.publishedAt)}</time>
               </div>
               <h3 className="mb-3 text-lg font-bold leading-snug text-dark-900 md:text-xl">
-                {featured.title}
+                <Link to={featured.route} className="transition-colors hover:text-primary-700">
+                  {featured.title}
+                </Link>
               </h3>
               <p className="mb-5 flex-1 text-sm leading-relaxed text-dark-500">
                 {featured.excerpt}
               </p>
-              <div className="flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors group-hover:text-primary-700">
+              <Link
+                to={featured.route}
+                className="flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors group-hover:text-primary-700"
+              >
                 {t('common.readMore')}
                 <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
-              </div>
+              </Link>
             </div>
-          </motion.a>
+          </motion.article>
 
           <div className="flex flex-col gap-6 lg:gap-8">
             {others.map((item, i) => (
-              <motion.a
+              <motion.article
                 key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 30 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: 0.2 + i * 0.1 }}
                 className="group flex flex-1 flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-md transition-shadow hover:shadow-lg sm:flex-row"
               >
-                <div className="relative aspect-[16/10] overflow-hidden sm:w-2/5 sm:flex-shrink-0">
+                <Link to={item.route} className="relative aspect-[16/10] overflow-hidden sm:w-2/5 sm:flex-shrink-0">
                   <img
                     src={item.image}
-                    alt={item.title}
+                    alt={item.imageAlt}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => {
@@ -103,25 +112,27 @@ export default function News() {
                   <span className="absolute start-3 top-3 rounded-full bg-primary-600/90 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
                     {item.category}
                   </span>
-                </div>
+                </Link>
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-2 flex items-center gap-2 text-xs text-dark-400">
                     <Calendar className="h-3.5 w-3.5" />
-                    {item.date}
+                    <time dateTime={item.publishedAt}>{formatNewsDate(locale, item.publishedAt)}</time>
                   </div>
                   <h3 className="mb-2 text-sm font-bold leading-snug text-dark-900 md:text-base">
-                    {item.title}
+                    <Link to={item.route} className="transition-colors hover:text-primary-700">
+                      {item.title}
+                    </Link>
                   </h3>
                   <p className="mb-3 flex-1 text-xs leading-relaxed text-dark-500 line-clamp-2 md:text-sm">
                     {item.excerpt}
                   </p>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-600">
+                  <Link to={item.route} className="flex items-center gap-1.5 text-xs font-semibold text-primary-600">
                     {t('common.readMore')}
                     <ArrowIcon className={`h-3.5 w-3.5 transition-transform ${arrowHoverClass}`} />
-                  </div>
+                  </Link>
                 </div>
-              </motion.a>
+              </motion.article>
             ))}
           </div>
         </div>
