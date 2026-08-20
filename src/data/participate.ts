@@ -114,10 +114,10 @@ export type ParticipateContent = {
 };
 
 export const participateSources = {
-  shareIdeas: 'https://veysvakfi.org/share-your-ideas-with-us/',
-  complaintsSuggestions: 'https://veysvakfi.org/complaints-suggestions/',
-  volunteer: 'https://veysvakfi.org/volunteer-with-us/',
-  contact: 'https://veysvakfi.org/communication/',
+  shareIdeas: '/participate/share-ideas',
+  complaintsSuggestions: '/participate/complaints-suggestions',
+  volunteer: '/participate/volunteer',
+  contact: '/participate/contact',
 } as const;
 
 const routeByKey: Record<ParticipatePageKey, string> = {

@@ -80,13 +80,13 @@ function ProgramCardContent({
         {String(index + 1).padStart(2, '0')}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 md:p-10 lg:p-12">
+      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 md:p-8 lg:p-10">
         <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-4xl text-start">
-            <h3 className="font-brand text-3xl font-black leading-tight text-white text-balance sm:text-4xl md:text-5xl lg:text-6xl">
+            <h3 className="font-brand text-3xl font-black leading-tight text-white text-balance sm:text-4xl md:text-[2.75rem] lg:text-5xl">
               {program.title}
             </h3>
-            <p className="mt-4 max-w-3xl text-sm font-semibold leading-relaxed text-white/90 sm:text-base md:text-lg lg:text-xl">
+            <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-white/90 sm:text-base lg:text-lg">
               {program.description}
             </p>
           </div>
@@ -165,7 +165,7 @@ function StaticProgramCard({
   return (
     <article
       data-program-card={program.id}
-      className="relative min-h-[31rem] overflow-hidden rounded-[1.5rem] border border-white/12 bg-dark-950 shadow-xl shadow-dark-950/15 md:min-h-[34rem]"
+      className="relative min-h-[24rem] overflow-hidden rounded-[1.5rem] border border-white/12 bg-dark-950 shadow-xl shadow-dark-950/15 md:min-h-[26rem]"
     >
       <ProgramCardContent
         program={program}
@@ -297,10 +297,13 @@ export default function Programs() {
           className="relative hidden md:block"
           style={{ height: `calc(${programs.length * 108}svh)` }}
         >
-          <div
-            className="sticky top-20 lg:top-24"
-            style={{ height: 'calc(100svh - 7rem)', minHeight: '34rem' }}
-          >
+          {/*
+            Fully visible card while pinned. The fixed header occupies
+            pt-5 + h-20 = 6.25rem on md and pt-8 + h-20 = 7rem on xl, so the
+            card is pinned ~1rem below it and stops ~1.5rem short of the
+            viewport bottom, leaving clear space on all four sides.
+          */}
+          <div className="sticky top-[7.25rem] h-[calc(100svh-8.75rem)] min-h-[30rem] xl:top-[8rem] xl:h-[calc(100svh-9.5rem)]">
             <div className="relative h-full overflow-hidden rounded-[1.75rem] border-[10px] border-dark-950/25 bg-dark-950 shadow-2xl shadow-dark-950/25 md:rounded-[2.1rem]">
               {programs.map((program, index) => (
                 <StackedProgramCard

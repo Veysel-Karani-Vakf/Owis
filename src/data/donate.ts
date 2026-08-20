@@ -28,7 +28,7 @@ export type DonatePageContent = {
   seo: {
     title: string;
     description: string;
-    canonical: string;
+    canonical?: string;
   };
   hero: {
     title: string;
@@ -55,103 +55,86 @@ export type DonatePageContent = {
   opportunities: DonationOpportunity[];
 };
 
-const officialSources = {
-  donate: 'https://veysvakfi.org/donate-now/',
-  waqfShare: 'https://veysvakfi.org/product/waqf-share/',
-  waqfApartments:
-    'https://veysvakfi.org/product/%d8%a7%d9%84%d8%b3%d9%87%d9%85-%d8%a7%d9%84%d8%a7%d9%88%d9%84/',
-  waqfGift: 'https://veysvakfi.org/gifts/',
-  motherYemen: 'https://veysvakfi.org/product/%d9%88%d9%82%d9%81-%d8%b9%d8%a7%d9%85/',
-  goldWallet: 'https://veysvakfi.org/product/gold-wallet/',
-  waqfLand:
-    'https://veysvakfi.org/product/%d9%85%d8%b4%d8%b1%d9%88%d8%b9-%d8%a7%d9%84%d8%a3%d8%b1%d8%a7%d8%b6%d9%8a-%d8%a7%d9%84%d9%88%d9%82%d9%81%d9%8a%d8%a9/',
-  waqfCars:
-    'https://veysvakfi.org/product/%d9%85%d8%b4%d8%b1%d9%88%d8%b9-%d8%a7%d9%84%d8%b3%d9%8a%d8%a7%d8%b1%d8%a7%d8%aa-%d8%a7%d9%84%d9%88%d9%82%d9%81%d9%8a%d8%a9/',
-  blessedTree: 'https://veysvakfi.org/product/the-blessed-tree-project/',
-  blessedTreeFarmOne:
-    'https://veysvakfi.org/product/%d9%85%d8%b4%d8%b1%d9%88%d8%b9-%d8%a7%d9%84%d8%b4%d8%ac%d8%b1%d8%a9-%d8%a7%d9%84%d9%85%d8%a8%d8%a7%d8%b1%d9%83%d8%a9-%d8%a7%d9%84%d9%85%d8%b2%d8%b1%d8%b9%d8%a9-%d8%a7%d9%84%d8%a3%d9%88%d9%84%d9%89/',
-  blessedTreeFarmTwo:
-    'https://veysvakfi.org/product/%d9%85%d8%b4%d8%b1%d9%88%d8%b9-%d8%a7%d9%84%d8%b4%d8%ac%d8%b1%d8%a9-%d8%a7%d9%84%d9%85%d8%a8%d8%a7%d8%b1%d9%83%d8%a9-%d8%a7%d9%84%d9%85%d8%b2%d8%b1%d8%b9%d8%a9-2/',
-  blessedTreeFarmThree:
-    'https://veysvakfi.org/product/%d9%85%d8%b4%d8%b1%d9%88%d8%b9-%d8%a7%d9%84%d8%b4%d8%ac%d8%b1%d8%a9-%d8%a7%d9%84%d9%85%d8%a8%d8%a7%d8%b1%d9%83%d8%a9-%d8%a7%d9%84%d9%85%d8%b2%d8%b1%d8%b9%d8%a9-3/',
-} as const;
+// Temporary internal contribution flow: every open opportunity leads to the
+// in-site contact form until the new site's own payment gateway goes live.
+export const contributeContactRoute = '/participate/contact';
 
 const sharedOpportunities = {
   waqfShare: {
     id: 'waqf-share',
     price: '$100.00',
     image: waqfShareImage,
-    url: officialSources.waqfShare,
+    url: contributeContactRoute,
     available: true,
   },
   waqfApartments: {
     id: 'waqf-apartments',
     price: '$0.00',
     image: waqfApartmentsImage,
-    url: officialSources.waqfApartments,
+    url: contributeContactRoute,
     available: false,
   },
   waqfGift: {
     id: 'waqf-gift',
     price: '$1.00',
     image: waqfGiftImage,
-    url: officialSources.waqfGift,
+    url: contributeContactRoute,
     available: true,
   },
   motherYemen: {
     id: 'mother-yemen',
     price: '$1.00',
     image: motherYemenImage,
-    url: officialSources.motherYemen,
+    url: contributeContactRoute,
     available: true,
   },
   goldWallet: {
     id: 'gold-wallet',
     price: '$100.00',
     image: goldWalletImage,
-    url: officialSources.goldWallet,
+    url: contributeContactRoute,
     available: true,
   },
   waqfLand: {
     id: 'waqf-land',
     price: '$0.00',
     image: waqfLandImage,
-    url: officialSources.waqfLand,
+    url: contributeContactRoute,
     available: false,
   },
   waqfCars: {
     id: 'waqf-cars',
     price: '$100.00',
     image: waqfCarsImage,
-    url: officialSources.waqfCars,
+    url: contributeContactRoute,
     available: false,
   },
   blessedTree: {
     id: 'blessed-tree',
     price: '$100.00',
     image: blessedTreeImage,
-    url: officialSources.blessedTree,
+    url: contributeContactRoute,
     available: true,
   },
   blessedTreeFarmOne: {
     id: 'blessed-tree-farm-one',
     price: '$0.00',
     image: blessedTreeFarmImage,
-    url: officialSources.blessedTreeFarmOne,
+    url: contributeContactRoute,
     available: false,
   },
   blessedTreeFarmTwo: {
     id: 'blessed-tree-farm-two',
     price: '$100.00',
     image: blessedTreeFarmImage,
-    url: officialSources.blessedTreeFarmTwo,
+    url: contributeContactRoute,
     available: false,
   },
   blessedTreeFarmThree: {
     id: 'blessed-tree-farm-three',
     price: '$100.00',
     image: blessedTreeFarmImage,
-    url: officialSources.blessedTreeFarmThree,
+    url: contributeContactRoute,
     available: true,
   },
 } as const;
@@ -161,13 +144,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     seo: {
       title: 'ساهم الآن | وقف أويس القرني',
       description:
-        'صفحة داخلية تعرض فرص المساهمة الرسمية المنشورة لدى وقف أويس القرني دون إنشاء نظام دفع أو سلة شراء داخل الموقع الجديد.',
-      canonical: officialSources.donate,
+        'صفحة تعرض فرص المساهمة المعتمدة لدى وقف أويس القرني، وتتم المساهمة حالياً عبر التواصل المباشر إلى حين إطلاق بوابة الدفع الإلكتروني.',
+      canonical: undefined,
     },
     hero: {
       title: 'ساهم الآن',
       description:
-        'ساهم معنا بسهم وقفي أو أكثر، أو في مشروع الشجرة المباركة، أو محفظة الذهب الوقفية، عبر الروابط الرسمية للوقف.',
+        'ساهم معنا بسهم وقفي أو أكثر، أو في مشروع الشجرة المباركة، أو محفظة الذهب الوقفية، بالتواصل المباشر معنا عبر هذا الموقع.',
       image: waqfShareHeroImage,
       imageAlt: 'السهم الوقفي من وقف أويس القرني',
     },
@@ -177,10 +160,10 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     ],
     intro: {
       eyebrow: 'فرص المساهمة الرسمية',
-      title: 'كل بطاقة تفتح مصدرها الرسمي فقط',
+      title: 'المساهمة تتم حالياً عبر التواصل المباشر',
       paragraphs: [
-        'هذه الصفحة تعرض الفرص كما ظهرت في صفحة المساهمة الرسمية لوقف أويس القرني.',
-        'لا تحتوي الصفحة على دفع داخلي أو سلة أو حقول كمية؛ الأزرار المتاحة تنقل الزائر إلى الرابط الرسمي، والمشاريع المغلقة تظهر بوضوح كغير متاحة.',
+        'هذه الصفحة تعرض فرص المساهمة المعتمدة لدى وقف أويس القرني.',
+        'بوابة الدفع الإلكتروني الخاصة بالموقع قيد التجهيز؛ حتى إطلاقها ينقلك زر «ساهم الآن» إلى صفحة التواصل داخل الموقع لإتمام مساهمتك، والمشاريع المغلقة تظهر بوضوح كغير متاحة.',
       ],
     },
     labels: {
@@ -191,7 +174,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       contribute: 'ساهم الآن',
       unavailable: 'غير متاح حالياً',
       officialNotice: 'لا تعرض هذه الصفحة بيانات مصرفية أو عملية دفع داخلية.',
-      externalNotice: 'يفتح الرابط الرسمي في نافذة جديدة',
+      externalNotice: 'ينقلك الزر إلى صفحة التواصل داخل الموقع لإتمام المساهمة',
     },
     opportunities: [
       {
@@ -203,7 +186,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfApartments,
         title: 'الشقق الوقفية',
-        description: 'مشروع ظاهر في صفحة المساهمة الرسمية وحالته مغلقة.',
+        description: 'مشروع مغلق حالياً وغير متاح للمساهمة.',
         imageAlt: 'الشقق الوقفية',
       },
       {
@@ -227,13 +210,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfLand,
         title: 'مشروع الأراضي الوقفية',
-        description: 'مشروع ظاهر في صفحة المساهمة الرسمية وحالته مغلقة.',
+        description: 'مشروع مغلق حالياً وغير متاح للمساهمة.',
         imageAlt: 'مشروع الأراضي الوقفية',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'مشروع السيارات الوقفية',
-        description: 'مشروع ظاهر في صفحة المساهمة الرسمية وحالته مغلقة.',
+        description: 'مشروع مغلق حالياً وغير متاح للمساهمة.',
         imageAlt: 'مشروع السيارات الوقفية',
       },
       {
@@ -245,13 +228,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.blessedTreeFarmOne,
         title: 'مشروع الشجرة المباركة - المزرعة 1',
-        description: 'مشروع ظاهر في صفحة المساهمة الرسمية وحالته مغلقة.',
+        description: 'مشروع مغلق حالياً وغير متاح للمساهمة.',
         imageAlt: 'مشروع الشجرة المباركة - المزرعة 1',
       },
       {
         ...sharedOpportunities.blessedTreeFarmTwo,
         title: 'مشروع الشجرة المباركة - المزرعة 2',
-        description: 'مشروع ظاهر في صفحة المساهمة الرسمية وحالته مغلقة.',
+        description: 'مشروع مغلق حالياً وغير متاح للمساهمة.',
         imageAlt: 'مشروع الشجرة المباركة - المزرعة 2',
       },
       {
@@ -266,13 +249,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     seo: {
       title: 'Simdi Katki Sun | Veysel Karani Vakfi',
       description:
-        'Veysel Karani Vakfinin resmi katkı firsatlarini gosteren dahili sayfa; yeni odeme sistemi veya sepet akisi olusturmaz.',
-      canonical: officialSources.donate,
+        'Veysel Karani Vakfinin onayli katkı firsatlarini gosteren sayfa; odeme altyapisi hazir olana kadar katkı dogrudan iletisimle yapilir.',
+      canonical: undefined,
     },
     hero: {
       title: 'Simdi Katki Sun',
       description:
-        'Vakif hissesi, Bereketli Agac Projesi veya Vakif Altin Portfoyu gibi resmi katkı firsatlarina vakfin resmi baglantilari uzerinden ulasin.',
+        'Vakif hissesi, Bereketli Agac Projesi veya Vakif Altin Portfoyu gibi katkı firsatlari icin bu site uzerinden bizimle dogrudan iletisime gecin.',
       image: waqfShareHeroImage,
       imageAlt: 'Veysel Karani Vakfi vakif hissesi',
     },
@@ -282,10 +265,10 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     ],
     intro: {
       eyebrow: 'Resmi Katki Firsatlari',
-      title: 'Her kart yalnizca resmi kaynaga gider',
+      title: 'Katki su an dogrudan iletisimle yapilir',
       paragraphs: [
-        'Bu sayfa, Veysel Karani Vakfinin resmi katkı sayfasinda gorunen firsatlari listeler.',
-        'Sayfada dahili odeme, sepet veya miktar alani yoktur. Acik firsatlar resmi baglantiya gider; kapali projeler net sekilde pasif gorunur.',
+        'Bu sayfa, Veysel Karani Vakfinin onayli katkı firsatlarini listeler.',
+        'Sitenin odeme altyapisi hazirlaniyor; o zamana kadar "Katki Sun" butonu sizi site icindeki iletisim sayfasina yonlendirir. Kapali projeler net sekilde pasif gorunur.',
       ],
     },
     labels: {
@@ -296,7 +279,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       contribute: 'Katki Sun',
       unavailable: 'Su anda kullanilamaz',
       officialNotice: 'Bu sayfa banka bilgisi veya dahili odeme islemi gostermez.',
-      externalNotice: 'Resmi baglanti yeni sekmede acilir',
+      externalNotice: 'Buton sizi site icindeki iletisim sayfasina yonlendirir',
     },
     opportunities: [
       {
@@ -308,7 +291,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfApartments,
         title: 'Vakif Daireleri',
-        description: 'Resmi katkı sayfasinda gorunen ve kapali olan proje.',
+        description: 'Su anda kapali olan ve katkiya acik olmayan proje.',
         imageAlt: 'Vakif daireleri',
       },
       {
@@ -332,13 +315,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfLand,
         title: 'Vakif Arazileri Projesi',
-        description: 'Resmi katkı sayfasinda gorunen ve kapali olan proje.',
+        description: 'Su anda kapali olan ve katkiya acik olmayan proje.',
         imageAlt: 'Vakif Arazileri Projesi',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'Vakif Araclari Projesi',
-        description: 'Resmi katkı sayfasinda gorunen ve kapali olan proje.',
+        description: 'Su anda kapali olan ve katkiya acik olmayan proje.',
         imageAlt: 'Vakif Araclari Projesi',
       },
       {
@@ -350,13 +333,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.blessedTreeFarmOne,
         title: 'Bereketli Agac Projesi - 1. Ciftlik',
-        description: 'Resmi katkı sayfasinda gorunen ve kapali olan proje.',
+        description: 'Su anda kapali olan ve katkiya acik olmayan proje.',
         imageAlt: 'Bereketli Agac Projesi - 1. Ciftlik',
       },
       {
         ...sharedOpportunities.blessedTreeFarmTwo,
         title: 'Bereketli Agac Projesi - 2. Ciftlik',
-        description: 'Resmi katkı sayfasinda gorunen ve kapali olan proje.',
+        description: 'Su anda kapali olan ve katkiya acik olmayan proje.',
         imageAlt: 'Bereketli Agac Projesi - 2. Ciftlik',
       },
       {
@@ -371,13 +354,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     seo: {
       title: 'Contribute Now | Veysel Karani Waqf',
       description:
-        'An internal page listing official contribution opportunities from Veysel Karani Waqf without creating a payment flow or cart.',
-      canonical: officialSources.donate,
+        'A page listing the approved contribution opportunities of Veysel Karani Waqf; contributions are arranged through direct contact until the payment gateway launches.',
+      canonical: undefined,
     },
     hero: {
       title: 'Contribute Now',
       description:
-        'Access official contribution opportunities such as the waqf share, the Blessed Tree Project and the Gold Waqf Wallet through the official waqf links.',
+        'Contribute a waqf share, support the Blessed Tree Project or the Gold Waqf Wallet by contacting us directly through this website.',
       image: waqfShareHeroImage,
       imageAlt: 'Veysel Karani Waqf share',
     },
@@ -387,10 +370,10 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
     ],
     intro: {
       eyebrow: 'Official Contribution Opportunities',
-      title: 'Each card links only to its official source',
+      title: 'Contributions are currently arranged through direct contact',
       paragraphs: [
-        'This page lists the opportunities shown on the official Veysel Karani Waqf contribution page.',
-        'It does not include internal payment, cart or quantity controls. Available opportunities open the official link; closed projects are clearly disabled.',
+        'This page lists the approved contribution opportunities of Veysel Karani Waqf.',
+        "The site's own payment gateway is being prepared; until it launches, the Contribute button takes you to the in-site contact page to arrange your contribution. Closed projects are clearly disabled.",
       ],
     },
     labels: {
@@ -401,7 +384,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       contribute: 'Contribute Now',
       unavailable: 'Unavailable now',
       officialNotice: 'This page does not show bank details or process payments internally.',
-      externalNotice: 'The official link opens in a new tab',
+      externalNotice: 'The button takes you to the in-site contact page',
     },
     opportunities: [
       {
@@ -413,7 +396,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfApartments,
         title: 'Waqf Apartments',
-        description: 'A project shown on the official contribution page and marked closed.',
+        description: 'A project that is currently closed and not open for contributions.',
         imageAlt: 'Waqf Apartments',
       },
       {
@@ -437,13 +420,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfLand,
         title: 'Waqf Land Project',
-        description: 'A project shown on the official contribution page and marked closed.',
+        description: 'A project that is currently closed and not open for contributions.',
         imageAlt: 'Waqf Land Project',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'Waqf Cars Project',
-        description: 'A project shown on the official contribution page and marked closed.',
+        description: 'A project that is currently closed and not open for contributions.',
         imageAlt: 'Waqf Cars Project',
       },
       {
@@ -455,13 +438,13 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.blessedTreeFarmOne,
         title: 'Blessed Tree Project - Farm 1',
-        description: 'A project shown on the official contribution page and marked closed.',
+        description: 'A project that is currently closed and not open for contributions.',
         imageAlt: 'Blessed Tree Project - Farm 1',
       },
       {
         ...sharedOpportunities.blessedTreeFarmTwo,
         title: 'Blessed Tree Project - Farm 2',
-        description: 'A project shown on the official contribution page and marked closed.',
+        description: 'A project that is currently closed and not open for contributions.',
         imageAlt: 'Blessed Tree Project - Farm 2',
       },
       {

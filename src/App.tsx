@@ -3,7 +3,10 @@ import ScrollProgress from '@/components/ui/ScrollProgress';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ScrollRestoration from '@/components/internal/ScrollRestoration';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+
+const AdminApp = lazy(() => import('@/admin/AdminApp'));
 import HomePage from '@/pages/HomePage';
 import WaqfAboutPage from '@/pages/WaqfAboutPage';
 import GovernancePage from '@/pages/GovernancePage';
@@ -18,8 +21,22 @@ import LibraryIndexPage from '@/pages/library/LibraryIndexPage';
 import LibraryCollectionPage from '@/pages/library/LibraryCollectionPage';
 import LibraryTextPage from '@/pages/library/LibraryTextPage';
 import LibraryGalleryPage from '@/pages/library/LibraryGalleryPage';
+import LibraryDocumentsPage from '@/pages/library/LibraryDocumentsPage';
 
 function App() {
+  const { pathname } = useLocation();
+
+  // The admin dashboard renders its own chrome (no public Header/Footer/Preloader).
+  if (pathname.startsWith('/admin')) {
+    return (
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100" />}>
+        <Routes>
+          <Route path="/admin/*" element={<AdminApp />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   return (
     <>
       <Preloader />
@@ -41,10 +58,10 @@ function App() {
         <Route path="/library" element={<LibraryIndexPage />} />
         <Route path="/library/forum" element={<LibraryCollectionPage collection="forum" />} />
         <Route path="/library/forum/:slug" element={<LibraryTextPage type="forum" />} />
-        <Route path="/library/periodic-reports" element={<LibraryCollectionPage collection="periodic-reports" />} />
-        <Route path="/library/waqf-books" element={<LibraryCollectionPage collection="waqf-books" />} />
-        <Route path="/library/waqf-literature" element={<LibraryCollectionPage collection="waqf-literature" />} />
-        <Route path="/library/yemeni-figures" element={<LibraryCollectionPage collection="yemeni-figures" />} />
+        <Route path="/library/periodic-reports" element={<LibraryDocumentsPage collection="periodic-reports" />} />
+        <Route path="/library/waqf-books" element={<LibraryDocumentsPage collection="waqf-books" />} />
+        <Route path="/library/waqf-literature" element={<LibraryDocumentsPage collection="waqf-literature" />} />
+        <Route path="/library/yemeni-figures" element={<LibraryDocumentsPage collection="yemeni-figures" />} />
         <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
         <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
         <Route path="/library/gallery" element={<LibraryGalleryPage />} />

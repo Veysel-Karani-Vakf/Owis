@@ -46,7 +46,11 @@ export default function PageSeo({
   const { locale } = useI18n();
 
   useEffect(() => {
-    const pageUrl = canonical ?? `${window.location.origin}${location.pathname}`;
+    const pageUrl = canonical
+      ? canonical.startsWith('/')
+        ? `${window.location.origin}${canonical}`
+        : canonical
+      : `${window.location.origin}${location.pathname}`;
     const applySeo = () => {
       document.title = title;
 

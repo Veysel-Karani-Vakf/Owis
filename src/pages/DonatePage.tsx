@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ExternalLink, HandHeart, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, HandHeart, PhoneCall, ShieldCheck } from 'lucide-react';
 import { useMemo } from 'react';
 import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
@@ -66,10 +67,8 @@ function DonationCard({
 
         <div className="mt-auto pt-6">
           {opportunity.available && opportunity.url ? (
-            <a
-              href={opportunity.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={opportunity.url}
               aria-label={`${labels.contribute}: ${opportunity.title}. ${labels.externalNotice}`}
               className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
@@ -81,7 +80,7 @@ function DonationCard({
                 }`}
                 aria-hidden="true"
               />
-            </a>
+            </Link>
           ) : (
             <button
               type="button"
@@ -114,7 +113,7 @@ export default function DonatePage() {
         '@type': 'ListItem',
         position: index + 1,
         name: opportunity.title,
-        url: opportunity.url ?? `${origin}/donate#${opportunity.id}`,
+        url: `${origin}${opportunity.available && opportunity.url ? opportunity.url : `/donate#${opportunity.id}`}`,
       })),
     };
   }, [page.hero.description, page.hero.title, page.opportunities]);
@@ -189,7 +188,7 @@ export default function DonatePage() {
             </div>
 
             <div className="mt-8 rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
-              <ExternalLink className="mb-3 h-5 w-5 text-primary-600" aria-hidden="true" />
+              <PhoneCall className="mb-3 h-5 w-5 text-primary-600" aria-hidden="true" />
               {page.labels.externalNotice}
             </div>
           </div>

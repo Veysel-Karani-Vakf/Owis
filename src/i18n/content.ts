@@ -105,12 +105,20 @@ export type SiteContent = {
     button: string;
     image: string;
     indicators: { label: string; value: number | null }[];
+    statisticsSource: {
+      label: string;
+      url: string;
+    };
   };
   statistics: {
     eyebrow: string;
     title: string;
     description: string;
     indicators: { label: string; value: number | null; suffix: string }[];
+    source: {
+      label: string;
+      url: string;
+    };
   };
   news: {
     eyebrow: string;
@@ -197,9 +205,9 @@ export const languages: { code: Locale; label: string; nativeName: string; short
 ];
 
 const shared = {
-  logo: 'https://veysvakfi.org/wp-content/uploads/2023/06/cropped-cropped-شعار-الوقف-170x57-1.png',
+  logo: '/media/cropped-cropped-170x57-1-18a12f60.png',
   videoId: 'LMK-Sv__71w',
-  mainImage: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+  mainImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   socialLinks: {
     facebook: 'https://www.facebook.com/veysvakfi',
     twitter: 'https://twitter.com/veysvakfi',
@@ -212,33 +220,50 @@ const shared = {
     goldPortfolio: goldPortfolioImage,
   },
   programImages: {
-    futureLeaders: 'https://veysvakfi.org/wp-content/uploads/2025/10/برنامج-رواد-اليمن-وقف-أويس-القرني.jpg',
-    capacityBuilding: 'https://veysvakfi.org/wp-content/uploads/2020/07/IMG_8018-1024x683.jpg',
-    institutionalDevelopment:
-      'https://veysvakfi.org/wp-content/gallery/d8a7d984d981d8b9d8a7d984d98ad8a7d8aa/413871824_776644024501184_8029070847178980447_n.jpg',
-    communityAwareness: 'https://veysvakfi.org/wp-content/uploads/2019/10/DSC_7222.jpg',
+    futureLeaders: '/media/file-6c159173.jpg',
+    capacityBuilding: '/media/5-41deee62.png',
+    institutionalDevelopment: '/media/6-8aafe52f.png',
+    communityAwareness: '/media/4-17cc70a3.png',
+  },
+  yemenPioneersStatistics: {
+    educationalScholarships: 86,
+    peerReviewedResearch: 33,
+    trainingForums: 6,
+    internationalParticipations: 7,
+    sourceUrl: '/media/docs/2025-c909c767.pdf',
+  },
+  // Official figures from the “Owais in Numbers” report (7th edition, through December 2025)
+  waqfStatistics: {
+    waqfShares: 17488,
+    contributors: 9403,
+    contributorCountries: 22,
+    programBeneficiaries: 1556,
+    developmentPrograms: 40,
+    capitalGrowthPercent: 51.67,
+    volunteers: 2693,
+    sourceUrl: '/media/docs/2025-c909c767.pdf',
   },
   newsImages: {
-    condolencesSheikhHamad: 'https://veysvakfi.org/wp-content/uploads/2026/07/تعزية-امير-قطر.JPG-scaled.jpeg',
+    condolencesSheikhHamad: '/media/.jpg-scaled-ed6ad55b.jpeg',
     democracyUnityDay:
-      'https://veysvakfi.org/wp-content/uploads/2026/07/وقف-أويس-القرني-يحيي-الذكرى-العاشرة-ليوم-الديمقراطية-والوحدة-الوطنية-في-تركيا.jpeg',
-    condolencesQatar: 'https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-13-at-15.55.06.jpeg',
+      '/media/file-9aa999b6.jpeg',
+    condolencesQatar: '/media/whatsapp-image-2026-07-13-at-15.55.06-7a2c58f4.jpeg',
   },
   partnerLogos: [
-    'https://veysvakfi.org/wp-content/uploads/2018/11/ytb-logo-yatay-yaldiz-150x150.png',
-    'https://veysvakfi.org/wp-content/uploads/2018/05/logo3-1.png',
-    'https://veysvakfi.org/wp-content/uploads/2018/05/logo2-150x118.png',
-    'https://veysvakfi.org/wp-content/uploads/2018/11/DkGHXZrXsAAkQA3-150x150.jpg',
-    'https://veysvakfi.org/wp-content/uploads/2024/01/منصة-بيفول-اويس-القرني-وقف-السهم-الوقفي-سهم-وقفي-150x150.jpg',
-    'https://veysvakfi.org/wp-content/uploads/2024/05/download_image_1714989756380-150x150.png',
-    'https://veysvakfi.org/wp-content/uploads/2024/05/22ff63b6bb2d8355ef224aada68ed218-1-150x150.png',
-    'https://veysvakfi.org/wp-content/uploads/2024/05/download_image_1717068331986-1-150x150.png',
-    'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.13-150x150.jpeg',
-    'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.12-150x150.jpeg',
-    'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.11-150x150.jpeg',
-    'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.12-1-150x150.png',
-    'https://veysvakfi.org/wp-content/uploads/2025/02/صورة-واتساب-بتاريخ-2025-02-25-في-15.05.46_84749624-150x150.jpg',
-    'https://veysvakfi.org/wp-content/uploads/2025/11/سيف-ذا-شلدرن-1.png',
+    '/media/ytb-logo-yatay-yaldiz-150x150-9e4ed0b3.png',
+    '/media/logo3-1-50865719.png',
+    '/media/logo2-150x118-ed42d6c2.png',
+    '/media/dkghxzrxsaakqa3-150x150-b0778c69.jpg',
+    '/media/150x150-dc4fef1e.jpg',
+    '/media/download_image_1714989756380-150x150-e6c9705e.png',
+    '/media/22ff63b6bb2d8355ef224aada68ed218-1-150x150-b12720b9.png',
+    '/media/download_image_1717068331986-1-150x150-cdbfa110.png',
+    '/media/whatsapp-image-2024-08-14-at-14.10.13-150x150-340b1281.jpeg',
+    '/media/whatsapp-image-2024-08-14-at-14.10.12-150x150-7ed6083a.jpeg',
+    '/media/whatsapp-image-2024-08-14-at-14.10.11-150x150-7a288ba7.jpeg',
+    '/media/whatsapp-image-2024-08-14-at-14.10.12-1-150x150-061d7473.png',
+    '/media/2025-02-25-15.05.46_84749624-150x150-78272285.jpg',
+    '/media/1-87baca56.png',
   ],
 };
 
@@ -328,7 +353,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 دولار',
           image: shared.projectImages.waqfShare,
           detailsUrl: '/projects/waqf-share',
-          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
+          contributionUrl: '/donate',
         },
         {
           id: 'blessed-tree',
@@ -338,7 +363,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 دولار',
           image: shared.projectImages.blessedTree,
           detailsUrl: '/projects/blessed-tree',
-          contributionUrl: 'https://blessedtree.veysvakfi.org/',
+          contributionUrl: '/donate',
         },
         {
           id: 'gold-portfolio',
@@ -348,7 +373,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 دولار',
           image: shared.projectImages.goldPortfolio,
           detailsUrl: '/projects/gold-wallet',
-          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
+          contributionUrl: '/donate',
         },
       ],
     },
@@ -400,22 +425,31 @@ export const localizedContent: Record<Locale, SiteContent> = {
       button: 'اكتشف البرنامج',
       image: shared.mainImage,
       indicators: [
-        { label: 'عدد الطلاب والطالبات', value: null },
-        { label: 'عدد المحافظات', value: null },
-        { label: 'عدد الجامعات', value: null },
-        { label: 'عدد التخصصات', value: null },
+        { label: 'منح تعليمية', value: shared.yemenPioneersStatistics.educationalScholarships },
+        { label: 'أبحاث علمية محكّمة', value: shared.yemenPioneersStatistics.peerReviewedResearch },
+        { label: 'ملتقيات تدريبية', value: shared.yemenPioneersStatistics.trainingForums },
+        { label: 'مشاركات دولية', value: shared.yemenPioneersStatistics.internationalParticipations },
       ],
+      statisticsSource: {
+        label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
+        url: shared.yemenPioneersStatistics.sourceUrl,
+      },
     },
     statistics: {
       eyebrow: 'أثر الوقف',
       title: 'أويس في أرقام',
-      description: 'ستظهر الأرقام الرسمية هنا فور اعتمادها من قبل إدارة الوقف.',
+      description:
+        'أرقام رسمية من تقرير «أويس في أرقام» — الإصدار السابع، حتى ديسمبر 2025م.',
       indicators: [
-        { label: 'عدد الأسهم الوقفية', value: null, suffix: '' },
-        { label: 'عدد المساهمين', value: null, suffix: '' },
-        { label: 'المستفيدون من البرامج', value: null, suffix: '' },
-        { label: 'عدد البرامج والمشروعات', value: null, suffix: '' },
+        { label: 'سهماً وقفياً', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'إجمالي الأسهم الوقفية التي جُمعت لتنمية أصول الوقف واستدامة مساراته التنموية.' },
+        { label: 'مساهماً ومساهمة من 22 دولة', value: shared.waqfStatistics.contributors, suffix: '', detail: 'واقفون وواقفات من 22 دولة حول العالم شاركوا في بناء الوقف وتنميته.' },
+        { label: 'مستفيداً من المسارات الوقفية', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'مستفيدون مباشرون من برامج المسارات الوقفية التعليمية والتنموية والمجتمعية.' },
+        { label: 'برنامجاً تنموياً ضمن المسارات الوقفية', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'برامج تنموية نُفّذت ضمن المسارات الوقفية في التطوير المؤسسي وبناء القدرات والتوعية.' },
       ],
+      source: {
+        label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
+        url: shared.waqfStatistics.sourceUrl,
+      },
     },
     news: {
       eyebrow: 'آخر المستجدات',
@@ -430,7 +464,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'قدّم رئيس وقف أويس القرني عضو مجلس الشورى الأستاذ صلاح باتيس واجب العزاء في وفاة الأمير الوالد سمو الشيخ حمد بن خليفة آل ثاني، وذلك في القنصلية العامة لدولة قطر.',
           image: shared.newsImages.condolencesSheikhHamad,
-          url: 'https://veysvakfi.org/shura-member-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/shura-member-condolences-sheikh-hamad',
           featured: true,
         },
         {
@@ -441,7 +475,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'في الذكرى العاشرة ليوم الديمقراطية والوحدة الوطنية، يستذكر وقف أويس القرني بكل تقدير تضحيات الشعب التركي في حماية وطنه وإرادته ووحدته.',
           image: shared.newsImages.democracyUnityDay,
-          url: 'https://veysvakfi.org/owais-waqf-democracy-and-national-unity-day/',
+          url: '/news/democracy-national-unity-day',
         },
         {
           id: 'condolences-qatar',
@@ -451,7 +485,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'بقلوب مؤمنة بقضاء الله وقدره تلقينا نبأ وفاة سمو الأمير الوالد الشيخ حمد بن خليفة آل ثاني رحمه الله، وتتقدم كافة هيئات الوقف بأحر التعازي.',
           image: shared.newsImages.condolencesQatar,
-          url: 'https://veysvakfi.org/owais-waqf-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/qatar-condolences-sheikh-hamad',
         },
       ],
     },
@@ -616,7 +650,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.waqfShare,
           detailsUrl: '/projects/waqf-share',
-          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
+          contributionUrl: '/donate',
         },
         {
           id: 'blessed-tree',
@@ -626,7 +660,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.blessedTree,
           detailsUrl: '/projects/blessed-tree',
-          contributionUrl: 'https://blessedtree.veysvakfi.org/',
+          contributionUrl: '/donate',
         },
         {
           id: 'gold-portfolio',
@@ -636,7 +670,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.goldPortfolio,
           detailsUrl: '/projects/gold-wallet',
-          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
+          contributionUrl: '/donate',
         },
       ],
     },
@@ -688,22 +722,31 @@ export const localizedContent: Record<Locale, SiteContent> = {
       button: 'Programı Keşfet',
       image: shared.mainImage,
       indicators: [
-        { label: 'Öğrenci Sayısı', value: null },
-        { label: 'İl Sayısı', value: null },
-        { label: 'Üniversite Sayısı', value: null },
-        { label: 'Bölüm Sayısı', value: null },
+        { label: 'Eğitim Bursu', value: shared.yemenPioneersStatistics.educationalScholarships },
+        { label: 'Hakemli Bilimsel Araştırma', value: shared.yemenPioneersStatistics.peerReviewedResearch },
+        { label: 'Eğitim Buluşması', value: shared.yemenPioneersStatistics.trainingForums },
+        { label: 'Uluslararası Katılım', value: shared.yemenPioneersStatistics.internationalParticipations },
       ],
+      statisticsSource: {
+        label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
+        url: shared.yemenPioneersStatistics.sourceUrl,
+      },
     },
     statistics: {
       eyebrow: 'Vakfın Etkisi',
       title: 'Rakamlarla Oveys',
-      description: 'Resmi rakamlar vakıf yönetimi tarafından onaylandığında burada yayımlanacaktır.',
+      description:
+        '“Rakamlarla Oveys” raporundan resmi rakamlar — 7. sayı, Aralık 2025’e kadar.',
       indicators: [
-        { label: 'Vakıf Hissesi Sayısı', value: null, suffix: '' },
-        { label: 'Katkı Sunanlar', value: null, suffix: '' },
-        { label: 'Program Yararlanıcıları', value: null, suffix: '' },
-        { label: 'Program ve Proje Sayısı', value: null, suffix: '' },
+        { label: 'Vakıf Hissesi', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Vakıf varlıklarını büyütmek ve programlarını sürdürülebilir kılmak için toplanan toplam vakıf hissesi.' },
+        { label: '22 Ülkeden Katkı Sunan', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Dünya genelinde 22 ülkeden vakfın kuruluşuna ve büyümesine katkı sunan bağışçılar.' },
+        { label: 'Vakıf Programlarından Yararlanan', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Vakıf programlarının eğitim, kalkınma ve toplumsal alanlardaki doğrudan yararlanıcıları.' },
+        { label: 'Kalkınma Programı', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Kurumsal gelişim, kapasite geliştirme ve farkındalık alanlarında yürütülen kalkınma programları.' },
       ],
+      source: {
+        label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
+        url: shared.waqfStatistics.sourceUrl,
+      },
     },
     news: {
       eyebrow: 'Son Gelişmeler',
@@ -718,7 +761,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'Veysel Karani Vakfı Başkanı ve Şura Meclisi üyesi Salah Batiss, Katar Devletinin kurucu emiri Şeyh Hamad bin Halife Al Sani için taziyelerini Katar Başkonsolosluğunda sundu.',
           image: shared.newsImages.condolencesSheikhHamad,
-          url: 'https://veysvakfi.org/shura-member-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/shura-member-condolences-sheikh-hamad',
           featured: true,
         },
         {
@@ -729,7 +772,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'Demokrasi ve Milli Birlik Gününün onuncu yılında vakıf, Türk halkının vatanını, iradesini ve birliğini koruma uğruna gösterdiği fedakarlıkları saygıyla anıyor.',
           image: shared.newsImages.democracyUnityDay,
-          url: 'https://veysvakfi.org/owais-waqf-democracy-and-national-unity-day/',
+          url: '/news/democracy-national-unity-day',
         },
         {
           id: 'condolences-qatar',
@@ -739,7 +782,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'Şeyh Hamad bin Halife Al Sani’nin vefat haberini iman ve teslimiyetle aldık; vakfın tüm heyetleri en içten taziyelerini sunar.',
           image: shared.newsImages.condolencesQatar,
-          url: 'https://veysvakfi.org/owais-waqf-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/qatar-condolences-sheikh-hamad',
         },
       ],
     },
@@ -904,7 +947,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.waqfShare,
           detailsUrl: '/projects/waqf-share',
-          contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
+          contributionUrl: '/donate',
         },
         {
           id: 'blessed-tree',
@@ -914,7 +957,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.blessedTree,
           detailsUrl: '/projects/blessed-tree',
-          contributionUrl: 'https://blessedtree.veysvakfi.org/',
+          contributionUrl: '/donate',
         },
         {
           id: 'gold-portfolio',
@@ -924,7 +967,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           contribution: '100 USD',
           image: shared.projectImages.goldPortfolio,
           detailsUrl: '/projects/gold-wallet',
-          contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
+          contributionUrl: '/donate',
         },
       ],
     },
@@ -976,22 +1019,31 @@ export const localizedContent: Record<Locale, SiteContent> = {
       button: 'Discover the Program',
       image: shared.mainImage,
       indicators: [
-        { label: 'Students', value: null },
-        { label: 'Governorates', value: null },
-        { label: 'Universities', value: null },
-        { label: 'Specializations', value: null },
+        { label: 'Educational Scholarships', value: shared.yemenPioneersStatistics.educationalScholarships },
+        { label: 'Peer-Reviewed Studies', value: shared.yemenPioneersStatistics.peerReviewedResearch },
+        { label: 'Training Forums', value: shared.yemenPioneersStatistics.trainingForums },
+        { label: 'International Participations', value: shared.yemenPioneersStatistics.internationalParticipations },
       ],
+      statisticsSource: {
+        label: 'Source: “Owais in Numbers” report — through December 2025',
+        url: shared.yemenPioneersStatistics.sourceUrl,
+      },
     },
     statistics: {
       eyebrow: 'Waqf Impact',
       title: 'Owais in Numbers',
-      description: 'Official numbers will appear here once approved by the waqf administration.',
+      description:
+        'Official figures from the “Owais in Numbers” report — 7th edition, through December 2025.',
       indicators: [
-        { label: 'Waqf Shares', value: null, suffix: '' },
-        { label: 'Contributors', value: null, suffix: '' },
-        { label: 'Program Beneficiaries', value: null, suffix: '' },
-        { label: 'Programs and Projects', value: null, suffix: '' },
+        { label: 'Waqf Shares', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Total waqf shares contributed to grow the endowment’s assets and sustain its development tracks.' },
+        { label: 'Contributors from 22 Countries', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Donors from 22 countries around the world who have taken part in building and growing the waqf.' },
+        { label: 'Program Beneficiaries', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Direct beneficiaries of the waqf tracks’ educational, developmental, and community programs.' },
+        { label: 'Development Programs', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Development programs delivered across institutional development, capacity building, and awareness tracks.' },
       ],
+      source: {
+        label: 'Source: “Owais in Numbers” report — through December 2025',
+        url: shared.waqfStatistics.sourceUrl,
+      },
     },
     news: {
       eyebrow: 'Latest Updates',
@@ -1006,7 +1058,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'Veysel Karani Waqf president and Shura Council member Salah Batiss offered condolences on the passing of Sheikh Hamad bin Khalifa Al Thani at the Consulate General of Qatar.',
           image: shared.newsImages.condolencesSheikhHamad,
-          url: 'https://veysvakfi.org/shura-member-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/shura-member-condolences-sheikh-hamad',
           featured: true,
         },
         {
@@ -1017,7 +1069,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'On the tenth anniversary of Democracy and National Unity Day, the waqf honors the sacrifices of the Turkish people in protecting their homeland, will, and unity.',
           image: shared.newsImages.democracyUnityDay,
-          url: 'https://veysvakfi.org/owais-waqf-democracy-and-national-unity-day/',
+          url: '/news/democracy-national-unity-day',
         },
         {
           id: 'condolences-qatar',
@@ -1027,7 +1079,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           excerpt:
             'With faithful hearts, we received the news of the passing of Sheikh Hamad bin Khalifa Al Thani; all waqf bodies extend their deepest condolences.',
           image: shared.newsImages.condolencesQatar,
-          url: 'https://veysvakfi.org/owais-waqf-condolences-sheikh-hamad-bin-khalifa/',
+          url: '/news/qatar-condolences-sheikh-hamad',
         },
       ],
     },

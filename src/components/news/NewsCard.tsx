@@ -25,7 +25,7 @@ export default function NewsCard({ article, labels, locale, isRtl, compact = fal
           src={article.image}
           alt={article.imageAlt}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
+          className="h-full w-full object-contain"
         />
         <span className="absolute start-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-primary-700 shadow-sm">
           {article.category}

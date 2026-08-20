@@ -5,10 +5,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 import { donateRoute } from '@/data/donate';
+import { supabase } from '@/lib/supabase';
 
 export default function Footer() {
   const { ref, inView } = useInView<HTMLElement>();
-  const { content, t, isRtl } = useI18n();
+  const { content, t, isRtl, locale } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -24,13 +25,17 @@ export default function Footer() {
     { icon: Youtube, url: siteConfig.socialLinks.youtube, label: t('social.youtube') },
   ];
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail('');
-      setTimeout(() => setSubscribed(false), 3000);
-    }
+    if (!email) return;
+    // Persist the subscriber; ignore duplicates (unique email constraint).
+    await supabase.from('newsletter_subscribers').upsert(
+      { email: email.trim().toLowerCase(), locale },
+      { onConflict: 'email', ignoreDuplicates: true },
+    );
+    setSubscribed(true);
+    setEmail('');
+    setTimeout(() => setSubscribed(false), 3000);
   };
 
   const handleNavClick = (href: string) => {

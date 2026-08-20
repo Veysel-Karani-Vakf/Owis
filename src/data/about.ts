@@ -55,10 +55,13 @@ export type WaqfPageContent = {
     sourceUrl: string;
   };
   goals: {
+    eyebrow: string;
     title: string;
+    description: string;
     items: string[];
   };
   identity: {
+    ctaLabel: string;
     valuesTitle: string;
     values: string[];
     missionTitle: string;
@@ -67,7 +70,11 @@ export type WaqfPageContent = {
     vision: string;
   };
   methodology: {
+    eyebrow: string;
     title: string;
+    description: string;
+    stepLabel: string;
+    itemTitles: string[];
     items: string[];
   };
   president: {
@@ -117,13 +124,13 @@ export type AboutPagesContent = {
 
 const assets = {
   waqfHero:
-    'https://veysvakfi.org/wp-content/uploads/2023/09/صلاح-باتيس-وقف-أويس-القرني-1024x576.jpeg',
-  governanceHero: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+    '/media/1024x576-3bbcc5a7.jpeg',
+  governanceHero: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   president:
-    'https://veysvakfi.org/wp-content/uploads/2023/09/صلاح-باتيس-وقف-أويس-القرني-1024x576.jpeg',
+    '/media/1024x576-3bbcc5a7.jpeg',
   profileFile: 'https://drive.google.com/file/d/1Qt_OTnbexW6S6P-MxNZgY5RDXGYOgKBb/view?usp=sharing',
-  waqfSource: 'https://veysvakfi.org/who-we-are/',
-  governanceSource: 'https://veysvakfi.org/governance-system/',
+  waqfSource: '/about/waqf',
+  governanceSource: '/about/governance',
   videoSource: 'https://www.youtube.com/watch?v=dvDQGL8IWX8',
 };
 
@@ -717,7 +724,10 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         sourceUrl: assets.videoSource,
       },
       goals: {
+        eyebrow: 'هويتنا',
         title: 'غاياتنا',
+        description:
+          'رؤية ورسالة وغايات وقيم تشكّل معًا هوية وقف أويس، وتوجّه عمله نحو بناء أكبر وقف في تاريخ اليمن بمساهمة كل اليمنيين ومحبي اليمن.',
         items: [
           'إيجاد الوقف بمساهمة كل اليمنيين ومحبي اليمن حول العالم، وتنمية موارده كمؤسسة مالية استثمارية وقفية.',
           'تعزيز الروح الوطنية لدى اليمنيين كشركاء في إيجاد أكبر وقف في تاريخ اليمن بمساهمتهم جميعًا.',
@@ -725,6 +735,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
+        ctaLabel: 'اكتشف المزيد',
         valuesTitle: 'قيمنا',
         values: ['المبادرة', 'الطموح', 'الشراكة', 'الشفافية', 'المؤسسية', 'الاستدامة'],
         missionTitle: 'رسالتنا',
@@ -734,7 +745,12 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         vision: 'رواد الوقف التخصصي في نهوض اليمن الحضاري.',
       },
       methodology: {
+        eyebrow: 'كيف نعمل',
         title: 'منهجيتنا',
+        description:
+          'خمسة مبادئ عملية تحكم طريقة بناء الوقف وإدارته واستثماره، من الانفتاح على كل مساهم إلى ضمان الاستدامة والشراكات الفاعلة.',
+        stepLabel: 'المبدأ',
+        itemTitles: ['الانفتاح والمشاركة', 'المساهم شريك', 'الاستثمار الوقفي', 'الاستدامة 70 / 30', 'الشراكات الفاعلة'],
         items: [
           'الانفتاح على جميع أبناء اليمن ومحبيه، واستقبال مساهماتهم بالأفكار والأموال، ليكون كل يمني ومحب لليمن مساهماً في بناء الوقف بسهم وقفي عن نفسه، أو بأكثر من سهم يهديها لوالديه أو من يحب.',
           'المساهم معنا شريك في الوقف لبناء وتنمية اليمن، ومن حقه الحصول على وثيقة مساهمة وقفية، والتقارير الدورية، وإبداء الآراء والمقترحات لتطوير عمل الوقف.',
@@ -867,7 +883,10 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         sourceUrl: assets.videoSource,
       },
       goals: {
+        eyebrow: 'Our Identity',
         title: 'Our Purposes',
+        description:
+          'A vision, mission, purposes, and values that together shape the identity of Veysel Karani Waqf and guide its work toward building the largest waqf in the history of Yemen.',
         items: [
           'Establish the waqf through contributions from Yemenis and friends of Yemen around the world and grow its resources as a financial investment waqf institution.',
           'Strengthen national spirit among Yemenis as partners in building the largest waqf in Yemen history.',
@@ -875,6 +894,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
+        ctaLabel: 'Explore More',
         valuesTitle: 'Our Values',
         values: ['Initiative', 'Ambition', 'Partnership', 'Transparency', 'Institutionalism', 'Sustainability'],
         missionTitle: 'Our Mission',
@@ -884,7 +904,12 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         vision: 'Pioneers of specialized waqf for Yemen civilizational advancement.',
       },
       methodology: {
+        eyebrow: 'How We Work',
         title: 'Our Methodology',
+        description:
+          'Five working principles that govern how the waqf is built, managed, and invested — from openness to every contributor to sustainability and active partnerships.',
+        stepLabel: 'Principle',
+        itemTitles: ['Openness & Participation', 'Contributor as Partner', 'Waqf Investment', 'Sustainability 70 / 30', 'Active Partnerships'],
         items: [
           'Openness to all Yemenis and friends of Yemen, receiving their ideas and contributions so every Yemeni and friend of Yemen can help build the waqf with a waqf share for themselves or additional shares gifted to parents or loved ones.',
           'Every contributor is a partner in building and developing Yemen and has the right to receive a waqf contribution document, periodic reports, and opportunities to provide opinions and suggestions.',
@@ -997,7 +1022,10 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         sourceUrl: assets.videoSource,
       },
       goals: {
+        eyebrow: 'Kimliğimiz',
         title: 'Gayelerimiz',
+        description:
+          'Vizyon, misyon, gayeler ve değerler; Veysel Karani Vakfının kimliğini birlikte oluşturur ve çalışmalarını Yemen tarihinin en büyük vakfını kurmaya yönlendirir.',
         items: [
           'Dünyadaki tüm Yemenliler ve Yemen dostlarının katkısıyla vakfı kurmak ve kaynaklarını mali yatırım vakfı olarak geliştirmek.',
           'Yemenlilerin, Yemen tarihindeki en büyük vakfı kurma ortakları olarak ulusal ruhunu güçlendirmek.',
@@ -1005,6 +1033,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
+        ctaLabel: 'Daha Fazla Keşfet',
         valuesTitle: 'Değerlerimiz',
         values: ['Girişim', 'Hırs', 'Ortaklık', 'Şeffaflık', 'Kurumsallık', 'Sürdürülebilirlik'],
         missionTitle: 'Misyonumuz',
@@ -1014,7 +1043,12 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         vision: 'Yemenin medeniyet kalkınmasında uzmanlaşmış vakfın öncüleri olmak.',
       },
       methodology: {
+        eyebrow: 'Nasıl Çalışıyoruz',
         title: 'Metodolojimiz',
+        description:
+          'Vakfın kuruluşunu, yönetimini ve yatırımını belirleyen beş çalışma ilkesi; her katılımcıya açıklıktan sürdürülebilirliğe ve etkin ortaklıklara kadar.',
+        stepLabel: 'İlke',
+        itemTitles: ['Açıklık ve Katılım', 'Katılımcı Ortaktır', 'Vakıf Yatırımı', 'Sürdürülebilirlik 70 / 30', 'Etkin Ortaklıklar'],
         items: [
           'Tüm Yemenlilere ve Yemen dostlarına açık olmak, fikirlerini ve mali katkılarını kabul ederek her Yemenlinin ve Yemen dostunun kendisi, anne babası veya sevdikleri adına vakıf hissesiyle vakfın inşasına katkı vermesini sağlamak.',
           'Katkı veren kişi, Yemenin inşası ve kalkınmasında vakfın ortağıdır; vakıf katkı belgesi, dönemsel raporlar ve görüş-öneri sunma hakkına sahiptir.',

@@ -18,10 +18,10 @@ import CreditTiltCard from '@/components/effects/CreditTiltCard';
 import FadeContent from '@/components/effects/FadeContent';
 import ScrollMask from '@/components/effects/ScrollMask';
 import ScrollStack from '@/components/effects/ScrollStack';
-import SpotlightCard from '@/components/effects/SpotlightCard';
 import ParticipationCTA from '@/components/sections/ParticipationCTA';
-import SectionHeading from '@/components/ui/SectionHeading';
-import { getAboutContent } from '@/data/about';
+import WaqfIdentityTabs, { type IdentityTab } from '@/components/sections/WaqfIdentityTabs';
+import WaqfMethodologyTimeline from '@/components/sections/WaqfMethodologyTimeline';
+import { aboutRoutes, getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
 
 const phaseIcons: LucideIcon[] = [Landmark, TrendingUp, HandHeart];
@@ -34,13 +34,12 @@ const sectionReveal = {
   threshold: 0.22,
 } as const;
 
-const softStagger = (index: number) => index * 35;
 const creditLayerStyle = (factor: number, depth: number): CSSProperties => ({
   transform: `translate3d(calc(var(--credit-parallax-x, 0px) * ${factor}), calc(var(--credit-parallax-y, 0px) * ${factor}), ${depth}px)`,
 });
 
 export default function WaqfAboutPage() {
-  const { locale, isRtl } = useI18n();
+  const { locale, isRtl, t } = useI18n();
   const page = getAboutContent(locale).waqf;
   const introVideoRef = useRef<HTMLDivElement>(null);
   const introVideoIframeRef = useRef<HTMLIFrameElement>(null);
@@ -53,33 +52,34 @@ export default function WaqfAboutPage() {
     embedOrigin ? `&origin=${encodeURIComponent(embedOrigin)}` : ''
   }`;
 
-  const identityCards: {
-    title: string;
-    icon: LucideIcon;
-    body?: string;
-    bullets?: string[];
-    featured?: boolean;
-  }[] = [
+  const identityTabs: IdentityTab[] = [
     {
+      key: 'vision',
       title: page.identity.visionTitle,
       icon: Eye,
       body: page.identity.vision,
-      featured: true,
+      href: '/projects',
     },
     {
+      key: 'mission',
       title: page.identity.missionTitle,
       icon: Target,
       body: page.identity.mission,
+      href: '/participate',
     },
     {
+      key: 'goals',
       title: page.goals.title,
       icon: Landmark,
       bullets: page.goals.items,
+      href: '/participate',
     },
     {
+      key: 'values',
       title: page.identity.valuesTitle,
       icon: Gem,
-      bullets: page.identity.values,
+      chips: page.identity.values,
+      href: aboutRoutes.governance,
     },
   ];
   const cycleStepLabels = page.cycle.phases.map((phase) => {
@@ -249,9 +249,9 @@ export default function WaqfAboutPage() {
                       scaleOnHover={1.026}
                       shadowColor="rgba(35, 15, 20, 0.16)"
                       shineColor="rgba(180, 35, 58, 0.16)"
-                      className="min-h-[172px] rounded-[18px] border border-primary-100 bg-white p-5 text-start ring-1 ring-white/80 hover:border-primary-200"
+                      className="min-h-[172px] rounded-[18px] border border-primary-100 bg-white p-5 text-center ring-1 ring-white/80 hover:border-primary-200"
                     >
-                      <div className="flex h-full min-h-[132px] flex-col justify-between">
+                      <div className="flex h-full min-h-[132px] flex-col items-center justify-between">
                         <div
                           className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-700 will-change-transform group-hover:bg-primary-100"
                           style={creditLayerStyle(0.72, 46)}
@@ -271,90 +271,25 @@ export default function WaqfAboutPage() {
           </div>
         </section>
 
-        <section className="bg-white py-20 md:py-28">
+        <WaqfIdentityTabs
+          eyebrow={page.goals.eyebrow}
+          title={page.goals.title}
+          description={page.goals.description}
+          tabs={identityTabs}
+          ctaLabel={page.identity.ctaLabel}
+          ariaLabel={t('accessibility.aboutTabs')}
+        />
+
+        <section className="bg-warm py-14 md:py-20">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <FadeContent {...sectionReveal}>
-              <SectionHeading title={page.goals.title} />
-            </FadeContent>
-
-            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {identityCards.map((card, index) => {
-                const Icon = card.icon;
-
-                return (
-                  <FadeContent key={card.title} {...sectionReveal} delay={softStagger(index)}>
-                    <SpotlightCard
-                      spotlightColor="rgba(180, 35, 58, 0.12)"
-                      className={`waqf-identity-card h-full rounded-[18px] border p-6 text-start shadow-[0_14px_38px_rgba(35,15,20,0.07)] ${
-                        card.featured
-                          ? 'waqf-identity-card--red border-primary-100 bg-primary-700 text-white'
-                          : 'waqf-identity-card--light border-primary-100 bg-white text-dark-900'
-                      }`}
-                    >
-                      <div
-                        className={`waqf-identity-icon mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${
-                          card.featured ? 'bg-white/10 text-white' : 'bg-primary-50 text-primary-700'
-                        }`}
-                      >
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <h2 className={`text-xl font-bold ${card.featured ? 'text-white' : 'text-dark-900'}`}>
-                        {card.title}
-                      </h2>
-                      {card.body && (
-                        <p className={`mt-4 leading-relaxed ${card.featured ? 'text-white/80' : 'text-dark-600'}`}>
-                          {card.body}
-                        </p>
-                      )}
-                      {card.bullets && (
-                        <ul className="mt-5 space-y-3">
-                          {card.bullets.map((item) => (
-                            <li
-                              key={item}
-                              className={`flex gap-2 text-sm leading-relaxed ${
-                                card.featured ? 'text-white/80' : 'text-dark-600'
-                              }`}
-                            >
-                              <Check
-                                className={`mt-1 h-4 w-4 shrink-0 ${
-                                  card.featured ? 'text-white' : 'text-primary-700'
-                                }`}
-                              />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </SpotlightCard>
-                  </FadeContent>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-warm py-20 md:py-28">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr]">
-              <FadeContent {...sectionReveal}>
-                <SectionHeading align="right" title={page.methodology.title} />
-              </FadeContent>
-              <FadeContent {...sectionReveal} delay={70}>
-                <div className="grid gap-4">
-                  {page.methodology.items.map((item) => (
-                    <div
-                      key={item}
-                      className="flex gap-4 rounded-[18px] border border-primary-100 bg-white p-5 text-start shadow-[0_12px_30px_rgba(35,15,20,0.05)]"
-                    >
-                      <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-700">
-                        <Check className="h-4 w-4" />
-                      </div>
-                      <p className="leading-relaxed text-dark-600">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </FadeContent>
-            </div>
+            <WaqfMethodologyTimeline
+              eyebrow={page.methodology.eyebrow}
+              title={page.methodology.title}
+              description={page.methodology.description}
+              stepLabel={page.methodology.stepLabel}
+              itemTitles={page.methodology.itemTitles}
+              items={page.methodology.items}
+            />
           </div>
         </section>
 
@@ -418,7 +353,9 @@ export default function WaqfAboutPage() {
                   </FadeContent>
                 </div>
               }
-              variant="fade"
+              variant="flip"
+              bookSpine="right"
+              bookSpiral
               scrollLength={0.75}
               peek={0}
               scaleStep={0.02}
@@ -429,7 +366,7 @@ export default function WaqfAboutPage() {
               cardWidth={1040}
               cardHeight={0.42}
               borderRadius={24}
-              perspective={1400}
+              perspective={2000}
               stepLabels={cycleStepLabels}
               indicatorLabel={page.cycle.title}
               topSpacing="clamp(20px, 3vw, 36px)"

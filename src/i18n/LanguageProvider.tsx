@@ -21,8 +21,9 @@ type I18nContextValue = {
 export const I18nContext = createContext<I18nContextValue | null>(null);
 
 const STORAGE_KEY = 'veysel-karani-locale';
+// Arabic uses Latin (Western) digits per brand preference: "-u-nu-latn" forces the numbering system.
 const localeTags: Record<Locale, string> = {
-  ar: 'ar-EG',
+  ar: 'ar-EG-u-nu-latn',
   tr: 'tr-TR',
   en: 'en-US',
 };

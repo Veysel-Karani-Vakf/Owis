@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ExternalLink, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect } from 'react';
 import type { LibraryGalleryImage, LibraryLabels } from '@/data/library';
 
@@ -90,15 +90,6 @@ export default function LibraryLightbox({
               <span className="text-sm font-semibold">
                 {labels.imageCounter} {activeIndex + 1} / {images.length}
               </span>
-              <a
-                href={image.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-              >
-                {labels.officialSource}
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
             </figcaption>
           </motion.figure>
 

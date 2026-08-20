@@ -17,13 +17,13 @@ export default function News() {
   const arrowHoverClass = isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1';
 
   return (
-    <section id="news" className="relative overflow-hidden bg-white py-20 md:py-28">
+    <section id="news" className="relative overflow-hidden bg-white py-14 md:py-20">
       <div ref={ref} className="mx-auto max-w-7xl px-4 md:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="mb-12 flex flex-col items-center text-center"
+          className="mb-8 flex flex-col items-center text-center md:mb-10"
         >
           <div className="mb-4 flex items-center gap-2">
             <span className="h-px w-8 bg-gold-400" />
@@ -42,19 +42,19 @@ export default function News() {
           </Link>
         </motion.div>
 
-        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+        <div className="grid gap-5 lg:grid-cols-2 lg:gap-6">
           <motion.article
             initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7 }}
             className="group relative flex flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-lg"
           >
-            <Link to={featured.route} className="relative aspect-[16/10] overflow-hidden">
+            <Link to={featured.route} className="relative aspect-[16/9] overflow-hidden bg-warm">
               <img
                 src={featured.image}
                 alt={featured.imageAlt}
                 loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="h-full w-full object-contain"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"%3E%3Crect fill="%232c6147" width="400" height="250"/%3E%3C/svg%3E';
@@ -66,22 +66,22 @@ export default function News() {
               </span>
             </Link>
 
-            <div className="flex flex-1 flex-col p-6 md:p-7">
+            <div className="flex flex-1 flex-col p-5">
               <div className="mb-3 flex items-center gap-2 text-xs text-dark-400">
                 <Calendar className="h-4 w-4" />
                 <time dateTime={featured.publishedAt}>{formatNewsDate(locale, featured.publishedAt)}</time>
               </div>
-              <h3 className="mb-3 text-lg font-bold leading-snug text-dark-900 md:text-xl">
+              <h3 className="mb-2 text-lg font-bold leading-snug text-dark-900 md:text-xl">
                 <Link to={featured.route} className="transition-colors hover:text-primary-700">
                   {featured.title}
                 </Link>
               </h3>
-              <p className="mb-5 flex-1 text-sm leading-relaxed text-dark-500">
+              <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-dark-500">
                 {featured.excerpt}
               </p>
               <Link
                 to={featured.route}
-                className="flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors group-hover:text-primary-700"
+                className="mt-auto flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors group-hover:text-primary-700"
               >
                 {t('common.readMore')}
                 <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
@@ -89,7 +89,7 @@ export default function News() {
             </div>
           </motion.article>
 
-          <div className="flex flex-col gap-6 lg:gap-8">
+          <div className="flex flex-col gap-5 lg:gap-6">
             {others.map((item, i) => (
               <motion.article
                 key={item.id}
@@ -98,12 +98,12 @@ export default function News() {
                 transition={{ duration: 0.6, delay: 0.2 + i * 0.1 }}
                 className="group flex flex-1 flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-md transition-shadow hover:shadow-lg sm:flex-row"
               >
-                <Link to={item.route} className="relative aspect-[16/10] overflow-hidden sm:w-2/5 sm:flex-shrink-0">
+                <Link to={item.route} className="relative aspect-[16/10] overflow-hidden bg-warm sm:w-2/5 sm:flex-shrink-0">
                   <img
                     src={item.image}
                     alt={item.imageAlt}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="h-full w-full object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"%3E%3Crect fill="%232c6147" width="400" height="250"/%3E%3C/svg%3E';
@@ -114,7 +114,7 @@ export default function News() {
                   </span>
                 </Link>
 
-                <div className="flex flex-1 flex-col p-5">
+                <div className="flex flex-1 flex-col p-4">
                   <div className="mb-2 flex items-center gap-2 text-xs text-dark-400">
                     <Calendar className="h-3.5 w-3.5" />
                     <time dateTime={item.publishedAt}>{formatNewsDate(locale, item.publishedAt)}</time>
@@ -124,10 +124,10 @@ export default function News() {
                       {item.title}
                     </Link>
                   </h3>
-                  <p className="mb-3 flex-1 text-xs leading-relaxed text-dark-500 line-clamp-2 md:text-sm">
+                  <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-dark-500 md:text-sm">
                     {item.excerpt}
                   </p>
-                  <Link to={item.route} className="flex items-center gap-1.5 text-xs font-semibold text-primary-600">
+                  <Link to={item.route} className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-primary-600">
                     {t('common.readMore')}
                     <ArrowIcon className={`h-3.5 w-3.5 transition-transform ${arrowHoverClass}`} />
                   </Link>

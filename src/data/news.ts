@@ -271,8 +271,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/07/تعزية-امير-قطر.JPG-scaled.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/تعزية-امير-قطر.JPG-1024x683.jpeg"
+      "/media/.jpg-scaled-ed6ad55b.jpeg",
+      "/media/.jpg-1024x683-c0cd6554.jpeg"
     ]
   },
   {
@@ -354,8 +354,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/07/وقف-أويس-القرني-يحيي-الذكرى-العاشرة-ليوم-الديمقراطية-والوحدة-الوطنية-في-تركيا.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/وقف-أويس-القرني-يحيي-الذكرى-العاشرة-ليوم-الديمقراطية-والوحدة-الوطنية-في-تركيا-819x1024.jpeg"
+      "/media/file-9aa999b6.jpeg",
+      "/media/819x1024-8fb5cb57.jpeg"
     ]
   },
   {
@@ -425,8 +425,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-13-at-15.55.06.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-13-at-15.55.06-576x1024.jpeg"
+      "/media/whatsapp-image-2026-07-13-at-15.55.06-7a2c58f4.jpeg",
+      "/media/whatsapp-image-2026-07-13-at-15.55.06-576x1024-02665540.jpeg"
     ]
   },
   {
@@ -499,8 +499,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/07/184f04c0-8983-4739-a9dc-dc05b79ce648.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/184f04c0-8983-4739-a9dc-dc05b79ce648-1017x1024.jpeg"
+      "/media/184f04c0-8983-4739-a9dc-dc05b79ce648-0f904d16.jpeg",
+      "/media/184f04c0-8983-4739-a9dc-dc05b79ce648-1017x1024-6beef627.jpeg"
     ]
   },
   {
@@ -654,13 +654,13 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.23-scaled.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.18-1024x768.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.20-1-1024x768.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.20-2-1024x768.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.22-1024x768.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.23-2-1024x768.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-04-at-21.49.23-1024x768.jpeg"
+      "/media/whatsapp-image-2026-07-04-at-21.49.23-scaled-5a765e1d.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.18-1024x768-b38b6dd0.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.20-1-1024x768-3fba8071.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.20-2-1024x768-9d6d811f.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.22-1024x768-7b0d98d8.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.23-2-1024x768-0d97d7d3.jpeg",
+      "/media/whatsapp-image-2026-07-04-at-21.49.23-1024x768-7d195bfe.jpeg"
     ]
   },
   {
@@ -730,8 +730,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/06/image.png",
-      "https://veysvakfi.org/wp-content/uploads/2026/06/البروفيسور-هلال-الأشول-يحقق-إنجازًا-عالميًا-جديدًا-في-مجال-علوم-الأعصاب-819x1024.jpeg"
+      "/media/image-eec8f4eb.png",
+      "/media/819x1024-95c73a9c.jpeg"
     ]
   },
   {
@@ -776,7 +776,7 @@ export const newsArticles = [
     },
     "gallery": [],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/06/وقف-أويس-القرني-يعزي-في-وفاة-الرئيس-اليمني-السابق-عبدربه-منصور-هادي.jpeg"
+      "/media/file-e011659c.jpeg"
     ]
   },
   {
@@ -888,10 +888,10 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/04/wamy-افطار-صائم-وقف-أويس.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/04/wamy-افطار-صائم-وقف-أويس-1-1024x576.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/04/IMG_6891-1024x576.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/04/IMG_6076-1024x576.jpg"
+      "/media/wamy-c4161329.jpg",
+      "/media/wamy-1-1024x576-dfd1ee27.jpg",
+      "/media/img_6891-1024x576-7ae9c967.jpg",
+      "/media/img_6076-1024x576-2e127cdf.jpg"
     ]
   },
   {
@@ -1108,16 +1108,16 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/03/16-scaled.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/16-1024x683.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/17-1024x683.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/12-1024x683.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/10-1024x576.png",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/4-1024x683.png",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/2-1024x683.png",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/11-1024x683.jpg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/5-1-1024x683.png",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/7-1024x683.png"
+      "/media/16-scaled-a956ce65.jpg",
+      "/media/16-1024x683-65df3857.jpg",
+      "/media/17-1024x683-ad7d52b5.jpg",
+      "/media/12-1024x683-d94d77ac.jpg",
+      "/media/10-1024x576-f8fccc8a.png",
+      "/media/4-1024x683-6c02ae12.png",
+      "/media/2-1024x683-f57af3c3.png",
+      "/media/11-1024x683-62659713.jpg",
+      "/media/5-1-1024x683-0f42135c.png",
+      "/media/7-1024x683-51474eac.png"
     ]
   },
   {
@@ -1190,8 +1190,8 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/03/برنامج-رواد-اليمن-1.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/برنامج-رواد-اليمن-819x1024.jpeg"
+      "/media/1-310e5953.jpeg",
+      "/media/819x1024-0f78f6ac.jpeg"
     ]
   },
   {
@@ -1288,9 +1288,9 @@ export const newsArticles = [
       }
     ],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2026/03/برنامج-رواد-اليمن-يستضيف-البروفيسور-عبدالقادر-بايزيد-في-أمسية-رمضانية-بعنوان-22قيم-ومبادئ-القائد22-في-كونيا-–-تركيا٢.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/برنامج-رواد-اليمن-يستضيف-البروفيسور-عبدالقادر-بايزيد-في-أمسية-رمضانية-بعنوان-22قيم-ومبادئ-القائد22-في-كونيا-–-تركيا-1024x642.jpeg",
-      "https://veysvakfi.org/wp-content/uploads/2026/03/برنامج-رواد-اليمن-يستضيف-البروفيسور-عبدالقادر-بايزيد-في-أمسية-رمضانية-بعنوان-22قيم-ومبادئ-القائد22-في-كونيا-–-تركيا٢-1-1024x768.jpeg"
+      "/media/22-22-392b344b.jpeg",
+      "/media/22-22-1024x642-8b39f4ee.jpeg",
+      "/media/22-22-1-1024x768-a146b600.jpeg"
     ]
   },
   {
@@ -1350,7 +1350,7 @@ export const newsArticles = [
     },
     "gallery": [],
     "sourceImages": [
-      "https://veysvakfi.org/wp-content/uploads/2025/12/1-2-scaled.png"
+      "/media/1-2-scaled-fe0d0095.png"
     ]
   }
 ] as const satisfies readonly NewsArticle[];

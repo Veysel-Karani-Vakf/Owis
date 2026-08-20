@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, ExternalLink, HandHeart, PlayCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, HandHeart, PlayCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
@@ -34,7 +34,7 @@ function RelatedProjectCard({ project, detailsLabel, isRtl }: RelatedProjectCard
 
   return (
     <article className="group overflow-hidden rounded-[22px] border border-primary-100 bg-white shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_20px_52px_rgba(40,12,18,0.11)] motion-reduce:hover:translate-y-0">
-      <div className="aspect-[4/3] overflow-hidden bg-warm">
+      <div className="aspect-square overflow-hidden bg-white">
         <img
           src={project.image}
           alt={project.imageAlt}
@@ -44,15 +44,15 @@ function RelatedProjectCard({ project, detailsLabel, isRtl }: RelatedProjectCard
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         />
       </div>
-      <div className="p-5 text-start md:p-6">
+      <div className="p-4 text-start md:p-5">
         <p className="text-sm font-semibold text-primary-700">{project.category}</p>
-        <h3 className="mt-2 text-2xl font-bold text-dark-950">{project.title}</h3>
-        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-dark-600">
+        <h3 className="mt-1.5 text-xl font-bold leading-snug text-dark-950 md:text-2xl">{project.title}</h3>
+        <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-dark-600">
           {project.shortDescription}
         </p>
         <Link
           to={project.route}
-          className="group/link mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+          className="group/link mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
         >
           {detailsLabel}
           <ArrowIcon
@@ -115,7 +115,6 @@ export default function ProjectDetailPage() {
       <PageSeo
         title={`${project.title} | ${content.siteConfig.name}`}
         description={project.shortDescription}
-        canonical={project.officialSourceUrl}
         type="article"
         image={project.image}
         structuredData={articleSchema}
@@ -131,14 +130,14 @@ export default function ProjectDetailPage() {
         <section className="bg-white py-16 md:py-24">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <FadeContent {...reveal}>
-              <div className="overflow-hidden rounded-[22px] border border-primary-100 bg-warm shadow-[0_20px_60px_rgba(40,12,18,0.10)]">
+              <div className="overflow-hidden rounded-[22px] border border-primary-100 bg-white shadow-[0_20px_60px_rgba(40,12,18,0.10)]">
                 <img
                   src={project.image}
                   alt={project.imageAlt}
                   width={1080}
                   height={1080}
                   loading="eager"
-                  className="aspect-[4/3] w-full object-cover"
+                  className="aspect-square w-full object-cover"
                 />
               </div>
             </FadeContent>
@@ -170,27 +169,15 @@ export default function ProjectDetailPage() {
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <a
-                    href={project.officialContributionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to={project.officialContributionUrl}
                     aria-label={`${page.labels.contribute}: ${project.title}. ${page.labels.externalNotice}`}
                     className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                   >
                     <HandHeart className="h-4 w-4" aria-hidden="true" />
                     {page.labels.contribute}
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                  <a
-                    href={project.officialSourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${page.labels.source}: ${project.title}. ${page.labels.externalNotice}`}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-full border border-primary-100 bg-white px-6 py-3 text-sm font-bold text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-                  >
-                    {page.labels.source}
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                  </a>
+                    <ArrowIcon className="h-4 w-4" aria-hidden="true" />
+                  </Link>
                 </div>
               </div>
             </FadeContent>
@@ -310,16 +297,14 @@ export default function ProjectDetailPage() {
                 <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-dark-600">
                   {project.ctaDescription}
                 </p>
-                <a
-                  href={project.officialContributionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={project.officialContributionUrl}
                   aria-label={`${page.labels.contribute}: ${project.title}. ${page.labels.externalNotice}`}
                   className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   {page.labels.contribute}
-                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                </a>
+                  <ArrowIcon className="h-4 w-4" aria-hidden="true" />
+                </Link>
               </div>
             </FadeContent>
           </div>
@@ -353,7 +338,7 @@ export default function ProjectDetailPage() {
               </div>
             </FadeContent>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
               {relatedProjects.map((relatedProject) => (
                 <RelatedProjectCard
                   key={relatedProject.slug}

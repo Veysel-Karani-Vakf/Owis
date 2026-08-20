@@ -14,10 +14,28 @@ import {
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
+import AwarenessHero from '@/components/programs/AwarenessHero';
+import AwarenessInitiatives from '@/components/programs/AwarenessInitiatives';
+import AwarenessThemes from '@/components/programs/AwarenessThemes';
+import CapacityCities from '@/components/programs/CapacityCities';
+import CapacityForum from '@/components/programs/CapacityForum';
+import CapacityOverview from '@/components/programs/CapacityOverview';
+import CapacityPhaseStory from '@/components/programs/CapacityPhaseStory';
+import CapacityRecommendations from '@/components/programs/CapacityRecommendations';
+import InstitutionalAudiences from '@/components/programs/InstitutionalAudiences';
+import InstitutionalManifesto from '@/components/programs/InstitutionalManifesto';
+import InstitutionalMap from '@/components/programs/InstitutionalMap';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
+import PioneerGoals from '@/components/programs/PioneerGoals';
+import PioneerHighlightsMarquee from '@/components/programs/PioneerHighlightsMarquee';
+import PioneerJourney from '@/components/programs/PioneerJourney';
+import PioneerOverview from '@/components/programs/PioneerOverview';
+import PioneerPillars from '@/components/programs/PioneerPillars';
+import PioneerVideoCarousel from '@/components/programs/PioneerVideoCarousel';
 import VideoModal from '@/components/ui/VideoModal';
 import { donateRoute } from '@/data/donate';
+import { participateRoutes } from '@/data/participate';
 import {
   getOtherPrograms,
   getProgram,
@@ -307,15 +325,56 @@ function MediaGallery({
   }
 
   const videos = program.videos ?? [];
+  // A single gallery image that merely repeats the hero adds nothing next to a video carousel.
+  const showImages =
+    program.imageGallery.length > 0 &&
+    (videos.length < 2 || program.imageGallery.some((image) => image.src !== program.heroImage));
+  const useCarousel = videos.length >= 2;
 
-  if (!program.imageGallery.length && !videos.length) return null;
+  if (!showImages && !videos.length) return null;
+
+  if (useCarousel) {
+    return (
+      <section className="overflow-hidden bg-white py-16 md:py-24">
+        <PioneerVideoCarousel
+          eyebrow={labels.officialMedia}
+          title={labels.videoGallery}
+          description={labels.videoGalleryDescription}
+          videos={videos}
+          labels={labels}
+          onVideoSelect={onVideoSelect}
+        />
+        {showImages && (
+          <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 md:grid-cols-2 md:px-8">
+            {program.imageGallery.map((image) => (
+              <FadeContent key={image.src} blur={false} duration={620} initialOpacity={0} yOffset={14} threshold={0.18} once>
+                <figure className="overflow-hidden rounded-[22px] border border-primary-100 bg-white shadow-[0_18px_48px_rgba(40,12,18,0.07)]">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    width={image.width}
+                    height={image.height}
+                    loading="lazy"
+                    className="aspect-[16/10] w-full object-cover"
+                  />
+                  {image.caption && (
+                    <figcaption className="px-5 py-4 text-sm font-semibold text-dark-600">{image.caption}</figcaption>
+                  )}
+                </figure>
+              </FadeContent>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="bg-white py-16 md:py-24">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading eyebrow={labels.officialMedia} title={labels.officialMedia} centered />
 
-        {program.imageGallery.length > 0 && (
+        {showImages && (
           <div className="grid gap-5 md:grid-cols-2">
             {program.imageGallery.map((image) => (
               <FadeContent
@@ -477,16 +536,6 @@ function InitiativesSection({
                       </div>
                     )}
 
-                    <a
-                      href={initiative.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${labels.officialSource}: ${initiative.title}. ${labels.openExternal}`}
-                      className="mt-auto inline-flex min-h-11 w-fit items-center justify-center gap-2 pt-6 text-sm font-bold text-primary-700 hover:text-primary-800"
-                    >
-                      {labels.officialSource}
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
                   </div>
                 </article>
               </FadeContent>
@@ -587,6 +636,187 @@ function OtherPrograms({
   );
 }
 
+function CapacityShowcase({
+  program,
+  labels,
+  onVideoSelect,
+}: {
+  program: Program;
+  labels: ReturnType<typeof getProgramsContent>['labels'];
+  onVideoSelect: (video: ActiveVideo) => void;
+}) {
+  const findSection = (id: string) => program.sections.find((section) => section.id === id);
+  const statement = findSection('closing-statement');
+  const recommendations = findSection('recommendations');
+  const forum = findSection('forum');
+  const cities = program.cities ?? [];
+  const forumImage = program.images[program.images.length - 1] ?? program.heroImage;
+
+  return (
+    <>
+      <section className="overflow-hidden bg-white py-16 md:py-24">
+        <CapacityOverview program={program} labels={labels} />
+      </section>
+
+      {cities.length > 0 && (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <CapacityCities
+            eyebrow={labels.phaseEyebrow}
+            title={labels.cityMedia}
+            description={labels.cityExplorerDescription}
+            cities={cities}
+            labels={labels}
+            onVideoSelect={onVideoSelect}
+          />
+        </section>
+      )}
+
+      {statement && (
+        <section className="overflow-hidden bg-white py-16 md:py-24">
+          <CapacityPhaseStory
+            eyebrow={labels.phaseEyebrow}
+            section={statement}
+            phase={program.phase}
+            images={program.images}
+          />
+        </section>
+      )}
+
+      {recommendations?.bullets?.length ? (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <CapacityRecommendations
+            eyebrow={labels.recommendationsEyebrow}
+            description={labels.recommendationsDescription}
+            section={recommendations}
+          />
+        </section>
+      ) : null}
+
+      {forum && (
+        <CapacityForum
+          eyebrow={labels.forumEyebrow}
+          objectivesLabel={labels.forumObjectives}
+          section={forum}
+          image={forumImage}
+        />
+      )}
+    </>
+  );
+}
+
+function InstitutionalShowcase({
+  program,
+  labels,
+}: {
+  program: Program;
+  labels: ReturnType<typeof getProgramsContent>['labels'];
+}) {
+  const intro = program.sections[0];
+  const areas = intro?.bullets ?? [];
+  const audiences = program.audiences ?? [];
+
+  return (
+    <>
+      <section className="overflow-hidden bg-white py-20 md:py-28">
+        <InstitutionalManifesto program={program} labels={labels} />
+      </section>
+
+      {areas.length > 0 && (
+        <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          <InstitutionalMap
+            eyebrow={labels.focusAreas}
+            title={labels.focusAreas}
+            description={labels.focusAreasDescription}
+            areaLabel={labels.areaLabel}
+            hubTitle={program.title}
+            hubSubtitle={intro?.title}
+            items={areas}
+          />
+        </section>
+      )}
+
+      {audiences.length > 0 && (
+        <section className="bg-white py-16 md:py-24">
+          <InstitutionalAudiences
+            eyebrow={labels.audiences}
+            title={labels.audiences}
+            description={labels.audiencesDescription}
+            audiences={audiences}
+            areas={areas}
+            image={program.heroImage}
+            donateLabel={labels.donate}
+          />
+        </section>
+      )}
+
+      {program.mediaNote && (
+        <section className="bg-[#faf8f8] py-10 md:py-12">
+          <div className="mx-auto max-w-4xl px-4 md:px-8">
+            <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
+              <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
+              <p className="mt-2">{program.mediaNote}</p>
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+const awarenessInitiativesAnchor = 'awareness-initiatives';
+
+function AwarenessShowcase({
+  program,
+  labels,
+}: {
+  program: Program;
+  labels: ReturnType<typeof getProgramsContent>['labels'];
+}) {
+  const themes = program.themes ?? [];
+  const initiatives = program.initiatives ?? [];
+
+  return (
+    <>
+      {themes.length > 0 && (
+        <section className="bg-white py-12 md:py-16">
+          <AwarenessThemes
+            eyebrow={labels.awarenessEyebrow}
+            title={labels.awarenessThemes}
+            description={labels.awarenessThemesDescription}
+            themeLabel={labels.themeLabel}
+            hubTitle={program.title}
+            themes={themes}
+          />
+        </section>
+      )}
+
+      {initiatives.length > 0 && (
+        <section id={awarenessInitiativesAnchor} className="scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          <AwarenessInitiatives
+            eyebrow={labels.awarenessInitiativesEyebrow}
+            title={labels.awarenessInitiatives}
+            description={labels.awarenessInitiativesDescription}
+            initiatives={initiatives}
+            volunteerRoute={participateRoutes.volunteer}
+            labels={labels}
+          />
+        </section>
+      )}
+
+      {program.mediaNote && (
+        <section className="bg-white py-10 md:py-12">
+          <div className="mx-auto max-w-4xl px-4 md:px-8">
+            <div className="rounded-[22px] border border-primary-100 bg-[#faf8f8] p-5 text-start text-sm leading-relaxed text-dark-600">
+              <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
+              <p className="mt-2">{program.mediaNote}</p>
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 export default function ProgramPage() {
   const { slug } = useParams();
   const { locale, isRtl } = useI18n();
@@ -618,28 +848,63 @@ export default function ProgramPage() {
   const breadcrumbs = getProgramBreadcrumbs(locale, program);
   const goals = program.goals ?? [];
   const components = program.components ?? [];
+  const journey = program.journey ?? [];
+  const pillars = program.pillars ?? [];
+  const highlights = program.highlights ?? [];
+  // Programs that ship journey/pillar content get the richer, animated showcase layout.
+  const isShowcase = journey.length > 0 || pillars.length > 0;
+  // Capacity building ships its own phase-driven storytelling layout.
+  const isCapacity = program.slug === 'capacity-building';
+  // Institutional development has thin official content, so it gets a typographic, diagram-led layout.
+  const isInstitutional = program.slug === 'institutional-development';
+  // Community awareness has logo-only media, so it gets a typographic hero plus a radar/initiative layout.
+  const isAwareness = program.slug === 'community-awareness';
+  const hasCustomLayout = isCapacity || isInstitutional || isAwareness;
 
   return (
     <>
       <PageSeo
         title={program.seo.title}
         description={program.seo.description}
-        canonical={program.seo.canonical}
         type="article"
         image={program.heroImage}
         structuredData={structuredData}
       />
       <main className="bg-white">
-        <PageHero
-          title={program.title}
-          description={program.summary}
-          image={program.heroImage}
-          imageAlt={program.heroImageAlt}
-          breadcrumbs={breadcrumbs}
-        />
+        {isAwareness ? (
+          <AwarenessHero
+            program={program}
+            breadcrumbs={breadcrumbs}
+            labels={page.labels}
+            initiativesAnchor={awarenessInitiativesAnchor}
+          />
+        ) : (
+          <PageHero
+            title={program.title}
+            description={program.summary}
+            image={program.heroImage}
+            imageAlt={program.heroImageAlt}
+            breadcrumbs={breadcrumbs}
+          />
+        )}
 
-        <section className="bg-white py-16 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-8 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        {highlights.length > 0 && (
+          <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} />
+        )}
+
+        {isCapacity ? (
+          <CapacityShowcase program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+        ) : isAwareness ? (
+          <AwarenessShowcase program={program} labels={page.labels} />
+        ) : isInstitutional ? (
+          <InstitutionalShowcase program={program} labels={page.labels} />
+        ) : isShowcase ? (
+          <section className="overflow-hidden bg-white py-12 md:py-16">
+            <PioneerOverview program={program} labels={page.labels} />
+          </section>
+        ) : (
+          <section className="bg-white py-16 md:py-24">
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
               <div className="sticky top-28 rounded-[24px] border border-primary-100 bg-[#faf8f8] p-6 text-start md:p-8">
                 <Layers3 className="h-9 w-9 text-primary-600" aria-hidden="true" />
@@ -654,15 +919,6 @@ export default function ProgramPage() {
                     {page.labels.contact}: {program.contactEmail}
                   </a>
                 )}
-                <a
-                  href={program.officialSourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 flex w-fit items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
-                >
-                  {page.labels.officialSource}
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
               </div>
             </FadeContent>
 
@@ -671,38 +927,72 @@ export default function ProgramPage() {
                 <ProgramSectionBlock key={section.id} section={section} />
               ))}
             </div>
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
-        {goals.length > 0 && (
+        {!hasCustomLayout && goals.length > 0 && (
           <section className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <NumberedList
-                title={page.labels.goals}
-                items={goals}
-                icon={<CheckCircle2 className="h-6 w-6" aria-hidden="true" />}
-              />
+              {isShowcase ? (
+                <PioneerGoals eyebrow={page.labels.goals} title={page.labels.goals} items={goals} />
+              ) : (
+                <NumberedList
+                  title={page.labels.goals}
+                  items={goals}
+                  icon={<CheckCircle2 className="h-6 w-6" aria-hidden="true" />}
+                />
+              )}
             </div>
           </section>
         )}
 
-        {components.length > 0 && (
-          <section className="bg-white py-16 md:py-24">
+        {hasCustomLayout ? null : journey.length > 0 ? (
+          <section className="relative bg-white py-10 md:py-14 lg:py-0">
+            <PioneerJourney
+              eyebrow={page.labels.journeyEyebrow}
+              title={page.labels.journey}
+              description={page.labels.journeyDescription}
+              stepLabel={page.labels.stepLabel}
+              steps={journey}
+            />
+          </section>
+        ) : (
+          components.length > 0 && (
+            <section className="bg-white py-16 md:py-24">
+              <div className="mx-auto max-w-7xl px-4 md:px-8">
+                <NumberedList
+                  title={page.labels.components}
+                  items={components}
+                  icon={<Layers3 className="h-6 w-6" aria-hidden="true" />}
+                />
+              </div>
+            </section>
+          )
+        )}
+
+        {!hasCustomLayout && pillars.length > 0 && (
+          <section className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
-              <NumberedList
-                title={page.labels.components}
-                items={components}
-                icon={<Layers3 className="h-6 w-6" aria-hidden="true" />}
+              <PioneerPillars
+                eyebrow={page.labels.pillarsEyebrow}
+                title={page.labels.pillars}
+                description={page.labels.pillarsDescription}
+                pillars={pillars}
               />
             </div>
           </section>
         )}
 
-        <StatisticsSection program={program} labels={page.labels} />
-        <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
-        <InitiativesSection program={program} labels={page.labels} />
+        {!hasCustomLayout && (
+          <>
+            <StatisticsSection program={program} labels={page.labels} />
+            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+          </>
+        )}
+        {!isAwareness && <InitiativesSection program={program} labels={page.labels} />}
 
-        {program.sections.length > 1 && (
+        {!hasCustomLayout && program.sections.length > 1 && (
           <section className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-5xl px-4 md:px-8">
               <SectionHeading eyebrow={page.labels.information} title={page.labels.information} centered />

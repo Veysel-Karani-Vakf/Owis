@@ -1,4 +1,4 @@
-// All site content sourced from https://veysvakfi.org/
+// Home page content data.
 // Centralized here for easy maintenance and future updates.
 
 import blessedTreeImage from '@/assets/projects/blessed-tree.jpg';
@@ -7,7 +7,7 @@ import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
 
 export const siteConfig = {
   name: 'وقف أويس القرني',
-  logo: 'https://veysvakfi.org/wp-content/uploads/2023/06/cropped-cropped-شعار-الوقف-170x57-1.png',
+  logo: '/media/cropped-cropped-170x57-1-18a12f60.png',
   licenseNumber: '6222',
   courtDecision: '2016/223-2016/501',
   taxNumber: '9250524198',
@@ -37,7 +37,7 @@ export const heroContent = {
   primaryButton: 'تعرّف على الوقف',
   secondaryButton: 'ساهم الآن',
   videoId: 'LMK-Sv__71w',
-  posterImage: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+  posterImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
 };
 
 export const aboutContent = {
@@ -52,7 +52,7 @@ export const aboutContent = {
     'تعزيز الروح الوطنية لدى اليمنيين كشركاء في إيجاد أكبر وقف في تاريخ اليمن بمساهمتهم جميعًا.',
     'ترسيخ الهُوية الوطنية الجامعة وتحقيق التنمية المستدامة لليمن.',
   ],
-  image: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+  image: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
 };
 
 export type Project = {
@@ -74,7 +74,7 @@ export const projects: Project[] = [
     contribution: '100 دولار',
     image: waqfShareImage,
     detailsUrl: '/projects/waqf-share',
-    contributionUrl: 'https://veysvakfi.org/product/waqf-share/',
+    contributionUrl: '/donate',
   },
   {
     id: 'blessed-tree',
@@ -84,7 +84,7 @@ export const projects: Project[] = [
     contribution: '100 دولار',
     image: blessedTreeImage,
     detailsUrl: '/projects/blessed-tree',
-    contributionUrl: 'https://blessedtree.veysvakfi.org/',
+    contributionUrl: '/donate',
   },
   {
     id: 'gold-portfolio',
@@ -94,7 +94,7 @@ export const projects: Project[] = [
     contribution: '100 دولار',
     image: goldPortfolioImage,
     detailsUrl: '/projects/gold-wallet',
-    contributionUrl: 'https://veysvakfi.org/product/gold-wallet/',
+    contributionUrl: '/donate',
   },
 ];
 
@@ -112,33 +112,32 @@ export const programs: Program[] = [
     title: 'إعداد قادة المستقبل',
     description:
       'الاهتمام بأوائل الطلاب والموهوبين والمبدعين المتميزين وإعدادهم قادة للمستقبل عبر برنامج رواد اليمن.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2025/10/برنامج-رواد-اليمن-وقف-أويس-القرني.jpg',
-    url: 'https://veysvakfi.org/برنامج-رواد-اليمن/',
+    image: '/media/file-6c159173.jpg',
+    url: '/programs/yemen-pioneers',
   },
   {
     id: 'capacity-building',
     title: 'بناء القدرات',
     description:
       'المساهمة في تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم ورفع كفاءتهم.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2020/07/IMG_8018-1024x683.jpg',
-    url: 'https://veysvakfi.org/بناء-القدرات/',
+    image: '/media/5-41deee62.png',
+    url: '/programs/capacity-building',
   },
   {
     id: 'institutional-development',
     title: 'التطوير المؤسسي',
     description:
       'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجياتها.',
-    image:
-      'https://veysvakfi.org/wp-content/gallery/d8a7d984d981d8b9d8a7d984d98ad8a7d8aa/413871824_776644024501184_8029070847178980447_n.jpg',
-    url: 'https://veysvakfi.org/التطوير-المؤسسي/',
+    image: '/media/6-8aafe52f.png',
+    url: '/programs/institutional-development',
   },
   {
     id: 'community-awareness',
     title: 'التوعية المجتمعية',
     description:
       'إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2019/10/DSC_7222.jpg',
-    url: 'https://veysvakfi.org/التوعية-المجتمعية-2/',
+    image: '/media/4-17cc70a3.png',
+    url: '/programs/community-awareness',
   },
 ];
 
@@ -147,22 +146,26 @@ export const yemenPioneersContent = {
   description:
     'برنامج متكامل يهتم بالتعليم والتأهيل النوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن، وإعدادهم قادة للمستقبل عبر منح دراسية وبرامج قيادية ومهارية.',
   button: 'اكتشف البرنامج',
-  image: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+  image: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   indicators: [
-    { label: 'عدد الطلاب والطالبات', value: null as number | null },
-    { label: 'عدد المحافظات', value: null as number | null },
-    { label: 'عدد الجامعات', value: null as number | null },
-    { label: 'عدد التخصصات', value: null as number | null },
+    { label: 'منح تعليمية', value: 86 },
+    { label: 'أبحاث علمية محكّمة', value: 33 },
+    { label: 'ملتقيات تدريبية', value: 6 },
+    { label: 'مشاركات دولية', value: 7 },
   ],
+  statisticsSource: {
+    label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
+    url: '/media/docs/2025-c909c767.pdf',
+  },
 };
 
 export const statisticsContent = {
   title: 'أويس في أرقام',
   indicators: [
-    { label: 'عدد الأسهم الوقفية', value: null as number | null, suffix: '' },
-    { label: 'عدد المساهمين', value: null as number | null, suffix: '' },
-    { label: 'المستفيدون من البرامج', value: null as number | null, suffix: '' },
-    { label: 'عدد البرامج والمشروعات', value: null as number | null, suffix: '' },
+    { label: 'سهماً وقفياً', value: 17488 as number | null, suffix: '' },
+    { label: 'مساهماً ومساهمة من 22 دولة', value: 9403 as number | null, suffix: '' },
+    { label: 'مستفيداً من المسارات الوقفية', value: 1556 as number | null, suffix: '' },
+    { label: 'برنامجاً تنموياً ضمن المسارات الوقفية', value: 40 as number | null, suffix: '' },
   ],
 };
 
@@ -186,8 +189,8 @@ export const news: NewsItem[] = [
     date: 'يوليو 2026',
     excerpt:
       'قدّم رئيس وقف أويس القرني عضو مجلس الشورى الأستاذ صلاح باتيس واجب العزاء في وفاة الأمير الوالد سمو الشيخ حمد بن خليفة آل ثاني، وذلك في القنصلية العامة لدولة قطر.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2026/07/تعزية-امير-قطر.JPG-scaled.jpeg',
-    url: 'https://veysvakfi.org/shura-member-condolences-sheikh-hamad-bin-khalifa/',
+    image: '/media/.jpg-scaled-ed6ad55b.jpeg',
+    url: '/news/shura-member-condolences-sheikh-hamad',
     featured: true,
   },
   {
@@ -199,8 +202,8 @@ export const news: NewsItem[] = [
     excerpt:
       'في الذكرى العاشرة ليوم الديمقراطية والوحدة الوطنية، يستذكر وقف أويس القرني بكل تقدير تضحيات الشعب التركي في حماة وطنه وإرادته ووحدته.',
     image:
-      'https://veysvakfi.org/wp-content/uploads/2026/07/وقف-أويس-القرني-يحيي-الذكرى-العاشرة-ليوم-الديمقراطية-والوحدة-الوطنية-في-تركيا.jpeg',
-    url: 'https://veysvakfi.org/owais-waqf-democracy-and-national-unity-day/',
+      '/media/file-9aa999b6.jpeg',
+    url: '/news/democracy-national-unity-day',
   },
   {
     id: 'condolences-qatar',
@@ -210,8 +213,8 @@ export const news: NewsItem[] = [
     date: 'يوليو 2026',
     excerpt:
       'بقلوب مؤمنة بقضاء الله وقدره تلقينا نبأ وفاة سمو الأمير الوالد الشيخ حمد بن خليفة آل ثاني رحمه الله، وتتقدم كافة هيئات الوقف بأحر التعازي.',
-    image: 'https://veysvakfi.org/wp-content/uploads/2026/07/WhatsApp-Image-2026-07-13-at-15.55.06.jpeg',
-    url: 'https://veysvakfi.org/owais-waqf-condolences-sheikh-hamad-bin-khalifa/',
+    image: '/media/whatsapp-image-2026-07-13-at-15.55.06-7a2c58f4.jpeg',
+    url: '/news/qatar-condolences-sheikh-hamad',
   },
 ];
 
@@ -221,20 +224,20 @@ export type Partner = {
 };
 
 export const partners: Partner[] = [
-  { name: 'هيئة المنح التركية YTB', logo: 'https://veysvakfi.org/wp-content/uploads/2018/11/ytb-logo-yatay-yaldiz-150x150.png' },
-  { name: 'البادية للتنمية والأعمال الإنسانية', logo: 'https://veysvakfi.org/wp-content/uploads/2018/05/logo3-1.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2018/05/logo2-150x118.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2018/11/DkGHXZrXsAAkQA3-150x150.jpg' },
-  { name: 'منصة بيفول', logo: 'https://veysvakfi.org/wp-content/uploads/2024/01/منصة-بيفول-اويس-القرني-وقف-السهم-الوقفي-سهم-وقفي-150x150.jpg' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/05/download_image_1714989756380-150x150.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/05/22ff63b6bb2d8355ef224aada68ed218-1-150x150.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/05/download_image_1717068331986-1-150x150.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.13-150x150.jpeg' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.12-150x150.jpeg' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.11-150x150.jpeg' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2024/08/WhatsApp-Image-2024-08-14-at-14.10.12-1-150x150.png' },
-  { name: 'شريك وقفي', logo: 'https://veysvakfi.org/wp-content/uploads/2025/02/صورة-واتساب-بتاريخ-2025-02-25-في-15.05.46_84749624-150x150.jpg' },
-  { name: 'سيف ذا شلدرن', logo: 'https://veysvakfi.org/wp-content/uploads/2025/11/سيف-ذا-شلدرن-1.png' },
+  { name: 'هيئة المنح التركية YTB', logo: '/media/ytb-logo-yatay-yaldiz-150x150-9e4ed0b3.png' },
+  { name: 'البادية للتنمية والأعمال الإنسانية', logo: '/media/logo3-1-50865719.png' },
+  { name: 'شريك وقفي', logo: '/media/logo2-150x118-ed42d6c2.png' },
+  { name: 'شريك وقفي', logo: '/media/dkghxzrxsaakqa3-150x150-b0778c69.jpg' },
+  { name: 'منصة بيفول', logo: '/media/150x150-dc4fef1e.jpg' },
+  { name: 'شريك وقفي', logo: '/media/download_image_1714989756380-150x150-e6c9705e.png' },
+  { name: 'شريك وقفي', logo: '/media/22ff63b6bb2d8355ef224aada68ed218-1-150x150-b12720b9.png' },
+  { name: 'شريك وقفي', logo: '/media/download_image_1717068331986-1-150x150-cdbfa110.png' },
+  { name: 'شريك وقفي', logo: '/media/whatsapp-image-2024-08-14-at-14.10.13-150x150-340b1281.jpeg' },
+  { name: 'شريك وقفي', logo: '/media/whatsapp-image-2024-08-14-at-14.10.12-150x150-7ed6083a.jpeg' },
+  { name: 'شريك وقفي', logo: '/media/whatsapp-image-2024-08-14-at-14.10.11-150x150-7a288ba7.jpeg' },
+  { name: 'شريك وقفي', logo: '/media/whatsapp-image-2024-08-14-at-14.10.12-1-150x150-061d7473.png' },
+  { name: 'شريك وقفي', logo: '/media/2025-02-25-15.05.46_84749624-150x150-78272285.jpg' },
+  { name: 'سيف ذا شلدرن', logo: '/media/1-87baca56.png' },
 ];
 
 export const participationContent = {
@@ -243,7 +246,7 @@ export const participationContent = {
     'بمساهمتك، تتحول الموارد الوقفية إلى فرص تعليم وتأهيل ومشروعات يستمر أثرها.',
   primaryButton: 'ساهم الآن',
   secondaryButton: 'تطوع معنا',
-  image: 'https://veysvakfi.org/wp-content/uploads/2024/05/135A7765-scaled-1-1024x683.jpg',
+  image: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
 };
 
 export const footerContent = {

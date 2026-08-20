@@ -70,6 +70,38 @@ export type ProgramCity = {
   videoId: string;
   videoTitle: string;
   videoSourceUrl: string;
+  partner?: string;
+};
+
+export type ProgramPhase = {
+  label: string;
+  period: string;
+  description: string;
+};
+
+export type ProgramAudience = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export type ProgramJourneyStep = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export type ProgramPillar = {
+  id: string;
+  title: string;
+  body: string;
+  points: string[];
+};
+
+export type ProgramTheme = {
+  id: string;
+  title: string;
+  description: string;
 };
 
 export type Program = {
@@ -90,6 +122,14 @@ export type Program = {
   contactEmail?: string;
   initiatives?: ProgramInitiative[];
   cities?: ProgramCity[];
+  journey?: ProgramJourneyStep[];
+  pillars?: ProgramPillar[];
+  highlights?: string[];
+  phase?: ProgramPhase;
+  audiences?: ProgramAudience[];
+  themes?: ProgramTheme[];
+  overviewImage?: string;
+  overviewImageAlt?: string;
   officialSourceUrl: string;
   seo: {
     title: string;
@@ -126,20 +166,57 @@ export type ProgramsPageContent = {
     details: string;
     donate: string;
     noVerifiedStats: string;
+    journey: string;
+    journeyEyebrow: string;
+    journeyDescription: string;
+    stepLabel: string;
+    pillars: string;
+    pillarsEyebrow: string;
+    pillarsDescription: string;
+    videoGallery: string;
+    videoGalleryDescription: string;
+    previous: string;
+    next: string;
+    highlights: string;
+    phaseEyebrow: string;
+    partner: string;
+    cityExplorerDescription: string;
+    recommendationsEyebrow: string;
+    recommendationsDescription: string;
+    forumEyebrow: string;
+    forumObjectives: string;
+    statsEyebrow: string;
+    manifestoEyebrow: string;
+    focusAreas: string;
+    focusAreasDescription: string;
+    areaLabel: string;
+    audiences: string;
+    audiencesDescription: string;
+    awarenessEyebrow: string;
+    awarenessHeroNote: string;
+    exploreInitiatives: string;
+    awarenessThemes: string;
+    awarenessThemesDescription: string;
+    themeLabel: string;
+    awarenessInitiativesEyebrow: string;
+    awarenessInitiatives: string;
+    awarenessInitiativesDescription: string;
+    initiativeLabel: string;
+    visitInitiative: string;
+    volunteerCta: string;
+    volunteerCtaDescription: string;
   };
   programs: Program[];
 };
 
+// This site is the official source now: program references stay in-site.
 const officialSources = {
-  yemenPioneers: 'https://veysvakfi.org/pioneers-of-yemen-program/',
-  capacityBuilding:
-    'https://veysvakfi.org/copy-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%82%d8%af%d8%b1%d8%a7%d8%aa/',
-  institutionalDevelopment:
-    'https://veysvakfi.org/%d8%a7%d9%84%d8%aa%d8%b7%d9%88%d9%8a%d8%b1-%d8%a7%d9%84%d9%85%d8%a4%d8%b3%d8%b3%d9%8a/',
-  communityAwareness:
-    'https://veysvakfi.org/%d8%a7%d9%84%d8%aa%d9%88%d8%b9%d9%8a%d8%a9-%d8%a7%d9%84%d9%85%d8%ac%d8%aa%d9%85%d8%b9%d9%8a%d8%a9-2/',
-  owaisPlatform: 'https://veysvakfi.org/program/owais-platform/',
-  volunteerUnit: 'https://veysvakfi.org/program/volunteer-unit/',
+  yemenPioneers: programRoutes.yemenPioneers,
+  capacityBuilding: programRoutes.capacityBuilding,
+  institutionalDevelopment: programRoutes.institutionalDevelopment,
+  communityAwareness: programRoutes.communityAwareness,
+  owaisPlatform: programRoutes.yemenPioneers,
+  volunteerUnit: programRoutes.yemenPioneers,
 } as const;
 
 const yemenPioneersVideos = [
@@ -165,6 +242,7 @@ const programShared = {
     images: [yemenPioneersHero],
     officialSourceUrl: officialSources.yemenPioneers,
     contactEmail: 'yemenpioneers@veysvakfi.org',
+    overviewImage: '/news/09-yemen-pioneers-second-scientific-conference-6.png',
   },
   'capacity-building': {
     id: 'capacity-building',
@@ -205,6 +283,7 @@ const programShared = {
     images: string[];
     officialSourceUrl: string;
     contactEmail?: string;
+    overviewImage?: string;
   }
 >;
 
@@ -228,7 +307,7 @@ const makeYemenVideos = (locale: Locale): ProgramVideo[] =>
       description: descriptionByLocale[locale],
       videoId,
       sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
-      posterImage: yemenPioneersHero,
+      posterImage: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     };
   });
 
@@ -260,6 +339,51 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       details: 'عرض التفاصيل',
       donate: 'ساهم الآن',
       noVerifiedStats: 'لم تُعرض أرقام غير موثقة في المصدر الرسمي.',
+      journey: 'رحلة الرائد',
+      journeyEyebrow: 'المسار',
+      journeyDescription:
+        'من الترشّح إلى القيادة: خمس محطات يمرّ بها كل رائد داخل البرنامج، تجمع بين الدراسة الأكاديمية والتأهيل القيادي.',
+      stepLabel: 'المحطة',
+      pillars: 'ماذا يحصل عليه الرائد؟',
+      pillarsEyebrow: 'ركائز البرنامج',
+      pillarsDescription:
+        'ثلاث ركائز متكاملة تُبنى عليها تجربة الرائد: المنحة، والبرنامج القيادي، والمتابعة والإرشاد.',
+      videoGallery: 'من قلب البرنامج',
+      videoGalleryDescription: 'فيديوهات رسمية منشورة من فعاليات ولقاءات برنامج رواد اليمن.',
+      previous: 'السابق',
+      next: 'التالي',
+      highlights: 'أبرز ملامح البرنامج',
+      phaseEyebrow: 'المرحلة الأولى',
+      partner: 'بالشراكة مع',
+      cityExplorerDescription:
+        'أربع مدن يمنية احتضنت المرحلة الأولى من البرنامج. اختر مدينة لاستعراض توثيقها وشركاء التنفيذ فيها.',
+      recommendationsEyebrow: 'مخرجات المرحلة',
+      recommendationsDescription:
+        'خرجت المرحلة الأولى بمجموعة من التوصيات العملية التي ترسم ملامح المراحل القادمة من البرنامج.',
+      forumEyebrow: 'مبادرة مصاحبة',
+      forumObjectives: 'أهداف الملتقى',
+      statsEyebrow: 'أرقام المرحلة الأولى',
+      manifestoEyebrow: 'رؤية المسار',
+      focusAreas: 'مجالات العمل',
+      focusAreasDescription: 'ثلاثة مجالات متكاملة يعمل عليها المسار داخل كل مؤسسة، مرّر فوق أي مجال لاستعراضه.',
+      areaLabel: 'المجال',
+      audiences: 'من يخدم المسار؟',
+      audiencesDescription: 'يتوجه المسار إلى نوعين من المؤسسات، ويعمل معهما على المجالات الثلاثة نفسها.',
+      awarenessEyebrow: 'المسار الرابع',
+      awarenessHeroNote: 'مبادرتان تعملان معاً على صناعة الوعي: منصة معرفية ووحدة للتطوع.',
+      exploreInitiatives: 'استكشف المبادرات',
+      awarenessThemes: 'ثلاث دوائر يشتغل عليها المسار',
+      awarenessThemesDescription:
+        'ينطلق المسار من الفرد إلى المجتمع: وعي يُصاغ، وهوية تُجمع، وثقافة تُرسَّخ. مرّر للأسفل لتنتقل بين الدوائر، أو حرّك المؤشر فوق أيٍّ منها.',
+      themeLabel: 'الدائرة',
+      awarenessInitiativesEyebrow: 'مبادرات المسار',
+      awarenessInitiatives: 'قناتان لصناعة الوعي',
+      awarenessInitiativesDescription:
+        'تترجم المبادرتان أهداف المسار إلى محتوى معرفي وفرص عمل ميداني، كلٌّ بطريقتها.',
+      initiativeLabel: 'المبادرة',
+      visitInitiative: 'زيارة المبادرة',
+      volunteerCta: 'انضم كمتطوع',
+      volunteerCtaDescription: 'سجّل اهتمامك عبر نموذج التطوع داخل الموقع، وسيتواصل معك فريق الوحدة.',
     },
     programs: [
       {
@@ -268,6 +392,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'برنامج متكامل للعناية بالتعليم والتأهيل النوعي للطلاب اليمنيين الموهوبين والمتفوقين، وإعدادهم قادةً للمستقبل عبر المنح الدراسية في أفضل الجامعات وبرنامج قيادي ومهاري موازٍ.',
         heroImageAlt: 'برنامج رواد اليمن من وقف أويس القرني',
+        overviewImageAlt: 'تكريم أحد رواد اليمن خلال الملتقى السادس لرواد اليمن',
         imageGallery: [
           {
             src: yemenPioneersHero,
@@ -297,6 +422,79 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'دعم الشباب في الدراسات العليا في المجالات المستهدفة لبناء القدرات والكوادر.',
           'التنسيق مع الجامعات والمؤسسات الدولية للشراكة في تأهيل الطلاب المشاركين.',
           'برنامج تأهيلي قيادي مصاحب للدراسة الأكاديمية.',
+        ],
+        journey: [
+          {
+            id: 'select',
+            title: 'الاستهداف والترشّح',
+            description:
+              'يستهدف البرنامج الطلاب اليمنيين الموهوبين والمتفوقين الراغبين في إكمال دراستهم الجامعية والعليا.',
+          },
+          {
+            id: 'scholarship',
+            title: 'المنحة الدراسية',
+            description:
+              'منح للدراسة في أفضل الجامعات، بالتنسيق مع الجامعات والمؤسسات الدولية الشريكة في التأهيل.',
+          },
+          {
+            id: 'leadership',
+            title: 'البرنامج القيادي الموازي',
+            description:
+              'برنامج تأهيلي قيادي ومهاري يسير جنباً إلى جنب مع الدراسة الأكاديمية عبر التدريب المباشر.',
+          },
+          {
+            id: 'practice',
+            title: 'الممارسة والمبادرات',
+            description:
+              'تهيئة الرواد للعمل القيادي من خلال المشاريع والبرامج والمبادرات والأنشطة مع متابعة وإرشاد مستمرين.',
+          },
+          {
+            id: 'impact',
+            title: 'قادة لخدمة اليمن',
+            description:
+              'كادر من القادة المهرة يمتلكون المعرفة والمهارات والقيم اللازمة للمشاركة في نهضة اليمن.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'scholarship',
+            title: 'المنحة الدراسية',
+            body: 'دعم الدراسة الجامعية والدراسات العليا في المجالات المستهدفة لبناء القدرات والكوادر.',
+            points: [
+              'فرص التعليم الجامعي والدراسات العليا للشباب اليمني.',
+              'الدراسة في أفضل الجامعات.',
+              'شراكات مع الجامعات والمؤسسات الدولية.',
+            ],
+          },
+          {
+            id: 'leadership',
+            title: 'البرنامج القيادي',
+            body: 'برنامج تأهيلي قيادي ومهاري مصاحب للدراسة الأكاديمية يُكسب الرواد مهارات القيادة.',
+            points: [
+              'تدريب قيادي مباشر.',
+              'استشراف مستقبل اليمن وتحدياته.',
+              'مهارات عملية موازية للتحصيل الأكاديمي.',
+            ],
+          },
+          {
+            id: 'mentoring',
+            title: 'المتابعة والإرشاد',
+            body: 'متابعة وإرشاد مستمران يهيّئان الرواد للعمل القيادي عبر المشاريع والمبادرات.',
+            points: [
+              'متابعة وإرشاد خلال مسار البرنامج.',
+              'مشاريع وبرامج ومبادرات وأنشطة تطبيقية.',
+              'تهيئة للعمل القيادي بعد التخرج.',
+            ],
+          },
+        ],
+        highlights: [
+          'منح دراسية',
+          'أفضل الجامعات',
+          'برنامج قيادي موازٍ',
+          'تدريب مباشر',
+          'متابعة وإرشاد',
+          'مشاريع ومبادرات',
+          'قادة المستقبل',
         ],
         videos: makeYemenVideos('ar'),
         cta: {
@@ -363,6 +561,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'فيديو برنامج بناء القدرات في حضرموت الساحل',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'مؤسسة صلة للتنمية',
           },
           {
             id: 'hadramout-valley',
@@ -372,6 +571,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'فيديو برنامج بناء القدرات في حضرموت الوادي',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'مؤسسة البادية للتنمية والأعمال الإنسانية',
           },
           {
             id: 'marib',
@@ -381,6 +581,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'فيديو برنامج بناء القدرات في مأرب',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'مكتب أوتشا مأرب والهيئة العالمية للإغاثة والتنمية - أنصر',
           },
           {
             id: 'taiz',
@@ -390,7 +591,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'فيديو برنامج بناء القدرات في تعز',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'مؤسسة رسالتي لتنمية المرأة',
           },
+        ],
+        phase: {
+          label: 'المرحلة الأولى',
+          period: '8 – 25 يوليو 2024',
+          description: 'ثمانية عشر يوماً من التدريب المكثف لمنظمات المجتمع المدني في أربع مدن يمنية.',
+        },
+        highlights: [
+          '160 مشاركاً من 140 منظمة',
+          '13 محافظة يمنية',
+          '4 مدن: حضرموت الساحل، حضرموت الوادي، مأرب، تعز',
+          'شراكات محلية ودولية',
+          'الملتقى الوطني لتوطين العمل الإنساني والتنموي',
         ],
         sections: [
           {
@@ -458,6 +672,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             height: 1080,
           },
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'المؤسسات الحكومية',
+            description: 'تطوير أداء الجهات الحكومية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+          },
+          {
+            id: 'civil',
+            title: 'المؤسسات الأهلية',
+            description: 'تطوير أداء المؤسسات الأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
@@ -514,6 +740,23 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             paragraphs: [
               'يركز مسار التوعية المجتمعية على إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
             ],
+          },
+        ],
+        themes: [
+          {
+            id: 'public-opinion',
+            title: 'إعادة صياغة الرأي العام',
+            description: 'خطاب عام يُبنى على قراءة التاريخ ودراسة الحاضر واستشراف المستقبل.',
+          },
+          {
+            id: 'national-identity',
+            title: 'الهوية الوطنية الجامعة',
+            description: 'هوية تتسع للجميع وتجمع اليمنيين حول مشترك واحد.',
+          },
+          {
+            id: 'renaissance-culture',
+            title: 'ثقافة النهضة والتعايش',
+            description: 'وعي جمعي يرسّخ قيم النهوض الحضاري والعيش المشترك.',
           },
         ],
         initiatives: [
@@ -577,6 +820,51 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       details: 'Detaylari Gor',
       donate: 'Katki Sun',
       noVerifiedStats: 'Resmi kaynakta dogrulanmayan sayilar gosterilmedi.',
+      journey: 'Oncunun Yolculugu',
+      journeyEyebrow: 'Yol Haritasi',
+      journeyDescription:
+        'Adayliktan liderlige: her oncunun programda gectigi, akademik egitim ile liderlik gelisimini birlestiren bes durak.',
+      stepLabel: 'Durak',
+      pillars: 'Oncu Neler Kazanir?',
+      pillarsEyebrow: 'Programin Temelleri',
+      pillarsDescription:
+        'Oncu deneyimini olusturan uc tamamlayici temel: burs, liderlik programi ve takip-rehberlik.',
+      videoGallery: 'Programin Icinden',
+      videoGalleryDescription: 'Yemen Onculeri Programi etkinlik ve bulusmalarindan yayinlanan resmi videolar.',
+      previous: 'Onceki',
+      next: 'Sonraki',
+      highlights: 'Programin One Cikanlari',
+      phaseEyebrow: 'Birinci Asama',
+      partner: 'Ortaklik',
+      cityExplorerDescription:
+        'Programin birinci asamasina dort Yemen sehri ev sahipligi yapti. Belgeleri ve uygulama ortaklarini gormek icin bir sehir secin.',
+      recommendationsEyebrow: 'Asama Ciktilari',
+      recommendationsDescription:
+        'Birinci asama, programin sonraki asamalarina yon veren bir dizi uygulanabilir oneriyle tamamlandi.',
+      forumEyebrow: 'Eslik Eden Girisim',
+      forumObjectives: 'Forumun Hedefleri',
+      statsEyebrow: 'Birinci Asama Rakamlari',
+      manifestoEyebrow: 'Programin Vizyonu',
+      focusAreas: 'Calisma Alanlari',
+      focusAreasDescription: 'Program her kurumda birbirini tamamlayan uc alanda calisir; incelemek icin bir alanin uzerine gelin.',
+      areaLabel: 'Alan',
+      audiences: 'Program Kimlere Hizmet Eder?',
+      audiencesDescription: 'Program iki tur kuruma yonelir ve her ikisiyle ayni uc alanda calisir.',
+      awarenessEyebrow: 'Dorduncu Eksen',
+      awarenessHeroNote: 'Farkindalik uretmek icin birlikte calisan iki girisim: bir bilgi platformu ve bir gonulluluk birimi.',
+      exploreInitiatives: 'Girisimleri Kesfet',
+      awarenessThemes: 'Programin calistigi uc halka',
+      awarenessThemesDescription:
+        'Program bireyden topluma uzanir: sekillenen bir bilinc, birlestiren bir kimlik ve kok salan bir kultur. Halkalar arasinda gecmek icin asagi kaydirin veya bir halkanin uzerine gelin.',
+      themeLabel: 'Halka',
+      awarenessInitiativesEyebrow: 'Program Girisimleri',
+      awarenessInitiatives: 'Farkindalik icin iki kanal',
+      awarenessInitiativesDescription:
+        'Iki girisim, programin hedeflerini bilgi icerigine ve sahada calisma firsatlarina donusturur; her biri kendi yontemiyle.',
+      initiativeLabel: 'Girisim',
+      visitInitiative: 'Girisimi Ziyaret Et',
+      volunteerCta: 'Gonullu Ol',
+      volunteerCtaDescription: 'Sitedeki gonulluluk formu uzerinden ilginizi kaydedin; birim ekibi sizinle iletisime gececek.',
     },
     programs: [
       {
@@ -585,6 +873,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'Ustun yetenekli ve basarili Yemenli ogrencilerin nitelikli egitim ve gelisimini destekleyen; onlari burslar, secili universiteler ve paralel liderlik-beceri programi ile gelecegin liderleri olarak hazirlayan butunlesik bir program.',
         heroImageAlt: 'Veysel Karani Vakfi Yemen Onculeri Programi',
+        overviewImageAlt: 'Altinci Yemenli Onculer Bulusmasinda bir oncunun odullendirilmesi',
         imageGallery: [
           {
             src: yemenPioneersHero,
@@ -614,6 +903,79 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'Hedeflenen kapasite ve kadro alanlarinda lisansustu egitim alan gencleri desteklemek.',
           'Katilimci ogrencilerin yetistirilmesi icin universiteler ve uluslararasi kurumlarla ortaklik kurmak.',
           'Akademik egitime eslik eden liderlik gelisim programi.',
+        ],
+        journey: [
+          {
+            id: 'select',
+            title: 'Hedefleme ve Adaylik',
+            description:
+              'Program, lisans ve lisansustu egitimini surdurmek isteyen ustun yetenekli ve basarili Yemenli ogrencileri hedefler.',
+          },
+          {
+            id: 'scholarship',
+            title: 'Egitim Bursu',
+            description:
+              'En iyi universitelerde egitim icin burslar; yetistirme surecinde universiteler ve uluslararasi kurumlarla is birligi.',
+          },
+          {
+            id: 'leadership',
+            title: 'Paralel Liderlik Programi',
+            description:
+              'Akademik egitimle birlikte yuruyen, dogrudan egitime dayali liderlik ve beceri gelisim programi.',
+          },
+          {
+            id: 'practice',
+            title: 'Uygulama ve Girisimler',
+            description:
+              'Surekli takip ve rehberlik esliginde projeler, programlar, girisimler ve faaliyetlerle liderlik calismasina hazirlik.',
+          },
+          {
+            id: 'impact',
+            title: 'Yemene Hizmet Eden Liderler',
+            description:
+              'Yemenin kalkinmasina katki sunacak bilgi, beceri ve degerlere sahip nitelikli lider kadrolar.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'scholarship',
+            title: 'Egitim Bursu',
+            body: 'Kapasite ve kadro gelistirme icin hedeflenen alanlarda lisans ve lisansustu egitim destegi.',
+            points: [
+              'Yemenli gencler icin lisans ve lisansustu egitim firsatlari.',
+              'En iyi universitelerde egitim.',
+              'Universiteler ve uluslararasi kurumlarla ortakliklar.',
+            ],
+          },
+          {
+            id: 'leadership',
+            title: 'Liderlik Programi',
+            body: 'Akademik egitime eslik eden ve onculere liderlik becerileri kazandiran liderlik ve beceri programi.',
+            points: [
+              'Dogrudan liderlik egitimi.',
+              'Yemenin gelecegini ve zorluklarini ongorme.',
+              'Akademik basariya paralel uygulamali beceriler.',
+            ],
+          },
+          {
+            id: 'mentoring',
+            title: 'Takip ve Rehberlik',
+            body: 'Onculeri projeler ve girisimler yoluyla liderlik calismasina hazirlayan surekli takip ve rehberlik.',
+            points: [
+              'Program boyunca takip ve rehberlik.',
+              'Uygulamali projeler, programlar, girisimler ve faaliyetler.',
+              'Mezuniyet sonrasi liderlik calismasina hazirlik.',
+            ],
+          },
+        ],
+        highlights: [
+          'Egitim burslari',
+          'En iyi universiteler',
+          'Paralel liderlik programi',
+          'Dogrudan egitim',
+          'Takip ve rehberlik',
+          'Projeler ve girisimler',
+          'Gelecegin liderleri',
         ],
         videos: makeYemenVideos('tr'),
         cta: {
@@ -681,6 +1043,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Hadramut Sahili Kapasite Gelistirme Programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Selah Kalkinma Vakfi',
           },
           {
             id: 'hadramout-valley',
@@ -690,6 +1053,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Hadramut Vadisi Kapasite Gelistirme Programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Al-Badia Insani Kalkinma Vakfi',
           },
           {
             id: 'marib',
@@ -699,6 +1063,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Marib Kapasite Gelistirme Programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'OCHA Marib ofisi ve International Relief and Development Authority - Ansar',
           },
           {
             id: 'taiz',
@@ -708,7 +1073,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Taiz Kapasite Gelistirme Programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Resalaty Kadin Kalkinma Vakfi',
           },
+        ],
+        phase: {
+          label: 'Birinci Asama',
+          period: '8 – 25 Temmuz 2024',
+          description: 'Dort Yemen sehrinde sivil toplum kuruluslari icin on sekiz gunluk yogun egitim.',
+        },
+        highlights: [
+          '140 kurulustan 160 katilimci',
+          '13 Yemen ili',
+          '4 sehir: Hadramut Sahili, Hadramut Vadisi, Marib, Taiz',
+          'Yerel ve uluslararasi ortakliklar',
+          'Insani ve Kalkinma Calismalarinin Yerellestirilmesi Ulusal Forumu',
         ],
         sections: [
           {
@@ -775,6 +1153,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             height: 1080,
           },
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'Kamu Kurumlari',
+            description: 'Kamu kurumlarinin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
+          },
+          {
+            id: 'civil',
+            title: 'Sivil Kurumlar',
+            description: 'Sivil kurumlarin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
@@ -832,6 +1222,23 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             paragraphs: [
               'Toplumsal Farkindalik programi; kamuoyunu, kapsayici ulusal kimligi ve kalkinis ile birlikte yasama kulturunu guclendirmeye odaklanir.',
             ],
+          },
+        ],
+        themes: [
+          {
+            id: 'public-opinion',
+            title: 'Kamuoyunu yeniden sekillendirmek',
+            description: 'Tarih okumasi, bugunun incelenmesi ve gelecegin ongorulmesi uzerine kurulu bir kamusal soylem.',
+          },
+          {
+            id: 'national-identity',
+            title: 'Kapsayici ulusal kimlik',
+            description: 'Herkesi kucaklayan ve Yemenlileri ortak bir paydada bulusturan bir kimlik.',
+          },
+          {
+            id: 'renaissance-culture',
+            title: 'Kalkinis ve birlikte yasama kulturu',
+            description: 'Medeni kalkinis ve ortak yasam degerlerini koklestiren kolektif bir bilinc.',
           },
         ],
         initiatives: [
@@ -895,6 +1302,51 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       details: 'View Details',
       donate: 'Contribute Now',
       noVerifiedStats: 'Numbers that were not verified in the official source are not displayed.',
+      journey: 'The Pioneer Journey',
+      journeyEyebrow: 'The Path',
+      journeyDescription:
+        'From nomination to leadership: five stages every pioneer passes through, combining academic study with leadership preparation.',
+      stepLabel: 'Stage',
+      pillars: 'What Does a Pioneer Receive?',
+      pillarsEyebrow: 'Program Pillars',
+      pillarsDescription:
+        'Three complementary pillars shape the pioneer experience: the scholarship, the leadership program, and follow-up and mentoring.',
+      videoGallery: 'Inside the Program',
+      videoGalleryDescription: 'Official videos published from Yemen Pioneers Program events and gatherings.',
+      previous: 'Previous',
+      next: 'Next',
+      highlights: 'Program Highlights',
+      phaseEyebrow: 'First Phase',
+      partner: 'In partnership with',
+      cityExplorerDescription:
+        'Four Yemeni cities hosted the first phase of the program. Pick a city to explore its documentation and implementing partners.',
+      recommendationsEyebrow: 'Phase Outcomes',
+      recommendationsDescription:
+        'The first phase concluded with a set of practical recommendations that shape the next phases of the program.',
+      forumEyebrow: 'Companion Initiative',
+      forumObjectives: 'Forum Objectives',
+      statsEyebrow: 'First Phase in Numbers',
+      manifestoEyebrow: 'Track Vision',
+      focusAreas: 'Areas of Work',
+      focusAreasDescription: 'Three complementary areas the track works on inside every institution — hover an area to explore it.',
+      areaLabel: 'Area',
+      audiences: 'Who Does the Track Serve?',
+      audiencesDescription: 'The track addresses two types of institutions and works with both on the same three areas.',
+      awarenessEyebrow: 'Fourth Track',
+      awarenessHeroNote: 'Two initiatives working together to shape awareness: a knowledge platform and a volunteer unit.',
+      exploreInitiatives: 'Explore the Initiatives',
+      awarenessThemes: 'Three circles the track works on',
+      awarenessThemesDescription:
+        'The track moves from the individual to society: an awareness that is shaped, an identity that unites, and a culture that takes root. Scroll down to move between the circles, or hover over any of them.',
+      themeLabel: 'Circle',
+      awarenessInitiativesEyebrow: 'Track Initiatives',
+      awarenessInitiatives: 'Two channels for shaping awareness',
+      awarenessInitiativesDescription:
+        'The two initiatives translate the track’s goals into knowledge content and hands-on opportunities, each in its own way.',
+      initiativeLabel: 'Initiative',
+      visitInitiative: 'Visit the Initiative',
+      volunteerCta: 'Join as a Volunteer',
+      volunteerCtaDescription: 'Register your interest through the volunteer form on this site and the unit’s team will get in touch.',
     },
     programs: [
       {
@@ -903,6 +1355,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'An integrated program for quality education and training of gifted, outstanding Yemeni students, preparing them as future leaders through scholarships at leading universities and a parallel leadership and skills program.',
         heroImageAlt: 'Veysel Karani Waqf Yemen Pioneers Program',
+        overviewImageAlt: 'Honoring a Yemen Pioneer at the Sixth Yemen Pioneers Gathering',
         imageGallery: [
           {
             src: yemenPioneersHero,
@@ -932,6 +1385,79 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'Support youth in graduate studies in targeted capacity and cadre-building fields.',
           'Coordinate with universities and international institutions to partner in qualifying participating students.',
           'A leadership qualification program that runs alongside academic study.',
+        ],
+        journey: [
+          {
+            id: 'select',
+            title: 'Targeting & Nomination',
+            description:
+              'The program targets gifted, outstanding Yemeni students who wish to pursue university and graduate studies.',
+          },
+          {
+            id: 'scholarship',
+            title: 'The Scholarship',
+            description:
+              'Scholarships at leading universities, coordinated with partner universities and international institutions.',
+          },
+          {
+            id: 'leadership',
+            title: 'Parallel Leadership Program',
+            description:
+              'A leadership and skills qualification program that runs alongside academic study through direct training.',
+          },
+          {
+            id: 'practice',
+            title: 'Practice & Initiatives',
+            description:
+              'Preparing pioneers for leadership work through projects, programs, initiatives and activities with continuous follow-up and guidance.',
+          },
+          {
+            id: 'impact',
+            title: 'Leaders Serving Yemen',
+            description:
+              'A skilled cadre of leaders with the knowledge, skills and values needed to contribute to the advancement of Yemen.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'scholarship',
+            title: 'The Scholarship',
+            body: 'Support for university and graduate studies in fields targeted for capacity and cadre building.',
+            points: [
+              'University and graduate education opportunities for Yemeni youth.',
+              'Study at leading universities.',
+              'Partnerships with universities and international institutions.',
+            ],
+          },
+          {
+            id: 'leadership',
+            title: 'Leadership Program',
+            body: 'A leadership and skills program that accompanies academic study and equips pioneers with leadership abilities.',
+            points: [
+              'Direct leadership training.',
+              'Foreseeing the future of Yemen and its challenges.',
+              'Practical skills parallel to academic achievement.',
+            ],
+          },
+          {
+            id: 'mentoring',
+            title: 'Follow-up & Mentoring',
+            body: 'Continuous follow-up and guidance that prepare pioneers for leadership work through projects and initiatives.',
+            points: [
+              'Follow-up and mentoring throughout the program.',
+              'Applied projects, programs, initiatives and activities.',
+              'Preparation for leadership work after graduation.',
+            ],
+          },
+        ],
+        highlights: [
+          'Scholarships',
+          'Leading universities',
+          'Parallel leadership program',
+          'Direct training',
+          'Follow-up & mentoring',
+          'Projects & initiatives',
+          'Future leaders',
         ],
         videos: makeYemenVideos('en'),
         cta: {
@@ -999,6 +1525,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Capacity Building Program video in Hadramout Coast',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Selah Foundation for Development',
           },
           {
             id: 'hadramout-valley',
@@ -1008,6 +1535,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Capacity Building Program video in Hadramout Valley',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Al-Badia Foundation for Humanitarian Development',
           },
           {
             id: 'marib',
@@ -1017,6 +1545,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Capacity Building Program video in Marib',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'OCHA Marib office and the International Relief and Development Authority - Ansar',
           },
           {
             id: 'taiz',
@@ -1026,7 +1555,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoId: capacityVideo.videoId,
             videoTitle: 'Capacity Building Program video in Taiz',
             videoSourceUrl: capacityVideo.sourceUrl,
+            partner: 'Resalaty Foundation for Women Development',
           },
+        ],
+        phase: {
+          label: 'First Phase',
+          period: '8 – 25 July 2024',
+          description: 'Eighteen days of intensive training for civil society organizations across four Yemeni cities.',
+        },
+        highlights: [
+          '160 participants from 140 organizations',
+          '13 Yemeni governorates',
+          '4 cities: Hadramout Coast, Hadramout Valley, Marib, Taiz',
+          'Local and international partnerships',
+          'National Forum for Localization of Humanitarian and Development Work',
         ],
         sections: [
           {
@@ -1096,6 +1638,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             height: 1080,
           },
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'Governmental Institutions',
+            description: 'Developing the performance of governmental bodies and updating their programs, mechanisms, plans and strategies.',
+          },
+          {
+            id: 'civil',
+            title: 'Civil Institutions',
+            description: 'Developing the performance of civil institutions and updating their programs, mechanisms, plans and strategies.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
@@ -1153,6 +1707,23 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             paragraphs: [
               'The Community Awareness track focuses on reshaping public opinion, the inclusive national identity, and awareness of the culture of advancement and coexistence.',
             ],
+          },
+        ],
+        themes: [
+          {
+            id: 'public-opinion',
+            title: 'Reshaping public opinion',
+            description: 'A public discourse built on reading history, studying the present and anticipating the future.',
+          },
+          {
+            id: 'national-identity',
+            title: 'An inclusive national identity',
+            description: 'An identity wide enough for everyone, gathering Yemenis around a shared common ground.',
+          },
+          {
+            id: 'renaissance-culture',
+            title: 'A culture of advancement and coexistence',
+            description: 'A collective awareness that roots the values of civilizational advancement and living together.',
           },
         ],
         initiatives: [

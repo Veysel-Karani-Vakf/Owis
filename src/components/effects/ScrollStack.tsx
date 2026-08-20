@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from 'react';
 import FadeContent from './FadeContent';
+import { useI18n } from '@/i18n/useI18n';
 
 type ScrollStackProps = {
   children: ReactNode;
@@ -40,6 +41,10 @@ type ScrollStackProps = {
   topSpacing?: string;
   stickyTop?: number;
   className?: string;
+  /** Book mode only: which edge the pages hinge on. 'auto' = right for RTL, left for LTR. */
+  bookSpine?: 'left' | 'right' | 'auto';
+  /** Book mode only: draw a spiral-notebook wire along the spine edge. */
+  bookSpiral?: boolean;
 };
 
 type StackLayerProps = {
@@ -210,6 +215,110 @@ function FadeLayer({
   );
 }
 
+type BookLayerProps = FadeLayerProps & { spineLeft: boolean };
+
+const bookEase = [0.645, 0.045, 0.355, 1] as const;
+
+function BookLayer({
+  children,
+  index,
+  count,
+  activeIndex,
+  borderRadius,
+  minHeight,
+  spineLeft,
+  layerRef,
+}: BookLayerProps) {
+  const isActive = activeIndex === index;
+  const isTurned = index < activeIndex;
+  const ahead = Math.max(0, index - activeIndex);
+  // Pages hinge on the spine edge.
+  const spineSign = spineLeft ? -1 : 1;
+  const turnedAngle = 105 * spineSign;
+  const peekOffset = Math.min(ahead, 2) * 6;
+
+  return (
+    <motion.div
+      ref={layerRef}
+      aria-hidden={!isActive}
+      className={`absolute inset-x-0 top-0 mx-auto w-full will-change-transform ${
+        isActive ? 'scroll-stack-layer--active' : 'scroll-stack-layer--inactive'
+      }`}
+      initial={false}
+      animate={
+        isTurned
+          ? { rotateY: turnedAngle, opacity: 0, x: 0, y: 0, scale: 1 }
+          : {
+              rotateY: 0,
+              opacity: 1,
+              x: isActive ? 0 : -peekOffset * spineSign,
+              y: isActive ? 0 : peekOffset,
+              scale: isActive ? 1 : 1 - Math.min(ahead, 2) * 0.012,
+            }
+      }
+      transition={{
+        rotateY: { duration: 0.85, ease: bookEase },
+        opacity: isTurned ? { duration: 0.22, delay: 0.5, ease: 'easeOut' } : { duration: 0.18, ease: 'easeOut' },
+        x: { duration: 0.5, ease: bookEase },
+        y: { duration: 0.5, ease: bookEase },
+        scale: { duration: 0.5, ease: bookEase },
+      }}
+      style={{
+        transformOrigin: spineLeft ? 'left center' : 'right center',
+        transformStyle: 'preserve-3d',
+        backfaceVisibility: 'hidden',
+        zIndex: isTurned ? count * 2 + (count - index) : count - ahead,
+        pointerEvents: isActive ? 'auto' : 'none',
+        borderRadius,
+        height: minHeight,
+      }}
+    >
+      {children}
+
+      {/* Spine shading + page-turn light sweep */}
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        initial={false}
+        animate={{ opacity: isTurned ? 0.55 : 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        style={{
+          borderRadius,
+          background: spineLeft
+            ? 'linear-gradient(to right, rgba(44,13,19,0.35), rgba(44,13,19,0.05) 45%, rgba(255,255,255,0.25))'
+            : 'linear-gradient(to left, rgba(44,13,19,0.35), rgba(44,13,19,0.05) 45%, rgba(255,255,255,0.25))',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 w-10"
+        style={{
+          [spineLeft ? 'left' : 'right']: 0,
+          borderRadius,
+          background: spineLeft
+            ? 'linear-gradient(to right, rgba(44,13,19,0.08), rgba(44,13,19,0))'
+            : 'linear-gradient(to left, rgba(44,13,19,0.08), rgba(44,13,19,0))',
+        }}
+      />
+    </motion.div>
+  );
+}
+
+const SPIRAL_RING_COUNT = 40;
+
+function BookSpiral({ spineLeft }: { spineLeft: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`scroll-stack-spiral ${spineLeft ? 'scroll-stack-spiral--left' : 'scroll-stack-spiral--right'}`}
+    >
+      {Array.from({ length: SPIRAL_RING_COUNT }, (_, index) => (
+        <span key={index} className="scroll-stack-spiral__ring" />
+      ))}
+    </div>
+  );
+}
+
 export default function ScrollStack({
   children,
   header,
@@ -232,14 +341,19 @@ export default function ScrollStack({
   topSpacing = '3.5rem',
   stickyTop = 112,
   className = '',
+  bookSpine = 'auto',
+  bookSpiral = false,
 }: ScrollStackProps) {
   const stackRef = useRef<HTMLDivElement>(null);
   const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const shouldReduceMotion = useReducedMotion();
+  const { isRtl } = useI18n();
   const isMobile = useNarrowScreen(767);
   const cards = useMemo(() => Children.toArray(children), [children]);
   const count = cards.length;
-  const isFadeMode = variant === 'fade' || variant === 'reveal';
+  const isBookMode = variant === 'flip';
+  const spineLeft = bookSpine === 'auto' ? !isRtl : bookSpine === 'left';
+  const isFadeMode = variant === 'fade' || variant === 'reveal' || isBookMode;
   const isStackMode = variant === 'stack';
   const stickyTopOffset = `${stickyTop}px`;
   const scrollOffset = useMemo(
@@ -389,20 +503,41 @@ export default function ScrollStack({
         >
           {header && <div className="mb-8 w-full">{header}</div>}
 
-          <div className="relative isolate w-full" style={{ minHeight: resolvedMinHeight }}>
-            {cards.map((card, index) => (
-              <FadeLayer
-                key={index}
-                index={index}
-                count={count}
-                activeIndex={activeIndex}
-                borderRadius={borderRadius}
-                minHeight={resolvedMinHeight}
-                layerRef={(node) => setLayerRef(index, node)}
-              >
-                {card}
-              </FadeLayer>
-            ))}
+          <div
+            className={`relative isolate w-full ${isBookMode ? 'scroll-stack-stage--book' : ''} ${
+              isBookMode && bookSpiral ? (spineLeft ? 'scroll-stack-stage--spiral-left' : 'scroll-stack-stage--spiral-right') : ''
+            }`}
+            style={{ minHeight: resolvedMinHeight, transformStyle: isBookMode ? 'preserve-3d' : undefined }}
+          >
+            {isBookMode && bookSpiral && <BookSpiral spineLeft={spineLeft} />}
+            {cards.map((card, index) =>
+              isBookMode ? (
+                <BookLayer
+                  key={index}
+                  index={index}
+                  count={count}
+                  activeIndex={activeIndex}
+                  borderRadius={borderRadius}
+                  minHeight={resolvedMinHeight}
+                  spineLeft={spineLeft}
+                  layerRef={(node) => setLayerRef(index, node)}
+                >
+                  {card}
+                </BookLayer>
+              ) : (
+                <FadeLayer
+                  key={index}
+                  index={index}
+                  count={count}
+                  activeIndex={activeIndex}
+                  borderRadius={borderRadius}
+                  minHeight={resolvedMinHeight}
+                  layerRef={(node) => setLayerRef(index, node)}
+                >
+                  {card}
+                </FadeLayer>
+              )
+            )}
           </div>
 
           {(showProgress || showCounter) && (

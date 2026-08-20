@@ -1,7 +1,8 @@
-import { ArrowLeft, ArrowRight, Calendar, ExternalLink, Languages } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Calendar, Languages } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import PageHero from '@/components/internal/PageHero';
+import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
 import LibraryLightbox from '@/components/library/LibraryLightbox';
 import NewsCard from '@/components/news/NewsCard';
@@ -17,6 +18,8 @@ import {
 import { getLibraryContent } from '@/data/library';
 import { useI18n } from '@/i18n/useI18n';
 
+const heroEase = [0.22, 1, 0.36, 1] as const;
+
 export default function NewsArticlePage() {
   const { slug } = useParams();
   const { locale, isRtl, content: siteContent } = useI18n();
@@ -25,6 +28,8 @@ export default function NewsArticlePage() {
   const article = getNewsArticle(locale, slug);
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  const shouldReduceMotion = useReducedMotion();
+  const heroDuration = shouldReduceMotion ? 0.01 : 0.6;
 
   const structuredData = useMemo(() => {
     if (!article) return undefined;
@@ -53,6 +58,10 @@ export default function NewsArticlePage() {
 
   const related = getRelatedNewsArticles(locale, article.slug, 3);
   const date = formatNewsDate(locale, article.publishedAt);
+  const crumbTitle = article.title.length > 60 ? `${article.title.slice(0, 60).trim()}…` : article.title;
+  const breadcrumbs = getNewsBreadcrumbs(locale, article).map((crumb, index, list) =>
+    index === list.length - 1 ? { ...crumb, label: crumbTitle } : crumb
+  );
 
   return (
     <>
@@ -64,39 +73,62 @@ export default function NewsArticlePage() {
         structuredData={structuredData}
       />
       <main className="bg-white">
-        <PageHero
-          title={article.title}
-          description={article.excerpt}
-          image={article.image}
-          imageAlt={article.imageAlt}
-          breadcrumbs={getNewsBreadcrumbs(locale, article)}
-        />
+        <header className="relative isolate overflow-hidden bg-dark-950 pt-28 md:pt-32">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary-950/90 via-dark-950 to-dark-950" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(218,8,18,0.24),transparent_38%)]" />
 
-        <article className="bg-white py-16 md:py-24">
-          <div className="mx-auto max-w-5xl px-4 md:px-8">
-            <div className="mx-auto max-w-[820px] text-start">
-              <div className="mb-8 flex flex-wrap gap-3 text-sm font-bold text-dark-600">
-                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-50 px-4 text-primary-700">
-                  <Calendar className="h-4 w-4" aria-hidden="true" />
+          <div className="mx-auto w-full max-w-5xl px-4 pb-32 text-start md:px-8 md:pb-40">
+            <motion.div
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: heroDuration, ease: heroEase }}
+              className="mb-6"
+            >
+              <Breadcrumbs items={breadcrumbs} light />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: heroDuration, delay: shouldReduceMotion ? 0 : 0.1, ease: heroEase }}
+            >
+              <div className="mb-5 flex flex-wrap gap-2.5 text-sm font-bold">
+                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
+                  <Calendar className="h-4 w-4 text-primary-300" aria-hidden="true" />
                   <time dateTime={article.publishedAt}>{date}</time>
                 </span>
-                <span className="inline-flex min-h-10 items-center rounded-full bg-warm px-4 text-dark-700">
+                <span className="inline-flex min-h-10 items-center rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
                   {article.category}
                 </span>
-                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-warm px-4 text-dark-700">
-                  <Languages className="h-4 w-4 text-primary-700" aria-hidden="true" />
+                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
+                  <Languages className="h-4 w-4 text-primary-300" aria-hidden="true" />
                   {labels.sourceLanguage}: العربية
                 </span>
               </div>
 
-              <figure className="mb-10 overflow-hidden rounded-[20px] border border-primary-100 bg-warm shadow-[0_18px_48px_rgba(35,12,18,0.08)]">
-                <img
-                  src={article.image}
-                  alt={article.imageAlt}
-                  className="aspect-[16/10] w-full object-cover"
-                />
-              </figure>
+              <h1 className="max-w-4xl text-balance text-2xl font-bold leading-snug text-white md:text-3xl md:leading-snug lg:text-4xl lg:leading-tight">
+                {article.title}
+              </h1>
+            </motion.div>
+          </div>
+        </header>
 
+        <article className="bg-white pb-16 md:pb-24">
+          <div className="mx-auto max-w-5xl px-4 md:px-8">
+            <motion.figure
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: heroDuration, delay: shouldReduceMotion ? 0 : 0.18, ease: heroEase }}
+              className="relative z-10 -mt-24 mb-12 overflow-hidden rounded-[20px] border border-white/60 bg-warm shadow-[0_28px_72px_rgba(35,12,18,0.22)] md:-mt-28 md:mb-14"
+            >
+              <img
+                src={article.image}
+                alt={article.imageAlt}
+                className="mx-auto max-h-[80vh] w-auto max-w-full object-contain"
+              />
+            </motion.figure>
+
+            <div className="mx-auto max-w-[820px] text-start">
               {locale !== 'ar' && (
                 <p className="mb-8 rounded-[20px] border border-primary-100 bg-primary-50 px-5 py-4 text-sm font-semibold leading-relaxed text-primary-800">
                   {labels.originalLanguageNote}
@@ -105,21 +137,12 @@ export default function NewsArticlePage() {
 
               <div className="space-y-6 text-lg leading-9 text-dark-800">
                 {article.content.map((paragraph, index) => (
-                  <p key={`${article.id}-${index}`}>{paragraph}</p>
+                  <p key={`${article.id}-${index}`} dir="auto">
+                    {paragraph}
+                  </p>
                 ))}
               </div>
 
-              <div className="mt-10 flex flex-wrap gap-3">
-                <a
-                  href={article.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-                >
-                  {labels.officialSource}
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
-              </div>
             </div>
 
             {article.gallery.length > 0 && (
@@ -142,7 +165,7 @@ export default function NewsArticlePage() {
                         src={image.thumbnail}
                         alt={image.imageAlt}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
+                        className="h-full w-full object-contain"
                       />
                       <span className="absolute inset-x-3 bottom-3 rounded-full bg-dark-950/82 px-3 py-2 text-center text-xs font-bold text-white backdrop-blur-sm">
                         {libraryLabels.imageCounter} {index + 1}

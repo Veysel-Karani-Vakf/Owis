@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ExternalLink, HandHeart, Landmark } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HandHeart, Landmark } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
@@ -40,7 +40,7 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
         spotlightColor="rgba(180, 35, 58, 0.08)"
         className="group/card flex h-full flex-col overflow-hidden rounded-[22px] border border-[rgba(127,29,45,0.11)] bg-white text-start shadow-[0_18px_48px_rgba(40,12,18,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_24px_58px_rgba(40,12,18,0.12)] motion-reduce:hover:translate-y-0"
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-warm">
+        <div className="relative aspect-square overflow-hidden bg-white">
           <img
             src={project.image}
             alt={project.imageAlt}
@@ -55,24 +55,24 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col p-5 md:p-6">
-          <p className="text-sm font-semibold text-primary-700">{project.category}</p>
-          <h2 className="mt-2 text-2xl font-bold leading-tight text-dark-950 md:text-3xl">
+        <div className="flex min-h-0 flex-1 flex-col p-4">
+          <p className="text-xs font-semibold text-primary-700">{project.category}</p>
+          <h2 className="mt-1 text-lg font-bold leading-snug text-dark-950 md:text-xl">
             {project.title}
           </h2>
-          <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-dark-600 md:text-base">
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-dark-600">
             {project.shortDescription}
           </p>
 
-          <div className="mt-5 rounded-2xl border border-primary-100 bg-primary-50/45 p-4">
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-primary-100 bg-primary-50/45 px-3 py-2">
             <p className="text-xs font-semibold text-primary-700">{labels.contribution}</p>
-            <p className="mt-1 text-lg font-bold text-dark-950">{project.contributionValue}</p>
+            <p className="text-sm font-bold text-dark-950">{project.contributionValue}</p>
           </div>
 
-          <div className="mt-auto flex flex-wrap gap-3 pt-6">
+          <div className="mt-auto flex flex-wrap gap-2 pt-3">
             <Link
               to={project.route}
-              className="group/link inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="group/link inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               {labels.details}
               <ArrowIcon
@@ -83,17 +83,14 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
               />
             </Link>
 
-            <a
-              href={project.officialContributionUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={project.officialContributionUrl}
               aria-label={`${labels.contribute}: ${project.title}. ${labels.externalNotice}`}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-primary-100 bg-white px-3.5 py-1.5 text-xs font-bold text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <HandHeart className="h-4 w-4" aria-hidden="true" />
               {labels.contribute}
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+            </Link>
           </div>
         </div>
       </SpotlightCard>
@@ -165,7 +162,7 @@ export default function ProjectsPage() {
           </div>
         </section>
 
-        <section className="bg-[#faf8f8] py-16 md:py-24">
+        <section className="bg-[#faf8f8] py-10 md:py-12">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent
               blur={false}
@@ -175,7 +172,7 @@ export default function ProjectsPage() {
               threshold={0.18}
               once
             >
-              <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+              <div className="mx-auto mb-6 max-w-3xl text-center md:mb-8">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <span className="h-px w-8 bg-primary-200" />
                   <span className="text-sm font-semibold text-primary-700">{page.grid.eyebrow}</span>
@@ -190,7 +187,7 @@ export default function ProjectsPage() {
               </div>
             </FadeContent>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mx-auto grid max-w-[62rem] gap-4 md:grid-cols-2 xl:grid-cols-3">
               {page.projects.map((project, index) => (
                 <ProjectCard
                   key={project.slug}

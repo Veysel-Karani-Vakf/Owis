@@ -41,7 +41,10 @@ export type LocalizedWaqfProject = {
   fullDescription: string[];
   image: string;
   imageAlt: string;
+  /** Visual scale applied to the product image so subjects look equal in size (1 = natural). */
+  imageScale?: number;
   contributionValue: string;
+  unitAmount: number;
   facts: ProjectFact[];
   officialContributionUrl: string;
   officialSourceUrl: string;
@@ -90,16 +93,25 @@ export type ProjectsPageContent = {
     video: string;
     otherProjects: string;
     backToProjects: string;
+    quantity: string;
+    total: string;
+    currency: string;
+    share: string;
+    linkCopied: string;
+    selectProject: string;
+    unitHint: string;
   };
   projects: LocalizedWaqfProject[];
 };
 
+// This site is the official source now: project pages reference in-site routes,
+// and contributions temporarily go through the internal donate page.
 const officialSources = {
-  projectsIndex: 'https://veysvakfi.org/projects/',
-  blessedTree: 'https://veysvakfi.org/product/the-blessed-tree-project/',
-  blessedTreeContribution: 'https://blessedtree.veysvakfi.org/',
-  waqfShare: 'https://veysvakfi.org/product/waqf-share/',
-  goldWallet: 'https://veysvakfi.org/product/gold-wallet/',
+  projectsIndex: '/projects',
+  blessedTree: projectRoutes.blessedTree,
+  blessedTreeContribution: '/donate',
+  waqfShare: projectRoutes.waqfShare,
+  goldWallet: projectRoutes.goldWallet,
   waqfGiftVideo: 'https://www.youtube.com/watch?v=2_r2fKz-hXs',
 } as const;
 
@@ -107,7 +119,14 @@ const sharedProjects: Record<
   ProjectSlug,
   Pick<
     LocalizedWaqfProject,
-    'id' | 'slug' | 'route' | 'image' | 'officialContributionUrl' | 'officialSourceUrl'
+    | 'id'
+    | 'slug'
+    | 'route'
+    | 'image'
+    | 'imageScale'
+    | 'unitAmount'
+    | 'officialContributionUrl'
+    | 'officialSourceUrl'
   >
 > = {
   'blessed-tree': {
@@ -115,6 +134,10 @@ const sharedProjects: Record<
     slug: 'blessed-tree',
     route: projectRoutes.blessedTree,
     image: blessedTreeImage,
+    // The tree artwork fills more of its 1080x1080 canvas than the other
+    // products, so it is scaled down to match the gold portfolio visually.
+    imageScale: 0.94,
+    unitAmount: 100,
     officialContributionUrl: officialSources.blessedTreeContribution,
     officialSourceUrl: officialSources.blessedTree,
   },
@@ -123,7 +146,8 @@ const sharedProjects: Record<
     slug: 'waqf-share',
     route: projectRoutes.waqfShare,
     image: waqfShareImage,
-    officialContributionUrl: officialSources.waqfShare,
+    unitAmount: 100,
+    officialContributionUrl: '/donate',
     officialSourceUrl: officialSources.waqfShare,
   },
   'gold-wallet': {
@@ -131,7 +155,8 @@ const sharedProjects: Record<
     slug: 'gold-wallet',
     route: projectRoutes.goldWallet,
     image: goldPortfolioImage,
-    officialContributionUrl: officialSources.goldWallet,
+    unitAmount: 100,
+    officialContributionUrl: '/donate',
     officialSourceUrl: officialSources.goldWallet,
   },
 };
@@ -165,7 +190,7 @@ const arProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'ساهم في مشروع الشجرة المباركة',
     ctaDescription:
-      'تتم المساهمة في هذا المشروع عبر الصفحة الرسمية المخصصة له.',
+      'تتم المساهمة في هذا المشروع حالياً عبر صفحة المساهمة داخل الموقع.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -217,7 +242,7 @@ const arProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'ساهم في السهم الوقفي',
     ctaDescription:
-      'تتم المساهمة في السهم الوقفي عبر صفحته الرسمية المعتمدة.',
+      'تتم المساهمة في السهم الوقفي حالياً عبر صفحة المساهمة داخل الموقع.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -263,7 +288,7 @@ const arProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'ساهم في محفظة الذهب الوقفية',
     ctaDescription:
-      'تتم المساهمة في محفظة الذهب عبر صفحتها الرسمية المعتمدة.',
+      'تتم المساهمة في محفظة الذهب حالياً عبر صفحة المساهمة داخل الموقع.',
   },
 ];
 
@@ -296,7 +321,7 @@ const enProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Contribute to the Blessed Tree Project',
     ctaDescription:
-      'Contribution to this project is handled through its dedicated official page.',
+      'Contribution to this project is currently arranged through the in-site contribute page.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -348,7 +373,7 @@ const enProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'Contribute to the Waqf Share',
     ctaDescription:
-      'Contribution to the Waqf Share is handled through its approved official page.',
+      'Contribution to the Waqf Share is currently arranged through the in-site contribute page.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -394,7 +419,7 @@ const enProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Contribute to the Waqf Gold Portfolio',
     ctaDescription:
-      'Contribution to the Gold Portfolio is handled through its approved official page.',
+      'Contribution to the Gold Portfolio is currently arranged through the in-site contribute page.',
   },
 ];
 
@@ -427,7 +452,7 @@ const trProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Bereketli Ağaç Projesine Katkı Sun',
     ctaDescription:
-      'Bu projeye katkı, kendisine ayrılmış resmi sayfa üzerinden yapılır.',
+      'Bu projeye katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -479,7 +504,7 @@ const trProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'Vakıf Hissesine Katkı Sun',
     ctaDescription:
-      'Vakıf Hissesine katkı, onaylı resmi sayfası üzerinden yapılır.',
+      'Vakıf Hissesine katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -525,7 +550,7 @@ const trProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Vakıf Altın Portföyüne Katkı Sun',
     ctaDescription:
-      'Vakıf Altın Portföyüne katkı, onaylı resmi sayfası üzerinden yapılır.',
+      'Vakıf Altın Portföyüne katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
   },
 ];
 
@@ -566,7 +591,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'قيمة المساهمة',
       details: 'عرض التفاصيل',
       contribute: 'ساهم الآن',
-      externalNotice: 'يفتح صفحة المساهمة الرسمية في تبويب جديد.',
+      externalNotice: 'ينقلك إلى صفحة المساهمة داخل الموقع.',
       source: 'المصدر الرسمي',
       facts: 'معلومات المشروع',
       overview: 'تفاصيل المشروع',
@@ -575,6 +600,13 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       video: 'الفيديو الرسمي',
       otherProjects: 'مشاريع أخرى',
       backToProjects: 'العودة إلى المشاريع',
+      quantity: 'الكمية',
+      total: 'الإجمالي',
+      currency: 'دولار',
+      share: 'مشاركة المشروع',
+      linkCopied: 'تم نسخ الرابط',
+      selectProject: 'اختر المشروع',
+      unitHint: 'لكل مساهمة',
     },
   },
   tr: {
@@ -613,7 +645,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'Katkı değeri',
       details: 'Detayları Gör',
       contribute: 'Katkı Sun',
-      externalNotice: 'Resmi katkı sayfasını yeni sekmede açar.',
+      externalNotice: 'Sizi site içindeki katkı sayfasına yönlendirir.',
       source: 'Resmi kaynak',
       facts: 'Proje bilgileri',
       overview: 'Proje detayları',
@@ -622,6 +654,13 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       video: 'Resmi video',
       otherProjects: 'Diğer projeler',
       backToProjects: 'Projelere dön',
+      quantity: 'Adet',
+      total: 'Toplam',
+      currency: 'USD',
+      share: 'Projeyi paylaş',
+      linkCopied: 'Bağlantı kopyalandı',
+      selectProject: 'Proje seçin',
+      unitHint: 'katkı başına',
     },
   },
   en: {
@@ -660,7 +699,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'Contribution value',
       details: 'View Details',
       contribute: 'Contribute Now',
-      externalNotice: 'Opens the official contribution page in a new tab.',
+      externalNotice: 'Takes you to the in-site contribute page.',
       source: 'Official source',
       facts: 'Project facts',
       overview: 'Project details',
@@ -669,6 +708,13 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       video: 'Official video',
       otherProjects: 'Other Projects',
       backToProjects: 'Back to Projects',
+      quantity: 'Qty',
+      total: 'Total',
+      currency: 'USD',
+      share: 'Share project',
+      linkCopied: 'Link copied',
+      selectProject: 'Select a project',
+      unitHint: 'per contribution',
     },
   },
 };

@@ -1,3 +1,5 @@
+import { MEDIA_BUCKET, supabase } from '@/lib/supabase';
+
 export type ParticipateSubmissionField = {
   id: string;
   sourceName: string;
@@ -22,37 +24,50 @@ export class ParticipateFormError extends Error {
   }
 }
 
+const slugify = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/**
+ * Persists a participate/contact form submission to Supabase. Any attached
+ * files are uploaded to the public media bucket under `submissions/`.
+ */
 export async function submitParticipateForm(payload: ParticipateSubmissionPayload) {
-  const endpoint = import.meta.env.VITE_PARTICIPATE_FORM_ENDPOINT;
+  const uploaded: Array<{ fieldId: string; name: string; size: number; type: string; url: string }> = [];
 
-  if (!endpoint) {
-    throw new ParticipateFormError('missing-endpoint');
-  }
+  try {
+    for (const [fieldId, files] of Object.entries(payload.files)) {
+      for (const file of files) {
+        const rand = Math.abs(hashString(file.name + file.size + file.lastModified)).toString(36);
+        const path = `submissions/${payload.formId}/${rand}-${slugify(file.name)}`;
+        const { error } = await supabase.storage
+          .from(MEDIA_BUCKET)
+          .upload(path, file, { cacheControl: '3600', upsert: true });
+        if (error) throw error;
+        const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+        uploaded.push({ fieldId, name: file.name, size: file.size, type: file.type, url: data.publicUrl });
+      }
+    }
 
-  const body = new FormData();
-  body.append('formId', payload.formId);
-  body.append('sourceUrl', payload.sourceUrl);
-  body.append(
-    'payload',
-    JSON.stringify({
-      formId: payload.formId,
-      sourceUrl: payload.sourceUrl,
-      submittedAt: new Date().toISOString(),
-      fields: payload.fields,
-    })
-  );
-
-  Object.entries(payload.files).forEach(([fieldId, files]) => {
-    files.forEach((file) => body.append(fieldId, file));
-  });
-
-  // TODO: Configure VITE_PARTICIPATE_FORM_ENDPOINT with the real backend receiver for Waqf forms.
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    body,
-  });
-
-  if (!response.ok) {
+    const { error } = await supabase.from('participate_submissions').insert({
+      form_id: payload.formId,
+      source_url: payload.sourceUrl,
+      payload: { fields: payload.fields },
+      files: uploaded,
+    });
+    if (error) throw error;
+  } catch {
     throw new ParticipateFormError('network');
   }
+}
+
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return h;
 }

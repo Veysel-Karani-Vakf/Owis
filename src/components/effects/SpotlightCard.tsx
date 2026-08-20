@@ -4,6 +4,7 @@ import { useRef } from 'react';
 type SpotlightCardProps = HTMLAttributes<HTMLDivElement> & {
   spotlightColor?: string;
   disabled?: boolean;
+  contentClassName?: string;
 };
 
 type SpotlightStyle = CSSProperties & {
@@ -24,6 +25,7 @@ export default function SpotlightCard({
   className = '',
   spotlightColor = 'rgba(180, 35, 58, 0.12)',
   disabled = false,
+  contentClassName = '',
   style,
   onPointerEnter,
   onPointerMove,
@@ -83,7 +85,7 @@ export default function SpotlightCard({
           background: `radial-gradient(360px circle at var(--spotlight-x) var(--spotlight-y), ${spotlightColor}, transparent 72%)`,
         }}
       />
-      <div className="relative z-10">{children}</div>
+      <div className={`relative z-10 ${contentClassName}`}>{children}</div>
     </div>
   );
 }

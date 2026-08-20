@@ -23,19 +23,6 @@ export type LibraryCollectionSlug =
 
 export type LibraryDocumentCollection = 'periodicReports' | 'waqfBooks' | 'waqfLiterature' | 'yemeniFigures';
 
-export type LibraryNavItem =
-  | {
-      type: 'link';
-      label: string;
-      href: string;
-    }
-  | {
-      type: 'group';
-      label: string;
-      href: string;
-      items: { label: string; href: string }[];
-    };
-
 export type LibraryLabels = {
   home: string;
   library: string;
@@ -65,6 +52,49 @@ export type LibraryLabels = {
   previousImage: string;
   nextImage: string;
   imageCounter: string;
+  searchAll: string;
+  searchAllPlaceholder: string;
+  searchHint: string;
+  suggestions: string;
+  seeAllIn: string;
+  sectionsNav: string;
+  allSections: string;
+  latestAcross: string;
+  documentsHub: string;
+  items: string;
+  viewGrid: string;
+  viewList: string;
+  pdfOnly: string;
+  pdfShort: string;
+  noPdfShort: string;
+  preview: string;
+  openInNewTab: string;
+  closePreview: string;
+  previewUnavailable: string;
+  readingTime: string;
+  tableOfContents: string;
+  readingProgress: string;
+  share: string;
+  copyLink: string;
+  linkCopied: string;
+  print: string;
+  previousItem: string;
+  nextItem: string;
+  author: string;
+  series: string;
+  partOfSeries: string;
+  partLabel: string;
+  donateCta: string;
+  clearFilters: string;
+  filters: string;
+  exploreGallery: string;
+  photos: string;
+  typeArticle: string;
+  typeDocument: string;
+  typeStory: string;
+  typeImage: string;
+  showMore: string;
+  showLess: string;
 };
 
 export type LibraryCollectionInfo = {
@@ -125,7 +155,6 @@ export type LibraryContent = {
     description: string;
     image: string;
   };
-  nav: LibraryNavItem[];
   labels: LibraryLabels;
   collections: Record<LibraryCollectionSlug | 'gallery', LibraryCollectionInfo>;
   breadcrumbs: {
@@ -183,6 +212,49 @@ const labels: Record<Locale, LibraryLabels> = {
     previousImage: 'الصورة السابقة',
     nextImage: 'الصورة التالية',
     imageCounter: 'صورة',
+    searchAll: 'ابحث في المكتبة كلها',
+    searchAllPlaceholder: 'ابحث عن مقال، كتاب، تقرير، أو قصة نجاح…',
+    searchHint: 'يبحث في المقالات والتقارير والكتب والأدبيات وقصص النجاح دفعة واحدة.',
+    suggestions: 'جرّب البحث عن',
+    seeAllIn: 'كل النتائج في',
+    sectionsNav: 'أقسام المكتبة',
+    allSections: 'أقسام المكتبة',
+    latestAcross: 'أحدث ما أُضيف',
+    documentsHub: 'الوثائق والإصدارات',
+    items: 'مادة',
+    viewGrid: 'عرض شبكي',
+    viewList: 'عرض قائمة',
+    pdfOnly: 'متاح PDF فقط',
+    pdfShort: 'PDF',
+    noPdfShort: 'بدون PDF',
+    preview: 'معاينة',
+    openInNewTab: 'فتح في تبويب جديد',
+    closePreview: 'إغلاق المعاينة',
+    previewUnavailable: 'إذا لم تظهر المعاينة هنا، افتح الملف في تبويب جديد.',
+    readingTime: 'دقائق قراءة',
+    tableOfContents: 'محتويات المقال',
+    readingProgress: 'تقدم القراءة',
+    share: 'مشاركة',
+    copyLink: 'نسخ الرابط',
+    linkCopied: 'تم نسخ الرابط',
+    print: 'طباعة',
+    previousItem: 'السابق',
+    nextItem: 'التالي',
+    author: 'الكاتب',
+    series: 'سلسلة',
+    partOfSeries: 'هذا المقال جزء من سلسلة',
+    partLabel: 'الجزء',
+    donateCta: 'ساهم الآن في الوقف',
+    clearFilters: 'مسح الفلاتر',
+    filters: 'تصفية',
+    exploreGallery: 'استعرض المعرض',
+    photos: 'صورة',
+    typeArticle: 'مقال',
+    typeDocument: 'وثيقة',
+    typeStory: 'قصة نجاح',
+    typeImage: 'صورة',
+    showMore: 'عرض المزيد',
+    showLess: 'عرض أقل',
   },
   en: {
     home: 'Home',
@@ -213,6 +285,49 @@ const labels: Record<Locale, LibraryLabels> = {
     previousImage: 'Previous image',
     nextImage: 'Next image',
     imageCounter: 'Image',
+    searchAll: 'Search the whole library',
+    searchAllPlaceholder: 'Search for an article, book, report, or success story…',
+    searchHint: 'Searches articles, reports, books, literature, and success stories at once.',
+    suggestions: 'Try searching for',
+    seeAllIn: 'All results in',
+    sectionsNav: 'Library sections',
+    allSections: 'Library sections',
+    latestAcross: 'Recently added',
+    documentsHub: 'Documents & publications',
+    items: 'items',
+    viewGrid: 'Grid view',
+    viewList: 'List view',
+    pdfOnly: 'PDF available only',
+    pdfShort: 'PDF',
+    noPdfShort: 'No PDF',
+    preview: 'Preview',
+    openInNewTab: 'Open in new tab',
+    closePreview: 'Close preview',
+    previewUnavailable: 'If the preview does not load here, open the file in a new tab.',
+    readingTime: 'min read',
+    tableOfContents: 'In this article',
+    readingProgress: 'Reading progress',
+    share: 'Share',
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
+    print: 'Print',
+    previousItem: 'Previous',
+    nextItem: 'Next',
+    author: 'Author',
+    series: 'Series',
+    partOfSeries: 'This article is part of a series',
+    partLabel: 'Part',
+    donateCta: 'Contribute to the waqf',
+    clearFilters: 'Clear filters',
+    filters: 'Filters',
+    exploreGallery: 'Explore the gallery',
+    photos: 'photos',
+    typeArticle: 'Article',
+    typeDocument: 'Document',
+    typeStory: 'Success story',
+    typeImage: 'Photo',
+    showMore: 'Show more',
+    showLess: 'Show less',
   },
   tr: {
     home: 'Ana Sayfa',
@@ -243,6 +358,49 @@ const labels: Record<Locale, LibraryLabels> = {
     previousImage: 'Önceki görsel',
     nextImage: 'Sonraki görsel',
     imageCounter: 'Görsel',
+    searchAll: 'Tüm kütüphanede ara',
+    searchAllPlaceholder: 'Makale, kitap, rapor veya başarı hikayesi ara…',
+    searchHint: 'Makaleler, raporlar, kitaplar, literatür ve başarı hikayelerinde aynı anda arar.',
+    suggestions: 'Şunları aramayı deneyin',
+    seeAllIn: 'Tüm sonuçlar:',
+    sectionsNav: 'Kütüphane bölümleri',
+    allSections: 'Kütüphane bölümleri',
+    latestAcross: 'Son eklenenler',
+    documentsHub: 'Belgeler ve yayınlar',
+    items: 'içerik',
+    viewGrid: 'Izgara görünümü',
+    viewList: 'Liste görünümü',
+    pdfOnly: 'Yalnızca PDF olanlar',
+    pdfShort: 'PDF',
+    noPdfShort: 'PDF yok',
+    preview: 'Önizleme',
+    openInNewTab: 'Yeni sekmede aç',
+    closePreview: 'Önizlemeyi kapat',
+    previewUnavailable: 'Önizleme burada yüklenmezse dosyayı yeni sekmede açın.',
+    readingTime: 'dk okuma',
+    tableOfContents: 'Bu makalede',
+    readingProgress: 'Okuma ilerlemesi',
+    share: 'Paylaş',
+    copyLink: 'Bağlantıyı kopyala',
+    linkCopied: 'Bağlantı kopyalandı',
+    print: 'Yazdır',
+    previousItem: 'Önceki',
+    nextItem: 'Sonraki',
+    author: 'Yazar',
+    series: 'Seri',
+    partOfSeries: 'Bu makale bir serinin parçasıdır',
+    partLabel: 'Bölüm',
+    donateCta: 'Vakfa katkıda bulun',
+    clearFilters: 'Filtreleri temizle',
+    filters: 'Filtrele',
+    exploreGallery: 'Galeriyi keşfet',
+    photos: 'fotoğraf',
+    typeArticle: 'Makale',
+    typeDocument: 'Belge',
+    typeStory: 'Başarı hikayesi',
+    typeImage: 'Fotoğraf',
+    showMore: 'Daha fazla göster',
+    showLess: 'Daha az göster',
   },
 };
 
@@ -456,42 +614,6 @@ function buildCollections(locale: Locale): Record<LibraryCollectionSlug | 'galle
   };
 }
 
-function navFor(locale: Locale): LibraryNavItem[] {
-  const c = buildCollections(locale);
-  const literatureLabel: Record<Locale, string> = {
-    ar: 'أدبيات',
-    en: 'Literature',
-    tr: 'Literatür',
-  };
-  const mediaLabel: Record<Locale, string> = {
-    ar: 'ميديا',
-    en: 'Media',
-    tr: 'Medya',
-  };
-
-  return [
-    { type: 'link', label: c.forum.shortTitle, href: c.forum.route },
-    {
-      type: 'group',
-      label: literatureLabel[locale],
-      href: c['periodic-reports'].route,
-      items: [
-        { label: c['periodic-reports'].shortTitle, href: c['periodic-reports'].route },
-        { label: c['waqf-books'].shortTitle, href: c['waqf-books'].route },
-        { label: c['waqf-literature'].shortTitle, href: c['waqf-literature'].route },
-        { label: c['yemeni-figures'].shortTitle, href: c['yemeni-figures'].route },
-      ],
-    },
-    { type: 'link', label: c['success-stories'].shortTitle, href: c['success-stories'].route },
-    {
-      type: 'group',
-      label: mediaLabel[locale],
-      href: c.gallery.route,
-      items: [{ label: c.gallery.shortTitle, href: c.gallery.route }],
-    },
-  ];
-}
-
 const heroText: Record<Locale, Omit<LibraryContent['hero'], 'image'>> = {
   ar: {
     title: 'المكتبة',
@@ -533,7 +655,16 @@ function localizeTextItem<T extends (typeof libraryCatalog.forumArticles)[number
 }
 
 function normalize(value: string) {
-  return value.toLowerCase().normalize('NFKD');
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[ً-ْـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/[̀-ͯ]/g, '');
 }
 
 export function getLibraryContent(locale: Locale): LibraryContent {
@@ -544,7 +675,6 @@ export function getLibraryContent(locale: Locale): LibraryContent {
       ...heroText[locale],
       image: libraryCatalog.forumArticles[0]?.image ?? '/library/forum/waqf-economics-part-three.jpeg',
     },
-    nav: navFor(locale),
     labels: labels[locale],
     collections,
     breadcrumbs: {
@@ -650,4 +780,284 @@ export function getYears(items: { year: number | null }[]) {
 
 export function getLibraryDiagnostics() {
   return libraryCatalog.diagnostics;
+}
+
+/* ------------------------------------------------------------------ */
+/* Library hub helpers: unified search, series, navigation, reading    */
+/* ------------------------------------------------------------------ */
+
+export const documentCollectionSlugs = [
+  'periodic-reports',
+  'waqf-books',
+  'waqf-literature',
+  'yemeni-figures',
+] as const satisfies readonly LibraryCollectionSlug[];
+
+export type LibraryDocumentCollectionSlug = (typeof documentCollectionSlugs)[number];
+
+export type LibrarySearchHit = {
+  id: string;
+  kind: 'article' | 'story' | 'document' | 'image';
+  collection: LibraryCollectionSlug | 'gallery';
+  title: string;
+  subtitle: string;
+  image: string;
+  href: string;
+  external: boolean;
+  hasPdf: boolean;
+  date: string;
+};
+
+export type LibrarySearchGroup = {
+  collection: LibraryCollectionSlug | 'gallery';
+  title: string;
+  route: string;
+  total: number;
+  hits: LibrarySearchHit[];
+};
+
+export type LibraryCounts = Record<LibraryCollectionSlug | 'gallery', number>;
+
+function matches(haystack: string, needle: string) {
+  if (!needle) return true;
+  const normalizedHaystack = normalize(haystack);
+  return needle
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((token) => normalizedHaystack.includes(token));
+}
+
+export function getLibraryCounts(locale: Locale): LibraryCounts {
+  return {
+    forum: libraryCatalog.forumArticles.length,
+    'periodic-reports': libraryCatalog.documents.periodicReports.length,
+    'waqf-books': libraryCatalog.documents.waqfBooks.length,
+    'waqf-literature': libraryCatalog.documents.waqfLiterature.length,
+    'yemeni-figures': libraryCatalog.documents.yemeniFigures.length,
+    'success-stories': getSuccessStories(locale).length,
+    gallery: libraryCatalog.gallery.length,
+  };
+}
+
+function textHit(item: LibraryTextItem, kind: 'article' | 'story', collection: LibraryCollectionSlug): LibrarySearchHit {
+  return {
+    id: item.id,
+    kind,
+    collection,
+    title: item.title,
+    subtitle: item.excerpt,
+    image: item.image,
+    href: item.route,
+    external: false,
+    hasPdf: false,
+    date: item.date,
+  };
+}
+
+function documentHit(item: LibraryDocumentItem, collection: LibraryCollectionSlug): LibrarySearchHit {
+  return {
+    id: item.id,
+    kind: 'document',
+    collection,
+    title: item.title,
+    subtitle: item.excerpt,
+    image: item.image,
+    href: item.pdfUrl ?? item.sourceUrl,
+    external: true,
+    hasPdf: Boolean(item.pdfUrl),
+    date: item.date,
+  };
+}
+
+/** Search across every library collection at once, grouped by section. */
+export function searchLibrary(locale: Locale, query: string, perGroup = 4): LibrarySearchGroup[] {
+  const needle = normalize(query.trim());
+  if (!needle) return [];
+
+  const content = getLibraryContent(locale);
+  const groups: LibrarySearchGroup[] = [];
+
+  const pushGroup = (collection: LibraryCollectionSlug | 'gallery', hits: LibrarySearchHit[]) => {
+    if (!hits.length) return;
+    const info = content.collections[collection];
+    groups.push({ collection, title: info.shortTitle, route: info.route, total: hits.length, hits: hits.slice(0, perGroup) });
+  };
+
+  pushGroup(
+    'forum',
+    getForumArticles(locale)
+      .filter((item) => matches(`${item.title} ${item.originalTitle} ${item.excerpt} ${item.year ?? ''}`, needle))
+      .map((item) => textHit(item, 'article', 'forum'))
+  );
+
+  for (const slug of documentCollectionSlugs) {
+    const info = content.collections[slug];
+    if (!info.documentCollection) continue;
+    pushGroup(
+      slug,
+      getDocuments(info.documentCollection)
+        .filter((item) => matches(`${item.title} ${item.excerpt} ${item.year ?? ''}`, needle))
+        .map((item) => documentHit(item, slug))
+    );
+  }
+
+  pushGroup(
+    'success-stories',
+    getSuccessStories(locale)
+      .filter((item) => matches(`${item.title} ${item.originalTitle} ${item.excerpt}`, needle))
+      .map((item) => textHit(item, 'story', 'success-stories'))
+  );
+
+  pushGroup(
+    'gallery',
+    getGalleryImages()
+      .filter((item) => matches(`${item.title} ${item.imageAlt}`, needle))
+      .map((item) => ({
+        id: item.id,
+        kind: 'image' as const,
+        collection: 'gallery' as const,
+        title: item.title,
+        subtitle: '',
+        image: item.thumbnail,
+        href: libraryRoutes.gallery,
+        external: false,
+        hasPdf: false,
+        date: '',
+      }))
+  );
+
+  return groups;
+}
+
+/** Suggested search terms per locale (shown under the unified search box). */
+export function getLibrarySearchSuggestions(locale: Locale): string[] {
+  const suggestions: Record<Locale, string[]> = {
+    ar: ['اقتصاد الوقف', 'أويس في أرقام', 'الاستثمار الوقفي', 'براءة اختراع', 'التنمية المستدامة'],
+    en: ['Economics of Waqf', 'Owais in Numbers', 'Waqf investment', 'patent', 'sustainable'],
+    tr: ['Vakıf Ekonomisi', 'Owais in Numbers', 'vakıf yatırımı', 'patent', 'sürdürülebilir'],
+  };
+  return suggestions[locale];
+}
+
+/** Latest items across articles, stories, and dated documents, newest first. */
+export function getLatestLibraryItems(locale: Locale, limit = 6): LibrarySearchHit[] {
+  const hits: LibrarySearchHit[] = [
+    ...getForumArticles(locale).map((item) => textHit(item, 'article', 'forum')),
+    ...getSuccessStories(locale).map((item) => textHit(item, 'story', 'success-stories')),
+  ];
+
+  for (const slug of documentCollectionSlugs) {
+    const info = collectionSettings[slug];
+    if (!info.documentCollection) continue;
+    hits.push(
+      ...getDocuments(info.documentCollection)
+        .filter((item) => item.date)
+        .map((item) => documentHit(item, slug))
+    );
+  }
+
+  return hits
+    .filter((hit) => hit.date)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
+const wordsPerMinute = 190;
+
+export function getReadingMinutes(item: Pick<LibraryTextItem, 'content' | 'excerpt'>) {
+  const words = item.content.join(' ').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / wordsPerMinute));
+}
+
+const partOrder: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+};
+
+export type LibrarySeries = {
+  key: string;
+  title: string;
+  parts: { slug: string; title: string; route: string; order: number }[];
+  currentIndex: number;
+};
+
+/** Detects "-part-one/two/..." article series from slugs. */
+export function getArticleSeries(locale: Locale, slug: string): LibrarySeries | null {
+  const match = slug.match(/^(.*)-part-([a-z]+)$/);
+  if (!match) return null;
+  const key = match[1];
+  const parts = getForumArticles(locale)
+    .map((item) => {
+      const itemMatch = item.slug.match(/^(.*)-part-([a-z]+)$/);
+      if (!itemMatch || itemMatch[1] !== key) return null;
+      return { slug: item.slug, title: item.title, route: item.route, order: partOrder[itemMatch[2]] ?? 99 };
+    })
+    .filter((part): part is NonNullable<typeof part> => part !== null)
+    .sort((a, b) => a.order - b.order);
+
+  if (parts.length < 2) return null;
+
+  const seriesTitle: Record<Locale, string> = {
+    ar: parts[0].title.replace(/\s*الجزء.*$/, ''),
+    en: parts[0].title.replace(/,?\s*Part.*$/i, ''),
+    tr: parts[0].title.replace(/,?\s*(Birinci|İkinci|Üçüncü|Dördüncü).*$/i, ''),
+  };
+
+  return {
+    key,
+    title: seriesTitle[locale] || parts[0].title,
+    parts,
+    currentIndex: parts.findIndex((part) => part.slug === slug),
+  };
+}
+
+/** Previous / next items in a text collection (array order = newest first). */
+export function getAdjacentTextItems(locale: Locale, type: 'forum' | 'success-stories', slug: string) {
+  const items = type === 'forum' ? getForumArticles(locale) : getSuccessStories(locale);
+  const index = items.findIndex((item) => item.slug === slug);
+  if (index === -1) return { previous: undefined, next: undefined };
+  return {
+    // "next" = the next newer item, "previous" = the older one
+    next: index > 0 ? items[index - 1] : undefined,
+    previous: index < items.length - 1 ? items[index + 1] : undefined,
+  };
+}
+
+export type LibraryDocumentSeries = { key: string; label: string; count: number };
+
+/** Groups documents that share a title prefix before " – " / " - " (e.g. "Owais in Numbers – Issue 7"). */
+export function getDocumentSeries(items: LibraryDocumentItem[], minCount = 3): LibraryDocumentSeries[] {
+  const buckets = new Map<string, number>();
+  for (const item of items) {
+    const key = getDocumentSeriesKey(item);
+    if (!key) continue;
+    buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+  return [...buckets.entries()]
+    .filter(([, count]) => count >= minCount)
+    .map(([key, count]) => ({ key, label: key, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export function getDocumentSeriesKey(item: Pick<LibraryDocumentItem, 'title'>) {
+  const match = item.title.match(/^(.+?)\s+[–—-]\s+/);
+  return match ? match[1].trim() : null;
+}
+
+export function filterDocuments(
+  items: LibraryDocumentItem[],
+  options: { query?: string; pdfOnly?: boolean; series?: string | null }
+) {
+  const needle = normalize((options.query ?? '').trim());
+  return items.filter((item) => {
+    if (options.pdfOnly && !item.pdfUrl) return false;
+    if (options.series && getDocumentSeriesKey(item) !== options.series) return false;
+    return matches(`${item.title} ${item.excerpt} ${item.year ?? ''}`, needle);
+  });
 }

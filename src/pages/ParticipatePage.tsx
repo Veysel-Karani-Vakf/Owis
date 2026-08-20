@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ExternalLink, Handshake, Lightbulb, MessageSquare, PhoneCall } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Handshake, Lightbulb, MessageSquare, PhoneCall } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
@@ -96,15 +96,6 @@ export default function ParticipatePage() {
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
-                <a
-                  href={page.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-7 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-                >
-                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                  {participate.labels.openOfficialSource}
-                </a>
               </div>
             </FadeContent>
 
@@ -115,11 +106,19 @@ export default function ParticipatePage() {
                   {participate.nav.map((item) => {
                     const Icon = navIcons[item.key];
                     const active = location.pathname === item.href;
+                    const targetHash = item.key === 'contact' ? '#participate-contact' : '#participate-form';
 
                     return (
                       <Link
                         key={item.href}
-                        to={item.href}
+                        to={`${item.href}${targetHash}`}
+                        onClick={() => {
+                          if (!active) return;
+                          const target = document.getElementById(targetHash.slice(1));
+                          if (!target) return;
+                          const top = target.getBoundingClientRect().top + window.scrollY - 96;
+                          window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+                        }}
                         aria-current={active ? 'page' : undefined}
                         className={`group flex min-h-14 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-start transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                           active
@@ -153,7 +152,7 @@ export default function ParticipatePage() {
         </section>
 
         {page.form && (
-          <section className="bg-[#faf8f8] py-16 md:py-24">
+          <section id="participate-form" className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-5xl px-4 md:px-8">
               <motion.div
                 initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
@@ -174,7 +173,7 @@ export default function ParticipatePage() {
 
         {page.contact && (
           <>
-            <section className="bg-[#faf8f8] py-16 md:py-24">
+            <section id="participate-contact" className="bg-[#faf8f8] py-16 md:py-24">
               <div className="mx-auto max-w-7xl px-4 md:px-8">
                 <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
                   <div className="mb-10 max-w-3xl text-start">
