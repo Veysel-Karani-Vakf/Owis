@@ -46,6 +46,7 @@ import {
   type ProgramSection,
   type ProgramVideo,
 } from '@/data/programs';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 const revealEase = [0.22, 1, 0.36, 1] as const;
@@ -129,6 +130,10 @@ function NumberedList({
   icon: ReactNode;
 }) {
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
+  const revealY = isNarrow ? 12 : 18;
+  const revealAmount = isNarrow ? 0.12 : 0.2;
+  const revealMargin = isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px';
 
   return (
     <div>
@@ -137,11 +142,11 @@ function NumberedList({
         {items.map((item, index) => (
           <motion.li
             key={item}
-            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: revealY }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
+            viewport={{ once: true, amount: revealAmount, margin: revealMargin }}
             transition={{
-              duration: shouldReduceMotion ? 0.01 : 0.5,
+              duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.42 : 0.5,
               delay: shouldReduceMotion ? 0 : index * 0.06,
               ease: revealEase,
             }}
@@ -603,32 +608,42 @@ function OtherPrograms({
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading eyebrow={labels.programs} title={labels.otherPrograms} centered />
         <div className="grid gap-5 md:grid-cols-3">
-          {otherPrograms.map((item) => (
-            <Link
+          {otherPrograms.map((item, index) => (
+            <FadeContent
               key={item.slug}
-              to={item.route}
-              className="group overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
+              blur={false}
+              duration={540}
+              initialOpacity={0}
+              yOffset={14}
+              delay={index * 55}
+              threshold={0.14}
+              once
             >
-              <img
-                src={item.heroImage}
-                alt={item.heroImageAlt}
-                loading="lazy"
-                className="aspect-[16/10] w-full object-cover"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-dark-950">{item.title}</h3>
-                <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-600">{item.summary}</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700">
-                  {labels.details}
-                  <ArrowIcon
-                    className={`h-4 w-4 transition-transform ${
-                      isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
-                    }`}
-                    aria-hidden="true"
-                  />
-                </span>
-              </div>
-            </Link>
+              <Link
+                to={item.route}
+                className="group block overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
+              >
+                <img
+                  src={item.heroImage}
+                  alt={item.heroImageAlt}
+                  loading="lazy"
+                  className="aspect-[16/10] w-full object-cover"
+                />
+                <div className="p-5">
+                  <h3 className="text-xl font-bold text-dark-950">{item.title}</h3>
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-600">{item.summary}</p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700">
+                    {labels.details}
+                    <ArrowIcon
+                      className={`h-4 w-4 transition-transform ${
+                        isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </span>
+                </div>
+              </Link>
+            </FadeContent>
           ))}
         </div>
       </div>

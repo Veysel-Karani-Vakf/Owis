@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar, Languages } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import FadeContent from '@/components/effects/FadeContent';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
 import LibraryLightbox from '@/components/library/LibraryLightbox';
@@ -154,23 +155,33 @@ export default function NewsArticlePage() {
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {article.gallery.map((image, index) => (
-                    <button
+                    <FadeContent
                       key={image.id}
-                      type="button"
-                      onClick={() => setActiveImageIndex(index)}
-                      className="group relative aspect-[16/10] overflow-hidden rounded-[20px] border border-white bg-warm text-start shadow-[0_16px_42px_rgba(35,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_52px_rgba(35,12,18,0.11)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-                      aria-label={`${libraryLabels.openImage}: ${image.title}`}
+                      blur={false}
+                      duration={520}
+                      initialOpacity={0}
+                      yOffset={12}
+                      delay={index * 45}
+                      threshold={0.12}
+                      once
                     >
-                      <img
-                        src={image.thumbnail}
-                        alt={image.imageAlt}
-                        loading="lazy"
-                        className="h-full w-full object-contain"
-                      />
-                      <span className="absolute inset-x-3 bottom-3 rounded-full bg-dark-950/82 px-3 py-2 text-center text-xs font-bold text-white backdrop-blur-sm">
-                        {libraryLabels.imageCounter} {index + 1}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveImageIndex(index)}
+                        className="group relative aspect-[16/10] w-full overflow-hidden rounded-[20px] border border-white bg-warm text-start shadow-[0_16px_42px_rgba(35,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_52px_rgba(35,12,18,0.11)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                        aria-label={`${libraryLabels.openImage}: ${image.title}`}
+                      >
+                        <img
+                          src={image.thumbnail}
+                          alt={image.imageAlt}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
+                        />
+                        <span className="absolute inset-x-3 bottom-3 rounded-full bg-dark-950/82 px-3 py-2 text-center text-xs font-bold text-white backdrop-blur-sm">
+                          {libraryLabels.imageCounter} {index + 1}
+                        </span>
+                      </button>
+                    </FadeContent>
                   ))}
                 </div>
               </section>
@@ -202,15 +213,25 @@ export default function NewsArticlePage() {
               </div>
 
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {related.map((item) => (
-                  <NewsCard
+                {related.map((item, index) => (
+                  <FadeContent
                     key={item.id}
-                    article={item}
-                    labels={labels}
-                    locale={locale}
-                    isRtl={isRtl}
-                    compact
-                  />
+                    blur={false}
+                    duration={540}
+                    initialOpacity={0}
+                    yOffset={14}
+                    delay={index * 55}
+                    threshold={0.14}
+                    once
+                  >
+                    <NewsCard
+                      article={item}
+                      labels={labels}
+                      locale={locale}
+                      isRtl={isRtl}
+                      compact
+                    />
+                  </FadeContent>
                 ))}
               </div>
             </div>

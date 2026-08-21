@@ -18,8 +18,9 @@ import {
   type LocalizedNewsArticle,
   type NewsLabels,
 } from '@/data/news';
-import type { Locale } from '@/i18n/content';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
+import type { Locale } from '@/i18n/content';
 
 const pageSize = 9;
 
@@ -60,6 +61,7 @@ export default function NewsIndexPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const labels = newsLabels[locale];
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('all');
@@ -220,10 +222,17 @@ export default function NewsIndexPage() {
                 {visibleArticles.map((article, index) => (
                   <motion.div
                     key={article.id}
-                    initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+                    initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 18 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.16 }}
-                    transition={{ duration: shouldReduceMotion ? 0.01 : 0.55, delay: index * 0.07 }}
+                    viewport={{
+                      once: true,
+                      amount: isNarrow ? 0.1 : 0.16,
+                      margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+                    }}
+                    transition={{
+                      duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.42 : 0.55,
+                      delay: shouldReduceMotion ? 0 : index * 0.07,
+                    }}
                   >
                     <NewsCard article={article} labels={labels} locale={locale} isRtl={isRtl} compact />
                   </motion.div>

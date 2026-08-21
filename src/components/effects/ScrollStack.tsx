@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from 'react';
 import FadeContent from './FadeContent';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 type ScrollStackProps = {
@@ -61,20 +62,6 @@ type StackLayerProps = {
   minHeight: string;
   layerRef?: (node: HTMLDivElement | null) => void;
 };
-
-function useNarrowScreen(maxWidth: number) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(`(max-width: ${maxWidth}px)`);
-    const update = () => setMatches(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, [maxWidth]);
-
-  return matches;
-}
 
 const FINAL_STAGE_HOLD = 0.28;
 
@@ -474,7 +461,8 @@ export default function ScrollStack({
                 initialOpacity={0}
                 yOffset={12}
                 delay={Math.min(index * 70, 210)}
-                threshold={0.16}
+                threshold={0.14}
+                className="scroll-stack-static-card"
               >
                 {card}
               </FadeContent>

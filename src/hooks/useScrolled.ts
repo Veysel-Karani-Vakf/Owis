@@ -4,13 +4,23 @@ export function useScrolled(threshold: number = 80) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => {
+    let frame = 0;
+
+    const updateScrolled = () => {
       setScrolled(window.scrollY > threshold);
     };
 
+    const onScroll = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateScrolled);
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    updateScrolled();
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [threshold]);
 
   return scrolled;

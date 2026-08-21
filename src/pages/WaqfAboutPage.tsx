@@ -11,7 +11,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
 import CreditTiltCard from '@/components/effects/CreditTiltCard';
@@ -21,6 +21,7 @@ import ScrollStack from '@/components/effects/ScrollStack';
 import ParticipationCTA from '@/components/sections/ParticipationCTA';
 import WaqfIdentityTabs, { type IdentityTab } from '@/components/sections/WaqfIdentityTabs';
 import WaqfMethodologyTimeline from '@/components/sections/WaqfMethodologyTimeline';
+import YouTubeEmbed from '@/components/ui/YouTubeEmbed';
 import { aboutRoutes, getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -41,17 +42,6 @@ const creditLayerStyle = (factor: number, depth: number): CSSProperties => ({
 export default function WaqfAboutPage() {
   const { locale, isRtl, t } = useI18n();
   const page = getAboutContent(locale).waqf;
-  const introVideoRef = useRef<HTMLDivElement>(null);
-  const introVideoIframeRef = useRef<HTMLIFrameElement>(null);
-  const introVideoInViewRef = useRef(false);
-  const [introVideoStarted, setIntroVideoStarted] = useState(false);
-  const embedOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const introVideoSrc = `https://www.youtube-nocookie.com/embed/${
-    page.video.videoId
-  }?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&controls=1&enablejsapi=1${
-    embedOrigin ? `&origin=${encodeURIComponent(embedOrigin)}` : ''
-  }`;
-
   const identityTabs: IdentityTab[] = [
     {
       key: 'vision',
@@ -87,52 +77,6 @@ export default function WaqfAboutPage() {
     const label = labelParts.join(':').trim();
     return label || phase.title;
   });
-
-  const sendIntroVideoCommand = useCallback((command: 'playVideo' | 'pauseVideo') => {
-    const iframeWindow = introVideoIframeRef.current?.contentWindow;
-    if (!iframeWindow) return;
-
-    iframeWindow.postMessage(
-      JSON.stringify({
-        event: 'command',
-        func: command,
-        args: [],
-      }),
-      'https://www.youtube-nocookie.com'
-    );
-  }, []);
-
-  useEffect(() => {
-    const element = introVideoRef.current;
-    if (!element) return;
-
-    if (!('IntersectionObserver' in window)) {
-      introVideoInViewRef.current = true;
-      setIntroVideoStarted(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        introVideoInViewRef.current = entry.isIntersecting;
-
-        if (entry.isIntersecting) {
-          setIntroVideoStarted(true);
-          window.setTimeout(() => sendIntroVideoCommand('playVideo'), 160);
-          return;
-        }
-
-        sendIntroVideoCommand('pauseVideo');
-      },
-      {
-        threshold: 0.42,
-        rootMargin: '0px 0px -10% 0px',
-      }
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [sendIntroVideoCommand]);
 
   return (
     <>
@@ -197,38 +141,13 @@ export default function WaqfAboutPage() {
             </FadeContent>
 
             <FadeContent {...sectionReveal} delay={70}>
-              <div
-                ref={introVideoRef}
+              <YouTubeEmbed
                 data-video-trigger="waqf-intro"
-                className="relative aspect-video w-full overflow-hidden rounded-[18px] border border-primary-100 bg-dark-950 text-start shadow-[0_22px_70px_rgba(35,15,20,0.18)]"
-              >
-                {introVideoStarted ? (
-                  <iframe
-                    ref={introVideoIframeRef}
-                    src={introVideoSrc}
-                    title={page.video.title}
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    onLoad={() => {
-                      if (introVideoInViewRef.current) {
-                        window.setTimeout(() => sendIntroVideoCommand('playVideo'), 160);
-                      }
-                    }}
-                    className="absolute inset-0 h-full w-full"
-                  />
-                ) : (
-                  <>
-                    <img
-                      src={page.hero.image}
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-dark-950/72 via-dark-950/30 to-dark-950/12" />
-                  </>
-                )}
-              </div>
+                videoId={page.video.videoId}
+                title={page.video.title}
+                posterImage={page.hero.image}
+                className="border border-primary-100"
+              />
             </FadeContent>
           </div>
         </section>

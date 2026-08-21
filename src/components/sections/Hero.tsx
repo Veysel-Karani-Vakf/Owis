@@ -1,28 +1,175 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Play } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
 import { useI18n } from '@/i18n/useI18n';
+import {
+  getYouTubeVideoId,
+  isTrustedYouTubeOrigin,
+  parseYouTubeMessage,
+  youtubeHosts,
+} from '@/utils/youtube';
 
 type HeroBackgroundVideoProps = {
   videoId: string;
   title: string;
 };
 
+function getIsBrowserOnline() {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
 function HeroBackgroundVideo({ videoId, title }: HeroBackgroundVideoProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const resolvedVideoId = useMemo(() => getYouTubeVideoId(videoId), [videoId]);
+  const [isBrowserOnline, setIsBrowserOnline] = useState(getIsBrowserOnline);
+  const [hasIframeLoaded, setHasIframeLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [hostIndex, setHostIndex] = useState(0);
+  const activeHost = youtubeHosts[hostIndex];
+  const canAttemptEmbed = isBrowserOnline && Boolean(resolvedVideoId);
+  const canShowBackground = isBrowserOnline && (isReady || hasIframeLoaded);
+
+  const embedSrc = useMemo(() => {
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      loop: '1',
+      playlist: resolvedVideoId,
+      controls: '0',
+      modestbranding: '1',
+      rel: '0',
+      showinfo: '0',
+      iv_load_policy: '3',
+      disablekb: '1',
+      playsinline: '1',
+      enablejsapi: '1',
+    });
+
+    if (typeof window !== 'undefined') {
+      params.set('origin', window.location.origin);
+    }
+
+    return `${activeHost}/embed/${resolvedVideoId}?${params.toString()}`;
+  }, [activeHost, resolvedVideoId]);
+
+  const postToPlayer = useCallback((payload: Record<string, unknown>) => {
+    const iframeWindow = iframeRef.current?.contentWindow;
+    if (!iframeWindow) return;
+
+    const message = JSON.stringify(payload);
+    youtubeHosts.forEach((host) => iframeWindow.postMessage(message, host));
+  }, []);
+
+  const sendCommand = useCallback(
+    (command: 'mute' | 'playVideo') => {
+      postToPlayer({
+        event: 'command',
+        func: command,
+        args: [],
+      });
+    },
+    [postToPlayer]
+  );
+
+  useEffect(() => {
+    setIsBrowserOnline(getIsBrowserOnline());
+    setHasIframeLoaded(false);
+    setIsReady(false);
+    setHostIndex(0);
+  }, [resolvedVideoId]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsBrowserOnline(true);
+      setHasIframeLoaded(false);
+      setIsReady(false);
+      setHostIndex(0);
+    };
+
+    const handleOffline = () => {
+      setIsBrowserOnline(false);
+      setHasIframeLoaded(false);
+      setIsReady(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canAttemptEmbed || canShowBackground || hostIndex > 0) return undefined;
+
+    const fallbackTimer = window.setTimeout(() => {
+      setHostIndex(1);
+      setHasIframeLoaded(false);
+      setIsReady(false);
+    }, 4200);
+
+    return () => window.clearTimeout(fallbackTimer);
+  }, [canAttemptEmbed, canShowBackground, hostIndex]);
+
+  useEffect(() => {
+    if (!canAttemptEmbed) return undefined;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (!isTrustedYouTubeOrigin(event.origin)) return;
+
+      const data = parseYouTubeMessage(event.data);
+      const eventName = typeof data?.event === 'string' ? data.event : '';
+
+      if (eventName === 'onReady' || eventName === 'initialDelivery' || eventName === 'infoDelivery') {
+        setHasIframeLoaded(true);
+        setIsReady(true);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [canAttemptEmbed]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    sendCommand('mute');
+    sendCommand('playVideo');
+  }, [isReady, sendCommand]);
+
+  const handleIframeLoad = () => {
+    if (!getIsBrowserOnline()) {
+      setIsBrowserOnline(false);
+      setHasIframeLoaded(false);
+      setIsReady(false);
+      return;
+    }
+
+    setIsBrowserOnline(true);
+    setHasIframeLoaded(true);
+    postToPlayer({ event: 'listening' });
+    sendCommand('mute');
+    sendCommand('playVideo');
+  };
+
+  if (!canAttemptEmbed) return null;
 
   return (
     <iframe
-      src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1`}
+      key={`${resolvedVideoId}-${hostIndex}`}
+      ref={iframeRef}
+      src={embedSrc}
       title={title}
-      className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-      allow="autoplay; encrypted-media"
+      className={`block border-0 transition-opacity duration-500 ${canShowBackground ? 'opacity-100' : 'opacity-0'}`}
+      allow="autoplay; encrypted-media; picture-in-picture"
       loading="eager"
       referrerPolicy="strict-origin-when-cross-origin"
-      onLoad={() => setIsLoaded(true)}
+      onLoad={handleIframeLoad}
     />
   );
 }
@@ -42,11 +189,7 @@ export default function Hero() {
   const [backgroundVideoPaused, setBackgroundVideoPaused] = useState(false);
   // Holds the title whose typing animation has finished; resets automatically when the title changes.
   const [typedTitle, setTypedTitle] = useState<string | null>(null);
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(min-width: 768px)').matches
-      : false,
-  );
+  const shouldReduceMotion = useReducedMotion();
   const { content, t, isRtl, locale } = useI18n();
   const heroContent = content.hero;
   const isLatinScript = locale !== 'ar';
@@ -61,16 +204,6 @@ export default function Hero() {
     minPx: TITLE_MIN_FONT_PX,
     fallbackPx: TITLE_WRAP_FONT_PX,
   });
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
-
-    const desktopMediaQuery = window.matchMedia('(min-width: 768px)');
-    const handleViewportChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
-
-    desktopMediaQuery.addEventListener('change', handleViewportChange);
-    return () => desktopMediaQuery.removeEventListener('change', handleViewportChange);
-  }, []);
 
   const openVideo = useCallback(() => {
     setBackgroundVideoPaused(true);
@@ -96,9 +229,9 @@ export default function Hero() {
       className="relative min-h-[100svh] overflow-hidden bg-dark-950"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.9, ease: heroEase }}
+        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
         className="absolute inset-0"
       >
         <img
@@ -110,12 +243,12 @@ export default function Hero() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.9, ease: heroEase }}
-        className="yt-bg-container hidden md:block"
+        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
+        className="yt-bg-container"
       >
-        {isDesktop && !backgroundVideoPaused && (
+        {!shouldReduceMotion && !backgroundVideoPaused && (
           <HeroBackgroundVideo
             videoId={heroContent.videoId}
             title={t('accessibility.videoBackgroundTitle')}
@@ -147,7 +280,7 @@ export default function Hero() {
                 text={heroContent.title}
                 startDelay={TITLE_TYPING_START_DELAY}
                 charDelay={TITLE_TYPING_CHAR_DELAY}
-                respectReducedMotion={false}
+                respectReducedMotion
                 onComplete={handleTitleTyped}
               />
             </h1>
@@ -177,9 +310,9 @@ export default function Hero() {
       <motion.button
         onClick={openVideo}
         aria-label={t('accessibility.playVideo')}
-        initial={{ opacity: 0, y: 24 }}
+        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.75, duration: 0.5, ease: heroEase }}
+        transition={{ delay: shouldReduceMotion ? 0 : 0.75, duration: shouldReduceMotion ? 0.01 : 0.5, ease: heroEase }}
         className={`group absolute bottom-8 z-20 flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/60 hover:bg-primary-500 md:bottom-10 md:h-16 md:w-16 ${
           isRtl ? 'left-4 md:left-8' : 'right-4 md:right-8'
         }`}
@@ -191,9 +324,9 @@ export default function Hero() {
       <motion.button
         onClick={scrollToAbout}
         aria-label={t('accessibility.scrollDown')}
-        initial={{ opacity: 0 }}
+        initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.05, duration: 0.4 }}
+        transition={{ delay: shouldReduceMotion ? 0 : 1.05, duration: shouldReduceMotion ? 0.01 : 0.4 }}
         className="absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 transition-colors hover:text-white md:flex"
       >
         <span className="text-xs font-medium">{t('common.discoverMore')}</span>

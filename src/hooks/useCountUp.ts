@@ -1,3 +1,4 @@
+import { useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 export function useCountUp(
@@ -7,9 +8,15 @@ export function useCountUp(
 ) {
   const [value, setValue] = useState(0);
   const rafRef = useRef<number>(0);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!start || target === 0) return;
+
+    if (shouldReduceMotion) {
+      setValue(target);
+      return;
+    }
 
     const startTime = performance.now();
     const animate = (now: number) => {
@@ -26,7 +33,7 @@ export function useCountUp(
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [target, duration, start]);
+  }, [target, duration, start, shouldReduceMotion]);
 
   return value;
 }

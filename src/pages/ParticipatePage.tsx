@@ -13,6 +13,7 @@ import {
   participateRoutes,
   type ParticipatePageKey,
 } from '@/data/participate';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 const navIcons = {
@@ -34,6 +35,7 @@ export default function ParticipatePage() {
   const participate = getParticipateContent(locale);
   const page = getParticipatePageBySlug(locale, slug);
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   const structuredData = useMemo(() => {
@@ -155,10 +157,14 @@ export default function ParticipatePage() {
           <section id="participate-form" className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-5xl px-4 md:px-8">
               <motion.div
-                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.18 }}
-                transition={{ duration: shouldReduceMotion ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+                viewport={{
+                  once: true,
+                  amount: isNarrow ? 0.12 : 0.18,
+                  margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+                }}
+                transition={{ duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.44 : 0.55, ease: [0.22, 1, 0.36, 1] }}
               >
                 <ParticipateForm
                   form={page.form}

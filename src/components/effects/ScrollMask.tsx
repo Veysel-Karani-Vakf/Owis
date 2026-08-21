@@ -5,7 +5,8 @@ import {
   useTransform,
   type MotionStyle,
 } from 'framer-motion';
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useRef, type CSSProperties, type ReactNode } from 'react';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 
 type ScrollMaskProps = {
   src: string;
@@ -28,20 +29,6 @@ const contentEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
 type MaskSectionStyle = CSSProperties & {
   '--scroll-mask-angle': string;
 };
-
-function useNarrowScreen(maxWidth: number) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(`(max-width: ${maxWidth}px)`);
-    const update = () => setMatches(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, [maxWidth]);
-
-  return matches;
-}
 
 export default function ScrollMask({
   src,

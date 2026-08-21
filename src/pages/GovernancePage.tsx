@@ -6,6 +6,7 @@ import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import SectionHeading from '@/components/ui/SectionHeading';
 import { getAboutContent, type Policy } from '@/data/about';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
@@ -42,6 +43,7 @@ export default function GovernancePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const page = getAboutContent(locale).governance;
   const policyIds = useMemo(() => page.policies.map((policy) => policy.id), [page.policies]);
   const [openPolicy, setOpenPolicy] = useState(page.policies[0]?.id ?? '');
@@ -131,11 +133,15 @@ export default function GovernancePage() {
 
             <div className="mt-12 grid gap-8 lg:grid-cols-[0.34fr_0.66fr] lg:items-start">
               <motion.aside
-                initial={{ opacity: 0, y: 24 }}
+                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.55, ease: smoothEase }}
-                className="sticky top-24 rounded-2xl border border-primary-100 bg-warm p-4 shadow-sm"
+                viewport={{
+                  once: true,
+                  amount: isNarrow ? 0.12 : 0.2,
+                  margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+                }}
+                transition={{ duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.42 : 0.55, ease: smoothEase }}
+                className="rounded-2xl border border-primary-100 bg-warm p-4 shadow-sm lg:sticky lg:top-24"
               >
                 <h2 className="mb-4 px-2 text-start text-sm font-bold text-dark-900">{page.intro.navTitle}</h2>
                 <div className="grid gap-2">
@@ -178,10 +184,18 @@ export default function GovernancePage() {
                       ref={(element) => {
                         policyRefs.current[policy.id] = element;
                       }}
-                      initial={{ opacity: 0, y: 24 }}
+                      initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 24 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.08 }}
-                      transition={{ duration: 0.48, delay: index * 0.02, ease: smoothEase }}
+                      viewport={{
+                        once: true,
+                        amount: isNarrow ? 0.08 : 0.12,
+                        margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+                      }}
+                      transition={{
+                        duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.4 : 0.48,
+                        delay: shouldReduceMotion ? 0 : index * 0.02,
+                        ease: smoothEase,
+                      }}
                       className="scroll-mt-28 overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm"
                     >
                       <button

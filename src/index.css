@@ -230,6 +230,12 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
+  .pioneers-stat-card:focus-within,
+  .pioneers-stat-card:active {
+    transform: translateY(-2px);
+    border-color: rgba(255, 132, 149, 0.3);
+  }
+
   .pioneers-stat-icon {
     background-color: rgba(255, 113, 132, 0.12);
     color: var(--pioneers-accent);
@@ -303,6 +309,10 @@
     .pioneers-stat-card {
       backdrop-filter: blur(6px);
     }
+
+    .pioneers-stat-card:active {
+      transform: translateY(-2px);
+    }
   }
 
   .waqf-identity-card {
@@ -348,6 +358,11 @@
     will-change: transform;
   }
 
+  .waqf-identity-card:focus-within,
+  .waqf-identity-card:active {
+    transform: translateY(-3px) scale(1.008);
+  }
+
   @media (hover: hover) and (pointer: fine) {
     .waqf-identity-card:hover {
       transform: translateY(-7px) scale(1.018);
@@ -388,6 +403,8 @@
     }
 
     .waqf-identity-card:hover,
+    .waqf-identity-card:focus-within,
+    .waqf-identity-card:active,
     .waqf-identity-card:hover .waqf-identity-icon {
       transform: none;
     }
@@ -632,6 +649,10 @@
       transform: none;
     }
   }
+
+  .scroll-stack-static-card {
+    will-change: transform, opacity;
+  }
 }
 
 .waqf-identity-progress {
@@ -729,12 +750,19 @@
   left: 50%;
   width: 100vw;
   height: 56.25vw;
-  min-height: 100vh;
-  min-width: 177.78vh;
+  min-height: 100svh;
+  min-width: 177.78svh;
   transform: translate(-50%, -50%);
   pointer-events: none;
   border: 0;
   filter: saturate(1.05) contrast(1.05);
+}
+
+@media (max-width: 767px) {
+  .yt-bg-container iframe {
+    min-height: 100svh;
+    min-width: 177.78svh;
+  }
 }
 
 /* Elements whose size is computed from measurements (e.g. the auto-fitted Hero title) must never

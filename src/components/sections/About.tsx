@@ -1,8 +1,9 @@
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Eye, Target, Compass, Gem, Landmark, ArrowLeft, ArrowRight, Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 type TabKey = 'vision' | 'mission' | 'methodology' | 'values' | 'sectors';
@@ -142,28 +143,13 @@ const tabItemVariants: Variants = {
   reduced: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.01 } },
 };
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsMobile(mediaQuery.matches);
-
-    update();
-    mediaQuery.addEventListener('change', update);
-    return () => mediaQuery.removeEventListener('change', update);
-  }, []);
-
-  return isMobile;
-}
-
 export default function About() {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.25 });
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('vision');
   const [tabDirection, setTabDirection] = useState(1);
   const shouldReduceMotion = useReducedMotion();
-  const isMobile = useIsMobile();
+  const isMobile = useNarrowScreen(767);
   const { content, t, isRtl } = useI18n();
   const aboutContent = content.about;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;

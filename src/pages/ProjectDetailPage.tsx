@@ -338,14 +338,24 @@ export default function ProjectDetailPage() {
               </div>
             </FadeContent>
 
-            <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
-              {relatedProjects.map((relatedProject) => (
-                <RelatedProjectCard
+            <div className="grid gap-6 md:grid-cols-2">
+              {relatedProjects.map((relatedProject, index) => (
+                <FadeContent
                   key={relatedProject.slug}
-                  project={relatedProject}
-                  detailsLabel={page.labels.details}
-                  isRtl={isRtl}
-                />
+                  blur={false}
+                  duration={540}
+                  initialOpacity={0}
+                  yOffset={14}
+                  delay={index * 60}
+                  threshold={0.14}
+                  once
+                >
+                  <RelatedProjectCard
+                    project={relatedProject}
+                    detailsLabel={page.labels.details}
+                    isRtl={isRtl}
+                  />
+                </FadeContent>
               ))}
             </div>
           </div>

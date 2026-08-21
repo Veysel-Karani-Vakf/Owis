@@ -20,6 +20,7 @@ import {
   getSuccessStories,
   type LibrarySearchHit,
 } from '@/data/library';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/i18n/content';
 
@@ -38,6 +39,7 @@ export default function LibraryIndexPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const page = getLibraryContent(locale);
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   const articles = getForumArticles(locale);
@@ -68,10 +70,17 @@ export default function LibraryIndexPage() {
   }, [page]);
 
   const reveal = (index: number) => ({
-    initial: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 },
+    initial: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 18 },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, amount: 0.18 },
-    transition: { duration: shouldReduceMotion ? 0.01 : 0.55, delay: index * 0.06 },
+    viewport: {
+      once: true,
+      amount: isNarrow ? 0.12 : 0.18,
+      margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+    },
+    transition: {
+      duration: shouldReduceMotion ? 0.01 : isNarrow ? 0.42 : 0.55,
+      delay: shouldReduceMotion ? 0 : index * 0.06,
+    },
   });
 
   const forum = page.collections.forum;

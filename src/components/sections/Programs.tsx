@@ -10,6 +10,7 @@ import { ArrowUpLeft, ArrowUpRight } from 'lucide-react';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { type Program } from '@/i18n/content';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
 function smoothStep(value: number, start: number, end: number) {
@@ -189,14 +190,19 @@ function ProgramsHeading({
   staticMode?: boolean;
 }) {
   const Component = staticMode ? 'div' : motion.div;
+  const isNarrow = useNarrowScreen();
 
   return (
     <Component
       {...(!staticMode && {
-        initial: { opacity: 0, y: 36 },
+        initial: { opacity: 0, y: isNarrow ? 16 : 36 },
         whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true, amount: 0.35 },
-        transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+        viewport: {
+          once: true,
+          amount: isNarrow ? 0.12 : 0.28,
+          margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+        },
+        transition: { duration: isNarrow ? 0.46 : 0.65, ease: [0.16, 1, 0.3, 1] },
       })}
       className="mb-12 flex flex-col items-center text-center md:mb-16"
     >
@@ -217,6 +223,7 @@ export default function Programs() {
   const { content, t, isRtl } = useI18n();
   const stackRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const programsContent = content.programs;
   const programs = programsContent.items;
   const actionLabel = t('common.learnMore');
@@ -276,10 +283,14 @@ export default function Programs() {
           {programs.map((program, index) => (
             <motion.div
               key={program.id}
-              initial={{ opacity: 0, y: 44 }}
+              initial={{ opacity: 0, y: isNarrow ? 18 : 44 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{
+                once: true,
+                amount: 0.12,
+                margin: '0px 0px -8% 0px',
+              }}
+              transition={{ duration: isNarrow ? 0.42 : 0.55, ease: [0.16, 1, 0.3, 1] }}
             >
               <StaticProgramCard
                 program={program}
