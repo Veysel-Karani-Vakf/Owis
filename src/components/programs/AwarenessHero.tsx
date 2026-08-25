@@ -8,9 +8,9 @@ type AwarenessHeroProps = {
   program: Program;
   breadcrumbs: BreadcrumbItem[];
   labels: {
-    awarenessEyebrow: string;
-    awarenessHeroNote: string;
-    exploreInitiatives: string;
+    eyebrow: string;
+    heroNote: string;
+    exploreCta: string;
     officialSource: string;
   };
   initiativesAnchor: string;
@@ -108,7 +108,7 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary-500" />
             </span>
-            {labels.awarenessEyebrow}
+            {labels.eyebrow}
           </motion.div>
 
           <motion.h1
@@ -140,7 +140,7 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
               onClick={scrollToInitiatives}
               className="group inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-dark-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0"
             >
-              {labels.exploreInitiatives}
+              {labels.exploreCta}
               <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" aria-hidden="true" />
             </button>
             <a
@@ -161,7 +161,7 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
             className="mt-8 flex max-w-xl items-start gap-3 text-sm leading-relaxed text-white/55"
           >
             <Radio className="mt-0.5 h-4 w-4 shrink-0 text-primary-400" aria-hidden="true" />
-            {labels.awarenessHeroNote}
+            {labels.heroNote}
           </motion.p>
         </div>
 

@@ -1,3 +1,4 @@
+import { cmsPageContent } from '@/cms/adapters';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Locale } from '@/i18n/content';
 import participateHeroImage from '@/assets/participate/participate-hero.jpg';
@@ -1046,11 +1047,11 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
 }
 
 export function getParticipateContent(locale: Locale): ParticipateContent {
-  return {
+  return cmsPageContent('participate', locale, {
     nav: navLabels[locale],
     labels: labels[locale],
     pages: buildPages(locale),
-  };
+  });
 }
 
 export function getParticipatePage(locale: Locale, key: ParticipatePageKey): ParticipatePageContent {
@@ -1062,4 +1063,9 @@ export function getParticipatePageBySlug(locale: Locale, slug: string | undefine
   const pages = getParticipateContent(locale).pages;
 
   return Object.values(pages).find((page) => page.slug === slug);
+}
+
+/** The participate pages as they ship in this repo, ignoring the CMS. */
+export function staticParticipateContent(locale: Locale): ParticipateContent {
+  return { nav: navLabels[locale], labels: labels[locale], pages: buildPages(locale) };
 }

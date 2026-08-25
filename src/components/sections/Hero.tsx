@@ -5,18 +5,51 @@ import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
 type HeroBackgroundVideoProps = {
   videoId: string;
+  videoFile?: string;
   title: string;
 };
 
-function HeroBackgroundVideo({ videoId, title }: HeroBackgroundVideoProps) {
+function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const source = resolveVideo({ videoFile, videoId });
+
+  if (!source) return null;
+
+  // A muted, looping file behaves like the YouTube background it replaces.
+  if (source.kind === 'file') {
+    return (
+      <video
+        src={source.src}
+        title={title}
+        className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onLoadedData={() => setIsLoaded(true)}
+      />
+    );
+  }
 
   return (
     <iframe
-      src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1`}
+      src={youTubeEmbedUrl(source.id, {
+        autoplay: 1,
+        mute: 1,
+        loop: 1,
+        playlist: source.id,
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        iv_load_policy: 3,
+        disablekb: 1,
+        playsinline: 1,
+      })}
       title={title}
       className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       allow="autoplay; encrypted-media"
@@ -118,6 +151,7 @@ export default function Hero() {
         {isDesktop && !backgroundVideoPaused && (
           <HeroBackgroundVideo
             videoId={heroContent.videoId}
+            videoFile={heroContent.videoFile}
             title={t('accessibility.videoBackgroundTitle')}
           />
         )}
@@ -212,6 +246,7 @@ export default function Hero() {
         onClose={closeVideo}
         onExitComplete={resumeBackgroundVideo}
         videoId={heroContent.videoId}
+        videoFile={heroContent.videoFile}
         posterImage={heroContent.posterImage}
       />
     </section>

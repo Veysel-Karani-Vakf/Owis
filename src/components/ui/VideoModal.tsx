@@ -2,25 +2,47 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
 type VideoModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onExitComplete: () => void;
   videoId: string;
+  /** Public URL of a video uploaded in the dashboard; takes priority over videoId. */
+  videoFile?: string;
   posterImage: string;
   title?: string;
 };
 
 type VideoPlayerProps = {
   videoId: string;
+  videoFile?: string;
   posterImage: string;
   title: string;
   loadingLabel: string;
 };
 
-function VideoPlayer({ videoId, posterImage, title, loadingLabel }: VideoPlayerProps) {
+function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: VideoPlayerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const source = resolveVideo({ videoFile, videoId });
+
+  // An uploaded file plays natively — there is no embed to wait on.
+  if (source?.kind === 'file') {
+    return (
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl">
+        <video
+          src={source.src}
+          poster={posterImage || undefined}
+          title={title}
+          className="absolute inset-0 h-full w-full"
+          controls
+          autoPlay
+          playsInline
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl">
@@ -49,7 +71,12 @@ function VideoPlayer({ videoId, posterImage, title, loadingLabel }: VideoPlayerP
       )}
 
       <iframe
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+        src={youTubeEmbedUrl(source?.kind === 'youtube' ? source.id : videoId, {
+          autoplay: 1,
+          playsinline: 1,
+          rel: 0,
+          modestbranding: 1,
+        })}
         title={title}
         className={`absolute inset-0 z-10 h-full w-full transition-opacity duration-300 ${
           isLoaded ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
@@ -70,6 +97,7 @@ export default function VideoModal({
   onClose,
   onExitComplete,
   videoId,
+  videoFile,
   posterImage,
   title,
 }: VideoModalProps) {
@@ -170,6 +198,7 @@ export default function VideoModal({
 
             <VideoPlayer
               videoId={videoId}
+              videoFile={videoFile}
               posterImage={posterImage}
               title={videoTitle}
               loadingLabel={t('accessibility.loadingVideo')}

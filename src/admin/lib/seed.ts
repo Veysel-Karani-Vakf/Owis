@@ -5,20 +5,35 @@ import { supabase } from '@/lib/supabase';
 import type { Locale } from '@/lib/types';
 
 import { newsArticles } from '@/data/news';
-import { getProjectsContent } from '@/data/projects';
-import { getProgramsContent } from '@/data/programs';
-import { getDonateContent } from '@/data/donate';
+import { staticProjectsContent } from '@/data/projects';
+import { localizedPrograms } from '@/data/programs';
+import { localizedDonateContent } from '@/data/donate';
 import {
-  getForumArticles,
-  getSuccessStories,
-  getDocuments,
-  getGalleryImages,
+  staticForumArticles,
+  staticSuccessStories,
+  staticDocuments,
+  staticGalleryImages,
 } from '@/data/library';
-import { getAboutContent } from '@/data/about';
+import { LOCALES } from '@/lib/types';
+import { buildAllPageRows } from './pageDefaults';
 import { localizedContent } from '@/i18n/content';
 
 const L3: Locale[] = ['ar', 'tr', 'en'];
 type Report = (line: string) => void;
+
+/** Build { ar, tr, en } from the same array field of each locale's variant. */
+function locArrays(byLoc: Record<Locale, any[]>, i: number, key: string) {
+  const out: Record<string, unknown[]> = {};
+  for (const l of L3) out[l] = byLoc[l]?.[i]?.[key] ?? [];
+  return out;
+}
+
+/** Build { ar, tr, en } from the same object field of each locale's variant. */
+function locObjects(byLoc: Record<Locale, any[]>, i: number, key: string) {
+  const out: Record<string, unknown> = {};
+  for (const l of L3) out[l] = byLoc[l]?.[i]?.[key] ?? null;
+  return out;
+}
 
 /** Build { ar, tr, en } by picking a string from each locale's array item at index i. */
 function loc3<T>(byLoc: Record<Locale, T[]>, i: number, pick: (t: T) => string | undefined) {
@@ -48,7 +63,16 @@ async function seedNews(report: Report) {
     content: a.content ?? {},
     image: a.image ?? null,
     image_alt: a.imageAlt ?? {},
-    gallery: a.gallery ?? [],
+    gallery: Object.fromEntries(
+      L3.map((l) => [
+        l,
+        (a.gallery ?? []).map((g: any) => ({
+          ...g,
+          title: g.title?.[l] ?? '',
+          imageAlt: g.imageAlt?.[l] ?? '',
+        })),
+      ]),
+    ),
     source_images: a.sourceImages ?? [],
     sort_order: i,
     is_published: true,
@@ -61,9 +85,9 @@ async function seedNews(report: Report) {
 // --- PROJECTS ---------------------------------------------------------------
 async function seedProjects(report: Report) {
   const byLoc = {
-    ar: getProjectsContent('ar').projects,
-    tr: getProjectsContent('tr').projects,
-    en: getProjectsContent('en').projects,
+    ar: staticProjectsContent('ar').projects,
+    tr: staticProjectsContent('tr').projects,
+    en: staticProjectsContent('en').projects,
   } as Record<Locale, any[]>;
 
   const rows = byLoc.ar.map((base: any, i: number) => ({
@@ -82,10 +106,7 @@ async function seedProjects(report: Report) {
     image_scale: base.imageScale ?? null,
     contribution_value: loc3(byLoc, i, (p) => p.contributionValue),
     unit_amount: base.unitAmount ?? null,
-    facts: (base.facts ?? []).map((_: any, fi: number) => ({
-      label: { ar: byLoc.ar[i].facts?.[fi]?.label, tr: byLoc.tr[i].facts?.[fi]?.label, en: byLoc.en[i].facts?.[fi]?.label },
-      value: { ar: byLoc.ar[i].facts?.[fi]?.value, tr: byLoc.tr[i].facts?.[fi]?.value, en: byLoc.en[i].facts?.[fi]?.value },
-    })),
+    facts: locArrays(byLoc, i, 'facts'),
     official_contribution_url: base.officialContributionUrl ?? null,
     official_source_url: base.officialSourceUrl ?? null,
     returns_title: loc3(byLoc, i, (p) => p.returnsTitle),
@@ -95,19 +116,8 @@ async function seedProjects(report: Report) {
       tr: byLoc.tr[i].returnUses ?? [],
       en: byLoc.en[i].returnUses ?? [],
     },
-    allocations: (base.allocations ?? []).map((al: any, ai: number) => ({
-      percent: al.percent,
-      title: { ar: byLoc.ar[i].allocations?.[ai]?.title, tr: byLoc.tr[i].allocations?.[ai]?.title, en: byLoc.en[i].allocations?.[ai]?.title },
-      description: { ar: byLoc.ar[i].allocations?.[ai]?.description, tr: byLoc.tr[i].allocations?.[ai]?.description, en: byLoc.en[i].allocations?.[ai]?.description },
-    })),
-    video: base.video
-      ? {
-          videoId: base.video.videoId,
-          sourceUrl: base.video.sourceUrl,
-          title: loc3(byLoc, i, (p) => p.video?.title),
-          buttonLabel: loc3(byLoc, i, (p) => p.video?.buttonLabel),
-        }
-      : null,
+    allocations: locArrays(byLoc, i, 'allocations'),
+    video: base.video ? locObjects(byLoc, i, 'video') : null,
     cta_title: loc3(byLoc, i, (p) => p.ctaTitle),
     cta_description: loc3(byLoc, i, (p) => p.ctaDescription),
     sort_order: i,
@@ -122,9 +132,9 @@ async function seedProjects(report: Report) {
 // --- PROGRAMS ---------------------------------------------------------------
 async function seedPrograms(report: Report) {
   const byLoc = {
-    ar: getProgramsContent('ar').programs,
-    tr: getProgramsContent('tr').programs,
-    en: getProgramsContent('en').programs,
+    ar: localizedPrograms.ar.programs,
+    tr: localizedPrograms.tr.programs,
+    en: localizedPrograms.en.programs,
   } as Record<Locale, any[]>;
 
   const paraLoc = (i: number, key: string) => ({
@@ -141,26 +151,26 @@ async function seedPrograms(report: Report) {
     hero_image: base.heroImage ?? null,
     hero_image_alt: loc3(byLoc, i, (p) => p.heroImageAlt),
     images: base.images ?? [],
-    image_gallery: base.imageGallery ?? [],
-    sections: base.sections ?? [],
+    image_gallery: locArrays(byLoc, i, 'imageGallery'),
+    sections: locArrays(byLoc, i, 'sections'),
     goals: paraLoc(i, 'goals'),
     components: paraLoc(i, 'components'),
-    statistics: base.statistics ?? [],
-    videos: base.videos ?? [],
+    statistics: locArrays(byLoc, i, 'statistics'),
+    videos: locArrays(byLoc, i, 'videos'),
     contact_email: base.contactEmail ?? null,
-    initiatives: base.initiatives ?? [],
-    cities: base.cities ?? [],
-    journey: base.journey ?? [],
-    pillars: base.pillars ?? [],
+    initiatives: locArrays(byLoc, i, 'initiatives'),
+    cities: locArrays(byLoc, i, 'cities'),
+    journey: locArrays(byLoc, i, 'journey'),
+    pillars: locArrays(byLoc, i, 'pillars'),
     highlights: paraLoc(i, 'highlights'),
-    phase: base.phase ?? null,
-    audiences: base.audiences ?? [],
-    themes: base.themes ?? [],
+    phase: locObjects(byLoc, i, 'phase'),
+    audiences: locArrays(byLoc, i, 'audiences'),
+    themes: locArrays(byLoc, i, 'themes'),
     overview_image: base.overviewImage ?? null,
     overview_image_alt: loc3(byLoc, i, (p) => p.overviewImageAlt),
     official_source_url: base.officialSourceUrl ?? null,
-    seo: base.seo ?? {},
-    cta: base.cta ?? {},
+    seo: locObjects(byLoc, i, 'seo'),
+    cta: locObjects(byLoc, i, 'cta'),
     media_note: loc3(byLoc, i, (p) => p.mediaNote),
     sort_order: i,
     is_published: true,
@@ -198,8 +208,8 @@ async function seedLibraryArticles(report: Report) {
   };
 
   const rows = [
-    ...build('forum', getForumArticles),
-    ...build('success-stories', getSuccessStories),
+    ...build('forum', staticForumArticles),
+    ...build('success-stories', staticSuccessStories),
   ];
   const { error } = await supabase.from('library_articles').upsert(rows, { onConflict: 'collection,slug' });
   if (error) throw new Error('library_articles: ' + error.message);
@@ -217,7 +227,7 @@ async function seedLibraryDocuments(report: Report) {
   await clearTable('library_documents');
   const rows: any[] = [];
   for (const [dbSlug, runtimeKey] of map) {
-    const items = getDocuments(runtimeKey) as any[];
+    const items = staticDocuments(runtimeKey) as any[];
     items.forEach((d, i) => {
       rows.push({
         collection: dbSlug,
@@ -242,7 +252,7 @@ async function seedLibraryDocuments(report: Report) {
 // --- GALLERY ----------------------------------------------------------------
 async function seedGallery(report: Report) {
   await clearTable('gallery_images');
-  const items = getGalleryImages() as any[];
+  const items = staticGalleryImages() as any[];
   const rows = items.map((g, i) => ({
     title: { ar: g.title ?? '' },
     image: g.image ?? null,
@@ -262,9 +272,9 @@ async function seedGallery(report: Report) {
 // --- DONATIONS --------------------------------------------------------------
 async function seedDonations(report: Report) {
   const byLoc = {
-    ar: getDonateContent('ar').opportunities,
-    tr: getDonateContent('tr').opportunities,
-    en: getDonateContent('en').opportunities,
+    ar: localizedDonateContent.ar.opportunities,
+    tr: localizedDonateContent.tr.opportunities,
+    en: localizedDonateContent.en.opportunities,
   } as Record<Locale, any[]>;
   const rows = byLoc.ar.map((base: any, i: number) => ({
     slug: base.id,
@@ -334,52 +344,10 @@ async function seedStats(report: Report) {
 }
 
 // --- SITE PAGES -------------------------------------------------------------
+// Every page in the dashboard schema, written locale-first so the editor and
+// the site's accessors read the same shape.
 async function seedSitePages(report: Report) {
-  const perLocale = <T,>(pick: (c: any) => T) => ({
-    ar: pick(localizedContent.ar),
-    tr: pick(localizedContent.tr),
-    en: pick(localizedContent.en),
-  });
-
-  const pages = [
-    {
-      key: 'home',
-      label: { ar: 'الصفحة الرئيسية', tr: 'Ana sayfa', en: 'Home' },
-      data: {
-        hero: perLocale((c) => c.hero),
-        about: perLocale((c) => c.about),
-        statistics: perLocale((c) => c.statistics),
-        yemenPioneers: perLocale((c) => c.yemenPioneers),
-      },
-    },
-    {
-      key: 'settings',
-      label: { ar: 'إعدادات الموقع', tr: 'Site ayarları', en: 'Site settings' },
-      data: {
-        siteConfig: perLocale((c) => c.siteConfig),
-        footer: perLocale((c) => c.footer),
-      },
-    },
-    {
-      key: 'about-waqf',
-      label: { ar: 'عن الوقف', tr: 'Vakıf hakkında', en: 'About the Waqf' },
-      data: {
-        ar: getAboutContent('ar').waqf,
-        tr: getAboutContent('tr').waqf,
-        en: getAboutContent('en').waqf,
-      },
-    },
-    {
-      key: 'governance',
-      label: { ar: 'الحوكمة', tr: 'Yönetişim', en: 'Governance' },
-      data: {
-        ar: getAboutContent('ar').governance,
-        tr: getAboutContent('tr').governance,
-        en: getAboutContent('en').governance,
-      },
-    },
-  ];
-
+  const pages = buildAllPageRows(LOCALES);
   const { error } = await supabase.from('site_pages').upsert(pages, { onConflict: 'key' });
   if (error) throw new Error('site_pages: ' + error.message);
   report(`✔ site_pages (${pages.length})`);

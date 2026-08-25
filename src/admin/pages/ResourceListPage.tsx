@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { adminStrings } from '../i18n';
 import { getResource } from '../lib/resources';
-import { listRows, deleteRow, pickLocalized } from '../lib/api';
+import { listRows, deleteRow, updateRow, pickLocalized } from '../lib/api';
 
 export default function ResourceListPage() {
   const { key = '' } = useParams();
@@ -57,6 +57,35 @@ export default function ResourceListPage() {
   if (!resource) return <p className="text-slate-500">{s.noAccess}</p>;
 
   const title = adminStrings[locale].sections[resource.labelKey] ?? resource.key;
+
+  // Reordering only makes sense while the list shows every row in its stored
+  // order — not while a search or a collection filter is narrowing it.
+  const canReorder = resource.defaultSort?.column === 'sort_order' && !search.trim();
+
+  const move = async (index: number, delta: -1 | 1) => {
+    const target = index + delta;
+    if (target < 0 || target >= rows.length) return;
+
+    const next = [...rows];
+    [next[index], next[target]] = [next[target], next[index]];
+
+    // Positions are the source of truth; write back only what actually moved.
+    const changed = next
+      .map((row, position) => ({ row, position }))
+      .filter(({ row, position }) => Number(row.sort_order) !== position);
+
+    setRows(next.map((row, position) => ({ ...row, sort_order: position })));
+
+    try {
+      await Promise.all(
+        changed.map(({ row, position }) =>
+          updateRow(resource.table, String(row.id), { sort_order: position }),
+        ),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : s.saveError);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(s.confirmDelete)) return;
@@ -119,12 +148,14 @@ export default function ResourceListPage() {
               <tr>
                 <th className="px-4 py-3 text-start font-semibold">{s.edit}</th>
                 <th className="px-4 py-3 text-start font-semibold">{s.status}</th>
-                <th className="px-4 py-3 text-start font-semibold">{s.order}</th>
+                {canReorder && (
+                  <th className="px-4 py-3 text-start font-semibold">{s.order}</th>
+                )}
                 <th className="px-4 py-3 text-end font-semibold">{s.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map((row) => (
+              {filtered.map((row, index) => (
                 <tr key={String(row.id)} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <button
@@ -154,7 +185,30 @@ export default function ResourceListPage() {
                       {row.is_published ? s.published : s.draft}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{String(row.sort_order ?? '')}</td>
+                  {canReorder && (
+                    <td className="px-4 py-3">
+                      <div className="flex gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => move(index, -1)}
+                          disabled={index === 0}
+                          title={s.moveUp}
+                          className="icon-btn disabled:opacity-30"
+                        >
+                          <ArrowUp size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => move(index, 1)}
+                          disabled={index === filtered.length - 1}
+                          title={s.moveDown}
+                          className="icon-btn disabled:opacity-30"
+                        >
+                          <ArrowDown size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
                       <button

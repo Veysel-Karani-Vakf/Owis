@@ -358,6 +358,7 @@ export default function ProjectDetailPage() {
           onClose={() => setVideoOpen(false)}
           onExitComplete={() => undefined}
           videoId={project.video.videoId}
+          videoFile={project.video.videoFile}
           posterImage={project.image}
         />
       )}

@@ -37,7 +37,7 @@ function readStoredView(): ViewMode {
  * chips / view mode, and PDFs preview in-site.
  */
 export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPageProps) {
-  const { locale, content: siteContent } = useI18n();
+  const { locale, content: siteContent, contentVersion } = useI18n();
   const page = getLibraryContent(locale);
   const info = page.collections[collection];
   const labels = page.labels;
@@ -45,8 +45,8 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
   const [searchParams, setSearchParams] = useSearchParams();
 
   const items = useMemo(
-    () => (info.documentCollection ? getDocuments(info.documentCollection) : []),
-    [info.documentCollection]
+    () => (info.documentCollection ? getDocuments(info.documentCollection, locale) : []),
+    [info.documentCollection, locale, contentVersion]
   );
   const series = useMemo(() => getDocumentSeries(items), [items]);
 

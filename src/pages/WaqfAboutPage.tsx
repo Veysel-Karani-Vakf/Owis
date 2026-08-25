@@ -23,6 +23,7 @@ import WaqfIdentityTabs, { type IdentityTab } from '@/components/sections/WaqfId
 import WaqfMethodologyTimeline from '@/components/sections/WaqfMethodologyTimeline';
 import { aboutRoutes, getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
 const phaseIcons: LucideIcon[] = [Landmark, TrendingUp, HandHeart];
 const factIcons: LucideIcon[] = [FileText, Landmark, FileText, Check];
@@ -46,11 +47,20 @@ export default function WaqfAboutPage() {
   const introVideoInViewRef = useRef(false);
   const [introVideoStarted, setIntroVideoStarted] = useState(false);
   const embedOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const introVideoSrc = `https://www.youtube-nocookie.com/embed/${
-    page.video.videoId
-  }?autoplay=1&mute=0&playsinline=1&rel=0&modestbranding=1&controls=1&enablejsapi=1${
-    embedOrigin ? `&origin=${encodeURIComponent(embedOrigin)}` : ''
-  }`;
+  const introVideo = resolveVideo(page.video);
+  const introVideoSrc =
+    introVideo?.kind === 'youtube'
+      ? youTubeEmbedUrl(introVideo.id, {
+          autoplay: 1,
+          mute: 0,
+          playsinline: 1,
+          rel: 0,
+          modestbranding: 1,
+          controls: 1,
+          enablejsapi: 1,
+          ...(embedOrigin ? { origin: embedOrigin } : {}),
+        })
+      : '';
 
   const identityTabs: IdentityTab[] = [
     {
@@ -202,7 +212,17 @@ export default function WaqfAboutPage() {
                 data-video-trigger="waqf-intro"
                 className="relative aspect-video w-full overflow-hidden rounded-[18px] border border-primary-100 bg-dark-950 text-start shadow-[0_22px_70px_rgba(35,15,20,0.18)]"
               >
-                {introVideoStarted ? (
+                {introVideoStarted && introVideo?.kind === 'file' ? (
+                  <video
+                    src={introVideo.src}
+                    poster={page.hero.image}
+                    title={page.video.title}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="absolute inset-0 h-full w-full"
+                  />
+                ) : introVideoStarted ? (
                   <iframe
                     ref={introVideoIframeRef}
                     src={introVideoSrc}

@@ -1,8 +1,10 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCmsVersion } from '@/cms/CmsProvider';
+import { pinnedPreviewLocale } from '@/cms/preview';
+import { resolveSiteContent } from '@/cms/siteContent';
 import {
   getDirection,
   isSupportedLocale,
-  localizedContent,
   type Direction,
   type Locale,
   type SiteContent,
@@ -16,6 +18,12 @@ type I18nContextValue = {
   setLocale: (locale: Locale) => void;
   t: (key: string) => string;
   formatNumber: (value: number) => string;
+  /**
+   * Increments whenever CMS content changes. Include it in the dependency list
+   * of any `useMemo` that derives data from the `@/data` accessors, which read
+   * the CMS snapshot outside of React.
+   */
+  contentVersion: number;
 };
 
 export const I18nContext = createContext<I18nContextValue | null>(null);
@@ -30,6 +38,11 @@ const localeTags: Record<Locale, string> = {
 
 function detectInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'ar';
+
+  // The dashboard pins a locale on its preview frame so the preview always
+  // shows the language being edited, whatever the browser last stored.
+  const pinned = pinnedPreviewLocale();
+  if (isSupportedLocale(pinned)) return pinned;
 
   const savedLocale = window.localStorage.getItem(STORAGE_KEY);
   if (isSupportedLocale(savedLocale)) return savedLocale;
@@ -56,7 +69,10 @@ function readPath(source: unknown, key: string): string | undefined {
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => detectInitialLocale());
   const direction = getDirection(locale);
-  const content = localizedContent[locale];
+  // Subscribing here is what propagates CMS updates: every component that reads
+  // site content also reads the locale, so a new context value re-renders them.
+  const contentVersion = useCmsVersion();
+  const content = useMemo(() => resolveSiteContent(locale), [locale, contentVersion]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
@@ -85,8 +101,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocale,
       t: (key: string) => readPath(content.ui, key) ?? key,
       formatNumber: (numberValue: number) => numberValue.toLocaleString(localeTags[locale]),
+      contentVersion,
     };
-  }, [content, direction, locale, setLocale]);
+  }, [content, contentVersion, direction, locale, setLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

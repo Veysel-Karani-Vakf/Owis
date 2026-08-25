@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/types';
+import type { PageFieldDef } from './pageSchema';
 
 export type FieldType =
   | 'text'
@@ -15,6 +16,10 @@ export type FieldType =
   | 'image'
   | 'file'
   | 'stringList'
+  | 'localizedRepeater'
+  | 'localizedGroup'
+  | 'video'
+  | 'slug'
   | 'json';
 
 export type SelectOption = { value: string; label: Record<Locale, string> };
@@ -31,6 +36,16 @@ export type FieldDef = {
   full?: boolean;
   /** placeholder for scalar inputs */
   placeholder?: string;
+  /** item shape for 'localizedRepeater' fields */
+  itemFields?: PageFieldDef[];
+  /** item field whose value titles a collapsed repeater row */
+  itemTitleField?: string;
+  /** route prefix shown beside a 'slug' field, e.g. '/news/' */
+  slugPrefix?: string;
+  /** keys to fill with an uploaded image's natural size */
+  dimensionsFor?: { width: string; height: string };
+  /** tucked into the collapsed "advanced" block instead of the main form */
+  advanced?: boolean;
 };
 
 export type ResourceDef = {
@@ -57,6 +72,9 @@ export function emptyValue(type: FieldType): unknown {
       return {};
     case 'stringList':
       return [];
+    case 'localizedRepeater':
+    case 'localizedGroup':
+      return {};
     case 'boolean':
       return false;
     case 'number':

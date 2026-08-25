@@ -1,3 +1,4 @@
+import { cmsGallery, cmsLibraryArticles, cmsLibraryDocuments, cmsPageContent } from '@/cms/adapters';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Locale } from '@/i18n/content';
 import { libraryCatalog } from './catalog';
@@ -670,7 +671,7 @@ function normalize(value: string) {
 export function getLibraryContent(locale: Locale): LibraryContent {
   const collections = buildCollections(locale);
 
-  return {
+  return cmsPageContent('library-page', locale, {
     hero: {
       ...heroText[locale],
       image: libraryCatalog.forumArticles[0]?.image ?? '/library/forum/waqf-economics-part-three.jpeg',
@@ -680,7 +681,7 @@ export function getLibraryContent(locale: Locale): LibraryContent {
     breadcrumbs: {
       index: [{ label: labels[locale].home, href: '/' }, { label: labels[locale].library }],
     },
-  };
+  });
 }
 
 export function getLibraryCollectionInfo(locale: Locale, slug: LibraryCollectionSlug | 'gallery') {
@@ -711,7 +712,11 @@ export function getLibraryTextBreadcrumbs(locale: Locale, item: LibraryTextItem,
 }
 
 export function getForumArticles(locale: Locale): LibraryTextItem[] {
-  return libraryCatalog.forumArticles.map((item) => localizeTextItem(item, locale, 'forum'));
+  return cmsLibraryArticles(
+    'forum',
+    locale,
+    libraryCatalog.forumArticles.map((item) => localizeTextItem(item, locale, 'forum')),
+  );
 }
 
 export function getForumArticle(locale: Locale, slug: string | undefined): LibraryTextItem | undefined {
@@ -720,7 +725,11 @@ export function getForumArticle(locale: Locale, slug: string | undefined): Libra
 }
 
 export function getSuccessStories(locale: Locale): LibraryTextItem[] {
-  return libraryCatalog.stories.map((item) => localizeTextItem(item, locale, 'success-stories'));
+  return cmsLibraryArticles(
+    'success-stories',
+    locale,
+    libraryCatalog.stories.map((item) => localizeTextItem(item, locale, 'success-stories')),
+  );
 }
 
 export function getSuccessStory(locale: Locale, slug: string | undefined): LibraryTextItem | undefined {
@@ -728,8 +737,19 @@ export function getSuccessStory(locale: Locale, slug: string | undefined): Libra
   return getSuccessStories(locale).find((item) => item.slug === slug);
 }
 
-export function getDocuments(collection: LibraryDocumentCollection): LibraryDocumentItem[] {
-  return libraryCatalog.documents[collection].map((item) => ({
+/** Runtime collection keys mapped to the slugs stored in `library_documents`. */
+const documentCollectionSlugByKey: Record<LibraryDocumentCollection, string> = {
+  periodicReports: 'periodic-reports',
+  waqfBooks: 'waqf-books',
+  waqfLiterature: 'waqf-literature',
+  yemeniFigures: 'yemeni-figures',
+};
+
+export function getDocuments(
+  collection: LibraryDocumentCollection,
+  locale: Locale = 'ar',
+): LibraryDocumentItem[] {
+  const fallback = libraryCatalog.documents[collection].map((item) => ({
     id: item.id,
     title: item.title,
     sourceUrl: item.sourceUrl,
@@ -740,10 +760,14 @@ export function getDocuments(collection: LibraryDocumentCollection): LibraryDocu
     image: item.image,
     imageAlt: item.imageAlt,
   }));
+  return cmsLibraryDocuments(documentCollectionSlugByKey[collection], locale, fallback);
 }
 
-export function getGalleryImages(): LibraryGalleryImage[] {
-  return libraryCatalog.gallery.map((item) => ({ ...item }));
+export function getGalleryImages(locale: Locale = 'ar'): LibraryGalleryImage[] {
+  return cmsGallery(
+    locale,
+    libraryCatalog.gallery.map((item) => ({ ...item })),
+  );
 }
 
 export function getLanguageName(locale: Locale, value: string) {
@@ -829,13 +853,13 @@ function matches(haystack: string, needle: string) {
 
 export function getLibraryCounts(locale: Locale): LibraryCounts {
   return {
-    forum: libraryCatalog.forumArticles.length,
-    'periodic-reports': libraryCatalog.documents.periodicReports.length,
-    'waqf-books': libraryCatalog.documents.waqfBooks.length,
-    'waqf-literature': libraryCatalog.documents.waqfLiterature.length,
-    'yemeni-figures': libraryCatalog.documents.yemeniFigures.length,
+    forum: getForumArticles(locale).length,
+    'periodic-reports': getDocuments('periodicReports', locale).length,
+    'waqf-books': getDocuments('waqfBooks', locale).length,
+    'waqf-literature': getDocuments('waqfLiterature', locale).length,
+    'yemeni-figures': getDocuments('yemeniFigures', locale).length,
     'success-stories': getSuccessStories(locale).length,
-    gallery: libraryCatalog.gallery.length,
+    gallery: getGalleryImages(locale).length,
   };
 }
 
@@ -895,7 +919,7 @@ export function searchLibrary(locale: Locale, query: string, perGroup = 4): Libr
     if (!info.documentCollection) continue;
     pushGroup(
       slug,
-      getDocuments(info.documentCollection)
+      getDocuments(info.documentCollection, locale)
         .filter((item) => matches(`${item.title} ${item.excerpt} ${item.year ?? ''}`, needle))
         .map((item) => documentHit(item, slug))
     );
@@ -910,7 +934,7 @@ export function searchLibrary(locale: Locale, query: string, perGroup = 4): Libr
 
   pushGroup(
     'gallery',
-    getGalleryImages()
+    getGalleryImages(locale)
       .filter((item) => matches(`${item.title} ${item.imageAlt}`, needle))
       .map((item) => ({
         id: item.id,
@@ -950,7 +974,7 @@ export function getLatestLibraryItems(locale: Locale, limit = 6): LibrarySearchH
     const info = collectionSettings[slug];
     if (!info.documentCollection) continue;
     hits.push(
-      ...getDocuments(info.documentCollection)
+      ...getDocuments(info.documentCollection, locale)
         .filter((item) => item.date)
         .map((item) => documentHit(item, slug))
     );
@@ -1060,4 +1084,45 @@ export function filterDocuments(
     if (options.series && getDocumentSeriesKey(item) !== options.series) return false;
     return matches(`${item.title} ${item.excerpt} ${item.year ?? ''}`, needle);
   });
+}
+
+// --- Static (CMS-free) views, used by the dashboard's import tool -----------
+export function staticLibraryContent(locale: Locale): LibraryContent {
+  return {
+    hero: {
+      ...heroText[locale],
+      image: libraryCatalog.forumArticles[0]?.image ?? '/library/forum/waqf-economics-part-three.jpeg',
+    },
+    labels: labels[locale],
+    collections: buildCollections(locale),
+    breadcrumbs: {
+      index: [{ label: labels[locale].home, href: '/' }, { label: labels[locale].library }],
+    },
+  };
+}
+
+export function staticForumArticles(locale: Locale): LibraryTextItem[] {
+  return libraryCatalog.forumArticles.map((item) => localizeTextItem(item, locale, 'forum'));
+}
+
+export function staticSuccessStories(locale: Locale): LibraryTextItem[] {
+  return libraryCatalog.stories.map((item) => localizeTextItem(item, locale, 'success-stories'));
+}
+
+export function staticDocuments(collection: LibraryDocumentCollection): LibraryDocumentItem[] {
+  return libraryCatalog.documents[collection].map((item) => ({
+    id: item.id,
+    title: item.title,
+    sourceUrl: item.sourceUrl,
+    pdfUrl: item.pdfUrl,
+    date: item.date,
+    year: item.year,
+    excerpt: item.excerpt,
+    image: item.image,
+    imageAlt: item.imageAlt,
+  }));
+}
+
+export function staticGalleryImages(): LibraryGalleryImage[] {
+  return libraryCatalog.gallery.map((item) => ({ ...item }));
 }

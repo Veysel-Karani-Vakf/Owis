@@ -795,3 +795,16 @@
     --partners-focus-fade: 40px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Dashboard preview frame
+   The site renders normally inside the admin's iframe; these rules only apply
+   when it was opened with ?cmsPreview=1.
+--------------------------------------------------------------------------- */
+[data-cms-preview] .cms-preview-highlight {
+  outline: 2px solid #d4a437;
+  outline-offset: -2px;
+  border-radius: 4px;
+  transition: outline-color 200ms ease;
+}
+

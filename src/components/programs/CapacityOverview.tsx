@@ -9,11 +9,13 @@ import {
 } from 'framer-motion';
 import { Building2, CalendarRange, ExternalLink, Landmark, MapPin, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import type { Program, ProgramStatistic } from '@/data/programs';
+import type { Program, ProgramSection, ProgramStatistic } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
 
 type CapacityOverviewProps = {
   program: Program;
+  /** Section that opens the capacity story; falls back to the program's first section. */
+  intro?: ProgramSection;
   labels: {
     overview: string;
     statsEyebrow: string;
@@ -130,10 +132,10 @@ function StatCell({ stat, index, reduced }: { stat: ProgramStatistic; index: num
   );
 }
 
-export default function CapacityOverview({ program, labels }: CapacityOverviewProps) {
+export default function CapacityOverview({ program, intro: introProp, labels }: CapacityOverviewProps) {
   const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
-  const intro = program.sections[0];
+  const intro = introProp ?? program.sections[0];
   const lead = intro?.paragraphs?.[0];
   const stats = program.statistics ?? [];
   const phase = program.phase;

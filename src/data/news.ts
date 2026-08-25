@@ -1,3 +1,4 @@
+import { cmsNews, cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 import type { BreadcrumbItem } from '@/data/about';
 
@@ -1395,8 +1396,16 @@ function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArt
   };
 }
 
+/** Labels merged with the `news-page` CMS entry. */
+export function getNewsLabels(locale: Locale): NewsLabels {
+  return cmsPageContent('news-page', locale, newsLabels[locale]);
+}
+
 export function getNewsArticles(locale: Locale): LocalizedNewsArticle[] {
-  return newsArticles.map((article) => localizeArticle(article, locale));
+  return cmsNews(
+    locale,
+    newsArticles.map((article) => localizeArticle(article, locale)),
+  );
 }
 
 export function getNewsArticle(locale: Locale, slug: string | undefined): LocalizedNewsArticle | undefined {
@@ -1412,8 +1421,9 @@ export function getFeaturedNews(locale: Locale): LocalizedNewsArticle {
   return getNewsArticles(locale)[0];
 }
 
-export function getNewsYears() {
-  return [...new Set(newsArticles.map((article) => article.year))].sort((a, b) => b - a);
+export function getNewsYears(locale: Locale = 'ar') {
+  const years = getNewsArticles(locale).map((article) => article.year);
+  return [...new Set(years)].sort((a, b) => b - a);
 }
 
 export function searchNewsArticles(
@@ -1456,7 +1466,7 @@ export function formatNewsDate(locale: Locale, date: string) {
 }
 
 export function getNewsBreadcrumbs(locale: Locale, article?: LocalizedNewsArticle): BreadcrumbItem[] {
-  const labels = newsLabels[locale];
+  const labels = getNewsLabels(locale);
   const crumbs: BreadcrumbItem[] = [
     { label: labels.home, href: '/' },
     article ? { label: labels.news, href: newsRoutes.index } : { label: labels.news },

@@ -236,6 +236,7 @@ function InitiativePanel({
             </motion.div>
           )}
 
+          {initiative.url && (
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
               href={initiative.url}
@@ -260,6 +261,7 @@ function InitiativePanel({
               {labels.officialSource}
             </span>
           </div>
+          )}
         </div>
       </div>
     </motion.article>

@@ -1,3 +1,4 @@
+import { cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 
 export const aboutRoutes = {
@@ -53,6 +54,8 @@ export type WaqfPageContent = {
     description: string;
     videoId: string;
     sourceUrl: string;
+    /** Public URL of a video uploaded in the dashboard; wins over videoId. */
+    videoFile?: string;
   };
   goals: {
     eyebrow: string;
@@ -1119,5 +1122,11 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
 };
 
 export function getAboutContent(locale: Locale): AboutPagesContent {
-  return aboutPages[locale] ?? aboutPages.ar;
+  const base = aboutPages[locale] ?? aboutPages.ar;
+  return {
+    ...base,
+    nav: cmsPageContent('about-nav', locale, base.nav),
+    waqf: cmsPageContent('about-waqf', locale, base.waqf),
+    governance: cmsPageContent('governance', locale, base.governance),
+  };
 }

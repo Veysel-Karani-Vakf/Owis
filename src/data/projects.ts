@@ -3,6 +3,7 @@ import blessedTreeImage from '@/assets/projects/blessed-tree.jpg';
 import goldPortfolioImage from '@/assets/projects/gold-portfolio.jpeg';
 import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
 import type { Locale } from '@/i18n/content';
+import { cmsPageContent, cmsProjects } from '@/cms/adapters';
 
 export const projectRoutes = {
   index: '/projects',
@@ -29,6 +30,8 @@ export type ProjectVideo = {
   buttonLabel: string;
   videoId: string;
   sourceUrl: string;
+  /** Public URL of a video uploaded in the dashboard; wins over videoId. */
+  videoFile?: string;
 };
 
 export type LocalizedWaqfProject = {
@@ -725,18 +728,31 @@ const projectsByLocale: Record<Locale, LocalizedWaqfProject[]> = {
   en: enProjects,
 };
 
+/** Projects from the CMS when present, otherwise the static list. */
+function resolveProjects(locale: Locale): LocalizedWaqfProject[] {
+  return cmsProjects(locale, projectsByLocale[locale]);
+}
+
 export function getProjectsContent(locale: Locale): ProjectsPageContent {
   return {
-    ...pageContent[locale],
-    projects: projectsByLocale[locale],
+    ...cmsPageContent('projects-page', locale, pageContent[locale]),
+    projects: resolveProjects(locale),
   };
 }
 
 export function getProject(locale: Locale, slug: string | undefined): LocalizedWaqfProject | undefined {
   if (!slug) return undefined;
-  return projectsByLocale[locale].find((project) => project.slug === slug);
+  return resolveProjects(locale).find((project) => project.slug === slug);
 }
 
 export function getOtherProjects(locale: Locale, slug: ProjectSlug): LocalizedWaqfProject[] {
-  return projectsByLocale[locale].filter((project) => project.slug !== slug);
+  return resolveProjects(locale).filter((project) => project.slug !== slug);
+}
+
+/**
+ * The projects page exactly as it ships in this repo, ignoring the CMS.
+ * Used by the dashboard's import tool to restore the original content.
+ */
+export function staticProjectsContent(locale: Locale): ProjectsPageContent {
+  return { ...pageContent[locale], projects: projectsByLocale[locale] };
 }

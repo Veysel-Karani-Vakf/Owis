@@ -13,7 +13,7 @@ import {
   getNewsArticles,
   getNewsBreadcrumbs,
   getNewsYears,
-  newsLabels,
+  getNewsLabels,
   searchNewsArticles,
   type LocalizedNewsArticle,
   type NewsLabels,
@@ -58,7 +58,7 @@ function NewsMiniCard({ article, labels, locale }: NewsMiniCardProps) {
 
 export default function NewsIndexPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
-  const labels = newsLabels[locale];
+  const labels = getNewsLabels(locale);
   const shouldReduceMotion = useReducedMotion();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const [query, setQuery] = useState('');
@@ -67,7 +67,7 @@ export default function NewsIndexPage() {
 
   const articles = getNewsArticles(locale);
   const featured = getFeaturedNews(locale);
-  const years = getNewsYears();
+  const years = getNewsYears(locale);
   const filtered = useMemo(() => searchNewsArticles(articles, query, year), [articles, query, year]);
   const hasActiveFilter = query.trim() !== '' || year !== 'all';
 

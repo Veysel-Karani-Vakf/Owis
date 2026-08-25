@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import type { FieldDef } from '../lib/fields';
 import {
@@ -8,10 +10,65 @@ import {
   StringListInput,
   scalarInputClass,
 } from './FieldControls';
+import { LocalizedRepeaterInput } from './LocalizedRepeater';
+import { VideoInput } from './VideoInput';
+import { LocalizedGroupInput } from './LocalizedGroup';
+import { SlugInput } from './SlugInput';
 
 type Values = Record<string, unknown>;
 
 export function FormEngine({
+  fields,
+  values,
+  onChange,
+}: {
+  fields: FieldDef[];
+  values: Values;
+  onChange: (key: string, value: unknown) => void;
+}) {
+  const { locale } = useI18n();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  const main = fields.filter((field) => !field.advanced);
+  const advanced = fields.filter((field) => field.advanced);
+
+  const label = (ar: string, tr: string, en: string) =>
+    locale === 'ar' ? ar : locale === 'tr' ? tr : en;
+
+  return (
+    <div className="space-y-6">
+      <FieldGrid fields={main} values={values} onChange={onChange} />
+
+      {/* Source links, ordering and image dimensions are real data but not
+          something an editor needs in front of them to write a record. */}
+      {advanced.length > 0 && (
+        <div className="rounded-xl border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((current) => !current)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-start text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          >
+            <Settings2 size={16} />
+            {label('إعدادات متقدمة', 'Gelişmiş ayarlar', 'Advanced settings')}
+            <span className="text-xs text-slate-400">({advanced.length})</span>
+            {advancedOpen ? (
+              <ChevronDown size={16} className="ms-auto" />
+            ) : (
+              <ChevronRight size={16} className="ms-auto rtl:rotate-180" />
+            )}
+          </button>
+          {advancedOpen && (
+            <div className="border-t border-slate-100 p-4">
+              <FieldGrid fields={advanced} values={values} onChange={onChange} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FieldGrid({
   fields,
   values,
   onChange,
@@ -27,7 +84,19 @@ export function FormEngine({
       {fields.map((field) => {
         const full =
           field.full ||
-          ['textarea', 'localizedTextarea', 'localizedParagraphs', 'json', 'stringList', 'image', 'file'].includes(
+          [
+            'textarea',
+            'localizedTextarea',
+            'localizedParagraphs',
+            'localizedRepeater',
+            'localizedGroup',
+            'video',
+            'slug',
+            'json',
+            'stringList',
+            'image',
+            'file',
+          ].includes(
             field.type,
           );
         const value = values[field.key];
@@ -64,6 +133,27 @@ function FieldControl({
       return <LocalizedInput value={(value as never) || {}} onChange={onChange} multiline />;
     case 'localizedParagraphs':
       return <LocalizedParagraphsInput value={(value as never) || {}} onChange={onChange} />;
+    case 'video':
+      return <VideoInput value={value} onChange={onChange} />;
+    case 'slug':
+      return (
+        <SlugInput
+          value={(value as string) ?? ''}
+          onChange={onChange}
+          prefix={field.slugPrefix}
+        />
+      );
+    case 'localizedGroup':
+      return <LocalizedGroupInput value={value} onChange={onChange} fields={field.itemFields ?? []} />;
+    case 'localizedRepeater':
+      return (
+        <LocalizedRepeaterInput
+          value={value}
+          onChange={onChange}
+          itemFields={field.itemFields ?? []}
+          itemTitleField={field.itemTitleField}
+        />
+      );
     case 'stringList':
       return <StringListInput value={(value as string[]) || []} onChange={onChange} />;
     case 'image':

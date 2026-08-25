@@ -3,6 +3,7 @@ import ScrollProgress from '@/components/ui/ScrollProgress';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ScrollRestoration from '@/components/internal/ScrollRestoration';
+import { isPreviewFrame } from '@/cms/preview';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
@@ -39,7 +40,8 @@ function App() {
 
   return (
     <>
-      <Preloader />
+      {/* The splash screen would cover the very content being edited. */}
+      {!isPreviewFrame() && <Preloader />}
       <ScrollProgress />
       <ScrollRestoration />
       <Header />

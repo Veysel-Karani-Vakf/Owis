@@ -33,6 +33,11 @@ import PioneerJourney from '@/components/programs/PioneerJourney';
 import PioneerOverview from '@/components/programs/PioneerOverview';
 import PioneerPillars from '@/components/programs/PioneerPillars';
 import PioneerVideoCarousel from '@/components/programs/PioneerVideoCarousel';
+import VolunteerFields from '@/components/programs/VolunteerFields';
+import VolunteerGoals from '@/components/programs/VolunteerGoals';
+import VolunteerHero from '@/components/programs/VolunteerHero';
+import VolunteerStatement from '@/components/programs/VolunteerStatement';
+import VolunteerSteps from '@/components/programs/VolunteerSteps';
 import VideoModal from '@/components/ui/VideoModal';
 import { donateRoute } from '@/data/donate';
 import { participateRoutes } from '@/data/participate';
@@ -59,6 +64,7 @@ type SectionHeadingProps = {
 
 type ActiveVideo = {
   videoId: string;
+  videoFile?: string;
   title: string;
   posterImage: string;
 };
@@ -279,6 +285,7 @@ function CityMedia({
                 onClick={() =>
                   onVideoSelect({
                     videoId: selectedCity.videoId,
+                    videoFile: selectedCity.videoFile,
                     title: selectedCity.videoTitle,
                     posterImage: selectedCity.image,
                   })
@@ -440,6 +447,7 @@ function VideoCard({
           onClick={() =>
             onVideoSelect({
               videoId: video.videoId,
+              videoFile: video.videoFile,
               title: video.title,
               posterImage: video.posterImage,
             })
@@ -646,6 +654,8 @@ function CapacityShowcase({
   onVideoSelect: (video: ActiveVideo) => void;
 }) {
   const findSection = (id: string) => program.sections.find((section) => section.id === id);
+  // The capacity story now rides on the institutional page, so it opens with its own intro section.
+  const intro = findSection('capacity-intro') ?? program.sections[0];
   const statement = findSection('closing-statement');
   const recommendations = findSection('recommendations');
   const forum = findSection('forum');
@@ -655,7 +665,7 @@ function CapacityShowcase({
   return (
     <>
       <section className="overflow-hidden bg-white py-16 md:py-24">
-        <CapacityOverview program={program} labels={labels} />
+        <CapacityOverview program={program} intro={intro} labels={labels} />
       </section>
 
       {cities.length > 0 && (
@@ -763,6 +773,51 @@ function InstitutionalShowcase({
   );
 }
 
+const volunteerStatementAnchor = 'volunteer-statement';
+
+/** The volunteer unit ships its own sections end to end; nothing here is shared with another program. */
+function VolunteerShowcase({
+  program,
+  copy,
+}: {
+  program: Program;
+  copy: NonNullable<Program['volunteer']>;
+}) {
+  const fields = program.pillars ?? [];
+  const goals = program.goals ?? [];
+  const steps = program.journey ?? [];
+
+  return (
+    <>
+      <section id={volunteerStatementAnchor} className="scroll-mt-24 bg-white py-16 md:py-24">
+        <VolunteerStatement program={program} copy={copy} />
+      </section>
+
+      {fields.length > 0 && (
+        <section className="overflow-hidden bg-white pb-16 md:pb-24">
+          <VolunteerFields fields={fields} copy={copy} />
+        </section>
+      )}
+
+      {goals.length > 0 && (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <VolunteerGoals goals={goals} copy={copy} />
+        </section>
+      )}
+
+      {steps.length > 0 && (
+        <section className="relative isolate overflow-hidden bg-dark-950 py-16 md:py-24">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_10%,rgba(218,8,18,0.3),transparent_50%)]"
+          />
+          <VolunteerSteps steps={steps} copy={copy} volunteerRoute={participateRoutes.volunteer} />
+        </section>
+      )}
+    </>
+  );
+}
+
 const awarenessInitiativesAnchor = 'awareness-initiatives';
 
 function AwarenessShowcase({
@@ -853,13 +908,15 @@ export default function ProgramPage() {
   const highlights = program.highlights ?? [];
   // Programs that ship journey/pillar content get the richer, animated showcase layout.
   const isShowcase = journey.length > 0 || pillars.length > 0;
-  // Capacity building ships its own phase-driven storytelling layout.
-  const isCapacity = program.slug === 'capacity-building';
-  // Institutional development has thin official content, so it gets a typographic, diagram-led layout.
-  const isInstitutional = program.slug === 'institutional-development';
   // Community awareness has logo-only media, so it gets a typographic hero plus a radar/initiative layout.
   const isAwareness = program.slug === 'community-awareness';
-  const hasCustomLayout = isCapacity || isInstitutional || isAwareness;
+  // Institutional development carries its own typographic layout plus the field story of the
+  // capacity raising program that runs under it.
+  const isInstitutional = program.slug === 'institutional-development';
+  const hasCityStory = (program.cities?.length ?? 0) > 0;
+  // Capacity building hosts the volunteer unit, which ships its own sections end to end.
+  const volunteerCopy = program.volunteer;
+  const hasCustomLayout = isAwareness || isInstitutional || !!volunteerCopy;
 
   return (
     <>
@@ -871,11 +928,24 @@ export default function ProgramPage() {
         structuredData={structuredData}
       />
       <main className="bg-white">
-        {isAwareness ? (
+        {volunteerCopy ? (
+          <VolunteerHero
+            program={program}
+            breadcrumbs={breadcrumbs}
+            copy={volunteerCopy}
+            volunteerRoute={participateRoutes.volunteer}
+            exploreAnchor={volunteerStatementAnchor}
+          />
+        ) : isAwareness ? (
           <AwarenessHero
             program={program}
             breadcrumbs={breadcrumbs}
-            labels={page.labels}
+            labels={{
+              eyebrow: page.labels.awarenessEyebrow,
+              heroNote: page.labels.awarenessHeroNote,
+              exploreCta: page.labels.exploreInitiatives,
+              officialSource: page.labels.officialSource,
+            }}
             initiativesAnchor={awarenessInitiativesAnchor}
           />
         ) : (
@@ -892,14 +962,19 @@ export default function ProgramPage() {
           <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} />
         )}
 
-        {isCapacity ? (
-          <CapacityShowcase program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+        {volunteerCopy ? (
+          <VolunteerShowcase program={program} copy={volunteerCopy} />
         ) : isAwareness ? (
           <AwarenessShowcase program={program} labels={page.labels} />
         ) : isInstitutional ? (
-          <InstitutionalShowcase program={program} labels={page.labels} />
+          <>
+            <InstitutionalShowcase program={program} labels={page.labels} />
+            {hasCityStory && (
+              <CapacityShowcase program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+            )}
+          </>
         ) : isShowcase ? (
-          <section className="overflow-hidden bg-white py-12 md:py-16">
+          <section className="overflow-hidden bg-white py-14 md:py-20">
             <PioneerOverview program={program} labels={page.labels} />
           </section>
         ) : (
@@ -1014,6 +1089,7 @@ export default function ProgramPage() {
         onClose={() => setActiveVideo(null)}
         onExitComplete={() => undefined}
         videoId={activeVideo?.videoId ?? ''}
+        videoFile={activeVideo?.videoFile}
         posterImage={activeVideo?.posterImage ?? program.heroImage}
         title={activeVideo?.title}
       />

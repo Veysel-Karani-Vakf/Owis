@@ -65,6 +65,8 @@ export type SiteContent = {
     primaryButton: string;
     secondaryButton: string;
     videoId: string;
+    /** Public URL of a video uploaded in the dashboard; takes priority over videoId. */
+    videoFile?: string;
     posterImage: string;
   };
   about: {
@@ -114,7 +116,7 @@ export type SiteContent = {
     eyebrow: string;
     title: string;
     description: string;
-    indicators: { label: string; value: number | null; suffix: string }[];
+    indicators: { label: string; value: number | null; suffix: string; detail: string }[];
     source: {
       label: string;
       url: string;
@@ -395,7 +397,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'capacity-building',
           title: 'بناء القدرات',
           description:
-            'المساهمة في تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم ورفع كفاءتهم.',
+            'ترسيخ ثقافة العمل التطوعي وإتاحة الفرص التطوعية عبر الوحدة التطوعية في الوقف.',
           image: shared.programImages.capacityBuilding,
           url: '/programs/capacity-building',
         },
@@ -403,7 +405,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'institutional-development',
           title: 'التطوير المؤسسي',
           description:
-            'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجياتها.',
+            'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وخططها، ورفع قدرات منظمات المجتمع المدني.',
           image: shared.programImages.institutionalDevelopment,
           url: '/programs/institutional-development',
         },
@@ -411,7 +413,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'community-awareness',
           title: 'التوعية المجتمعية',
           description:
-            'إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
+            'منصة أويس: منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري وتعزيز الوعي الجمعي.',
           image: shared.programImages.communityAwareness,
           url: '/programs/community-awareness',
         },
@@ -692,7 +694,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'capacity-building',
           title: 'Kapasite Geliştirme',
           description:
-            'Kamu ve sivil kurumların lider kadrolarını güçlendirmek, performanslarını geliştirmek ve yetkinliklerini artırmak.',
+            'Gönüllü çalışma kültürünü yerleştirmek ve vakfın Gönüllülük Birimi üzerinden gönüllülük fırsatları sunmak.',
           image: shared.programImages.capacityBuilding,
           url: '/programs/capacity-building',
         },
@@ -700,7 +702,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'institutional-development',
           title: 'Kurumsal Gelişim',
           description:
-            'Kamu ve sivil kurumların performansını geliştirmek; programlarını, mekanizmalarını, planlarını ve stratejilerini yenilemek.',
+            'Kamu ve sivil kurumların performansını, programlarını ve planlarını yenilemek; sivil toplum kuruluşlarının kapasitelerini artırmak.',
           image: shared.programImages.institutionalDevelopment,
           url: '/programs/institutional-development',
         },
@@ -708,7 +710,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'community-awareness',
           title: 'Toplumsal Farkındalık',
           description:
-            'Kamuoyunu ve kapsayıcı ulusal kimliği yeniden inşa etmek; kalkınma ve birlikte yaşama kültürünü güçlendirmek.',
+            'Owais Platformu: düşünce ve medeniyet kalkınışına odaklanan, kolektif bilinci güçlendiren bilgi platformu.',
           image: shared.programImages.communityAwareness,
           url: '/programs/community-awareness',
         },
@@ -989,7 +991,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'capacity-building',
           title: 'Capacity Building',
           description:
-            'Contributing to the development of leaders in public and civil institutions, improving performance, and raising institutional competence.',
+            'Rooting the culture of volunteer work and opening volunteer opportunities through the waqf Volunteer Unit.',
           image: shared.programImages.capacityBuilding,
           url: '/programs/capacity-building',
         },
@@ -997,7 +999,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'institutional-development',
           title: 'Institutional Development',
           description:
-            'Developing the performance of public and civil institutions and updating their programs, mechanisms, plans, and strategies.',
+            'Developing the performance of public and civil institutions, updating their programs and plans, and raising the capacities of civil society organizations.',
           image: shared.programImages.institutionalDevelopment,
           url: '/programs/institutional-development',
         },
@@ -1005,7 +1007,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
           id: 'community-awareness',
           title: 'Community Awareness',
           description:
-            'Reshaping public opinion and the inclusive national identity while promoting a culture of advancement and coexistence.',
+            'Owais Platform: a knowledge platform devoted to thought and civilizational advancement and collective awareness.',
           image: shared.programImages.communityAwareness,
           url: '/programs/community-awareness',
         },
