@@ -6,6 +6,7 @@ import { useI18n } from '@/i18n/useI18n';
 
 type ActiveVideo = {
   videoId: string;
+  videoFile?: string;
   title: string;
   posterImage: string;
 };
@@ -235,7 +236,12 @@ export default function CapacityCities({
                 <button
                   type="button"
                   onClick={() =>
-                    onVideoSelect({ videoId: active.videoId, title: active.videoTitle, posterImage: active.image })
+                    onVideoSelect({
+                      videoId: active.videoId,
+                      videoFile: active.videoFile,
+                      title: active.videoTitle,
+                      posterImage: active.image,
+                    })
                   }
                   className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >

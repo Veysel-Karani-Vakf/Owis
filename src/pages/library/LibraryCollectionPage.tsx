@@ -26,14 +26,14 @@ type LibraryCollectionPageProps = {
  * a featured first item, and a card grid. Filters live in the URL (`?q=&year=`).
  */
 export default function LibraryCollectionPage({ collection }: LibraryCollectionPageProps) {
-  const { locale, isRtl, content: siteContent } = useI18n();
+  const { locale, isRtl, content: siteContent, contentVersion } = useI18n();
   const page = getLibraryContent(locale);
   const labels = page.labels;
   const info = getLibraryCollectionInfo(locale, collection);
   const variant = collection === 'forum' ? ('article' as const) : ('story' as const);
   const items = useMemo(
     () => (collection === 'forum' ? getForumArticles(locale) : getSuccessStories(locale)),
-    [collection, locale]
+    [collection, locale, contentVersion]
   );
 
   const [searchParams, setSearchParams] = useSearchParams();

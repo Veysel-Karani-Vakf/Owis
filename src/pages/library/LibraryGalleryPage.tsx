@@ -17,7 +17,7 @@ export default function LibraryGalleryPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const library = getLibraryContent(locale);
   const info = getLibraryCollectionInfo(locale, 'gallery');
-  const images = getGalleryImages();
+  const images = getGalleryImages(locale);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 

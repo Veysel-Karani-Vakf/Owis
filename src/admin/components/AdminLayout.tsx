@@ -7,9 +7,11 @@ import {
   X,
   Inbox,
   Mail,
-  FileCog,
+  LayoutTemplate,
   Database,
   ExternalLink,
+  Images,
+  ChevronDown,
 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { LOCALES, type Locale } from '@/lib/types';
@@ -18,126 +20,140 @@ import { useAdminStrings } from '../hooks/useAdmin';
 import { RESOURCES } from '../lib/resources';
 import { adminStrings } from '../i18n';
 
-const localeName: Record<Locale, string> = { ar: 'ع', tr: 'TR', en: 'EN' };
+const localeShort: Record<Locale, string> = { ar: 'ع', tr: 'TR', en: 'EN' };
 
-const sectionOrder: Array<'content' | 'library' | 'engagement' | 'site'> = [
-  'content',
-  'library',
-  'engagement',
-  'site',
-];
+type NavEntry = { to: string; label: string; icon: typeof Inbox; end?: boolean };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const s = useAdminStrings();
+  const strings = useAdminStrings();
   const { locale, setLocale } = useI18n();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const label = (ar: string, tr: string, en: string) =>
+    locale === 'ar' ? ar : locale === 'tr' ? tr : en;
+
+  const resourceEntries = (section: string): NavEntry[] =>
+    RESOURCES.filter((resource) => resource.section === section).map((resource) => ({
+      to: `/admin/r/${resource.key}`,
+      label: adminStrings[locale].sections[resource.labelKey] ?? resource.key,
+      icon: resource.icon,
+    }));
+
+  const groups: { title: string; entries: NavEntry[] }[] = [
+    {
+      title: label('المحتوى', 'İçerik', 'Content'),
+      entries: [
+        {
+          to: '/admin/content',
+          label: label('إدارة المحتوى', 'İçerik yönetimi', 'Content management'),
+          icon: LayoutTemplate,
+        },
+        ...resourceEntries('content'),
+      ],
+    },
+    {
+      title: label('الأخبار والمكتبة', 'Haberler ve kütüphane', 'News & library'),
+      entries: resourceEntries('library'),
+    },
+    {
+      title: label('التفاعل', 'Etkileşim', 'Engagement'),
+      entries: [
+        { to: '/admin/submissions', label: strings.sections.submissions, icon: Inbox },
+        { to: '/admin/subscribers', label: strings.sections.subscribers, icon: Mail },
+      ],
+    },
+    {
+      title: label('التشغيل', 'Operasyon', 'Operations'),
+      entries: [
+        {
+          to: '/admin/media',
+          label: label('مكتبة الوسائط', 'Medya kütüphanesi', 'Media library'),
+          icon: Images,
+        },
+        {
+          to: '/admin/seed',
+          label: label('استيراد المحتوى', 'İçe aktar', 'Import content'),
+          icon: Database,
+        },
+      ],
+    },
+  ];
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ' +
-    (isActive ? 'bg-primary-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white');
-
-  const bySection = (sec: string) => RESOURCES.filter((r) => r.section === sec);
+    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ' +
+    (isActive
+      ? 'bg-slate-900 font-medium text-white'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900');
 
   const nav = (
-    <nav className="flex h-full flex-col gap-6 p-4">
-      <div>
-        <NavLink to="/admin" end className={linkClass} onClick={() => setOpen(false)}>
-          <LayoutDashboard size={18} /> {s.dashboard}
-        </NavLink>
-      </div>
+    <nav className="flex h-full flex-col gap-5 p-3">
+      <NavLink to="/admin" end className={linkClass} onClick={() => setOpen(false)}>
+        <LayoutDashboard size={17} /> {strings.dashboard}
+      </NavLink>
 
-      {sectionOrder.map((sec) => {
-        const items = bySection(sec);
-        const extras: ReactNode[] = [];
-        if (sec === 'engagement') {
-          extras.push(
-            <NavLink key="submissions" to="/admin/submissions" className={linkClass} onClick={() => setOpen(false)}>
-              <Inbox size={18} /> {s.sections.submissions}
-            </NavLink>,
-            <NavLink key="subscribers" to="/admin/subscribers" className={linkClass} onClick={() => setOpen(false)}>
-              <Mail size={18} /> {s.sections.subscribers}
-            </NavLink>,
-          );
-        }
-        if (sec === 'site') {
-          extras.push(
-            <NavLink key="pages" to="/admin/pages" className={linkClass} onClick={() => setOpen(false)}>
-              <FileCog size={18} /> {s.sections.pages}
-            </NavLink>,
-            <NavLink key="seed" to="/admin/seed" className={linkClass} onClick={() => setOpen(false)}>
-              <Database size={18} /> {locale === 'ar' ? 'استيراد المحتوى' : locale === 'tr' ? 'İçe aktar' : 'Import'}
-            </NavLink>,
-          );
-        }
-        if (items.length === 0 && extras.length === 0) return null;
-        return (
-          <div key={sec}>
-            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              {s.sections[sec]}
+      {groups.map((group) =>
+        group.entries.length === 0 ? null : (
+          <div key={group.title}>
+            <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              {group.title}
             </p>
-            <div className="space-y-1">
-              {items.map((r) => {
-                const Icon = r.icon;
+            <div className="space-y-0.5">
+              {group.entries.map((entry) => {
+                const Icon = entry.icon;
                 return (
-                  <NavLink key={r.key} to={`/admin/r/${r.key}`} className={linkClass} onClick={() => setOpen(false)}>
-                    <Icon size={18} /> {adminStrings[locale].sections[r.labelKey] ?? r.key}
+                  <NavLink
+                    key={entry.to}
+                    to={entry.to}
+                    className={linkClass}
+                    onClick={() => setOpen(false)}
+                  >
+                    <Icon size={17} className="shrink-0" />
+                    <span className="truncate">{entry.label}</span>
                   </NavLink>
                 );
               })}
-              {extras}
             </div>
           </div>
-        );
-      })}
+        ),
+      )}
 
-      <div className="mt-auto space-y-3 border-t border-slate-800 pt-4">
-        <a
-          href="/"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-2 px-3 text-xs text-slate-400 hover:text-white"
-        >
-          <ExternalLink size={14} /> {locale === 'ar' ? 'زيارة الموقع' : locale === 'tr' ? 'Siteyi görüntüle' : 'View site'}
-        </a>
-        <p className="truncate px-3 text-xs text-slate-500" dir="ltr">
-          {user?.email}
-        </p>
+      <div className="mt-auto border-t border-slate-200 pt-3">
         <button
+          type="button"
           onClick={async () => {
             await signOut();
             navigate('/admin/login', { replace: true });
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-600"
         >
-          <LogOut size={16} /> {s.signOut}
+          <LogOut size={17} /> {strings.signOut}
         </button>
       </div>
     </nav>
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      {/* Sidebar (desktop) */}
-      <aside className="fixed inset-y-0 z-30 hidden w-64 bg-slate-900 md:block ltr:left-0 rtl:right-0">
-        <div className="flex h-14 items-center gap-2 border-b border-slate-800 px-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white text-sm font-bold">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <aside className="fixed inset-y-0 z-30 hidden w-60 border-slate-200 bg-white md:block ltr:left-0 ltr:border-r rtl:right-0 rtl:border-l">
+        <div className="flex h-14 items-center gap-2.5 border-b border-slate-200 px-4">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
             و
-          </div>
-          <span className="text-sm font-semibold text-white">{s.dashboard}</span>
+          </span>
+          <span className="truncate text-sm font-semibold">{strings.brand}</span>
         </div>
         <div className="h-[calc(100vh-3.5rem)] overflow-y-auto">{nav}</div>
       </aside>
 
-      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 w-64 bg-slate-900 ltr:left-0 rtl:right-0">
-            <div className="flex h-14 items-center justify-between border-b border-slate-800 px-4">
-              <span className="text-sm font-semibold text-white">{s.dashboard}</span>
-              <button onClick={() => setOpen(false)} className="text-slate-400">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 w-64 bg-white ltr:left-0 rtl:right-0">
+            <div className="flex h-14 items-center justify-between border-b border-slate-200 px-4">
+              <span className="truncate text-sm font-semibold">{strings.brand}</span>
+              <button type="button" onClick={() => setOpen(false)} className="text-slate-400">
                 <X size={20} />
               </button>
             </div>
@@ -146,29 +162,75 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Main */}
-      <div className="md:ms-64">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4">
-          <button className="md:hidden" onClick={() => setOpen(true)}>
+      <div className="md:ms-60">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
+          <button type="button" className="md:hidden" onClick={() => setOpen(true)}>
             <Menu size={22} />
           </button>
           <div className="flex-1" />
-          <div className="flex gap-1">
-            {LOCALES.map((l) => (
+
+          <a
+            href="/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:text-slate-900"
+          >
+            <ExternalLink size={15} />
+            <span className="hidden sm:inline">
+              {label('زيارة الموقع', 'Siteyi gör', 'View site')}
+            </span>
+          </a>
+
+          <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+            {LOCALES.map((option) => (
               <button
-                key={l}
+                key={option}
                 type="button"
-                onClick={() => setLocale(l)}
+                onClick={() => setLocale(option)}
                 className={
-                  'flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold transition ' +
-                  (locale === l ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')
+                  'h-7 w-8 rounded-md text-xs font-semibold transition ' +
+                  (locale === option ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500')
                 }
               >
-                {localeName[l]}
+                {localeShort[option]}
               </button>
             ))}
           </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((current) => !current)}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-slate-100"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold uppercase text-white">
+                {user?.email?.[0] ?? 'A'}
+              </span>
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute top-full z-30 mt-1 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg ltr:right-0 rtl:left-0"
+                onMouseLeave={() => setMenuOpen(false)}
+              >
+                <p className="truncate px-3 py-2 text-xs text-slate-500" dir="ltr">
+                  {user?.email}
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await signOut();
+                    navigate('/admin/login', { replace: true });
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-600"
+                >
+                  <LogOut size={15} /> {strings.signOut}
+                </button>
+              </div>
+            )}
+          </div>
         </header>
+
         <main className="p-4 md:p-6">{children}</main>
       </div>
     </div>

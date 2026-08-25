@@ -1,3 +1,4 @@
+import { cmsDonations, cmsPageContent } from '@/cms/adapters';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Locale } from '@/i18n/content';
 import waqfShareImage from '@/assets/donate/waqf-share.jpg';
@@ -457,6 +458,10 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
   },
 };
 
-export function getDonateContent(locale: Locale) {
-  return localizedDonateContent[locale];
+export function getDonateContent(locale: Locale): DonatePageContent {
+  const base = localizedDonateContent[locale];
+  return {
+    ...cmsPageContent('donate-page', locale, base),
+    opportunities: cmsDonations(locale, base.opportunities),
+  };
 }

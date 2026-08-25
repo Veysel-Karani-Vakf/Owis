@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatNewsDate, getLatestNews, newsLabels, newsRoutes } from '@/data/news';
+import { formatNewsDate, getLatestNews, getNewsLabels, newsRoutes } from '@/data/news';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -9,7 +9,7 @@ export default function News() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, t, isRtl, locale } = useI18n();
   const newsContent = content.news;
-  const labels = newsLabels[locale];
+  const labels = getNewsLabels(locale);
   const news = getLatestNews(locale, 3);
   const featured = news[0];
   const others = news.slice(1, 3);

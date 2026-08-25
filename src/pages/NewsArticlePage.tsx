@@ -13,7 +13,7 @@ import {
   getNewsArticle,
   getNewsBreadcrumbs,
   getRelatedNewsArticles,
-  newsLabels,
+  getNewsLabels,
   newsRoutes,
 } from '@/data/news';
 import { getLibraryContent } from '@/data/library';
@@ -24,7 +24,7 @@ const heroEase = [0.22, 1, 0.36, 1] as const;
 export default function NewsArticlePage() {
   const { slug } = useParams();
   const { locale, isRtl, content: siteContent } = useI18n();
-  const labels = newsLabels[locale];
+  const labels = getNewsLabels(locale);
   const libraryLabels = getLibraryContent(locale).labels;
   const article = getNewsArticle(locale, slug);
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Save, Trash2 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
@@ -8,6 +8,18 @@ import { getResource } from '../lib/resources';
 import { emptyValue } from '../lib/fields';
 import { getRow, insertRow, updateRow, deleteRow } from '../lib/api';
 import { FormEngine } from '../components/FormEngine';
+import { slugFromTitle } from '../lib/slug';
+
+/** First non-empty string in a localized value. */
+function firstFilled(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object') {
+    for (const entry of Object.values(value as Record<string, unknown>)) {
+      if (typeof entry === 'string' && entry.trim()) return entry.trim();
+    }
+  }
+  return '';
+}
 
 function buildDefaults(resource: ReturnType<typeof getResource>): Record<string, unknown> {
   if (!resource) return {};
@@ -33,6 +45,9 @@ export default function ResourceEditPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  // Set once the editor types an address by hand, which stops it tracking the title.
+  const slugTouched = useRef(false);
 
   useEffect(() => {
     if (!resource) return;
@@ -55,7 +70,23 @@ export default function ResourceEditPage() {
   if (!resource) return <p className="text-slate-500">{s.noAccess}</p>;
 
   const title = adminStrings[locale].sections[resource.labelKey] ?? resource.key;
-  const setField = (k: string, v: unknown) => setValues((prev) => ({ ...prev, [k]: v }));
+  const hasSlug = resource.fields.some((field) => field.key === 'slug');
+
+  const setField = (k: string, v: unknown) => {
+    if (k === 'slug') slugTouched.current = true;
+
+    setValues((prev) => {
+      const next = { ...prev, [k]: v };
+
+      // While a record is new, its address follows the title. Once it has been
+      // published the slug is a live URL, so it is left alone.
+      if (isNew && hasSlug && !slugTouched.current && k === resource.titleField) {
+        const text = firstFilled(v);
+        if (text) next.slug = slugFromTitle(text);
+      }
+      return next;
+    });
+  };
 
   const save = async () => {
     setSaving(true);
@@ -81,7 +112,6 @@ export default function ResourceEditPage() {
     }
   };
 
-  const [savedFlash, setSavedFlash] = useState(false);
   const flash = () => {
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 1800);

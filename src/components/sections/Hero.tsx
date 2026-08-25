@@ -1,175 +1,64 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Play } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
 import { useI18n } from '@/i18n/useI18n';
-import {
-  getYouTubeVideoId,
-  isTrustedYouTubeOrigin,
-  parseYouTubeMessage,
-  youtubeHosts,
-} from '@/utils/youtube';
+import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
 type HeroBackgroundVideoProps = {
   videoId: string;
+  videoFile?: string;
   title: string;
 };
 
-function getIsBrowserOnline() {
-  return typeof navigator === 'undefined' ? true : navigator.onLine;
-}
-
-function HeroBackgroundVideo({ videoId, title }: HeroBackgroundVideoProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const resolvedVideoId = useMemo(() => getYouTubeVideoId(videoId), [videoId]);
-  const [isBrowserOnline, setIsBrowserOnline] = useState(getIsBrowserOnline);
-  const [hasIframeLoaded, setHasIframeLoaded] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [hostIndex, setHostIndex] = useState(0);
-  const activeHost = youtubeHosts[hostIndex];
-  const canAttemptEmbed = isBrowserOnline && Boolean(resolvedVideoId);
-  const canShowBackground = isBrowserOnline && (isReady || hasIframeLoaded);
-
-  const embedSrc = useMemo(() => {
-    const params = new URLSearchParams({
-      autoplay: '1',
-      mute: '1',
-      loop: '1',
-      playlist: resolvedVideoId,
-      controls: '0',
-      modestbranding: '1',
-      rel: '0',
-      showinfo: '0',
-      iv_load_policy: '3',
-      disablekb: '1',
-      playsinline: '1',
-      enablejsapi: '1',
-    });
-
-    if (typeof window !== 'undefined') {
-      params.set('origin', window.location.origin);
-    }
-
-    return `${activeHost}/embed/${resolvedVideoId}?${params.toString()}`;
-  }, [activeHost, resolvedVideoId]);
-
-  const postToPlayer = useCallback((payload: Record<string, unknown>) => {
-    const iframeWindow = iframeRef.current?.contentWindow;
-    if (!iframeWindow) return;
-
-    const message = JSON.stringify(payload);
-    youtubeHosts.forEach((host) => iframeWindow.postMessage(message, host));
-  }, []);
-
-  const sendCommand = useCallback(
-    (command: 'mute' | 'playVideo') => {
-      postToPlayer({
-        event: 'command',
-        func: command,
-        args: [],
-      });
-    },
-    [postToPlayer]
-  );
+function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const source = resolveVideo({ videoFile, videoId });
 
   useEffect(() => {
-    setIsBrowserOnline(getIsBrowserOnline());
-    setHasIframeLoaded(false);
-    setIsReady(false);
-    setHostIndex(0);
-  }, [resolvedVideoId]);
+    setIsLoaded(false);
+  }, [videoFile, videoId]);
 
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsBrowserOnline(true);
-      setHasIframeLoaded(false);
-      setIsReady(false);
-      setHostIndex(0);
-    };
+  if (!source) return null;
 
-    const handleOffline = () => {
-      setIsBrowserOnline(false);
-      setHasIframeLoaded(false);
-      setIsReady(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!canAttemptEmbed || canShowBackground || hostIndex > 0) return undefined;
-
-    const fallbackTimer = window.setTimeout(() => {
-      setHostIndex(1);
-      setHasIframeLoaded(false);
-      setIsReady(false);
-    }, 4200);
-
-    return () => window.clearTimeout(fallbackTimer);
-  }, [canAttemptEmbed, canShowBackground, hostIndex]);
-
-  useEffect(() => {
-    if (!canAttemptEmbed) return undefined;
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.source !== iframeRef.current?.contentWindow) return;
-      if (!isTrustedYouTubeOrigin(event.origin)) return;
-
-      const data = parseYouTubeMessage(event.data);
-      const eventName = typeof data?.event === 'string' ? data.event : '';
-
-      if (eventName === 'onReady' || eventName === 'initialDelivery' || eventName === 'infoDelivery') {
-        setHasIframeLoaded(true);
-        setIsReady(true);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [canAttemptEmbed]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    sendCommand('mute');
-    sendCommand('playVideo');
-  }, [isReady, sendCommand]);
-
-  const handleIframeLoad = () => {
-    if (!getIsBrowserOnline()) {
-      setIsBrowserOnline(false);
-      setHasIframeLoaded(false);
-      setIsReady(false);
-      return;
-    }
-
-    setIsBrowserOnline(true);
-    setHasIframeLoaded(true);
-    postToPlayer({ event: 'listening' });
-    sendCommand('mute');
-    sendCommand('playVideo');
-  };
-
-  if (!canAttemptEmbed) return null;
+  if (source.kind === 'file') {
+    return (
+      <video
+        src={source.src}
+        title={title}
+        className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onLoadedData={() => setIsLoaded(true)}
+      />
+    );
+  }
 
   return (
     <iframe
-      key={`${resolvedVideoId}-${hostIndex}`}
-      ref={iframeRef}
-      src={embedSrc}
+      src={youTubeEmbedUrl(source.id, {
+        autoplay: 1,
+        mute: 1,
+        loop: 1,
+        playlist: source.id,
+        controls: 0,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        iv_load_policy: 3,
+        disablekb: 1,
+        playsinline: 1,
+      })}
       title={title}
-      className={`block border-0 transition-opacity duration-500 ${canShowBackground ? 'opacity-100' : 'opacity-0'}`}
+      className={`block border-0 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       allow="autoplay; encrypted-media; picture-in-picture"
       loading="eager"
       referrerPolicy="strict-origin-when-cross-origin"
-      onLoad={handleIframeLoad}
+      onLoad={() => setIsLoaded(true)}
     />
   );
 }
@@ -189,6 +78,11 @@ export default function Hero() {
   const [backgroundVideoPaused, setBackgroundVideoPaused] = useState(false);
   // Holds the title whose typing animation has finished; resets automatically when the title changes.
   const [typedTitle, setTypedTitle] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(min-width: 768px)').matches
+      : false,
+  );
   const shouldReduceMotion = useReducedMotion();
   const { content, t, isRtl, locale } = useI18n();
   const heroContent = content.hero;
@@ -204,6 +98,16 @@ export default function Hero() {
     minPx: TITLE_MIN_FONT_PX,
     fallbackPx: TITLE_WRAP_FONT_PX,
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    const desktopMediaQuery = window.matchMedia('(min-width: 768px)');
+    const handleViewportChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
+
+    desktopMediaQuery.addEventListener('change', handleViewportChange);
+    return () => desktopMediaQuery.removeEventListener('change', handleViewportChange);
+  }, []);
 
   const openVideo = useCallback(() => {
     setBackgroundVideoPaused(true);
@@ -246,11 +150,12 @@ export default function Hero() {
         initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
-        className="yt-bg-container"
+        className="yt-bg-container hidden md:block"
       >
-        {!shouldReduceMotion && !backgroundVideoPaused && (
+        {isDesktop && !shouldReduceMotion && !backgroundVideoPaused && (
           <HeroBackgroundVideo
             videoId={heroContent.videoId}
+            videoFile={heroContent.videoFile}
             title={t('accessibility.videoBackgroundTitle')}
           />
         )}
@@ -345,6 +250,7 @@ export default function Hero() {
         onClose={closeVideo}
         onExitComplete={resumeBackgroundVideo}
         videoId={heroContent.videoId}
+        videoFile={heroContent.videoFile}
         posterImage={heroContent.posterImage}
       />
     </section>

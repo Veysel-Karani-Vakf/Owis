@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n/useI18n';
 
 export type CarouselVideoSelection = {
   videoId: string;
+  videoFile?: string;
   title: string;
   posterImage: string;
 };
@@ -154,7 +155,12 @@ export default function PioneerVideoCarousel({
                         emblaApi?.scrollTo(index);
                         return;
                       }
-                      onVideoSelect({ videoId: video.videoId, title: video.title, posterImage: video.posterImage });
+                      onVideoSelect({
+                        videoId: video.videoId,
+                        videoFile: video.videoFile,
+                        title: video.title,
+                        posterImage: video.posterImage,
+                      });
                     }}
                     className="group relative block aspect-video w-full overflow-hidden bg-dark-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     aria-label={`${labels.watchVideo}: ${video.title}`}

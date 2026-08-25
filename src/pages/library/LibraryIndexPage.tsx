@@ -44,13 +44,13 @@ export default function LibraryIndexPage() {
 
   const articles = getForumArticles(locale);
   const stories = getSuccessStories(locale);
-  const gallery = getGalleryImages();
+  const gallery = getGalleryImages(locale);
   const counts = getLibraryCounts(locale);
   const latest = getLatestLibraryItems(locale, 8);
 
   const documentStats = documentCollectionSlugs.map((slug) => {
     const info = page.collections[slug];
-    const items = info.documentCollection ? getDocuments(info.documentCollection) : [];
+    const items = info.documentCollection ? getDocuments(info.documentCollection, locale) : [];
     return { slug, info, total: items.length, withPdf: items.filter((item) => item.pdfUrl).length, cover: items[0]?.image };
   });
 

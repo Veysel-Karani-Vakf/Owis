@@ -1,11 +1,14 @@
 import type { BreadcrumbItem } from '@/data/about';
+import { participateRoutes } from '@/data/participate';
 import type { Locale } from '@/i18n/content';
+import { cmsPageContent, cmsPrograms } from '@/cms/adapters';
 import yemenPioneersHero from '@/assets/programs/yemen-pioneers-hero.jpeg';
 import capacityHadramoutCoastImage from '@/assets/programs/capacity-hadramout-coast.jpeg';
 import capacityHadramoutValleyImage from '@/assets/programs/capacity-hadramout-valley.jpeg';
 import capacityMaribImage from '@/assets/programs/capacity-marib.jpeg';
 import capacityTaizImage from '@/assets/programs/capacity-taiz.jpeg';
 import institutionalDevelopmentImage from '@/assets/programs/institutional-development.jpg';
+import volunteerHeroImage from '@/assets/participate/participate-hero.jpg';
 import awarenessOwaisPlatformImage from '@/assets/programs/awareness-owais-platform.jpg';
 import awarenessVolunteerUnitImage from '@/assets/programs/awareness-volunteer-unit.jpg';
 
@@ -43,6 +46,8 @@ export type ProgramVideo = {
   videoId: string;
   sourceUrl: string;
   posterImage: string;
+  /** Public URL of a video uploaded in the dashboard; wins over videoId. */
+  videoFile?: string;
 };
 
 export type ProgramImage = {
@@ -58,7 +63,8 @@ export type ProgramInitiative = {
   description: string;
   image: string;
   imageAlt: string;
-  url: string;
+  /** Omitted when the initiative has no destination of its own — the page is it. */
+  url?: string;
   products?: string[];
 };
 
@@ -70,6 +76,8 @@ export type ProgramCity = {
   videoId: string;
   videoTitle: string;
   videoSourceUrl: string;
+  /** Public URL of a video uploaded in the dashboard; wins over videoId. */
+  videoFile?: string;
   partner?: string;
 };
 
@@ -104,6 +112,27 @@ export type ProgramTheme = {
   description: string;
 };
 
+export type ProgramSectionCopy = {
+  eyebrow: string;
+  title: string;
+  description: string;
+};
+
+/** Copy for the volunteer unit page, which ships its own bespoke layout. */
+export type VolunteerCopy = {
+  eyebrow: string;
+  joinCta: string;
+  exploreCta: string;
+  slogan: string;
+  hashtags: string[];
+  contactTitle: string;
+  quoteLabel: string;
+  statement: ProgramSectionCopy;
+  fields: ProgramSectionCopy;
+  goals: ProgramSectionCopy;
+  steps: ProgramSectionCopy;
+};
+
 export type Program = {
   id: string;
   slug: ProgramSlug;
@@ -120,6 +149,9 @@ export type Program = {
   statistics?: ProgramStatistic[];
   videos?: ProgramVideo[];
   contactEmail?: string;
+  contactPhone?: string;
+  /** Present only on the volunteer unit program, which renders its own layout. */
+  volunteer?: VolunteerCopy;
   initiatives?: ProgramInitiative[];
   cities?: ProgramCity[];
   journey?: ProgramJourneyStep[];
@@ -215,8 +247,8 @@ const officialSources = {
   capacityBuilding: programRoutes.capacityBuilding,
   institutionalDevelopment: programRoutes.institutionalDevelopment,
   communityAwareness: programRoutes.communityAwareness,
-  owaisPlatform: programRoutes.yemenPioneers,
-  volunteerUnit: programRoutes.yemenPioneers,
+  // The volunteer unit now lives under capacity building; its call to action is the volunteer form.
+  volunteerUnit: participateRoutes.volunteer,
 } as const;
 
 const yemenPioneersVideos = [
@@ -248,21 +280,24 @@ const programShared = {
     id: 'capacity-building',
     slug: 'capacity-building',
     route: programRoutes.capacityBuilding,
-    heroImage: capacityMaribImage,
-    images: [
-      capacityHadramoutCoastImage,
-      capacityHadramoutValleyImage,
-      capacityMaribImage,
-      capacityTaizImage,
-    ],
+    heroImage: volunteerHeroImage,
+    images: [volunteerHeroImage, awarenessVolunteerUnitImage],
     officialSourceUrl: officialSources.capacityBuilding,
+    contactEmail: 'volunteering@veysvakfi.org',
+    contactPhone: '+90 536 745 6199',
+    overviewImage: awarenessVolunteerUnitImage,
   },
   'institutional-development': {
     id: 'institutional-development',
     slug: 'institutional-development',
     route: programRoutes.institutionalDevelopment,
     heroImage: institutionalDevelopmentImage,
-    images: [institutionalDevelopmentImage],
+    images: [
+      capacityHadramoutCoastImage,
+      capacityHadramoutValleyImage,
+      capacityMaribImage,
+      capacityTaizImage,
+    ],
     officialSourceUrl: officialSources.institutionalDevelopment,
   },
   'community-awareness': {
@@ -270,7 +305,7 @@ const programShared = {
     slug: 'community-awareness',
     route: programRoutes.communityAwareness,
     heroImage: awarenessOwaisPlatformImage,
-    images: [awarenessOwaisPlatformImage, awarenessVolunteerUnitImage],
+    images: [awarenessOwaisPlatformImage],
     officialSourceUrl: officialSources.communityAwareness,
   },
 } satisfies Record<
@@ -283,6 +318,7 @@ const programShared = {
     images: string[];
     officialSourceUrl: string;
     contactEmail?: string;
+    contactPhone?: string;
     overviewImage?: string;
   }
 >;
@@ -369,18 +405,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       areaLabel: 'المجال',
       audiences: 'من يخدم المسار؟',
       audiencesDescription: 'يتوجه المسار إلى نوعين من المؤسسات، ويعمل معهما على المجالات الثلاثة نفسها.',
-      awarenessEyebrow: 'المسار الرابع',
-      awarenessHeroNote: 'مبادرتان تعملان معاً على صناعة الوعي: منصة معرفية ووحدة للتطوع.',
-      exploreInitiatives: 'استكشف المبادرات',
-      awarenessThemes: 'ثلاث دوائر يشتغل عليها المسار',
+      awarenessEyebrow: 'منصة أويس',
+      awarenessHeroNote: 'منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري وصناعة الوعي الجمعي.',
+      exploreInitiatives: 'تعرّف على المنصة',
+      awarenessThemes: 'ثلاث دوائر تشتغل عليها المنصة',
       awarenessThemesDescription:
-        'ينطلق المسار من الفرد إلى المجتمع: وعي يُصاغ، وهوية تُجمع، وثقافة تُرسَّخ. مرّر للأسفل لتنتقل بين الدوائر، أو حرّك المؤشر فوق أيٍّ منها.',
+        'من التاريخ إلى الحاضر إلى ما هو آتٍ: قراءة تُستخلص، وواقع يُدرس، ومستقبل يُستشرف. مرّر للأسفل لتنتقل بين الدوائر، أو حرّك المؤشر فوق أيٍّ منها.',
       themeLabel: 'الدائرة',
-      awarenessInitiativesEyebrow: 'مبادرات المسار',
-      awarenessInitiatives: 'قناتان لصناعة الوعي',
+      awarenessInitiativesEyebrow: 'ما تقدّمه المنصة',
+      awarenessInitiatives: 'مواد وبرامج معرفية',
       awarenessInitiativesDescription:
-        'تترجم المبادرتان أهداف المسار إلى محتوى معرفي وفرص عمل ميداني، كلٌّ بطريقتها.',
-      initiativeLabel: 'المبادرة',
+        'قنوات متنوعة تصل بها المنصة إلى جمهورها، من البودكاست والديوانية إلى المواد المرئية والمدونة.',
+      initiativeLabel: 'المنصة',
       visitInitiative: 'زيارة المبادرة',
       volunteerCta: 'انضم كمتطوع',
       volunteerCtaDescription: 'سجّل اهتمامك عبر نموذج التطوع داخل الموقع، وسيتواصل معك فريق الوحدة.',
@@ -514,33 +550,166 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       {
         ...programShared['capacity-building'],
         title: 'بناء القدرات',
-        summary: 'المساهمة في تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم.',
-        heroImageAlt: 'برنامج بناء القدرات في مأرب',
+        summary:
+          'الوحدة التطوعية: ترسيخ ثقافة العمل التطوعي وإتاحة الفرص التطوعية المختلفة لبناء قدرات المتطوعين وتحقيق أهداف الوقف.',
+        heroImageAlt: 'الوحدة التطوعية في وقف أويس القرني',
         imageGallery: [
           {
+            src: volunteerHeroImage,
+            alt: 'صورة قسم التطوع الرسمية في وقف أويس القرني',
+            caption: 'وقفنا معاً لنهضة اليمن',
+            width: 1024,
+            height: 400,
+          },
+          {
+            src: awarenessVolunteerUnitImage,
+            alt: 'شعار الوحدة التطوعية',
+            caption: 'الوحدة التطوعية',
+            width: 1080,
+            height: 1080,
+          },
+        ],
+        volunteer: {
+          eyebrow: 'الوحدة التطوعية',
+          joinCta: 'انضم كمتطوع',
+          exploreCta: 'تعرّف على الوحدة',
+          slogan: 'كل جهد مهما كان بسيطًا يرسم ملامح يمنٍ أفضل.',
+          hashtags: ['#تطوعك_وقف', '#تطوع_لأجل_اليمن'],
+          contactTitle: 'تواصل مع الوحدة',
+          quoteLabel: 'ما نؤمن به',
+          statement: {
+            eyebrow: 'لماذا نتطوع',
+            title: 'يدٌ واحدة لا تصفّق',
+            description: 'الوحدة التطوعية هي المساحة التي تلتقي فيها الطاقات الفردية لتصير جهداً واحداً.',
+          },
+          fields: {
+            eyebrow: 'مجالات الوحدة',
+            title: 'ثلاثة مجالات نعمل عليها',
+            description: 'مرّر فوق أي مجال لتستعرضه: من ترسيخ القيمة، إلى إتاحة الفرصة، إلى توحيد الجهد.',
+          },
+          goals: {
+            eyebrow: 'ما نسعى إليه',
+            title: 'أربعة أهداف تقود عمل الوحدة',
+            description: 'أهداف تترجم العمل التطوعي إلى أثر ملموس في برامج الوقف ومساراته.',
+          },
+          steps: {
+            eyebrow: 'كيف تنضم',
+            title: 'ثلاث خطوات ويبدأ تطوعك',
+            description: 'من تسجيل اهتمامك إلى أول مشاركة فعلية داخل فرق العمل.',
+          },
+        },
+        goals: [
+          'المساهمة في تحقيق أهداف وقف أويس القرني عبر جهود المتطوعين.',
+          'بناء قدرات المتطوعين بالممارسة داخل برامج الوقف ومساراته.',
+          'توسيع قاعدة المشاركة المجتمعية في العمل التنموي والإنساني.',
+          'توحيد الجهود وتلاقح الأفكار خدمةً لنهضة اليمن.',
+        ],
+        journey: [
+          {
+            id: 'register',
+            title: 'سجّل اهتمامك',
+            description: 'عبّئ نموذج التطوع في الموقع ببياناتك ومجالات اهتمامك والمهارات التي تودّ تقديمها.',
+          },
+          {
+            id: 'match',
+            title: 'يتواصل معك الفريق',
+            description:
+              'يتواصل معك فريق الوحدة لمطابقة اهتمامك بالفرص المتاحة، ويمكنك التواصل المباشر عبر الهاتف +90 536 745 6199 أو البريد volunteering@veysvakfi.org.',
+          },
+          {
+            id: 'contribute',
+            title: 'شارك وابنِ قدراتك',
+            description: 'انضم إلى فرق العمل في برامج الوقف ومساراته، وتنمو قدراتك بالممارسة والعمل المشترك.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'volunteer-culture',
+            title: 'ترسيخ ثقافة التطوع',
+            body: 'نشر قيم العمل التطوعي وتعزيزها بين أبناء اليمن في الداخل والخارج.',
+            points: [
+              'خطاب يُعلي قيمة العطاء والمشاركة.',
+              'حضور دائم بين الشباب والمجتمعات المحلية.',
+            ],
+          },
+          {
+            id: 'volunteer-opportunities',
+            title: 'إتاحة الفرص التطوعية',
+            body: 'تقديم فرص تطوعية متنوعة تخدم برامج الوقف ومساراته التنموية.',
+            points: [
+              'فرص تناسب مهارات المتطوعين واهتماماتهم.',
+              'مشاركة فعلية داخل البرامج القائمة.',
+            ],
+          },
+          {
+            id: 'joint-effort',
+            title: 'توحيد الجهود',
+            body: 'استقبال المبادرات والأفكار وتوجيهها نحو أهداف الوقف والعمل معاً كالجسد الواحد.',
+            points: [
+              'تلاقح الأفكار بين المتطوعين وفرق العمل.',
+              'تكامل الجهود الفردية في مسار واحد.',
+            ],
+          },
+        ],
+        sections: [
+          {
+            id: 'intro',
+            title: 'الوحدة التطوعية',
+            paragraphs: [
+              'تُعنى الوحدة التطوعية بترسيخ ثقافة العمل التطوعي وتقديم الفرص التطوعية المختلفة لتحقيق أهداف وقف أويس القرني.',
+              'نؤمن أن بناء يمن جديد يبدأ من العمل المشترك والتكاتف بين أبناء الوطن، فتتلاقح الأفكار وتتوحد الجهود، وتُبنى قدرات المتطوعين من خلال المشاركة الفعلية في برامج الوقف ومساراته.',
+            ],
+          },
+        ],
+        cta: {
+          title: 'ادعم بناء القدرات والعمل التطوعي',
+          description:
+            'تجمع صفحة المساهمة الرسمية الفرص المتاحة لدعم مشاريع الوقف وبرامجه التنموية.',
+          button: 'اذهب إلى صفحة المساهمة',
+        },
+        seo: {
+          title: 'بناء القدرات | وقف أويس القرني',
+          description:
+            'مسار بناء القدرات في وقف أويس القرني والوحدة التطوعية التي ترسّخ ثقافة العمل التطوعي وتتيح الفرص التطوعية.',
+          canonical: officialSources.capacityBuilding,
+        },
+      },
+      {
+        ...programShared['institutional-development'],
+        title: 'التطوير المؤسسي',
+        summary: 'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+        heroImageAlt: 'مسار التطوير المؤسسي في وقف أويس القرني',
+        imageGallery: [
+          {
+            src: institutionalDevelopmentImage,
+            alt: 'صورة رسمية مستخدمة في الموقع لمسار التطوير المؤسسي',
+            width: 1080,
+            height: 1080,
+          },
+          {
             src: capacityHadramoutCoastImage,
-            alt: 'برنامج بناء القدرات في حضرموت الساحل',
+            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في حضرموت الساحل',
             caption: 'حضرموت الساحل',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'برنامج بناء القدرات في حضرموت الوادي',
+            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في حضرموت الوادي',
             caption: 'حضرموت الوادي',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'برنامج بناء القدرات في مأرب',
+            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في مأرب',
             caption: 'مأرب',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'برنامج بناء القدرات في تعز',
+            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في تعز',
             caption: 'تعز',
             width: 1080,
             height: 1350,
@@ -557,9 +726,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-coast',
             name: 'حضرموت الساحل',
             image: capacityHadramoutCoastImage,
-            imageAlt: 'توثيق برنامج بناء القدرات في حضرموت الساحل',
+            imageAlt: 'توثيق برنامج رفع القدرات في حضرموت الساحل',
             videoId: capacityVideo.videoId,
-            videoTitle: 'فيديو برنامج بناء القدرات في حضرموت الساحل',
+            videoTitle: 'فيديو برنامج رفع القدرات في حضرموت الساحل',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة صلة للتنمية',
           },
@@ -567,9 +736,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-valley',
             name: 'حضرموت الوادي',
             image: capacityHadramoutValleyImage,
-            imageAlt: 'توثيق برنامج بناء القدرات في حضرموت الوادي',
+            imageAlt: 'توثيق برنامج رفع القدرات في حضرموت الوادي',
             videoId: capacityVideo.videoId,
-            videoTitle: 'فيديو برنامج بناء القدرات في حضرموت الوادي',
+            videoTitle: 'فيديو برنامج رفع القدرات في حضرموت الوادي',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة البادية للتنمية والأعمال الإنسانية',
           },
@@ -577,9 +746,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'marib',
             name: 'مأرب',
             image: capacityMaribImage,
-            imageAlt: 'توثيق برنامج بناء القدرات في مأرب',
+            imageAlt: 'توثيق برنامج رفع القدرات في مأرب',
             videoId: capacityVideo.videoId,
-            videoTitle: 'فيديو برنامج بناء القدرات في مأرب',
+            videoTitle: 'فيديو برنامج رفع القدرات في مأرب',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مكتب أوتشا مأرب والهيئة العالمية للإغاثة والتنمية - أنصر',
           },
@@ -587,9 +756,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'taiz',
             name: 'تعز',
             image: capacityTaizImage,
-            imageAlt: 'توثيق برنامج بناء القدرات في تعز',
+            imageAlt: 'توثيق برنامج رفع القدرات في تعز',
             videoId: capacityVideo.videoId,
-            videoTitle: 'فيديو برنامج بناء القدرات في تعز',
+            videoTitle: 'فيديو برنامج رفع القدرات في تعز',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة رسالتي لتنمية المرأة',
           },
@@ -606,11 +775,37 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'شراكات محلية ودولية',
           'الملتقى الوطني لتوطين العمل الإنساني والتنموي',
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'المؤسسات الحكومية',
+            description: 'تطوير أداء الجهات الحكومية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+          },
+          {
+            id: 'civil',
+            title: 'المؤسسات الأهلية',
+            description: 'تطوير أداء المؤسسات الأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
             title: 'تعريف البرنامج',
-            paragraphs: ['يركز البرنامج على تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم.'],
+            paragraphs: [
+              'يركز مسار التطوير المؤسسي على تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
+            ],
+            bullets: [
+              'تطوير أداء المؤسسات الحكومية والأهلية.',
+              'تحديث البرامج والآليات.',
+              'تطوير الخطط والاستراتيجيات.',
+            ],
+          },
+          {
+            id: 'capacity-intro',
+            title: 'برنامج رفع قدرات منظمات المجتمع المدني',
+            paragraphs: [
+              'يترجم المسار أهدافه ميدانياً عبر برنامج رفع القدرات الذي يعمل على تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم، وقد نُفذت مرحلته الأولى مع منظمات المجتمع المدني في أربع مدن يمنية.',
+            ],
           },
           {
             id: 'closing-statement',
@@ -647,76 +842,24 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
         ],
         cta: {
-          title: 'ادعم بناء القدرات المؤسسية',
-          description:
-            'تجمع صفحة المساهمة الرسمية الفرص المتاحة لدعم مشاريع الوقف وبرامجه التنموية.',
-          button: 'اذهب إلى صفحة المساهمة',
-        },
-        seo: {
-          title: 'بناء القدرات | وقف أويس القرني',
-          description:
-            'برنامج بناء القدرات لتأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أداء منظمات المجتمع المدني.',
-          canonical: officialSources.capacityBuilding,
-        },
-      },
-      {
-        ...programShared['institutional-development'],
-        title: 'التطوير المؤسسي',
-        summary: 'تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
-        heroImageAlt: 'مسار التطوير المؤسسي في وقف أويس القرني',
-        imageGallery: [
-          {
-            src: institutionalDevelopmentImage,
-            alt: 'صورة رسمية مستخدمة في الموقع لمسار التطوير المؤسسي',
-            width: 1080,
-            height: 1080,
-          },
-        ],
-        audiences: [
-          {
-            id: 'government',
-            title: 'المؤسسات الحكومية',
-            description: 'تطوير أداء الجهات الحكومية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
-          },
-          {
-            id: 'civil',
-            title: 'المؤسسات الأهلية',
-            description: 'تطوير أداء المؤسسات الأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
-          },
-        ],
-        sections: [
-          {
-            id: 'intro',
-            title: 'تعريف البرنامج',
-            paragraphs: [
-              'يركز مسار التطوير المؤسسي على تطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وآلياتها وخططها واستراتيجيتها.',
-            ],
-            bullets: [
-              'تطوير أداء المؤسسات الحكومية والأهلية.',
-              'تحديث البرامج والآليات.',
-              'تطوير الخطط والاستراتيجيات.',
-            ],
-          },
-        ],
-        cta: {
           title: 'ساهم في دعم التطوير المؤسسي',
           description:
             'يمكن الوصول إلى فرص المساهمة الرسمية المنشورة لدى وقف أويس القرني من صفحة المساهمة الداخلية.',
           button: 'اذهب إلى صفحة المساهمة',
         },
-        mediaNote: 'لم يتضمن المصدر الرسمي أرقاماً أو فيديوهات تفصيلية خاصة بهذه الصفحة، لذلك لم تُضاف بيانات غير موثقة.',
         seo: {
           title: 'التطوير المؤسسي | وقف أويس القرني',
           description:
-            'تعرف على مسار التطوير المؤسسي لتطوير أداء المؤسسات الحكومية والأهلية وتحديث برامجها وخططها.',
+            'مسار التطوير المؤسسي لتطوير أداء المؤسسات الحكومية والأهلية، وبرنامج رفع قدرات منظمات المجتمع المدني في أربع مدن يمنية.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
       {
         ...programShared['community-awareness'],
         title: 'التوعية المجتمعية',
-        summary: 'إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
-        heroImageAlt: 'منصة أويس ضمن مسار التوعية المجتمعية',
+        summary:
+          'منصة أويس: منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري، وتسعى لتعزيز الوعي الجمعي عبر مواد وبرامج معرفية مختلفة.',
+        heroImageAlt: 'منصة أويس في وقف أويس القرني',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -725,61 +868,46 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
-          {
-            src: awarenessVolunteerUnitImage,
-            alt: 'وحدة التطوع',
-            caption: 'وحدة التطوع',
-            width: 1080,
-            height: 1080,
-          },
         ],
         sections: [
           {
             id: 'intro',
-            title: 'تعريف البرنامج',
+            title: 'منصة أويس',
             paragraphs: [
-              'يركز مسار التوعية المجتمعية على إعادة صياغة الرأي العام والهوية الوطنية الجامعة والتوعية بثقافة النهضة والتعايش.',
+              'منصة أويس إحدى مبادرات وقف أويس القرني، تُعنى بقضايا الفكر والنهوض الحضاري من خلال قراءة التاريخ ودراسة الحاضر واستشراف المستقبل.',
+              'تسعى المنصة لتعزيز الوعي الجمعي عبر مواد وبرامج معرفية مختلفة، تسهم في إعادة صياغة الرأي العام وترسيخ ثقافة النهضة والتعايش.',
             ],
           },
         ],
         themes: [
           {
-            id: 'public-opinion',
-            title: 'إعادة صياغة الرأي العام',
-            description: 'خطاب عام يُبنى على قراءة التاريخ ودراسة الحاضر واستشراف المستقبل.',
+            id: 'read-history',
+            title: 'قراءة التاريخ',
+            description: 'العودة إلى التجربة التاريخية لفهم جذور الحاضر واستخلاص دروسها.',
           },
           {
-            id: 'national-identity',
-            title: 'الهوية الوطنية الجامعة',
-            description: 'هوية تتسع للجميع وتجمع اليمنيين حول مشترك واحد.',
+            id: 'study-present',
+            title: 'دراسة الحاضر',
+            description: 'قراءة الواقع اليمني وقضاياه الفكرية بعين تحليلية.',
           },
           {
-            id: 'renaissance-culture',
-            title: 'ثقافة النهضة والتعايش',
-            description: 'وعي جمعي يرسّخ قيم النهوض الحضاري والعيش المشترك.',
+            id: 'anticipate-future',
+            title: 'استشراف المستقبل',
+            description: 'وعي جمعي يرسّخ قيم النهوض الحضاري والعيش المشترك ويستشرف ما هو آتٍ.',
           },
         ],
         initiatives: [
           {
             title: 'منصة أويس',
             description:
-              'إحدى مبادرات المسار الرابع لوقف أويس القرني، تُعنى بقضايا الفكر والنهوض الحضاري من خلال قراءة التاريخ ودراسة الحاضر واستشراف المستقبل، وتسعى لتعزيز الوعي الجمعي عبر مواد وبرامج معرفية مختلفة.',
+              'تُترجم المنصة اهتمامها بالفكر والنهوض الحضاري إلى مواد وبرامج معرفية متنوعة يجدها المتابع في القنوات التالية.',
             image: awarenessOwaisPlatformImage,
             imageAlt: 'شعار منصة أويس',
-            url: officialSources.owaisPlatform,
             products: ['بودكاست أويس', 'مواد مرئية متفرقة', 'ديوانية أويس', 'المدونة'],
-          },
-          {
-            title: 'وحدة التطوع',
-            description:
-              'إحدى مبادرات المسار الرابع لوقف أويس القرني، وتسعى لترسيخ ثقافة العمل التطوعي وتقديم الفرص التطوعية المختلفة لتحقيق أهداف الوقف.',
-            image: awarenessVolunteerUnitImage,
-            imageAlt: 'شعار وحدة التطوع',
-            url: officialSources.volunteerUnit,
           },
         ],
         cta: {
-          title: 'ادعم مبادرات الوعي والعمل التطوعي',
+          title: 'ادعم منصة أويس',
           description:
             'تعرض صفحة المساهمة الرسمية فرص الدعم المتاحة لدى وقف أويس القرني دون بناء نظام دفع داخلي.',
           button: 'اذهب إلى صفحة المساهمة',
@@ -787,7 +915,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         seo: {
           title: 'التوعية المجتمعية | وقف أويس القرني',
           description:
-            'تعرف على مسار التوعية المجتمعية ومبادرات منصة أويس ووحدة التطوع في وقف أويس القرني.',
+            'منصة أويس: منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري وتعزيز الوعي الجمعي في وقف أويس القرني.',
           canonical: officialSources.communityAwareness,
         },
       },
@@ -850,18 +978,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       areaLabel: 'Alan',
       audiences: 'Program Kimlere Hizmet Eder?',
       audiencesDescription: 'Program iki tur kuruma yonelir ve her ikisiyle ayni uc alanda calisir.',
-      awarenessEyebrow: 'Dorduncu Eksen',
-      awarenessHeroNote: 'Farkindalik uretmek icin birlikte calisan iki girisim: bir bilgi platformu ve bir gonulluluk birimi.',
-      exploreInitiatives: 'Girisimleri Kesfet',
-      awarenessThemes: 'Programin calistigi uc halka',
+      awarenessEyebrow: 'Owais Platformu',
+      awarenessHeroNote: 'Dusunce ve medeniyet kalkinisi konularina odaklanan, kolektif bilinci guclendiren bir bilgi platformu.',
+      exploreInitiatives: 'Platformu Kesfet',
+      awarenessThemes: 'Platformun calistigi uc halka',
       awarenessThemesDescription:
-        'Program bireyden topluma uzanir: sekillenen bir bilinc, birlestiren bir kimlik ve kok salan bir kultur. Halkalar arasinda gecmek icin asagi kaydirin veya bir halkanin uzerine gelin.',
+        'Tarihten bugune, oradan gelecege: okunan bir tarih, incelenen bir gercek ve ongorulen bir gelecek. Halkalar arasinda gecmek icin asagi kaydirin veya bir halkanin uzerine gelin.',
       themeLabel: 'Halka',
-      awarenessInitiativesEyebrow: 'Program Girisimleri',
-      awarenessInitiatives: 'Farkindalik icin iki kanal',
+      awarenessInitiativesEyebrow: 'Platformun sundugu',
+      awarenessInitiatives: 'Bilgi materyalleri ve programlar',
       awarenessInitiativesDescription:
-        'Iki girisim, programin hedeflerini bilgi icerigine ve sahada calisma firsatlarina donusturur; her biri kendi yontemiyle.',
-      initiativeLabel: 'Girisim',
+        'Platformun izleyicisine ulastigi cesitli kanallar: podcast ve divandan gorsel materyallere ve bloga.',
+      initiativeLabel: 'Platform',
       visitInitiative: 'Girisimi Ziyaret Et',
       volunteerCta: 'Gonullu Ol',
       volunteerCtaDescription: 'Sitedeki gonulluluk formu uzerinden ilginizi kaydedin; birim ekibi sizinle iletisime gececek.',
@@ -996,33 +1124,165 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       {
         ...programShared['capacity-building'],
         title: 'Kapasite Gelistirme',
-        summary: 'Kamu ve sivil kurum liderlerinin yetistirilmesine ve performanslarinin gelistirilmesine katkida bulunmak.',
-        heroImageAlt: 'Marib Kapasite Gelistirme Programi',
+        summary:
+          'Gonulluluk Birimi: gonullu calisma kulturunu yerlestirmek ve vakfin hedeflerini gerceklestirecek cesitli gonulluluk firsatlari sunmak.',
+        heroImageAlt: 'Veysel Karani Vakfi Gonulluluk Birimi',
         imageGallery: [
           {
+            src: volunteerHeroImage,
+            alt: 'Veysel Karani Vakfi resmi gonulluluk bolumu gorseli',
+            caption: 'Yemenin kalkinisi icin birlikte',
+            width: 1024,
+            height: 400,
+          },
+          {
+            src: awarenessVolunteerUnitImage,
+            alt: 'Gonulluluk Birimi logosu',
+            caption: 'Gonulluluk Birimi',
+            width: 1080,
+            height: 1080,
+          },
+        ],
+        volunteer: {
+          eyebrow: 'Gonulluluk Birimi',
+          joinCta: 'Gonullu Ol',
+          exploreCta: 'Birimi Kesfet',
+          slogan: 'En kucuk caba bile daha iyi bir Yemenin hatlarini cizer.',
+          hashtags: ['#تطوعك_وقف', '#تطوع_لأجل_اليمن'],
+          contactTitle: 'Birimle iletisime gecin',
+          quoteLabel: 'Inandigimiz sey',
+          statement: {
+            eyebrow: 'Neden gonulluluk',
+            title: 'Tek el alkis tutmaz',
+            description: 'Gonulluluk Birimi, bireysel enerjilerin bulusup tek bir cabaya donustugu alandir.',
+          },
+          fields: {
+            eyebrow: 'Birimin alanlari',
+            title: 'Calistigimiz uc alan',
+            description: 'Incelemek icin bir alanin uzerine gelin: degeri yerlestirmekten firsati acmaya, oradan cabayi birlestirmeye.',
+          },
+          goals: {
+            eyebrow: 'Hedefimiz',
+            title: 'Birimin calismasini yonlendiren dort hedef',
+            description: 'Gonullu calismayi vakfin program ve eksenlerinde somut bir etkiye ceviren hedefler.',
+          },
+          steps: {
+            eyebrow: 'Nasil katilirsiniz',
+            title: 'Uc adimda gonullulugunuz baslasin',
+            description: 'Ilginizi kaydetmekten calisma ekiplerindeki ilk fiili katiliminiza kadar.',
+          },
+        },
+        goals: [
+          'Gonullulerin cabalariyla Veysel Karani Vakfinin hedeflerine katki sunmak.',
+          'Vakfin program ve eksenlerinde fiili katilimla gonullulerin kapasitesini gelistirmek.',
+          'Kalkinma ve insani calismalarda toplumsal katilim tabanini genisletmek.',
+          'Yemenin kalkinisi icin cabalari ve fikirleri birlestirmek.',
+        ],
+        journey: [
+          {
+            id: 'register',
+            title: 'Ilginizi kaydedin',
+            description: 'Sitedeki gonulluluk formunu bilgileriniz, ilgi alanlariniz ve sunmak istediginiz becerilerle doldurun.',
+          },
+          {
+            id: 'match',
+            title: 'Ekip sizinle iletisime gecer',
+            description:
+              'Birim ekibi ilgi alaninizi mevcut firsatlarla eslestirir; dogrudan iletisim icin telefon +90 536 745 6199 veya e-posta volunteering@veysvakfi.org.',
+          },
+          {
+            id: 'contribute',
+            title: 'Katilin ve kapasitenizi gelistirin',
+            description: 'Vakfin program ve eksenlerindeki calisma ekiplerine katilin; kapasiteniz uygulama ve ortak calismayla buyusun.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'volunteer-culture',
+            title: 'Gonulluluk kulturunu yerlestirmek',
+            body: 'Gonullu calisma degerlerini yurt icinde ve disinda Yemenliler arasinda yaymak.',
+            points: [
+              'Vermeyi ve katilimi yucelten bir soylem.',
+              'Gencler ve yerel topluluklar arasinda surekli varlik.',
+            ],
+          },
+          {
+            id: 'volunteer-opportunities',
+            title: 'Gonulluluk firsatlari sunmak',
+            body: 'Vakfin programlarina ve kalkinma eksenlerine hizmet eden cesitli gonulluluk firsatlari sunmak.',
+            points: [
+              'Gonullulerin beceri ve ilgi alanlarina uygun firsatlar.',
+              'Mevcut programlarda fiili katilim.',
+            ],
+          },
+          {
+            id: 'joint-effort',
+            title: 'Cabalari birlestirmek',
+            body: 'Girisim ve fikirleri toplayip vakfin hedefleri dogrultusunda yonlendirmek ve tek vucut calismak.',
+            points: [
+              'Gonulluler ve ekipler arasinda fikir alisverisi.',
+              'Bireysel cabalarin tek bir yolda butunlesmesi.',
+            ],
+          },
+        ],
+        sections: [
+          {
+            id: 'intro',
+            title: 'Gonulluluk Birimi',
+            paragraphs: [
+              'Gonulluluk Birimi, gonullu calisma kulturunu yerlestirmeyi ve Veysel Karani Vakfinin hedeflerini gerceklestirmek icin cesitli gonulluluk firsatlari sunmayi amaclar.',
+              'Yeni bir Yemenin insasinin ortak calisma ve dayanisma ile basladigina inaniyoruz; fikirler bulusur, cabalar birlesir ve gonulluler vakfin programlarina fiilen katilarak kapasitelerini gelistirir.',
+            ],
+          },
+        ],
+        cta: {
+          title: 'Kapasite Gelistirmeyi ve Gonullulugu Destekleyin',
+          description: 'Resmi katkı sayfasi, vakfin mevcut proje ve program destek firsatlarini bir araya getirir.',
+          button: 'Katki Sayfasina Git',
+        },
+        seo: {
+          title: 'Kapasite Gelistirme | Veysel Karani Vakfi',
+          description:
+            'Veysel Karani Vakfinin kapasite gelistirme ekseni ve gonullu calisma kulturunu yerlestiren Gonulluluk Birimi.',
+          canonical: officialSources.capacityBuilding,
+        },
+      },
+      {
+        ...programShared['institutional-development'],
+        title: 'Kurumsal Gelisim',
+        summary: 'Kamu ve sivil kurumlarin performansini gelistirmek; programlarini, mekanizmalarini, planlarini ve stratejilerini yenilemek.',
+        heroImageAlt: 'Veysel Karani Vakfi Kurumsal Gelisim Programi',
+        imageGallery: [
+          {
+            src: institutionalDevelopmentImage,
+            alt: 'Kurumsal Gelisim programi icin resmi site gorseli',
+            width: 1080,
+            height: 1080,
+          },
+          {
             src: capacityHadramoutCoastImage,
-            alt: 'Hadramut Sahili Kapasite Gelistirme Programi',
+            alt: 'Hadramut Sahilinde sivil toplum kapasite artirma programi',
             caption: 'Hadramut Sahili',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'Hadramut Vadisi Kapasite Gelistirme Programi',
+            alt: 'Hadramut Vadisinde sivil toplum kapasite artirma programi',
             caption: 'Hadramut Vadisi',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'Marib Kapasite Gelistirme Programi',
+            alt: 'Maribde sivil toplum kapasite artirma programi',
             caption: 'Marib',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'Taiz Kapasite Gelistirme Programi',
+            alt: 'Taizde sivil toplum kapasite artirma programi',
             caption: 'Taiz',
             width: 1080,
             height: 1350,
@@ -1039,9 +1299,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-coast',
             name: 'Hadramut Sahili',
             image: capacityHadramoutCoastImage,
-            imageAlt: 'Hadramut Sahili kapasite gelistirme belgesi',
+            imageAlt: 'Hadramut Sahili kapasite artirma belgesi',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Hadramut Sahili Kapasite Gelistirme Programi videosu',
+            videoTitle: 'Hadramut Sahili kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Selah Kalkinma Vakfi',
           },
@@ -1049,9 +1309,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-valley',
             name: 'Hadramut Vadisi',
             image: capacityHadramoutValleyImage,
-            imageAlt: 'Hadramut Vadisi kapasite gelistirme belgesi',
+            imageAlt: 'Hadramut Vadisi kapasite artirma belgesi',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Hadramut Vadisi Kapasite Gelistirme Programi videosu',
+            videoTitle: 'Hadramut Vadisi kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Al-Badia Insani Kalkinma Vakfi',
           },
@@ -1059,9 +1319,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'marib',
             name: 'Marib',
             image: capacityMaribImage,
-            imageAlt: 'Marib kapasite gelistirme belgesi',
+            imageAlt: 'Marib kapasite artirma belgesi',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Marib Kapasite Gelistirme Programi videosu',
+            videoTitle: 'Marib kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'OCHA Marib ofisi ve International Relief and Development Authority - Ansar',
           },
@@ -1069,9 +1329,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'taiz',
             name: 'Taiz',
             image: capacityTaizImage,
-            imageAlt: 'Taiz kapasite gelistirme belgesi',
+            imageAlt: 'Taiz kapasite artirma belgesi',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Taiz Kapasite Gelistirme Programi videosu',
+            videoTitle: 'Taiz kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Resalaty Kadin Kalkinma Vakfi',
           },
@@ -1088,11 +1348,37 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'Yerel ve uluslararasi ortakliklar',
           'Insani ve Kalkinma Calismalarinin Yerellestirilmesi Ulusal Forumu',
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'Kamu Kurumlari',
+            description: 'Kamu kurumlarinin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
+          },
+          {
+            id: 'civil',
+            title: 'Sivil Kurumlar',
+            description: 'Sivil kurumlarin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
             title: 'Program Tanimi',
-            paragraphs: ['Program, kamu ve sivil kurum liderlerinin yetistirilmesine ve performanslarinin gelistirilmesine odaklanir.'],
+            paragraphs: [
+              'Kurumsal Gelisim programi, kamu ve sivil kurumlarin performansini gelistirmeye; programlarini, mekanizmalarini, planlarini ve stratejilerini yenilemeye odaklanir.',
+            ],
+            bullets: [
+              'Kamu ve sivil kurum performansini gelistirmek.',
+              'Programlari ve mekanizmalari yenilemek.',
+              'Planlari ve stratejileri gelistirmek.',
+            ],
+          },
+          {
+            id: 'capacity-intro',
+            title: 'Sivil Toplum Kuruluslari Kapasite Artirma Programi',
+            paragraphs: [
+              'Program hedeflerini sahada kapasite artirma calismasiyla hayata gecirir: kamu ve sivil kurum liderlerini yetistirir ve performanslarini gelistirir. Birinci asamasi dort Yemen sehrinde sivil toplum kuruluslariyla uygulandi.',
+            ],
           },
           {
             id: 'closing-statement',
@@ -1129,76 +1415,24 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
         ],
         cta: {
-          title: 'Kurumsal Kapasiteyi Destekleyin',
-          description: 'Resmi katkı sayfasi, vakfin mevcut proje ve program destek firsatlarini bir araya getirir.',
-          button: 'Katki Sayfasina Git',
-        },
-        seo: {
-          title: 'Kapasite Gelistirme | Veysel Karani Vakfi',
-          description:
-            'Kamu ve sivil kurum liderlerinin yetistirilmesi, sivil toplum performansinin gelistirilmesi ve yerellestirme calismalari.',
-          canonical: officialSources.capacityBuilding,
-        },
-      },
-      {
-        ...programShared['institutional-development'],
-        title: 'Kurumsal Gelisim',
-        summary: 'Kamu ve sivil kurumlarin performansini gelistirmek; programlarini, mekanizmalarini, planlarini ve stratejilerini yenilemek.',
-        heroImageAlt: 'Veysel Karani Vakfi Kurumsal Gelisim Programi',
-        imageGallery: [
-          {
-            src: institutionalDevelopmentImage,
-            alt: 'Kurumsal Gelisim programi icin resmi site gorseli',
-            width: 1080,
-            height: 1080,
-          },
-        ],
-        audiences: [
-          {
-            id: 'government',
-            title: 'Kamu Kurumlari',
-            description: 'Kamu kurumlarinin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
-          },
-          {
-            id: 'civil',
-            title: 'Sivil Kurumlar',
-            description: 'Sivil kurumlarin performansini gelistirmek; program, mekanizma, plan ve stratejilerini yenilemek.',
-          },
-        ],
-        sections: [
-          {
-            id: 'intro',
-            title: 'Program Tanimi',
-            paragraphs: [
-              'Kurumsal Gelisim programi, kamu ve sivil kurumlarin performansini gelistirmeye; programlarini, mekanizmalarini, planlarini ve stratejilerini yenilemeye odaklanir.',
-            ],
-            bullets: [
-              'Kamu ve sivil kurum performansini gelistirmek.',
-              'Programlari ve mekanizmalari yenilemek.',
-              'Planlari ve stratejileri gelistirmek.',
-            ],
-          },
-        ],
-        cta: {
           title: 'Kurumsal Gelisimi Destekleyin',
           description:
             'Veysel Karani Vakfinin resmi destek firsatlarina dahili katkı sayfasi uzerinden ulasilabilir.',
           button: 'Katki Sayfasina Git',
         },
-        mediaNote:
-          'Resmi kaynakta bu sayfaya ozel ayrintili istatistik veya video bulunmadigi icin dogrulanmayan veri eklenmedi.',
         seo: {
           title: 'Kurumsal Gelisim | Veysel Karani Vakfi',
           description:
-            'Kamu ve sivil kurum performansini gelistiren, programlari, planlari ve stratejileri yenileyen kurumsal gelisim programi.',
+            'Kamu ve sivil kurum performansini gelistiren kurumsal gelisim ekseni ve dort Yemen sehrinde uygulanan sivil toplum kapasite artirma programi.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
       {
         ...programShared['community-awareness'],
         title: 'Toplumsal Farkindalik',
-        summary: 'Kamuoyu algisini, kapsayici ulusal kimligi, kalkinis ve birlikte yasama kulturunu yeniden guclendirmek.',
-        heroImageAlt: 'Toplumsal Farkindalik kapsami icindeki Owais Platformu',
+        summary:
+          'Owais Platformu: dusunce ve medeniyet kalkinisi konularina odaklanan, farkli bilgi materyalleri ve programlarla kolektif bilinci guclendiren bir platform.',
+        heroImageAlt: 'Veysel Karani Vakfi Owais Platformu',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -1207,61 +1441,46 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
-          {
-            src: awarenessVolunteerUnitImage,
-            alt: 'Gonulluluk Birimi',
-            caption: 'Gonulluluk Birimi',
-            width: 1080,
-            height: 1080,
-          },
         ],
         sections: [
           {
             id: 'intro',
-            title: 'Program Tanimi',
+            title: 'Owais Platformu',
             paragraphs: [
-              'Toplumsal Farkindalik programi; kamuoyunu, kapsayici ulusal kimligi ve kalkinis ile birlikte yasama kulturunu guclendirmeye odaklanir.',
+              'Owais Platformu, Veysel Karani Vakfinin girisimlerinden biridir; tarih okumasi, bugunun incelenmesi ve gelecegin ongorulmesi yoluyla dusunce ve medeniyet kalkinisi konularina odaklanir.',
+              'Platform, farkli bilgi materyalleri ve programlarla kolektif bilinci guclendirmeyi; kamuoyunu yeniden sekillendirmeye, kalkinis ve birlikte yasama kulturunu koklestirmeye katki sunmayi hedefler.',
             ],
           },
         ],
         themes: [
           {
-            id: 'public-opinion',
-            title: 'Kamuoyunu yeniden sekillendirmek',
-            description: 'Tarih okumasi, bugunun incelenmesi ve gelecegin ongorulmesi uzerine kurulu bir kamusal soylem.',
+            id: 'read-history',
+            title: 'Tarihi okumak',
+            description: 'Bugunun koklerini anlamak ve dersler cikarmak icin tarihsel tecrubeye donmek.',
           },
           {
-            id: 'national-identity',
-            title: 'Kapsayici ulusal kimlik',
-            description: 'Herkesi kucaklayan ve Yemenlileri ortak bir paydada bulusturan bir kimlik.',
+            id: 'study-present',
+            title: 'Bugunu incelemek',
+            description: 'Yemen gercekligini ve dusunsel meselelerini analitik bir gozle okumak.',
           },
           {
-            id: 'renaissance-culture',
-            title: 'Kalkinis ve birlikte yasama kulturu',
-            description: 'Medeni kalkinis ve ortak yasam degerlerini koklestiren kolektif bir bilinc.',
+            id: 'anticipate-future',
+            title: 'Gelecegi ongormek',
+            description: 'Medeni kalkinis ve ortak yasam degerlerini koklestiren, geleceni ongoren kolektif bir bilinc.',
           },
         ],
         initiatives: [
           {
             title: 'Owais Platformu',
             description:
-              'Vakfin dorduncu eksenindeki girisimlerden biridir. Dusunce ve medeniyet kalkinisi konularina tarih okumasi, bugunun incelenmesi ve gelecegin ongorulmesi yoluyla odaklanir; farkli bilgi materyalleri ve programlarla kolektif bilinci guclendirmeyi hedefler.',
+              'Platform, dusunce ve medeniyet kalkinisina duydugu ilgiyi izleyicisine su kanallar uzerinden ulasan cesitli bilgi materyallerine ve programlara cevirir.',
             image: awarenessOwaisPlatformImage,
             imageAlt: 'Owais Platformu logosu',
-            url: officialSources.owaisPlatform,
             products: ['Owais Podcast', 'Cesitli gorsel icerikler', 'Owais Divani', 'Blog'],
-          },
-          {
-            title: 'Gonulluluk Birimi',
-            description:
-              'Vakfin dorduncu eksenindeki girisimlerden biridir. Gonullu calisma kulturunu yerlestirmeyi ve vakfin hedeflerini gerceklestirmek icin cesitli gonulluluk firsatlari sunmayi amaclar.',
-            image: awarenessVolunteerUnitImage,
-            imageAlt: 'Gonulluluk Birimi logosu',
-            url: officialSources.volunteerUnit,
           },
         ],
         cta: {
-          title: 'Farkindalik ve Gonulluluk Girisimlerini Destekleyin',
+          title: 'Owais Platformunu Destekleyin',
           description:
             'Resmi katkı sayfasi, dahili bir odeme sistemi kurmadan vakfin mevcut destek firsatlarini gosterir.',
           button: 'Katki Sayfasina Git',
@@ -1269,7 +1488,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         seo: {
           title: 'Toplumsal Farkindalik | Veysel Karani Vakfi',
           description:
-            'Owais Platformu ve Gonulluluk Birimi girisimleriyle toplumsal farkindalik programini inceleyin.',
+            'Owais Platformu: dusunce ve medeniyet kalkinisi konularina odaklanan, kolektif bilinci guclendiren bilgi platformu.',
           canonical: officialSources.communityAwareness,
         },
       },
@@ -1332,18 +1551,18 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       areaLabel: 'Area',
       audiences: 'Who Does the Track Serve?',
       audiencesDescription: 'The track addresses two types of institutions and works with both on the same three areas.',
-      awarenessEyebrow: 'Fourth Track',
-      awarenessHeroNote: 'Two initiatives working together to shape awareness: a knowledge platform and a volunteer unit.',
-      exploreInitiatives: 'Explore the Initiatives',
-      awarenessThemes: 'Three circles the track works on',
+      awarenessEyebrow: 'Owais Platform',
+      awarenessHeroNote: 'A knowledge platform devoted to thought and civilizational advancement, shaping collective awareness.',
+      exploreInitiatives: 'Explore the Platform',
+      awarenessThemes: 'Three circles the platform works on',
       awarenessThemesDescription:
-        'The track moves from the individual to society: an awareness that is shaped, an identity that unites, and a culture that takes root. Scroll down to move between the circles, or hover over any of them.',
+        'From history, to the present, to what lies ahead: a history read, a reality studied, and a future anticipated. Scroll down to move between the circles, or hover over any of them.',
       themeLabel: 'Circle',
-      awarenessInitiativesEyebrow: 'Track Initiatives',
-      awarenessInitiatives: 'Two channels for shaping awareness',
+      awarenessInitiativesEyebrow: 'What the platform offers',
+      awarenessInitiatives: 'Knowledge materials and programs',
       awarenessInitiativesDescription:
-        'The two initiatives translate the track’s goals into knowledge content and hands-on opportunities, each in its own way.',
-      initiativeLabel: 'Initiative',
+        'The varied channels through which the platform reaches its audience, from the podcast and diwaniya to visual materials and the blog.',
+      initiativeLabel: 'Platform',
       visitInitiative: 'Visit the Initiative',
       volunteerCta: 'Join as a Volunteer',
       volunteerCtaDescription: 'Register your interest through the volunteer form on this site and the unit’s team will get in touch.',
@@ -1478,33 +1697,166 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       {
         ...programShared['capacity-building'],
         title: 'Capacity Building',
-        summary: 'Contributing to the qualification of leaders in governmental and civil institutions and improving their performance.',
-        heroImageAlt: 'Capacity Building Program in Marib',
+        summary:
+          'The Volunteer Unit: rooting the culture of volunteer work and offering varied volunteer opportunities that build capacity and serve the waqf goals.',
+        heroImageAlt: 'The Volunteer Unit of Veysel Karani Waqf',
         imageGallery: [
           {
+            src: volunteerHeroImage,
+            alt: 'Official volunteer section image from Veysel Karani Waqf',
+            caption: 'Standing together for Yemen’s advancement',
+            width: 1024,
+            height: 400,
+          },
+          {
+            src: awarenessVolunteerUnitImage,
+            alt: 'Volunteer Unit logo',
+            caption: 'Volunteer Unit',
+            width: 1080,
+            height: 1080,
+          },
+        ],
+        volunteer: {
+          eyebrow: 'Volunteer Unit',
+          joinCta: 'Join as a Volunteer',
+          exploreCta: 'Explore the Unit',
+          slogan: 'Every effort, however simple, shapes a better Yemen.',
+          hashtags: ['#تطوعك_وقف', '#تطوع_لأجل_اليمن'],
+          contactTitle: 'Reach the unit',
+          quoteLabel: 'What we believe',
+          statement: {
+            eyebrow: 'Why we volunteer',
+            title: 'One hand does not clap',
+            description: 'The Volunteer Unit is where individual energies meet and become a single shared effort.',
+          },
+          fields: {
+            eyebrow: 'Areas of the unit',
+            title: 'Three areas we work on',
+            description: 'Hover any area to open it: from rooting the value, to opening the opportunity, to uniting the effort.',
+          },
+          goals: {
+            eyebrow: 'What we aim for',
+            title: 'Four goals that steer the unit',
+            description: 'Goals that turn volunteer work into visible impact across the waqf programs and tracks.',
+          },
+          steps: {
+            eyebrow: 'How to join',
+            title: 'Three steps and your volunteering begins',
+            description: 'From registering your interest to your first real participation inside the working teams.',
+          },
+        },
+        goals: [
+          'Contribute to the goals of Veysel Karani Waqf through the efforts of volunteers.',
+          'Build volunteers’ capacities through real participation in the waqf programs and tracks.',
+          'Widen community participation in development and humanitarian work.',
+          'Unite efforts and ideas in service of Yemen’s advancement.',
+        ],
+        journey: [
+          {
+            id: 'register',
+            title: 'Register your interest',
+            description: 'Fill in the volunteer form on this site with your details, areas of interest and the skills you want to offer.',
+          },
+          {
+            id: 'match',
+            title: 'The team gets in touch',
+            description:
+              'The unit’s team matches your interest with the available opportunities. For direct contact: phone +90 536 745 6199 or email volunteering@veysvakfi.org.',
+          },
+          {
+            id: 'contribute',
+            title: 'Take part and grow',
+            description: 'Join the working teams across the waqf programs and tracks, and build your capacities through practice and shared work.',
+          },
+        ],
+        pillars: [
+          {
+            id: 'volunteer-culture',
+            title: 'Rooting the culture of volunteering',
+            body: 'Spreading the values of volunteer work among Yemenis at home and abroad.',
+            points: [
+              'A discourse that raises the value of giving and participation.',
+              'A steady presence among young people and local communities.',
+            ],
+          },
+          {
+            id: 'volunteer-opportunities',
+            title: 'Opening volunteer opportunities',
+            body: 'Offering varied volunteer opportunities that serve the waqf programs and development tracks.',
+            points: [
+              'Opportunities matched to volunteers’ skills and interests.',
+              'Real participation inside the running programs.',
+            ],
+          },
+          {
+            id: 'joint-effort',
+            title: 'Uniting efforts',
+            body: 'Receiving initiatives and ideas, directing them toward the waqf goals, and working as one body.',
+            points: [
+              'Ideas exchanged between volunteers and working teams.',
+              'Individual efforts brought together into one track.',
+            ],
+          },
+        ],
+        sections: [
+          {
+            id: 'intro',
+            title: 'The Volunteer Unit',
+            paragraphs: [
+              'The Volunteer Unit seeks to root the culture of volunteer work and provide varied volunteer opportunities that serve the goals of Veysel Karani Waqf.',
+              'We believe building a new Yemen starts with joint work and solidarity: ideas meet, efforts unite, and volunteers build their own capacities by taking part in the waqf programs and tracks.',
+            ],
+          },
+        ],
+        cta: {
+          title: 'Support Capacity Building and Volunteering',
+          description:
+            'The official contribution page gathers available opportunities to support the waqf projects and development programs.',
+          button: 'Go to Contribution Page',
+        },
+        seo: {
+          title: 'Capacity Building | Veysel Karani Waqf',
+          description:
+            'The Capacity Building track of Veysel Karani Waqf and the Volunteer Unit that roots the culture of volunteer work.',
+          canonical: officialSources.capacityBuilding,
+        },
+      },
+      {
+        ...programShared['institutional-development'],
+        title: 'Institutional Development',
+        summary: 'Developing the performance of governmental and civil institutions and updating their programs, mechanisms, plans and strategies.',
+        heroImageAlt: 'Veysel Karani Waqf Institutional Development track',
+        imageGallery: [
+          {
+            src: institutionalDevelopmentImage,
+            alt: 'Official site image for Institutional Development',
+            width: 1080,
+            height: 1080,
+          },
+          {
             src: capacityHadramoutCoastImage,
-            alt: 'Capacity Building Program in Hadramout Coast',
+            alt: 'Civil society capacity raising program in Hadramout Coast',
             caption: 'Hadramout Coast',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'Capacity Building Program in Hadramout Valley',
+            alt: 'Civil society capacity raising program in Hadramout Valley',
             caption: 'Hadramout Valley',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'Capacity Building Program in Marib',
+            alt: 'Civil society capacity raising program in Marib',
             caption: 'Marib',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'Capacity Building Program in Taiz',
+            alt: 'Civil society capacity raising program in Taiz',
             caption: 'Taiz',
             width: 1080,
             height: 1350,
@@ -1521,9 +1873,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-coast',
             name: 'Hadramout Coast',
             image: capacityHadramoutCoastImage,
-            imageAlt: 'Capacity Building documentation in Hadramout Coast',
+            imageAlt: 'Capacity raising documentation in Hadramout Coast',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Capacity Building Program video in Hadramout Coast',
+            videoTitle: 'Capacity raising program video in Hadramout Coast',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Selah Foundation for Development',
           },
@@ -1531,9 +1883,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'hadramout-valley',
             name: 'Hadramout Valley',
             image: capacityHadramoutValleyImage,
-            imageAlt: 'Capacity Building documentation in Hadramout Valley',
+            imageAlt: 'Capacity raising documentation in Hadramout Valley',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Capacity Building Program video in Hadramout Valley',
+            videoTitle: 'Capacity raising program video in Hadramout Valley',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Al-Badia Foundation for Humanitarian Development',
           },
@@ -1541,9 +1893,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'marib',
             name: 'Marib',
             image: capacityMaribImage,
-            imageAlt: 'Capacity Building documentation in Marib',
+            imageAlt: 'Capacity raising documentation in Marib',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Capacity Building Program video in Marib',
+            videoTitle: 'Capacity raising program video in Marib',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'OCHA Marib office and the International Relief and Development Authority - Ansar',
           },
@@ -1551,9 +1903,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'taiz',
             name: 'Taiz',
             image: capacityTaizImage,
-            imageAlt: 'Capacity Building documentation in Taiz',
+            imageAlt: 'Capacity raising documentation in Taiz',
             videoId: capacityVideo.videoId,
-            videoTitle: 'Capacity Building Program video in Taiz',
+            videoTitle: 'Capacity raising program video in Taiz',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Resalaty Foundation for Women Development',
           },
@@ -1570,12 +1922,36 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           'Local and international partnerships',
           'National Forum for Localization of Humanitarian and Development Work',
         ],
+        audiences: [
+          {
+            id: 'government',
+            title: 'Governmental Institutions',
+            description: 'Developing the performance of governmental bodies and updating their programs, mechanisms, plans and strategies.',
+          },
+          {
+            id: 'civil',
+            title: 'Civil Institutions',
+            description: 'Developing the performance of civil institutions and updating their programs, mechanisms, plans and strategies.',
+          },
+        ],
         sections: [
           {
             id: 'intro',
             title: 'Program Definition',
             paragraphs: [
-              'The program focuses on qualifying leaders of governmental and civil institutions and improving their performance.',
+              'The Institutional Development track focuses on developing the performance of governmental and civil institutions and updating their programs, mechanisms, plans and strategies.',
+            ],
+            bullets: [
+              'Develop the performance of governmental and civil institutions.',
+              'Update programs and mechanisms.',
+              'Develop plans and strategies.',
+            ],
+          },
+          {
+            id: 'capacity-intro',
+            title: 'Civil Society Organizations Capacity Raising Program',
+            paragraphs: [
+              'The track turns its goals into field work through the capacity raising program, which qualifies leaders of governmental and civil institutions and improves their performance. Its first phase was implemented with civil society organizations across four Yemeni cities.',
             ],
           },
           {
@@ -1613,77 +1989,24 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
         ],
         cta: {
-          title: 'Support Institutional Capacity',
-          description:
-            'The official contribution page gathers available opportunities to support the waqf projects and development programs.',
-          button: 'Go to Contribution Page',
-        },
-        seo: {
-          title: 'Capacity Building | Veysel Karani Waqf',
-          description:
-            'Capacity Building Program for qualifying governmental and civil institution leaders and improving civil society performance.',
-          canonical: officialSources.capacityBuilding,
-        },
-      },
-      {
-        ...programShared['institutional-development'],
-        title: 'Institutional Development',
-        summary: 'Developing the performance of governmental and civil institutions and updating their programs, mechanisms, plans and strategies.',
-        heroImageAlt: 'Veysel Karani Waqf Institutional Development track',
-        imageGallery: [
-          {
-            src: institutionalDevelopmentImage,
-            alt: 'Official site image for Institutional Development',
-            width: 1080,
-            height: 1080,
-          },
-        ],
-        audiences: [
-          {
-            id: 'government',
-            title: 'Governmental Institutions',
-            description: 'Developing the performance of governmental bodies and updating their programs, mechanisms, plans and strategies.',
-          },
-          {
-            id: 'civil',
-            title: 'Civil Institutions',
-            description: 'Developing the performance of civil institutions and updating their programs, mechanisms, plans and strategies.',
-          },
-        ],
-        sections: [
-          {
-            id: 'intro',
-            title: 'Program Definition',
-            paragraphs: [
-              'The Institutional Development track focuses on developing the performance of governmental and civil institutions and updating their programs, mechanisms, plans and strategies.',
-            ],
-            bullets: [
-              'Develop the performance of governmental and civil institutions.',
-              'Update programs and mechanisms.',
-              'Develop plans and strategies.',
-            ],
-          },
-        ],
-        cta: {
           title: 'Support Institutional Development',
           description:
             'The official support opportunities published by Veysel Karani Waqf can be reached through the internal contribution page.',
           button: 'Go to Contribution Page',
         },
-        mediaNote:
-          'The official source did not include detailed statistics or videos for this page, so no unverified data was added.',
         seo: {
           title: 'Institutional Development | Veysel Karani Waqf',
           description:
-            'Institutional Development track for improving governmental and civil institution performance and updating programs and strategies.',
+            'Institutional Development track for improving governmental and civil institution performance, and the civil society capacity raising program across four Yemeni cities.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
       {
         ...programShared['community-awareness'],
         title: 'Community Awareness',
-        summary: 'Reshaping public opinion, the inclusive national identity, and awareness of the culture of advancement and coexistence.',
-        heroImageAlt: 'Owais Platform within the Community Awareness track',
+        summary:
+          'Owais Platform: a knowledge platform devoted to thought and civilizational advancement, strengthening collective awareness through varied materials and programs.',
+        heroImageAlt: 'Owais Platform of Veysel Karani Waqf',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -1692,61 +2015,46 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
-          {
-            src: awarenessVolunteerUnitImage,
-            alt: 'Volunteer Unit',
-            caption: 'Volunteer Unit',
-            width: 1080,
-            height: 1080,
-          },
         ],
         sections: [
           {
             id: 'intro',
-            title: 'Program Definition',
+            title: 'Owais Platform',
             paragraphs: [
-              'The Community Awareness track focuses on reshaping public opinion, the inclusive national identity, and awareness of the culture of advancement and coexistence.',
+              'Owais Platform is one of the initiatives of Veysel Karani Waqf. It focuses on issues of thought and civilizational advancement through reading history, studying the present and anticipating the future.',
+              'The platform strengthens collective awareness through varied knowledge materials and programs, contributing to reshaping public opinion and rooting a culture of advancement and coexistence.',
             ],
           },
         ],
         themes: [
           {
-            id: 'public-opinion',
-            title: 'Reshaping public opinion',
-            description: 'A public discourse built on reading history, studying the present and anticipating the future.',
+            id: 'read-history',
+            title: 'Reading history',
+            description: 'Returning to the historical experience to understand the roots of the present and draw its lessons.',
           },
           {
-            id: 'national-identity',
-            title: 'An inclusive national identity',
-            description: 'An identity wide enough for everyone, gathering Yemenis around a shared common ground.',
+            id: 'study-present',
+            title: 'Studying the present',
+            description: 'Reading the Yemeni reality and its questions of thought with an analytical eye.',
           },
           {
-            id: 'renaissance-culture',
-            title: 'A culture of advancement and coexistence',
-            description: 'A collective awareness that roots the values of civilizational advancement and living together.',
+            id: 'anticipate-future',
+            title: 'Anticipating the future',
+            description: 'A collective awareness that roots the values of advancement and living together, and looks ahead.',
           },
         ],
         initiatives: [
           {
             title: 'Owais Platform',
             description:
-              'One of the fourth-track initiatives of Veysel Karani Waqf. It focuses on issues of thought and civilizational advancement through reading history, studying the present and anticipating the future, while strengthening collective awareness through varied knowledge materials and programs.',
+              'The platform turns its concern with thought and civilizational advancement into varied knowledge materials and programs, reaching its audience through the following channels.',
             image: awarenessOwaisPlatformImage,
             imageAlt: 'Owais Platform logo',
-            url: officialSources.owaisPlatform,
             products: ['Owais Podcast', 'Various visual materials', 'Owais Diwaniya', 'Blog'],
-          },
-          {
-            title: 'Volunteer Unit',
-            description:
-              'One of the fourth-track initiatives of Veysel Karani Waqf. It seeks to root the culture of volunteer work and provide varied volunteer opportunities to achieve the goals of the waqf.',
-            image: awarenessVolunteerUnitImage,
-            imageAlt: 'Volunteer Unit logo',
-            url: officialSources.volunteerUnit,
           },
         ],
         cta: {
-          title: 'Support Awareness and Volunteer Initiatives',
+          title: 'Support Owais Platform',
           description:
             'The official contribution page presents available support opportunities without creating an internal payment system.',
           button: 'Go to Contribution Page',
@@ -1754,7 +2062,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         seo: {
           title: 'Community Awareness | Veysel Karani Waqf',
           description:
-            'Explore the Community Awareness track and its Owais Platform and Volunteer Unit initiatives.',
+            'Owais Platform: a knowledge platform devoted to thought and civilizational advancement and to strengthening collective awareness.',
           canonical: officialSources.communityAwareness,
         },
       },
@@ -1762,8 +2070,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
   },
 };
 
-export function getProgramsContent(locale: Locale) {
-  return localizedPrograms[locale];
+export function getProgramsContent(locale: Locale): ProgramsPageContent {
+  const base = localizedPrograms[locale];
+  return {
+    ...cmsPageContent('programs-page', locale, base),
+    programs: cmsPrograms(locale, base.programs),
+  };
 }
 
 export function isProgramSlug(slug: string | undefined): slug is ProgramSlug {
@@ -1776,16 +2088,16 @@ export function isProgramSlug(slug: string | undefined): slug is ProgramSlug {
 }
 
 export function getProgram(locale: Locale, slug: string | undefined) {
-  if (!isProgramSlug(slug)) return undefined;
-  return localizedPrograms[locale].programs.find((program) => program.slug === slug);
+  if (!slug) return undefined;
+  return getProgramsContent(locale).programs.find((program) => program.slug === slug);
 }
 
 export function getOtherPrograms(locale: Locale, slug: ProgramSlug) {
-  return localizedPrograms[locale].programs.filter((program) => program.slug !== slug);
+  return getProgramsContent(locale).programs.filter((program) => program.slug !== slug);
 }
 
 export function getProgramBreadcrumbs(locale: Locale, program: Program): BreadcrumbItem[] {
-  const content = localizedPrograms[locale];
+  const content = getProgramsContent(locale);
 
   return [
     { label: content.labels.home, href: '/' },

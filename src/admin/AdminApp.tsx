@@ -8,7 +8,8 @@ import ResourceListPage from './pages/ResourceListPage';
 import ResourceEditPage from './pages/ResourceEditPage';
 import SubmissionsPage from './pages/SubmissionsPage';
 import SubscribersPage from './pages/SubscribersPage';
-import SitePagesPage from './pages/SitePagesPage';
+import ContentManagementPage from './pages/ContentManagementPage';
+import MediaLibraryPage from './pages/MediaLibraryPage';
 import SeedPage from './pages/SeedPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -95,13 +96,22 @@ function AdminRoutes() {
         }
       />
       <Route
-        path="pages"
+        path="content"
         element={
           <Protected>
-            <SitePagesPage />
+            <ContentManagementPage />
           </Protected>
         }
       />
+      <Route
+        path="media"
+        element={
+          <Protected>
+            <MediaLibraryPage />
+          </Protected>
+        }
+      />
+      <Route path="pages" element={<Navigate to="/admin/content" replace />} />
       <Route
         path="seed"
         element={

@@ -55,7 +55,7 @@ export default function Partners() {
   const marqueePartners = [...baseSet, ...baseSet];
 
   return (
-    <section className="overflow-hidden bg-cream py-16 md:py-20">
+    <section id="partners" className="overflow-hidden bg-cream py-16 md:py-20">
       <div ref={ref} className="mx-auto max-w-7xl px-4 md:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

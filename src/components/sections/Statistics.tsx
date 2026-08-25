@@ -137,7 +137,7 @@ export default function Statistics() {
   }, [rotating, activeIndex, indicators.length]);
 
   return (
-    <section className="relative overflow-hidden bg-cream py-20 md:py-28">
+    <section id="statistics" className="relative overflow-hidden bg-cream py-20 md:py-28">
       <div ref={ref} className="mx-auto max-w-7xl px-4 md:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
