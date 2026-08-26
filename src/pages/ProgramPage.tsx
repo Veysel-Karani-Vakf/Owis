@@ -753,21 +753,12 @@ function InstitutionalShowcase({
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
-  const intro = program.sections[0];
-  const areas = intro?.bullets ?? [];
   const audiences = program.audiences ?? [];
 
   return (
     <>
-      {/* New Hero Section */}
+      {/* Hero Section */}
       <InstitutionalHeroNew program={program} />
-
-      {/* Focus Areas / Core Pillars */}
-      {areas.length > 0 && (
-        <section className="overflow-hidden">
-          <InstitutionalPillarsNew items={areas} section={intro} />
-        </section>
-      )}
 
       {/* Statistics Section */}
       {program.statistics?.length > 0 && (
@@ -993,12 +984,7 @@ export default function ProgramPage() {
         ) : isAwareness ? (
           <AwarenessShowcase program={program} labels={page.labels} />
         ) : isInstitutional ? (
-          <>
-            <InstitutionalShowcase program={program} labels={page.labels} />
-            {hasCityStory && (
-              <CapacityShowcase program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
-            )}
-          </>
+          <InstitutionalShowcase program={program} labels={page.labels} />
         ) : isShowcase ? (
           <section className="overflow-hidden bg-white py-14 md:py-20">
             <PioneerOverview program={program} labels={page.labels} />
