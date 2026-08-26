@@ -1,9 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ExternalLink, FileText, Images, Newspaper, Search, Trophy, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, FileText, Images, Newspaper, Search, Trophy, Users, X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  getLibrarySearchSuggestions,
+  getLibraryContent,
   searchLibrary,
   type LibraryLabels,
   type LibrarySearchHit,
@@ -19,6 +19,7 @@ type LibrarySearchProps = {
 const kindIcons = {
   article: Newspaper,
   story: Trophy,
+  figure: Users,
   document: FileText,
   image: Images,
 } as const;
@@ -29,6 +30,8 @@ function kindLabel(labels: LibraryLabels, kind: LibrarySearchHit['kind']) {
       return labels.typeArticle;
     case 'story':
       return labels.typeStory;
+    case 'figure':
+      return labels.typeFigure;
     case 'document':
       return labels.typeDocument;
     default:
@@ -49,9 +52,12 @@ export default function LibrarySearch({ locale, labels, isRtl }: LibrarySearchPr
   const shouldReduceMotion = useReducedMotion();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
-  const groups = useMemo(() => searchLibrary(locale, deferredQuery), [deferredQuery, locale]);
+  const { searchSuggestions: suggestions, layout } = getLibraryContent(locale);
+  const groups = useMemo(
+    () => searchLibrary(locale, deferredQuery, layout.searchPerGroup),
+    [deferredQuery, layout.searchPerGroup, locale]
+  );
   const totalHits = groups.reduce((sum, group) => sum + group.total, 0);
-  const suggestions = getLibrarySearchSuggestions(locale);
   const hasQuery = deferredQuery.trim().length > 0;
 
   useEffect(() => {
@@ -108,7 +114,7 @@ export default function LibrarySearch({ locale, labels, isRtl }: LibrarySearchPr
             <span className="rounded-full bg-primary-50 px-3 py-1.5 text-primary-700" aria-live="polite">
               {totalHits} {labels.results}
             </span>
-          ) : (
+          ) : suggestions.length > 0 && (
             <>
               <span className="me-1">{labels.suggestions}:</span>
               {suggestions.map((suggestion) => (

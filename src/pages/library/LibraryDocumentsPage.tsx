@@ -1,11 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { LayoutGrid, List, Search, X } from 'lucide-react';
+import { LayoutGrid, List, Search, Newspaper, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
-import { LibraryDocumentRow, LibraryDocumentTile } from '@/components/library/LibraryDocumentViews';
+import { LibraryDocumentRow, LibraryDocumentTile, LibraryDocumentNewsCard } from '@/components/library/LibraryDocumentViews';
 import LibraryPdfViewer from '@/components/library/LibraryPdfViewer';
 import { LibraryLayout } from '@/components/library/LibraryNav';
 import {
@@ -23,16 +23,17 @@ type LibraryDocumentsPageProps = {
   collection: LibraryDocumentCollectionSlug;
 };
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'news';
 const viewStorageKey = 'library:documents:view';
 
 function readStoredView(): ViewMode {
   if (typeof window === 'undefined') return 'grid';
-  return window.localStorage.getItem(viewStorageKey) === 'list' ? 'list' : 'grid';
+  const stored = window.localStorage.getItem(viewStorageKey);
+  return stored === 'list' || stored === 'news' ? stored : 'grid';
 }
 
 /**
- * Document collections (reports, books, literature, figures) share this page:
+ * Document collections (reports, books, literature) share this page:
  * tabs switch between them, a toolbar handles search / PDF filter / series
  * chips / view mode, and PDFs preview in-site.
  */
@@ -55,7 +56,8 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
   const activeSeries = searchParams.get('series');
   const [view, setView] = useState<ViewMode>(() => {
     const fromUrl = searchParams.get('view');
-    return fromUrl === 'list' || fromUrl === 'grid' ? fromUrl : readStoredView();
+    if (fromUrl === 'list' || fromUrl === 'grid' || fromUrl === 'news') return fromUrl;
+    return readStoredView();
   });
   const [previewItem, setPreviewItem] = useState<LibraryDocumentItem | null>(null);
 
@@ -106,6 +108,8 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
   }, [filtered, info.title]);
 
   const closePreview = useCallback(() => setPreviewItem(null), []);
+  // Admin-set hero wins; otherwise the first document's cover, then the library hero.
+  const heroImage = info.image || items[0]?.image || page.hero.image;
 
   const filters = (
     <div className="rounded-[22px] border border-primary-100 bg-white p-3 shadow-[0_18px_48px_rgba(40,12,18,0.06)] md:p-4">
@@ -144,8 +148,21 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
             className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               view === 'grid' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
             }`}
+            title={labels.viewGrid}
           >
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => changeView('news')}
+            aria-pressed={view === 'news'}
+            aria-label={labels.viewNews}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              view === 'news' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
+            }`}
+            title={labels.viewNews}
+          >
+            <Newspaper className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -155,6 +172,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
             className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               view === 'list' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
             }`}
+            title={labels.viewList}
           >
             <List className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -220,7 +238,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
         <div>
           <div className="mb-3 flex items-center gap-2">
             <span className="h-px w-8 bg-primary-200" />
-            <span className="text-sm font-semibold text-primary-700">{labels.documentsHub}</span>
+            <span className="text-sm font-semibold text-primary-700">{info.eyebrow || labels.documentsHub}</span>
           </div>
           <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">{info.shortTitle}</h2>
         </div>
@@ -233,15 +251,15 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
       <PageSeo
         title={`${info.title} | ${siteContent.siteConfig.name}`}
         description={info.description}
-        image={items[0]?.image}
+        image={heroImage}
         structuredData={itemListSchema}
       />
       <main className="bg-white">
         <PageHero
           title={info.title}
           description={info.description}
-          image={items[0]?.image ?? page.hero.image}
-          imageAlt={info.title}
+          image={heroImage}
+          imageAlt={info.imageAlt || info.title}
           breadcrumbs={getLibraryCollectionBreadcrumbs(locale, collection)}
         />
 
@@ -270,6 +288,19 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
               >
                 {filtered.map((item) => (
                   <LibraryDocumentTile key={item.id} item={item} labels={labels} locale={locale} onPreview={setPreviewItem} />
+                ))}
+              </motion.div>
+            ) : view === 'news' ? (
+              <motion.div
+                key="news"
+                initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="grid gap-6 lg:grid-cols-2"
+              >
+                {filtered.map((item) => (
+                  <LibraryDocumentNewsCard key={item.id} item={item} labels={labels} locale={locale} onPreview={setPreviewItem} />
                 ))}
               </motion.div>
             ) : (

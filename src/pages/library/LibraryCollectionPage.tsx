@@ -7,32 +7,40 @@ import PageSeo from '@/components/internal/PageSeo';
 import { LibraryTextCard } from '@/components/library/LibraryCards';
 import { LibraryLayout } from '@/components/library/LibraryNav';
 import {
-  getForumArticles,
   getLibraryCollectionBreadcrumbs,
   getLibraryCollectionInfo,
   getLibraryContent,
-  getSuccessStories,
+  getTextItems,
   getYears,
   searchLibraryItems,
+  type LibraryTextCollectionSlug,
 } from '@/data/library';
 import { useI18n } from '@/i18n/useI18n';
 
 type LibraryCollectionPageProps = {
-  collection: 'forum' | 'success-stories';
+  collection: LibraryTextCollectionSlug;
 };
 
+const cardVariants = {
+  forum: 'article',
+  'success-stories': 'story',
+  'yemeni-figures': 'figure',
+} as const;
+
 /**
- * Text collections (forum articles and success stories): search, year chips,
- * a featured first item, and a card grid. Filters live in the URL (`?q=&year=`).
+ * Text collections (forum articles, success stories, Yemeni figures): search,
+ * year chips, a featured first item, and a news-style card grid. Filters live
+ * in the URL (`?q=&year=`).
  */
 export default function LibraryCollectionPage({ collection }: LibraryCollectionPageProps) {
   const { locale, isRtl, content: siteContent, contentVersion } = useI18n();
   const page = getLibraryContent(locale);
   const labels = page.labels;
   const info = getLibraryCollectionInfo(locale, collection);
-  const variant = collection === 'forum' ? ('article' as const) : ('story' as const);
+  const variant = cardVariants[collection];
   const items = useMemo(
-    () => (collection === 'forum' ? getForumArticles(locale) : getSuccessStories(locale)),
+    () => getTextItems(locale, collection),
+    // contentVersion re-reads CMS rows after a dashboard save
     [collection, locale, contentVersion]
   );
 
@@ -64,6 +72,8 @@ export default function LibraryCollectionPage({ collection }: LibraryCollectionP
     };
   }, [filtered, info.title]);
 
+  // Admin-set hero wins; otherwise the first item's image, then the library hero.
+  const heroImage = info.image || items[0]?.image || page.hero.image;
   const featured = hasFilters ? undefined : filtered[0];
   const rest = hasFilters ? filtered : filtered.slice(1);
 
@@ -172,15 +182,15 @@ export default function LibraryCollectionPage({ collection }: LibraryCollectionP
       <PageSeo
         title={`${info.title} | ${siteContent.siteConfig.name}`}
         description={info.description}
-        image={items[0]?.image}
+        image={heroImage}
         structuredData={itemListSchema}
       />
       <main className="bg-white">
         <PageHero
           title={info.title}
           description={info.description}
-          image={items[0]?.image ?? page.hero.image}
-          imageAlt={info.title}
+          image={heroImage}
+          imageAlt={info.imageAlt || info.title}
           breadcrumbs={getLibraryCollectionBreadcrumbs(locale, collection)}
         />
 

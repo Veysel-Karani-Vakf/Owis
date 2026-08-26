@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Check,
   Clock,
+  Download,
   Languages,
   Link2,
   ListTree,
@@ -20,25 +21,26 @@ import { getArticleHeadings, parseArticleContent } from '@/components/library/ar
 import {
   getAdjacentTextItems,
   getArticleSeries,
-  getForumArticle,
   getLanguageName,
   getLibraryContent,
   getLibraryTextBreadcrumbs,
   getReadingMinutes,
-  getRelatedForumArticles,
-  getRelatedSuccessStories,
-  getSuccessStory,
+  getRelatedTextItems,
+  getTextItem,
+  textCollectionRoutes,
+  type LibraryTextCollectionSlug,
   type LibraryTextItem,
 } from '@/data/library';
 import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/i18n/content';
 
 type LibraryTextPageProps = {
-  type: 'forum' | 'success-stories';
+  type: LibraryTextCollectionSlug;
 };
 
 function formatDate(locale: Locale, date: string) {
-  if (!date) return '';
+  // The date column is free text; an unparsable value shows nothing instead of "Invalid Date".
+  if (!date || Number.isNaN(Date.parse(date))) return '';
   const formatterLocale = locale === 'ar' ? 'ar' : locale === 'tr' ? 'tr-TR' : 'en-US';
   return new Intl.DateTimeFormat(formatterLocale, { month: 'long', year: 'numeric', day: 'numeric' }).format(
     new Date(date)
@@ -101,15 +103,11 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
   const { locale, isRtl, content: siteContent } = useI18n();
   const library = getLibraryContent(locale);
   const labels = library.labels;
-  const item = type === 'forum' ? getForumArticle(locale, slug) : getSuccessStory(locale, slug);
+  const item = getTextItem(locale, type, slug);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
-  const related = item
-    ? type === 'forum'
-      ? getRelatedForumArticles(locale, item.slug, 4)
-      : getRelatedSuccessStories(locale, item.slug, 4)
-    : [];
+  const related = item ? getRelatedTextItems(locale, type, item.slug, library.layout.relatedLimit) : [];
   const series = item && type === 'forum' ? getArticleSeries(locale, item.slug) : null;
   const adjacent = item ? getAdjacentTextItems(locale, type, item.slug) : { previous: undefined, next: undefined };
 
@@ -159,7 +157,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
   }, [copyLink, item]);
 
   if (!item) {
-    return <Navigate to={type === 'forum' ? '/library/forum' : '/library/success-stories'} replace />;
+    return <Navigate to={textCollectionRoutes[type]} replace />;
   }
 
   const parent = library.collections[type];
@@ -337,7 +335,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
                   </nav>
                 )}
 
-                {item.title !== item.originalTitle && (
+                {item.originalTitle && item.title !== item.originalTitle && (
                   <div className="mb-8 rounded-[22px] border border-primary-100 bg-primary-50/45 p-5">
                     <p className="text-sm font-bold text-primary-700">{labels.officialSource}</p>
                     <p className="mt-2 text-lg font-bold leading-tight text-dark-950">{item.originalTitle}</p>
@@ -359,9 +357,25 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
+                  {item.pdfUrl && (
+                    <a
+                      href={item.pdfUrl}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    >
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                      {labels.downloadPdf}
+                    </a>
+                  )}
                   <Link
                     to={parent.route}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                      item.pdfUrl
+                        ? 'border border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'
+                        : 'bg-primary-600 text-white hover:bg-primary-700'
+                    }`}
                   >
                     <BackIcon className="h-4 w-4" aria-hidden="true" />
                     {labels.backToCollection}

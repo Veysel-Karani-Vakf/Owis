@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScro
 import { Eye, History, Sparkles, Telescope, type LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ProgramTheme } from '@/data/programs';
+import { resolveIcon } from '@/lib/icons';
 
 type AwarenessThemesProps = {
   eyebrow: string;
@@ -40,8 +41,13 @@ export default function AwarenessThemes({
     themes.findIndex((theme) => theme.id === activeId),
   );
   const activeTheme = themes[activeIndex];
+  // Editor-chosen icon first, then the seeded id map, then the positional defaults.
   const ActiveIcon = activeTheme
-    ? (themeIcons[activeTheme.id] ?? fallbackIcons[activeIndex] ?? Sparkles)
+    ? resolveIcon(
+        activeTheme.icon,
+        [themeIcons[activeTheme.id] ?? fallbackIcons[activeIndex] ?? Sparkles],
+        activeIndex,
+      )
     : Sparkles;
 
   // The section is taller than the viewport on large screens; the stage pins while the

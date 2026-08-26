@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { type Project } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 import { useInView } from '@/hooks/useInView';
@@ -18,11 +18,17 @@ type CoverflowMetrics = {
 const ease = [0.22, 1, 0.36, 1] as const;
 const projectTransitionEase = [0.45, 0, 0.55, 1] as const;
 const projectTransitionDuration = 0.65;
+// Focal points for the three original cards; a card's own `imagePosition` wins.
 const projectImagePositions: Record<string, string> = {
   'waqf-share': '50% 27%',
   'blessed-tree': '50% 25%',
   'gold-portfolio': '50% 24%',
 };
+
+/** Stable key for a card, whether it came from code (has id) or the dashboard (no id). */
+function projectKey(project: Project, index: number) {
+  return project.id ?? project.detailsUrl ?? String(index);
+}
 
 function normalizeIndex(index: number, length: number) {
   return ((index % length) + length) % length;
@@ -91,6 +97,7 @@ function ProjectCard({
   reduceMotion,
   labels,
   onActivate,
+  onContribute,
 }: {
   project: Project;
   index: number;
@@ -104,14 +111,19 @@ function ProjectCard({
     donateWithUs: string;
   };
   onActivate: (index: number) => void;
+  /** Handles the section-wide fallback destination when a card has no contribution link. */
+  onContribute: () => void;
 }) {
   const isActive = index === activeIndex;
   const absoluteOffset = Math.abs(offset);
   const signedDirection = offset === 0 ? 0 : offset > 0 ? 1 : -1;
   const visualDirection = isRtl ? -signedDirection : signedDirection;
   const isFar = absoluteOffset > 2;
-  const isInternalDetails = project.detailsUrl.startsWith('/');
-  const isExternalDetails = project.detailsUrl.startsWith('http');
+  const detailsUrl = project.detailsUrl ?? '';
+  const isInternalDetails = detailsUrl.startsWith('/');
+  const isExternalDetails = detailsUrl.startsWith('http');
+  const imagePosition =
+    project.imagePosition || (project.id ? projectImagePositions[project.id] : undefined) || '50% 26%';
   const scale = isActive ? 1 : absoluteOffset === 1 ? metrics.sideScale : metrics.farScale;
   const opacity = isActive ? 1 : absoluteOffset === 1 ? 0.72 : 0.34;
   const rotateY =
@@ -133,7 +145,7 @@ function ProjectCard({
       }}
     >
       <motion.article
-        data-project-card={project.id}
+        data-project-card={projectKey(project, index)}
         aria-current={isActive ? 'true' : undefined}
         aria-label={project.name}
         role={isActive ? 'group' : 'button'}
@@ -173,10 +185,10 @@ function ProjectCard({
         <div className="relative aspect-[3/2] min-h-[10rem] w-full shrink-0 overflow-hidden bg-[#eaeaea]">
           <img
             src={project.image}
-            alt={project.name}
+            alt={project.imageAlt || project.name}
             loading={isActive ? 'eager' : 'lazy'}
             className="h-full w-full object-cover"
-            style={{ objectPosition: projectImagePositions[project.id] ?? '50% 26%' }}
+            style={{ objectPosition: imagePosition }}
             draggable={false}
             onError={(event) => {
               const target = event.target as HTMLImageElement;
@@ -206,7 +218,7 @@ function ProjectCard({
           >
             {isInternalDetails ? (
               <Link
-                to={project.detailsUrl}
+                to={detailsUrl}
                 tabIndex={isActive ? 0 : -1}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
               >
@@ -215,7 +227,7 @@ function ProjectCard({
               </Link>
             ) : (
               <a
-                href={project.detailsUrl}
+                href={detailsUrl || undefined}
                 target={isExternalDetails ? '_blank' : undefined}
                 rel={isExternalDetails ? 'noopener noreferrer' : undefined}
                 tabIndex={isActive ? 0 : -1}
@@ -238,10 +250,7 @@ function ProjectCard({
               <button
                 type="button"
                 tabIndex={isActive ? 0 : -1}
-                onClick={() => {
-                  const el = document.querySelector('#participate');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={onContribute}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-4 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
               >
                 {labels.donateWithUs}
@@ -259,8 +268,10 @@ export default function Projects() {
   const metrics = useCoverflowMetrics();
   const shouldReduceMotion = useReducedMotion();
   const { content, t, isRtl } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
   const projectsContent = content.projects;
-  const projects = projectsContent.items;
+  const projects = useMemo(() => projectsContent.items ?? [], [projectsContent.items]);
   const [activeIndex, setActiveIndex] = useState(0);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const wheelTimeoutRef = useRef<number | undefined>(undefined);
@@ -280,13 +291,40 @@ export default function Projects() {
 
   const goToProject = useCallback(
     (index: number) => {
+      if (projectCount === 0) return;
       setActiveIndex(normalizeIndex(index, projectCount));
     },
     [projectCount]
   );
 
+  // Fallback for cards without their own contribution link: an editable
+  // destination that may be a page ("/donate") or an anchor ("#participate").
+  const goToDefaultContribution = useCallback(() => {
+    const href = projectsContent.defaultContributionUrl || '/donate';
+
+    if (href.startsWith('#')) {
+      if (location.pathname !== '/') {
+        navigate({ pathname: '/', hash: href });
+        return;
+      }
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    if (href.startsWith('/')) {
+      navigate(href);
+      return;
+    }
+
+    window.open(href, '_blank', 'noopener,noreferrer');
+  }, [location.pathname, navigate, projectsContent.defaultContributionUrl]);
+
   const goNext = useCallback(() => goToProject(activeIndex + 1), [activeIndex, goToProject]);
   const goPrevious = useCallback(() => goToProject(activeIndex - 1), [activeIndex, goToProject]);
+
+  // The editor may empty the list; hide the section rather than render an empty stage.
+  if (projectCount === 0) return null;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowLeft') {
@@ -401,7 +439,7 @@ export default function Projects() {
           >
             {projects.map((project, index) => (
               <ProjectCard
-                key={project.id}
+                key={projectKey(project, index)}
                 project={project}
                 index={index}
                 activeIndex={activeIndex}
@@ -414,6 +452,7 @@ export default function Projects() {
                   donateWithUs: t('common.donateWithUs'),
                 }}
                 onActivate={goToProject}
+                onContribute={goToDefaultContribution}
               />
             ))}
           </div>
@@ -450,7 +489,7 @@ export default function Projects() {
         <div className="mt-6 flex items-center justify-center gap-2" aria-label={t('accessibility.projectDots')}>
           {projects.map((project, index) => (
             <button
-              key={project.id}
+              key={projectKey(project, index)}
               type="button"
               onClick={() => goToProject(index)}
               aria-label={`${t('accessibility.showProject')} ${project.name}`}

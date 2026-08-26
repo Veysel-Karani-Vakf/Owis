@@ -32,6 +32,15 @@ export type ProjectVideo = {
   sourceUrl: string;
   /** Public URL of a video uploaded in the dashboard; wins over videoId. */
   videoFile?: string;
+  /** Cover image chosen in the dashboard; falls back to the project image. */
+  posterImage?: string;
+};
+
+/** Per-project SEO overrides; every field is optional and falls back to the composed values. */
+export type ProjectSeo = {
+  title?: string;
+  description?: string;
+  canonical?: string;
 };
 
 export type LocalizedWaqfProject = {
@@ -58,6 +67,7 @@ export type LocalizedWaqfProject = {
   video?: ProjectVideo;
   ctaTitle: string;
   ctaDescription: string;
+  seo?: ProjectSeo;
 };
 
 export type ProjectsPageContent = {
@@ -70,6 +80,7 @@ export type ProjectsPageContent = {
     title: string;
     description: string;
     image: string;
+    imageAlt: string;
   };
   breadcrumbs: BreadcrumbItem[];
   intro: {
@@ -570,6 +581,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       description:
         'استثمارات وقفية مستدامة لتنمية أصول الوقف وتحويل عوائدها إلى برامج تنموية تخدم اليمن.',
       image: waqfShareImage,
+      imageAlt: 'المشاريع الوقفية',
     },
     breadcrumbs: [
       { label: 'الرئيسية', href: '/' },
@@ -624,6 +636,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       description:
         'Vakıf varlıklarını büyüten ve gelirlerini Yemen’e hizmet eden kalkınma programlarına dönüştüren sürdürülebilir yatırımlar.',
       image: waqfShareImage,
+      imageAlt: 'Vakıf Projeleri',
     },
     breadcrumbs: [
       { label: 'Ana Sayfa', href: '/' },
@@ -678,6 +691,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       description:
         'Sustainable waqf investments that grow waqf assets and turn their returns into development programs serving Yemen.',
       image: waqfShareImage,
+      imageAlt: 'Waqf Projects',
     },
     breadcrumbs: [
       { label: 'Home', href: '/' },

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { participateRoutes } from '@/data/participate';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
@@ -9,10 +10,64 @@ type ParticipationCTAProps = {
   standalone?: boolean;
 };
 
+/**
+ * Renders a button whose destination the editor controls: "/path" navigates,
+ * "#anchor" scrolls on the home page (navigating there first when needed),
+ * anything else opens as an external link.
+ */
+function CtaLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className: string;
+  children: ReactNode;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  if (href.startsWith('/')) {
+    return (
+      <Link to={href} className={className}>
+        {children}
+      </Link>
+    );
+  }
+
+  if (href.startsWith('#')) {
+    return (
+      <a
+        href={href}
+        className={className}
+        onClick={(event) => {
+          event.preventDefault();
+          if (location.pathname !== '/') {
+            navigate({ pathname: '/', hash: href });
+            return;
+          }
+          const el = document.querySelector(href);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+      {children}
+    </a>
+  );
+}
+
 export default function ParticipationCTA({ standalone = false }: ParticipationCTAProps) {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, isRtl } = useI18n();
   const participationContent = content.participation;
+  const primaryUrl = participationContent.primaryUrl || '/donate';
+  const secondaryUrl = participationContent.secondaryUrl || participateRoutes.volunteer;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const arrowHoverClass = isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1';
   const sectionClassName = standalone
@@ -74,21 +129,25 @@ export default function ParticipationCTA({ standalone = false }: ParticipationCT
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
-          <Link
-            to="/donate"
-            className="group flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-sm font-semibold text-dark-900 shadow-xl transition-all duration-300 hover:bg-gold-300 hover:shadow-2xl"
-          >
-            {participationContent.primaryButton}
-            <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
-          </Link>
+          {participationContent.primaryButton && (
+            <CtaLink
+              href={primaryUrl}
+              className="group flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-sm font-semibold text-dark-900 shadow-xl transition-all duration-300 hover:bg-gold-300 hover:shadow-2xl"
+            >
+              {participationContent.primaryButton}
+              <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
+            </CtaLink>
+          )}
 
-          <Link
-            to={participateRoutes.volunteer}
-            className="group flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10"
-          >
-            {participationContent.secondaryButton}
-            <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
-          </Link>
+          {participationContent.secondaryButton && (
+            <CtaLink
+              href={secondaryUrl}
+              className="group flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10"
+            >
+              {participationContent.secondaryButton}
+              <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
+            </CtaLink>
+          )}
         </motion.div>
       </div>
     </section>

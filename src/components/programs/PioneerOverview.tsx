@@ -1,8 +1,19 @@
 import { motion, useReducedMotion, useScroll, useTransform, type Variants } from 'framer-motion';
-import { Compass, ExternalLink, GraduationCap, HeartHandshake, Mail, Quote, Sparkles, type LucideIcon } from 'lucide-react';
+import {
+  Compass,
+  ExternalLink,
+  GraduationCap,
+  HeartHandshake,
+  Mail,
+  Phone,
+  Quote,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 import { useRef } from 'react';
 import type { Program } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
 type PioneerOverviewProps = {
   program: Program;
@@ -15,6 +26,12 @@ type PioneerOverviewProps = {
 
 const pillarIcons: LucideIcon[] = [GraduationCap, Compass, HeartHandshake];
 const smoothEase = [0.22, 1, 0.36, 1] as const;
+
+// This repo IS the official site: a source URL that still points at the legacy
+// domain is stale and must never be linked from here.
+function isLinkableSource(url: string | undefined): url is string {
+  return !!url && !/veysvakfi\.org/i.test(url);
+}
 
 const containerVariants: Variants = {
   hidden: {},
@@ -40,11 +57,13 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
   const imageY = useTransform(scrollYProgress, [0, 1], reduced ? ['0%', '0%'] : ['-8%', '8%']);
   const imageScale = useTransform(scrollYProgress, [0, 0.5, 1], reduced ? [1, 1, 1] : [1.08, 1.02, 1.08]);
 
-  const intro = program.sections[0];
+  const intro = program.sections?.[0];
   const paragraphs = intro?.paragraphs ?? [];
   const lead = paragraphs[0];
   const quote = paragraphs.slice(1).join(' ');
   const pillars = program.pillars ?? [];
+  const phone = program.contactPhone?.trim();
+  const sourceUrl = isLinkableSource(program.officialSourceUrl) ? program.officialSourceUrl : undefined;
 
   return (
     <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 md:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
@@ -97,7 +116,7 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
         {pillars.length > 0 && (
           <motion.ul variants={containerVariants} className="mt-5 flex flex-wrap gap-2">
             {pillars.map((pillar, index) => {
-              const Icon = pillarIcons[index % pillarIcons.length];
+              const Icon = resolveIcon(pillar.icon, pillarIcons, index);
               return (
                 <motion.li
                   key={pillar.id}
@@ -126,18 +145,28 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
               </span>
             </a>
           )}
-          <a
-            href={program.officialSourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-200 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-          >
-            {labels.officialSource}
-            <ExternalLink
-              className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'} group-hover:-translate-y-0.5`}
-              aria-hidden="true"
-            />
-          </a>
+          {phone && (
+            <a
+              href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+              className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+            >
+              <Phone className="h-4 w-4 transition-transform group-hover:-rotate-6" aria-hidden="true" />
+              <span dir="ltr" className="font-semibold">
+                {phone}
+              </span>
+            </a>
+          )}
+          {sourceUrl && (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-primary-700 transition-colors hover:text-primary-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+            >
+              {labels.officialSource}
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+          )}
         </motion.div>
       </motion.div>
 

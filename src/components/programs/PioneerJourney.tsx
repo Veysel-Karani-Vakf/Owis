@@ -11,6 +11,7 @@ import { Award, Compass, GraduationCap, Rocket, UserSearch, type LucideIcon } fr
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ProgramJourneyStep } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
 type PioneerJourneyProps = {
   eyebrow: string;
@@ -77,7 +78,8 @@ function StepCard({
   reduced: boolean;
   pinned: boolean;
 }) {
-  const Icon = stepIcons[index % stepIcons.length];
+  // The editor's icon wins; otherwise the position-based default keeps the original look.
+  const Icon = resolveIcon(step.icon, stepIcons, index);
   const isLast = index === total - 1;
 
   return (
@@ -301,7 +303,7 @@ export default function PioneerJourney(props: PioneerJourneyProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px) and (min-height: 640px)');
   const pinned = isDesktop && !shouldReduceMotion;
 
-  if (!props.steps.length) return null;
+  if (!props.steps?.length) return null;
 
   return pinned ? <HorizontalJourney {...props} /> : <VerticalJourney {...props} />;
 }

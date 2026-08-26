@@ -4,6 +4,10 @@
 //   { ar: { hero: { title: "…" } }, tr: { … }, en: { … } }
 // The dashboard edits one locale at a time, so field paths below are relative
 // to `data[locale]`.
+//
+// Every section carries a `description`: one sentence, in the editor's words,
+// saying where on the site the fields appear. That line — not the field count —
+// is what tells a non-technical editor they are in the right place.
 
 import {
   Home,
@@ -30,9 +34,17 @@ import {
   Award,
   Route as RouteIcon,
   Building2,
+  Share2,
+  Accessibility,
+  LayoutGrid,
+  Phone,
+  Search,
+  SlidersHorizontal,
+  Library,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
+import type { SelectOption } from './fields';
 
 /** Compact trilingual label. */
 const L = (ar: string, tr: string, en: string): Record<Locale, string> => ({ ar, tr, en });
@@ -47,6 +59,10 @@ export type PageFieldType =
   | 'number'
   | 'boolean'
   | 'video'
+  | 'select'
+  | 'icon'
+  | 'localized'
+  | 'localizedTextarea'
   | 'repeater';
 
 export type PageFieldDef = {
@@ -59,12 +75,21 @@ export type PageFieldDef = {
   itemFields?: PageFieldDef[];
   /** Item field whose value titles the collapsed row. */
   itemTitleField?: string;
+  /** Choices for `select` fields. */
+  options?: SelectOption[];
+  /** Upper bound on repeater rows, where the layout cannot show more. */
+  max?: number;
   full?: boolean;
+  /** Tucked into a collapsed "more settings" block instead of the main grid. */
+  advanced?: boolean;
+  placeholder?: string;
 };
 
 export type PageSectionDef = {
   key: string;
   label: Record<Locale, string>;
+  /** Where on the site this section's fields appear. */
+  description?: Record<Locale, string>;
   icon: LucideIcon;
   /** Element in the live preview to scroll to and outline while editing. */
   anchor?: string;
@@ -78,6 +103,8 @@ export type SitePageDef = {
   key: string;
   group: PageGroup;
   label: Record<Locale, string>;
+  /** One line under the page name in the page list. */
+  description?: Record<Locale, string>;
   icon: LucideIcon;
   /** Public route opened in the preview frame. */
   route: string;
@@ -85,31 +112,49 @@ export type SitePageDef = {
 };
 
 export const PAGE_GROUPS: { key: PageGroup; label: Record<Locale, string> }[] = [
-  { key: 'main', label: L('الرئيسية', 'Ana', 'Main') },
+  { key: 'main', label: L('الصفحات الرئيسية', 'Ana sayfalar', 'Main pages') },
   { key: 'about', label: L('عن الوقف', 'Hakkında', 'About') },
-  { key: 'involve', label: L('شارك معنا', 'Katılım', 'Get involved') },
-  { key: 'library', label: L('المكتبة والأخبار', 'Kütüphane', 'Library & news') },
+  { key: 'involve', label: L('المساهمة والمشاركة', 'Katılım', 'Donate & participate') },
+  { key: 'library', label: L('المكتبة والأخبار', 'Kütüphane ve haberler', 'Library & news') },
   { key: 'system', label: L('إعدادات الموقع', 'Site ayarları', 'Site settings') },
 ];
 
 // Reusable field clusters ----------------------------------------------------
 const seoFields = (prefix = 'seo'): PageFieldDef[] => [
-  { path: `${prefix}.title`, label: L('عنوان الصفحة', 'Sayfa başlığı', 'Page title'), type: 'text' },
+  {
+    path: `${prefix}.title`,
+    label: L('عنوان الصفحة في جوجل', 'Google başlığı', 'Search-engine title'),
+    type: 'text',
+    help: L('يظهر في تبويب المتصفح ونتائج البحث', 'Tarayıcı sekmesinde ve arama sonuçlarında görünür', 'Shown in the browser tab and in search results'),
+  },
   {
     path: `${prefix}.description`,
-    label: L('وصف الصفحة', 'Sayfa açıklaması', 'Page description'),
+    label: L('وصف الصفحة في جوجل', 'Google açıklaması', 'Search-engine description'),
     type: 'textarea',
+  },
+  {
+    path: `${prefix}.canonical`,
+    label: L('الرابط الأساسي (canonical)', 'Kanonik bağlantı', 'Canonical URL'),
+    type: 'url',
+    advanced: true,
+    help: L('اتركه فارغاً إلا إذا كانت الصفحة منشورة على رابط آخر أيضاً', 'Sayfa başka bir adreste de yayındaysa doldurun', 'Leave empty unless the page also lives at another address'),
   },
 ];
 
 const heroFields = (prefix = 'hero'): PageFieldDef[] => [
   { path: `${prefix}.title`, label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
   { path: `${prefix}.description`, label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
-  { path: `${prefix}.image`, label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
+  { path: `${prefix}.image`, label: L('صورة الخلفية', 'Arka plan görseli', 'Background image'), type: 'image' },
+  {
+    path: `${prefix}.imageAlt`,
+    label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'),
+    type: 'text',
+    help: L('لقارئات الشاشة ومحركات البحث', 'Ekran okuyucular ve arama motorları için', 'For screen readers and search engines'),
+  },
 ];
 
 const introFields = (prefix = 'intro'): PageFieldDef[] => [
-  { path: `${prefix}.eyebrow`, label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
+  { path: `${prefix}.eyebrow`, label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
   { path: `${prefix}.title`, label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
   {
     path: `${prefix}.paragraphs`,
@@ -120,17 +165,108 @@ const introFields = (prefix = 'intro'): PageFieldDef[] => [
 
 const linkItemFields: PageFieldDef[] = [
   { path: 'label', label: L('النص', 'Etiket', 'Label'), type: 'text' },
-  { path: 'href', label: L('الرابط', 'Bağlantı', 'Link'), type: 'text' },
+  {
+    path: 'href',
+    label: L('الرابط', 'Bağlantı', 'Link'),
+    type: 'text',
+    help: L('مثال: /projects أو #about', 'Örnek: /projects veya #about', 'Example: /projects or #about'),
+  },
 ];
 
+const breadcrumbFields = (path = 'breadcrumbs'): PageFieldDef => ({
+  path,
+  label: L('مسار التنقل (فتات الخبز)', 'Gezinti yolu', 'Breadcrumb trail'),
+  type: 'repeater',
+  itemTitleField: 'label',
+  itemFields: [
+    { path: 'label', label: L('النص', 'Etiket', 'Label'), type: 'text' },
+    {
+      path: 'href',
+      label: L('الرابط', 'Bağlantı', 'Link'),
+      type: 'text',
+      help: L('اتركه فارغاً للعنصر الأخير', 'Son öğe için boş bırakın', 'Leave empty for the last item'),
+    },
+  ],
+});
+
+const eyebrowTitleDescription = (prefix: string): PageFieldDef[] => [
+  { path: `${prefix}.eyebrow`, label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
+  { path: `${prefix}.title`, label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+  { path: `${prefix}.description`, label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+];
+
+const iconField = (path = 'icon'): PageFieldDef => ({
+  path,
+  label: L('الأيقونة', 'Simge', 'Icon'),
+  type: 'icon',
+  help: L('اختياري — يُستخدم الافتراضي إن تُرك فارغاً', 'İsteğe bağlı', 'Optional — the default is used when empty'),
+});
+
+type LabelEntry = [key: string, ar: string, tr: string, en: string, type?: 'text' | 'textarea'];
+
 /** Turns a flat label map into individual text fields. */
-function labelFields(prefix: string, entries: [string, string, string, string][]): PageFieldDef[] {
-  return entries.map(([key, ar, tr, en]) => ({
-    path: `${prefix}.${key}`,
+function labelFields(prefix: string, entries: LabelEntry[]): PageFieldDef[] {
+  return entries.map(([key, ar, tr, en, type]) => ({
+    path: prefix ? `${prefix}.${key}` : key,
     label: L(ar, tr, en),
-    type: 'text' as const,
+    type: type ?? 'text',
   }));
 }
+
+const socialNetworkFields = (prefix: string): PageFieldDef[] => [
+  { path: `${prefix}.facebook`, label: L('فيسبوك', 'Facebook', 'Facebook'), type: 'url' },
+  { path: `${prefix}.twitter`, label: L('تويتر / X', 'Twitter / X', 'Twitter / X'), type: 'url' },
+  { path: `${prefix}.instagram`, label: L('إنستغرام', 'Instagram', 'Instagram'), type: 'url' },
+  { path: `${prefix}.youtube`, label: L('يوتيوب', 'YouTube', 'YouTube'), type: 'url' },
+  { path: `${prefix}.linkedin`, label: L('لينكدإن', 'LinkedIn', 'LinkedIn'), type: 'url' },
+  { path: `${prefix}.tiktok`, label: L('تيك توك', 'TikTok', 'TikTok'), type: 'url' },
+  { path: `${prefix}.whatsapp`, label: L('واتساب', 'WhatsApp', 'WhatsApp'), type: 'url' },
+  { path: `${prefix}.telegram`, label: L('تيليغرام', 'Telegram', 'Telegram'), type: 'url' },
+];
+
+const formFieldTypeOptions: SelectOption[] = [
+  { value: 'text', label: L('نص قصير', 'Kısa metin', 'Short text') },
+  { value: 'textarea', label: L('نص طويل', 'Uzun metin', 'Long text') },
+  { value: 'email', label: L('بريد إلكتروني', 'E-posta', 'Email') },
+  { value: 'tel', label: L('رقم هاتف', 'Telefon', 'Phone number') },
+  { value: 'select', label: L('قائمة اختيار', 'Seçim listesi', 'Dropdown') },
+  { value: 'file', label: L('رفع ملف', 'Dosya yükleme', 'File upload') },
+];
+
+const inputModeOptions: SelectOption[] = [
+  { value: 'text', label: L('نص', 'Metin', 'Text') },
+  { value: 'email', label: L('بريد', 'E-posta', 'Email') },
+  { value: 'tel', label: L('هاتف', 'Telefon', 'Phone') },
+  { value: 'numeric', label: L('أرقام', 'Sayısal', 'Numbers') },
+];
+
+const contactKindOptions: SelectOption[] = [
+  { value: 'whatsapp', label: L('واتساب', 'WhatsApp', 'WhatsApp') },
+  { value: 'social', label: L('صفحة تواصل اجتماعي', 'Sosyal medya', 'Social page') },
+];
+
+const participateKeyOptions: SelectOption[] = [
+  { value: 'shareIdeas', label: L('شارك بفكرة', 'Fikir paylaş', 'Share an idea') },
+  { value: 'complaintsSuggestions', label: L('الشكاوى والمقترحات', 'Şikayet ve öneriler', 'Complaints & suggestions') },
+  { value: 'volunteer', label: L('التطوع', 'Gönüllülük', 'Volunteer') },
+  { value: 'contact', label: L('تواصل معنا', 'İletişim', 'Contact us') },
+];
+
+const navMenuOptions: SelectOption[] = [
+  { value: '', label: L('بدون قائمة منسدلة', 'Açılır menü yok', 'No dropdown') },
+  { value: 'about', label: L('قائمة "عن الوقف"', '"Hakkında" menüsü', '"About" menu') },
+  { value: 'programs', label: L('قائمة "البرامج"', '"Programlar" menüsü', '"Programs" menu') },
+];
+
+const libraryCollectionKeys: [string, string, string, string][] = [
+  ['forum', 'منتدى الوقف (المقالات)', 'Vakıf forumu', 'Waqf forum (articles)'],
+  ['periodic-reports', 'التقارير الدورية', 'Periyodik raporlar', 'Periodic reports'],
+  ['waqf-books', 'كتب الوقف', 'Vakıf kitapları', 'Waqf books'],
+  ['waqf-literature', 'أدبيات الوقف', 'Vakıf literatürü', 'Waqf literature'],
+  ['yemeni-figures', 'شخصيات يمانية', 'Yemenli şahsiyetler', 'Yemeni figures'],
+  ['success-stories', 'قصص النجاح', 'Başarı hikayeleri', 'Success stories'],
+  ['gallery', 'معرض الصور', 'Galeri', 'Photo gallery'],
+];
 
 // PAGES ----------------------------------------------------------------------
 export const SITE_PAGES: SitePageDef[] = [
@@ -139,26 +275,24 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'home',
     group: 'main',
     label: L('الصفحة الرئيسية', 'Ana sayfa', 'Home'),
+    description: L('كل أقسام الصفحة الأولى من الأعلى إلى الأسفل', 'Açılış sayfasının tüm bölümleri', 'Every section of the landing page, top to bottom'),
     icon: Home,
     route: '/',
     sections: [
       {
         key: 'hero',
         label: L('الواجهة الرئيسية', 'Hero bölümü', 'Hero section'),
+        description: L('أول ما يراه الزائر: العنوان الكبير فوق الفيديو والزر تحته', 'Ziyaretçinin ilk gördüğü: video üstündeki başlık ve buton', 'The first thing a visitor sees: the big title over the video and the button below it'),
         icon: Megaphone,
         anchor: '#hero',
         fields: [
-          { path: 'hero.title', label: L('العنوان', 'Başlık', 'Title'), type: 'textarea' },
-          { path: 'hero.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          { path: 'hero.title', label: L('العنوان الكبير', 'Büyük başlık', 'Headline'), type: 'textarea' },
+          { path: 'hero.secondaryButton', label: L('نص الزر', 'Buton metni', 'Button label'), type: 'text' },
           {
-            path: 'hero.primaryButton',
-            label: L('الزر الأساسي', 'Ana buton', 'Primary button'),
+            path: 'hero.secondaryUrl',
+            label: L('وجهة الزر', 'Buton hedefi', 'Button destination'),
             type: 'text',
-          },
-          {
-            path: 'hero.secondaryButton',
-            label: L('الزر الثانوي', 'İkincil buton', 'Secondary button'),
-            type: 'text',
+            help: L('مثال: #participate أو /donate', 'Örnek: #participate veya /donate', 'Example: #participate or /donate'),
           },
           { path: 'hero', label: L('فيديو الخلفية', 'Arka plan videosu', 'Background video'), type: 'video' },
         ],
@@ -166,42 +300,54 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'about',
         label: L('عن الوقف', 'Vakıf hakkında', 'About the waqf'),
+        description: L('قسم التعريف بالوقف مع التبويبات (الرؤية، الرسالة…)', 'Sekmeli tanıtım bölümü (vizyon, misyon…)', 'The introduction section with its tabs (vision, mission…)'),
         icon: Info,
         anchor: '#about',
         fields: [
-          { path: 'about.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'about.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'about.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('about'),
           { path: 'about.image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
-          { path: 'about.tabs.vision', label: L('تبويب: الرؤية', 'Sekme: Vizyon', 'Tab: Vision'), type: 'text' },
-          { path: 'about.tabs.mission', label: L('تبويب: الرسالة', 'Sekme: Misyon', 'Tab: Mission'), type: 'text' },
+          { path: 'about.imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' },
           {
-            path: 'about.tabs.methodology',
-            label: L('تبويب: المنهجية', 'Sekme: Metodoloji', 'Tab: Methodology'),
+            path: 'about.learnMoreUrl',
+            label: L('وجهة زر "اعرف المزيد"', '"Daha fazla" hedefi', '"Learn more" destination'),
             type: 'text',
+            help: L('مثال: /about/waqf', 'Örnek: /about/waqf', 'Example: /about/waqf'),
           },
-          { path: 'about.tabs.values', label: L('تبويب: القيم', 'Sekme: Değerler', 'Tab: Values'), type: 'text' },
-          { path: 'about.tabs.sectors', label: L('تبويب: القطاعات', 'Sekme: Sektörler', 'Tab: Sectors'), type: 'text' },
-          { path: 'about.vision', label: L('الرؤية', 'Vizyon', 'Vision'), type: 'textarea' },
-          { path: 'about.mission', label: L('الرسالة', 'Misyon', 'Mission'), type: 'list' },
-          { path: 'about.methodology', label: L('المنهجية', 'Metodoloji', 'Methodology'), type: 'list' },
+          { path: 'about.tabs.vision', label: L('اسم تبويب الرؤية', 'Vizyon sekmesi adı', 'Vision tab name'), type: 'text' },
+          { path: 'about.vision', label: L('نص الرؤية', 'Vizyon metni', 'Vision text'), type: 'textarea' },
+          { path: 'about.tabs.mission', label: L('اسم تبويب الرسالة', 'Misyon sekmesi adı', 'Mission tab name'), type: 'text' },
+          { path: 'about.mission', label: L('نقاط الرسالة', 'Misyon maddeleri', 'Mission points'), type: 'list' },
+          { path: 'about.tabs.methodology', label: L('اسم تبويب المنهجية', 'Metodoloji sekmesi adı', 'Methodology tab name'), type: 'text' },
+          { path: 'about.methodology', label: L('نقاط المنهجية', 'Metodoloji maddeleri', 'Methodology points'), type: 'list' },
+          { path: 'about.tabs.values', label: L('اسم تبويب القيم', 'Değerler sekmesi adı', 'Values tab name'), type: 'text' },
           { path: 'about.values', label: L('القيم', 'Değerler', 'Values'), type: 'list' },
+          { path: 'about.tabs.sectors', label: L('اسم تبويب القطاعات', 'Sektörler sekmesi adı', 'Sectors tab name'), type: 'text' },
           { path: 'about.sectors', label: L('القطاعات', 'Sektörler', 'Sectors'), type: 'list' },
           { path: 'about.goals', label: L('الأهداف', 'Hedefler', 'Goals'), type: 'list' },
         ],
       },
       {
         key: 'projects',
-        label: L('المشاريع الوقفية', 'Vakıf projeleri', 'Waqf projects'),
+        label: L('بطاقات المشاريع', 'Proje kartları', 'Project cards'),
+        description: L(
+          'عنوان قسم المشاريع وبطاقاته الدوّارة. هذه البطاقات مستقلة عن صفحات المشاريع — لتعديل صفحة مشروع كاملة اذهب إلى "المشاريع" في القائمة.',
+          'Proje bölümünün başlığı ve kartları. Kartlar proje sayfalarından bağımsızdır; sayfayı düzenlemek için menüden "Projeler"e gidin.',
+          'The projects section title and its rotating cards. Cards are independent of the project pages — to edit a full project page open "Projects" in the menu.',
+        ),
         icon: FolderKanban,
         anchor: '#projects',
         fields: [
-          { path: 'projects.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'projects.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'projects.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('projects'),
+          {
+            path: 'projects.defaultContributionUrl',
+            label: L('وجهة "ساهم معنا" الافتراضية', 'Varsayılan katkı hedefi', 'Default "donate" destination'),
+            type: 'text',
+            advanced: true,
+            help: L('تُستخدم عندما لا يكون للبطاقة رابط مساهمة خاص', 'Kartın kendi bağlantısı yoksa kullanılır', 'Used when a card has no contribution link of its own'),
+          },
           {
             path: 'projects.items',
-            label: L('بطاقات المشاريع', 'Proje kartları', 'Project cards'),
+            label: L('البطاقات', 'Kartlar', 'Cards'),
             type: 'repeater',
             itemTitleField: 'name',
             itemFields: [
@@ -209,6 +355,14 @@ export const SITE_PAGES: SitePageDef[] = [
               { path: 'description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
               { path: 'contribution', label: L('قيمة المساهمة', 'Katkı', 'Contribution'), type: 'text' },
               { path: 'image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
+              { path: 'imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' },
+              {
+                path: 'imagePosition',
+                label: L('نقطة تركيز الصورة', 'Görsel odak noktası', 'Image focal point'),
+                type: 'text',
+                advanced: true,
+                help: L('مثال: 50% 30% — يحدد أي جزء من الصورة يبقى ظاهراً عند القص', 'Örnek: 50% 30%', 'Example: 50% 30% — which part of the image stays visible when cropped'),
+              },
               { path: 'detailsUrl', label: L('رابط التفاصيل', 'Detay bağlantısı', 'Details link'), type: 'text' },
               {
                 path: 'contributionUrl',
@@ -221,22 +375,26 @@ export const SITE_PAGES: SitePageDef[] = [
       },
       {
         key: 'programs',
-        label: L('البرامج', 'Programlar', 'Programs'),
+        label: L('بطاقات البرامج', 'Program kartları', 'Program cards'),
+        description: L(
+          'عنوان قسم البرامج وبطاقاته المتراكبة. البطاقات مستقلة عن صفحات البرامج — لتعديل صفحة برنامج اذهب إلى "البرامج".',
+          'Program bölümünün başlığı ve kartları; program sayfalarından bağımsızdır.',
+          'The programs section title and its stacked cards. Cards are independent of the program pages — open "Programs" to edit a page.',
+        ),
         icon: GraduationCap,
         anchor: '#programs',
         fields: [
-          { path: 'programs.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'programs.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'programs.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('programs'),
           {
             path: 'programs.items',
-            label: L('بطاقات البرامج', 'Program kartları', 'Program cards'),
+            label: L('البطاقات', 'Kartlar', 'Cards'),
             type: 'repeater',
             itemTitleField: 'title',
             itemFields: [
               { path: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
               { path: 'description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
               { path: 'image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
+              { path: 'imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' },
               { path: 'url', label: L('الرابط', 'Bağlantı', 'Link'), type: 'text' },
             ],
           },
@@ -245,49 +403,47 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'yemenPioneers',
         label: L('رواد اليمن', 'Yemen öncüleri', 'Yemen pioneers'),
+        description: L(
+          'القسم الأحمر الخاص برواد اليمن. الأرقام الأربعة تُدار من "الإحصائيات" في القائمة (مجموعة رواد اليمن).',
+          'Yemen öncüleri bölümü. Rakamlar menüdeki "İstatistikler"den yönetilir.',
+          'The Yemen pioneers band. Its figures are managed under "Statistics" in the menu (Yemen pioneers group).',
+        ),
         icon: Award,
         anchor: '#yemen-pioneers',
         fields: [
-          { path: 'yemenPioneers.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'yemenPioneers.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          {
-            path: 'yemenPioneers.description',
-            label: L('الوصف', 'Açıklama', 'Description'),
-            type: 'textarea',
-          },
+          ...eyebrowTitleDescription('yemenPioneers'),
           { path: 'yemenPioneers.button', label: L('نص الزر', 'Buton metni', 'Button label'), type: 'text' },
+          {
+            path: 'yemenPioneers.url',
+            label: L('وجهة الزر', 'Buton hedefi', 'Button destination'),
+            type: 'text',
+            help: L('مثال: /programs/yemen-pioneers', 'Örnek: /programs/yemen-pioneers', 'Example: /programs/yemen-pioneers'),
+          },
           { path: 'yemenPioneers.image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
           {
             path: 'yemenPioneers.statisticsSource.label',
-            label: L('اسم المصدر', 'Kaynak adı', 'Source label'),
+            label: L('اسم مصدر الأرقام', 'Kaynak adı', 'Figures source label'),
             type: 'text',
           },
           {
             path: 'yemenPioneers.statisticsSource.url',
-            label: L('رابط المصدر', 'Kaynak bağlantısı', 'Source URL'),
+            label: L('رابط مصدر الأرقام', 'Kaynak bağlantısı', 'Figures source URL'),
             type: 'url',
-          },
-          {
-            path: 'yemenPioneers.indicators',
-            label: L('المؤشرات', 'Göstergeler', 'Indicators'),
-            type: 'repeater',
-            itemTitleField: 'label',
-            itemFields: [
-              { path: 'label', label: L('البيان', 'Etiket', 'Label'), type: 'text' },
-              { path: 'value', label: L('القيمة', 'Değer', 'Value'), type: 'number' },
-            ],
           },
         ],
       },
       {
         key: 'statistics',
         label: L('الإحصائيات', 'İstatistikler', 'Statistics'),
+        description: L(
+          'عنوان قسم الأرقام ومصدرها. الأرقام نفسها تُدار من "الإحصائيات" في القائمة.',
+          'Rakamlar bölümünün başlığı ve kaynağı. Rakamlar menüdeki "İstatistikler"den yönetilir.',
+          'The title and source of the figures section. The figures themselves are managed under "Statistics" in the menu.',
+        ),
         icon: BarChart3,
         anchor: '#statistics',
         fields: [
-          { path: 'statistics.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'statistics.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'statistics.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('statistics'),
           {
             path: 'statistics.source.label',
             label: L('اسم المصدر', 'Kaynak adı', 'Source label'),
@@ -298,43 +454,40 @@ export const SITE_PAGES: SitePageDef[] = [
             label: L('رابط المصدر', 'Kaynak bağlantısı', 'Source URL'),
             type: 'url',
           },
-          {
-            path: 'statistics.indicators',
-            label: L('المؤشرات', 'Göstergeler', 'Indicators'),
-            type: 'repeater',
-            itemTitleField: 'label',
-            itemFields: [
-              { path: 'label', label: L('البيان', 'Etiket', 'Label'), type: 'text' },
-              { path: 'value', label: L('القيمة', 'Değer', 'Value'), type: 'number' },
-              { path: 'suffix', label: L('اللاحقة', 'Sonek', 'Suffix'), type: 'text' },
-              { path: 'detail', label: L('التفصيل', 'Detay', 'Detail'), type: 'text' },
-            ],
-          },
         ],
       },
       {
         key: 'news',
         label: L('قسم الأخبار', 'Haber bölümü', 'News section'),
+        description: L('عنوان قسم آخر الأخبار في الصفحة الرئيسية؛ الأخبار نفسها من قائمة "الأخبار"', 'Ana sayfadaki haber bölümü başlığı; haberler "Haberler" listesinden gelir', 'The latest-news section title; the articles come from the "News" list'),
         icon: Newspaper,
         anchor: '#news',
         fields: [
-          { path: 'news.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
+          { path: 'news.eyebrow', label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
           { path: 'news.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+          {
+            path: 'news.count',
+            label: L('عدد الأخبار المعروضة', 'Gösterilen haber sayısı', 'Number of articles shown'),
+            type: 'number',
+            help: L('الافتراضي 3: خبر كبير وخبران صغيران', 'Varsayılan 3', 'Default 3: one large card and two small ones'),
+          },
         ],
       },
       {
         key: 'partners',
         label: L('الشركاء', 'Ortaklar', 'Partners'),
+        description: L('عنوان شريط شعارات الشركاء؛ الشعارات من قائمة "الشركاء"', 'Ortak logoları şeridinin başlığı; logolar "Ortaklar" listesinden', 'The partner-logo strip title; the logos come from the "Partners" list'),
         icon: Handshake,
         anchor: '#partners',
         fields: [
-          { path: 'partners.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
+          { path: 'partners.eyebrow', label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
           { path: 'partners.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
         ],
       },
       {
         key: 'participation',
         label: L('دعوة المشاركة', 'Katılım çağrısı', 'Participation call'),
+        description: L('اللوحة الداكنة في أسفل الصفحة الرئيسية وصفحة عن الوقف، بزرّيها', 'Ana sayfanın altındaki koyu pano ve iki butonu', 'The dark banner at the bottom of the home and about pages, with its two buttons'),
         icon: MessageSquare,
         anchor: '#participate',
         fields: [
@@ -344,17 +497,11 @@ export const SITE_PAGES: SitePageDef[] = [
             label: L('الوصف', 'Açıklama', 'Description'),
             type: 'textarea',
           },
-          {
-            path: 'participation.primaryButton',
-            label: L('الزر الأساسي', 'Ana buton', 'Primary button'),
-            type: 'text',
-          },
-          {
-            path: 'participation.secondaryButton',
-            label: L('الزر الثانوي', 'İkincil buton', 'Secondary button'),
-            type: 'text',
-          },
-          { path: 'participation.image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
+          { path: 'participation.primaryButton', label: L('الزر الأول', 'Birinci buton', 'First button'), type: 'text' },
+          { path: 'participation.primaryUrl', label: L('وجهة الزر الأول', 'Birinci buton hedefi', 'First button destination'), type: 'text' },
+          { path: 'participation.secondaryButton', label: L('الزر الثاني', 'İkinci buton', 'Second button'), type: 'text' },
+          { path: 'participation.secondaryUrl', label: L('وجهة الزر الثاني', 'İkinci buton hedefi', 'Second button destination'), type: 'text' },
+          { path: 'participation.image', label: L('صورة الخلفية', 'Arka plan görseli', 'Background image'), type: 'image' },
         ],
       },
     ],
@@ -364,26 +511,41 @@ export const SITE_PAGES: SitePageDef[] = [
   {
     key: 'settings',
     group: 'system',
-    label: L('الهوية والتذييل', 'Kimlik ve altbilgi', 'Identity & footer'),
+    label: L('الهوية والقائمة والتذييل', 'Kimlik, menü ve altbilgi', 'Identity, menu & footer'),
+    description: L('ما يتكرر في كل الصفحات: الشعار، القائمة العلوية، التذييل، والنصوص العامة', 'Her sayfada tekrarlanan: logo, üst menü, altbilgi, genel metinler', 'What repeats on every page: logo, top menu, footer, and shared labels'),
     icon: Settings2,
     route: '/',
     sections: [
       {
         key: 'meta',
         label: L('بيانات الموقع', 'Site meta', 'Site meta'),
+        description: L('عنوان الموقع في تبويب المتصفح ووصفه في نتائج البحث وصورة المشاركة', 'Tarayıcı sekmesi başlığı, arama açıklaması ve paylaşım görseli', 'The browser-tab title, search-result description and share image'),
         icon: Type,
         fields: [
           { path: 'meta.title', label: L('عنوان المتصفح', 'Tarayıcı başlığı', 'Browser title'), type: 'text' },
           { path: 'meta.description', label: L('وصف الموقع', 'Site açıklaması', 'Site description'), type: 'textarea' },
+          {
+            path: 'meta.ogImage',
+            label: L('صورة المشاركة', 'Paylaşım görseli', 'Share image'),
+            type: 'image',
+            help: L('تظهر عند مشاركة رابط الموقع على واتساب وفيسبوك', 'Site bağlantısı paylaşıldığında görünür', 'Shown when the site link is shared on WhatsApp or Facebook'),
+          },
         ],
       },
       {
         key: 'siteConfig',
-        label: L('الهوية القانونية', 'Kurumsal kimlik', 'Legal identity'),
+        label: L('الهوية القانونية والروابط', 'Kurumsal kimlik ve bağlantılar', 'Legal identity & links'),
+        description: L('اسم المؤسسة وشعارها وأرقام الترخيص في التذييل، وحسابات التواصل الاجتماعي', 'Kurum adı, logo, altbilgideki lisans numaraları ve sosyal hesaplar', 'Organisation name, logo, the licence numbers in the footer, and social accounts'),
         icon: Building2,
         fields: [
           { path: 'siteConfig.name', label: L('اسم المؤسسة', 'Kurum adı', 'Organisation name'), type: 'text' },
           { path: 'siteConfig.logo', label: L('الشعار', 'Logo', 'Logo'), type: 'image' },
+          {
+            path: 'siteConfig.donateUrl',
+            label: L('وجهة زر "ساهم الآن"', '"Bağış yap" hedefi', '"Donate now" destination'),
+            type: 'text',
+            help: L('يُستخدم في القائمة العلوية والتذييل', 'Üst menü ve altbilgide kullanılır', 'Used in the top menu and the footer'),
+          },
           { path: 'siteConfig.licenseNumber', label: L('رقم الترخيص', 'Lisans no', 'License number'), type: 'text' },
           {
             path: 'siteConfig.courtDecision',
@@ -393,18 +555,16 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'siteConfig.taxNumber', label: L('الرقم الضريبي', 'Vergi no', 'Tax number'), type: 'text' },
           {
             path: 'siteConfig.taxExempt',
-            label: L('إعفاء ضريبي', 'Vergi muafiyeti', 'Tax exempt'),
+            label: L('إظهار سطر "الإعفاء الضريبي" في التذييل', 'Altbilgide "vergi muafiyeti" satırını göster', 'Show the "tax exempt" line in the footer'),
             type: 'boolean',
           },
-          { path: 'siteConfig.socialLinks.facebook', label: L('فيسبوك', 'Facebook', 'Facebook'), type: 'url' },
-          { path: 'siteConfig.socialLinks.twitter', label: L('تويتر / X', 'Twitter / X', 'Twitter / X'), type: 'url' },
-          { path: 'siteConfig.socialLinks.instagram', label: L('إنستغرام', 'Instagram', 'Instagram'), type: 'url' },
-          { path: 'siteConfig.socialLinks.youtube', label: L('يوتيوب', 'YouTube', 'YouTube'), type: 'url' },
+          ...socialNetworkFields('siteConfig.socialLinks'),
         ],
       },
       {
         key: 'navLinks',
-        label: L('قائمة التنقل', 'Menü bağlantıları', 'Navigation menu'),
+        label: L('القائمة العلوية', 'Üst menü', 'Top menu'),
+        description: L('روابط القائمة في رأس الصفحة (وقائمة الجوال)', 'Sayfa başındaki ve mobil menüdeki bağlantılar', 'The links in the page header (and the mobile menu)'),
         icon: ListTree,
         anchor: 'header',
         fields: [
@@ -413,13 +573,23 @@ export const SITE_PAGES: SitePageDef[] = [
             label: L('روابط القائمة', 'Menü bağlantıları', 'Menu links'),
             type: 'repeater',
             itemTitleField: 'label',
-            itemFields: linkItemFields,
+            itemFields: [
+              ...linkItemFields,
+              {
+                path: 'menu',
+                label: L('قائمة منسدلة', 'Açılır menü', 'Dropdown menu'),
+                type: 'select',
+                options: navMenuOptions,
+                help: L('يعرض تحت هذا الرابط قائمة "عن الوقف" أو "البرامج"', 'Bu bağlantının altında alt menü gösterir', 'Shows the About or Programs submenu under this link'),
+              },
+            ],
           },
         ],
       },
       {
         key: 'footer',
         label: L('التذييل', 'Altbilgi', 'Footer'),
+        description: L('النص والعنوان وبيانات التواصل والروابط السريعة في أسفل كل صفحة', 'Her sayfanın altındaki metin, adres, iletişim ve hızlı bağlantılar', 'The text, address, contact details and quick links at the bottom of every page'),
         icon: Landmark,
         anchor: 'footer',
         fields: [
@@ -433,17 +603,23 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'footer.contactInfo.phone', label: L('الهاتف', 'Telefon', 'Phone'), type: 'text' },
           {
             path: 'footer.bankAccountsLink',
-            label: L('رابط الحسابات البنكية', 'Banka hesapları bağlantısı', 'Bank accounts link'),
+            label: L('نص رابط الحسابات البنكية', 'Banka hesapları bağlantı metni', 'Bank accounts link text'),
             type: 'text',
           },
           {
+            path: 'footer.bankAccountsUrl',
+            label: L('وجهة رابط الحسابات البنكية', 'Banka hesapları hedefi', 'Bank accounts link destination'),
+            type: 'text',
+            help: L('مثال: /donate أو رابط ملف PDF', 'Örnek: /donate veya bir PDF', 'Example: /donate or a PDF link'),
+          },
+          {
             path: 'footer.newsletterTitle',
-            label: L('عنوان النشرة', 'Bülten başlığı', 'Newsletter title'),
+            label: L('عنوان النشرة البريدية', 'Bülten başlığı', 'Newsletter title'),
             type: 'text',
           },
           {
             path: 'footer.newsletterDescription',
-            label: L('وصف النشرة', 'Bülten açıklaması', 'Newsletter description'),
+            label: L('وصف النشرة البريدية', 'Bülten açıklaması', 'Newsletter description'),
             type: 'textarea',
           },
           {
@@ -458,6 +634,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'uiCommon',
         label: L('أزرار ونصوص متكررة', 'Ortak metinler', 'Common labels'),
+        description: L('كلمات تتكرر في أزرار الموقع مثل "اقرأ المزيد" و"ساهم الآن"', 'Sitedeki butonlarda tekrarlanan kelimeler', 'Words that repeat on buttons across the site, e.g. "Read more"'),
         icon: Type,
         fields: labelFields('ui.common', [
           ['learnMore', 'اعرف المزيد', 'Daha fazla', 'Learn more'],
@@ -469,7 +646,7 @@ export const SITE_PAGES: SitePageDef[] = [
           ['subscribe', 'اشترك', 'Abone ol', 'Subscribe'],
           ['subscribed', 'تم الاشتراك', 'Abone olundu', 'Subscribed'],
           ['emailPlaceholder', 'حقل البريد', 'E-posta alanı', 'Email placeholder'],
-          ['taxExempt', 'إعفاء ضريبي', 'Vergi muafiyeti', 'Tax exempt'],
+          ['taxExempt', 'سطر الإعفاء الضريبي', 'Vergi muafiyeti satırı', 'Tax exempt line'],
           ['discoverMore', 'اكتشف المزيد', 'Keşfet', 'Discover more'],
           ['unavailable', 'غير متاح', 'Mevcut değil', 'Unavailable'],
         ]),
@@ -477,19 +654,37 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'uiFooter',
         label: L('نصوص التذييل', 'Altbilgi metinleri', 'Footer labels'),
+        description: L('الكلمات الصغيرة في سطر الترخيص وحقوق النشر', 'Lisans ve telif satırındaki küçük kelimeler', 'The small words in the licence and copyright line'),
         icon: Landmark,
         fields: labelFields('ui.footer', [
-          ['licensePrefix', 'بادئة الترخيص', 'Lisans ön eki', 'License prefix'],
-          ['courtDecisionPrefix', 'بادئة قرار المحكمة', 'Mahkeme kararı ön eki', 'Court decision prefix'],
-          ['taxNumberPrefix', 'بادئة الرقم الضريبي', 'Vergi no ön eki', 'Tax number prefix'],
+          ['licensePrefix', 'كلمة "الترخيص"', 'Lisans ön eki', 'License prefix'],
+          ['courtDecisionPrefix', 'كلمة "قرار المحكمة"', 'Mahkeme kararı ön eki', 'Court decision prefix'],
+          ['taxNumberPrefix', 'كلمة "الرقم الضريبي"', 'Vergi no ön eki', 'Tax number prefix'],
           ['rightsReserved', 'حقوق النشر', 'Telif hakkı', 'Rights reserved'],
           ['yearSuffix', 'لاحقة السنة', 'Yıl son eki', 'Year suffix'],
         ]),
       },
       {
+        key: 'uiSocial',
+        label: L('أسماء شبكات التواصل', 'Sosyal ağ adları', 'Social network names'),
+        description: L('أسماء الأيقونات لقارئات الشاشة', 'Ekran okuyucular için simge adları', 'Icon names for screen readers'),
+        icon: Share2,
+        fields: labelFields('ui.social', [
+          ['facebook', 'فيسبوك', 'Facebook', 'Facebook'],
+          ['twitter', 'تويتر / X', 'Twitter / X', 'Twitter / X'],
+          ['instagram', 'إنستغرام', 'Instagram', 'Instagram'],
+          ['youtube', 'يوتيوب', 'YouTube', 'YouTube'],
+          ['linkedin', 'لينكدإن', 'LinkedIn', 'LinkedIn'],
+          ['tiktok', 'تيك توك', 'TikTok', 'TikTok'],
+          ['whatsapp', 'واتساب', 'WhatsApp', 'WhatsApp'],
+          ['telegram', 'تيليغرام', 'Telegram', 'Telegram'],
+        ]),
+      },
+      {
         key: 'uiAccessibility',
-        label: L('نصوص إمكانية الوصول', 'Erişilebilirlik', 'Accessibility labels'),
-        icon: Compass,
+        label: L('نصوص قارئات الشاشة', 'Erişilebilirlik metinleri', 'Screen-reader labels'),
+        description: L('نصوص لا تظهر على الشاشة لكن تقرؤها برامج المكفوفين', 'Ekranda görünmeyen, ekran okuyucuların okuduğu metinler', 'Text that is not shown but read aloud by assistive software'),
+        icon: Accessibility,
         fields: labelFields('ui.accessibility', [
           ['openMenu', 'فتح القائمة', 'Menüyü aç', 'Open menu'],
           ['closeMenu', 'إغلاق القائمة', 'Menüyü kapat', 'Close menu'],
@@ -497,8 +692,17 @@ export const SITE_PAGES: SitePageDef[] = [
           ['closeVideo', 'إغلاق الفيديو', 'Videoyu kapat', 'Close video'],
           ['scrollDown', 'التمرير لأسفل', 'Aşağı kaydır', 'Scroll down'],
           ['videoTitle', 'عنوان الفيديو', 'Video başlığı', 'Video title'],
+          ['videoBackgroundTitle', 'عنوان فيديو الخلفية', 'Arka plan videosu başlığı', 'Background video title'],
           ['loadingVideo', 'جارٍ تحميل الفيديو', 'Video yükleniyor', 'Loading video'],
           ['languageSwitcher', 'مبدّل اللغة', 'Dil değiştirici', 'Language switcher'],
+          ['languageMenu', 'قائمة اللغات', 'Dil menüsü', 'Language menu'],
+          ['aboutTabs', 'تبويبات عن الوقف', 'Hakkında sekmeleri', 'About tabs'],
+          ['projectGallery', 'معرض المشاريع', 'Proje galerisi', 'Project gallery'],
+          ['previousProject', 'المشروع السابق', 'Önceki proje', 'Previous project'],
+          ['nextProject', 'المشروع التالي', 'Sonraki proje', 'Next project'],
+          ['projectDots', 'نقاط التنقل بين المشاريع', 'Proje noktaları', 'Project navigation dots'],
+          ['showProject', 'إظهار المشروع', 'Projeyi göster', 'Show project'],
+          ['breadcrumb', 'مسار التنقل', 'Gezinti yolu', 'Breadcrumb'],
         ]),
       },
     ],
@@ -509,35 +713,37 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'projects-page',
     group: 'main',
     label: L('صفحة المشاريع', 'Projeler sayfası', 'Projects page'),
+    description: L('نصوص صفحة /projects وصفحات تفاصيل المشاريع؛ المشاريع نفسها من قائمة "المشاريع"', '/projects sayfasının ve proje detaylarının metinleri', 'Copy on /projects and the project detail pages; the projects come from the "Projects" list'),
     icon: FolderKanban,
     route: '/projects',
     sections: [
-      { key: 'seo', label: L('تحسين محركات البحث', 'SEO', 'SEO'), icon: Type, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, fields: heroFields() },
+      { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان أعلى الصفحة', 'Sayfanın üstündeki görsel ve başlık', 'The image and title at the top of the page'), icon: ImageIcon, fields: [...heroFields(), breadcrumbFields()] },
       { key: 'intro', label: L('المقدمة', 'Giriş', 'Intro'), icon: Info, fields: introFields() },
       {
         key: 'grid',
         label: L('شبكة المشاريع', 'Proje ızgarası', 'Projects grid'),
-        icon: FolderKanban,
-        fields: [
-          { path: 'grid.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'grid.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'grid.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
-        ],
+        description: L('العنوان فوق بطاقات المشاريع', 'Proje kartlarının üstündeki başlık', 'The heading above the project cards'),
+        icon: LayoutGrid,
+        fields: eyebrowTitleDescription('grid'),
       },
       {
         key: 'labels',
         label: L('النصوص والأزرار', 'Etiketler', 'Labels'),
+        description: L('كلمات تظهر على بطاقات المشاريع وصفحات التفاصيل', 'Proje kartlarında ve detay sayfalarında görünen kelimeler', 'Words on the project cards and detail pages'),
         icon: Type,
         fields: labelFields('labels', [
-          ['projectBadge', 'شارة المشروع', 'Proje rozeti', 'Project badge'],
-          ['contribution', 'المساهمة', 'Katkı', 'Contribution'],
-          ['details', 'التفاصيل', 'Detaylar', 'Details'],
-          ['contribute', 'ساهم', 'Katkıda bulun', 'Contribute'],
-          ['externalNotice', 'تنبيه رابط خارجي', 'Dış bağlantı uyarısı', 'External notice'],
-          ['source', 'المصدر', 'Kaynak', 'Source'],
-          ['facts', 'الحقائق', 'Bilgiler', 'Facts'],
-          ['overview', 'نظرة عامة', 'Genel bakış', 'Overview'],
+          ['projectBadge', 'شارة "مشروع وقفي"', 'Proje rozeti', 'Project badge'],
+          ['contribution', 'كلمة "قيمة المساهمة"', 'Katkı', 'Contribution'],
+          ['details', 'زر التفاصيل', 'Detaylar', 'Details button'],
+          ['contribute', 'زر ساهم', 'Katkıda bulun', 'Contribute button'],
+          ['externalNotice', 'تنبيه تحت زر المساهمة', 'Katkı uyarısı', 'Notice under the contribute button'],
+          ['facts', 'عنوان معلومات المشروع', 'Proje bilgileri başlığı', 'Project facts heading'],
+          ['overview', 'عنوان نظرة عامة', 'Genel bakış', 'Overview heading'],
+          ['returns', 'عنوان مصارف العوائد', 'Getiri kullanımları başlığı', 'Return uses heading'],
+          ['video', 'عنوان الفيديو الرسمي', 'Resmi video başlığı', 'Official video heading'],
+          ['otherProjects', 'عنوان مشاريع أخرى', 'Diğer projeler başlığı', 'Other projects heading'],
+          ['backToProjects', 'زر العودة إلى المشاريع', 'Projelere dön', 'Back to projects button'],
         ]),
       },
     ],
@@ -547,13 +753,15 @@ export const SITE_PAGES: SitePageDef[] = [
   {
     key: 'programs-page',
     group: 'main',
-    label: L('صفحات البرامج', 'Program sayfaları', 'Programs pages'),
+    label: L('نصوص صفحات البرامج', 'Program sayfası metinleri', 'Program pages copy'),
+    description: L('قائمة البرامج والعناوين الثابتة في صفحات البرامج؛ محتوى كل برنامج من قائمة "البرامج"', 'Program menüsü ve program sayfalarındaki sabit başlıklar', 'The programs menu and the fixed headings on program pages; each program’s content is in the "Programs" list'),
     icon: GraduationCap,
     route: '/programs/yemen-pioneers',
     sections: [
       {
         key: 'nav',
         label: L('قائمة البرامج', 'Program menüsü', 'Programs menu'),
+        description: L('الروابط في القائمة المنسدلة "البرامج" في رأس الموقع', 'Üst menüdeki "Programlar" açılır listesi', 'The links in the "Programs" dropdown in the site header'),
         icon: ListTree,
         fields: [
           {
@@ -566,25 +774,100 @@ export const SITE_PAGES: SitePageDef[] = [
         ],
       },
       {
-        key: 'labels',
-        label: L('نصوص صفحات البرامج', 'Program etiketleri', 'Program labels'),
+        key: 'labelsGeneral',
+        label: L('نصوص عامة', 'Genel etiketler', 'General labels'),
+        description: L('عناوين وأزرار تظهر في كل صفحات البرامج', 'Tüm program sayfalarında görünen başlık ve butonlar', 'Headings and buttons shared by every program page'),
         icon: Type,
         fields: labelFields('labels', [
-          ['overview', 'نظرة عامة', 'Genel bakış', 'Overview'],
-          ['goals', 'الأهداف', 'Hedefler', 'Goals'],
-          ['components', 'المكوّنات', 'Bileşenler', 'Components'],
-          ['statistics', 'الإحصائيات', 'İstatistikler', 'Statistics'],
-          ['initiatives', 'المبادرات', 'Girişimler', 'Initiatives'],
-          ['products', 'المنتجات', 'Ürünler', 'Products'],
-          ['watchVideo', 'مشاهدة الفيديو', 'Videoyu izle', 'Watch video'],
-          ['officialSource', 'المصدر الرسمي', 'Resmî kaynak', 'Official source'],
-          ['contact', 'تواصل', 'İletişim', 'Contact'],
-          ['otherPrograms', 'برامج أخرى', 'Diğer programlar', 'Other programs'],
-          ['details', 'التفاصيل', 'Detaylar', 'Details'],
-          ['donate', 'ساهم', 'Bağış', 'Donate'],
-          ['journey', 'المسار', 'Yolculuk', 'Journey'],
-          ['pillars', 'الركائز', 'Sütunlar', 'Pillars'],
-          ['videoGallery', 'معرض الفيديو', 'Video galerisi', 'Video gallery'],
+          ['home', 'مسار التنقل: الرئيسية', 'Gezinti: Ana sayfa', 'Breadcrumb: Home'],
+          ['programs', 'مسار التنقل: البرامج', 'Gezinti: Programlar', 'Breadcrumb: Programs'],
+          ['programsHref', 'وجهة رابط "البرامج" في المسار', '"Programlar" bağlantı hedefi', '"Programs" breadcrumb destination'],
+          ['overview', 'عنوان نظرة عامة', 'Genel bakış', 'Overview heading'],
+          ['goals', 'عنوان الأهداف', 'Hedefler', 'Goals heading'],
+          ['components', 'عنوان المكوّنات', 'Bileşenler', 'Components heading'],
+          ['information', 'عنوان المعلومات والنتائج', 'Bilgi ve sonuçlar', 'Information heading'],
+          ['statistics', 'عنوان الإحصائيات', 'İstatistikler', 'Statistics heading'],
+          ['statsEyebrow', 'السطر فوق الإحصائيات', 'İstatistik üst satırı', 'Line above statistics'],
+          ['noVerifiedStats', 'ملاحظة عدم وجود أرقام موثقة', 'Doğrulanmış rakam yok notu', 'No verified figures note', 'textarea'],
+          ['initiatives', 'عنوان المبادرات', 'Girişimler', 'Initiatives heading'],
+          ['products', 'كلمة "المنتجات"', 'Ürünler', 'Products'],
+          ['officialMedia', 'عنوان الوسائط الرسمية', 'Resmi medya', 'Official media heading'],
+          ['videoGallery', 'عنوان معرض الفيديو', 'Video galerisi', 'Video gallery heading'],
+          ['videoGalleryDescription', 'وصف معرض الفيديو', 'Video galerisi açıklaması', 'Video gallery description', 'textarea'],
+          ['watchVideo', 'زر مشاهدة الفيديو', 'Videoyu izle', 'Watch video button'],
+          ['officialSource', 'كلمة "المصدر الرسمي"', 'Resmî kaynak', 'Official source'],
+          ['openExternal', 'تلميح فتح رابط خارجي', 'Dış bağlantı ipucu', 'External link hint'],
+          ['previous', 'زر السابق', 'Önceki', 'Previous button'],
+          ['next', 'زر التالي', 'Sonraki', 'Next button'],
+          ['contact', 'كلمة "تواصل"', 'İletişim', 'Contact'],
+          ['otherPrograms', 'عنوان برامج أخرى', 'Diğer programlar', 'Other programs heading'],
+          ['details', 'زر التفاصيل', 'Detaylar', 'Details button'],
+          ['highlights', 'اسم شريط أبرز الملامح', 'Öne çıkanlar şeridi', 'Highlights strip name'],
+        ]),
+      },
+      {
+        key: 'labelsPioneers',
+        label: L('نصوص صفحة رواد اليمن', 'Yemen öncüleri etiketleri', 'Yemen pioneers labels'),
+        description: L('العناوين الثابتة في أقسام المسار والركائز والأرقام', 'Yolculuk, sütunlar ve rakamlar bölümlerinin sabit başlıkları', 'Fixed headings in the journey, pillars and figures sections'),
+        icon: Award,
+        fields: labelFields('labels', [
+          ['journey', 'عنوان المسار', 'Yolculuk', 'Journey heading'],
+          ['journeyEyebrow', 'السطر فوق المسار', 'Yolculuk üst satırı', 'Line above the journey'],
+          ['journeyDescription', 'وصف المسار', 'Yolculuk açıklaması', 'Journey description', 'textarea'],
+          ['stepLabel', 'كلمة "مرحلة"', 'Aşama kelimesi', '"Stage" word'],
+          ['pillars', 'عنوان الركائز', 'Sütunlar', 'Pillars heading'],
+          ['pillarsEyebrow', 'السطر فوق الركائز', 'Sütunlar üst satırı', 'Line above the pillars'],
+          ['pillarsDescription', 'وصف الركائز', 'Sütunlar açıklaması', 'Pillars description', 'textarea'],
+          ['pioneerStatsEyebrow', 'السطر فوق الأرقام', 'Rakamlar üst satırı', 'Line above the figures'],
+          ['pioneerStatsTitle', 'عنوان الأرقام', 'Rakamlar başlığı', 'Figures heading'],
+          ['pioneerStatsDescription', 'وصف الأرقام', 'Rakamlar açıklaması', 'Figures description', 'textarea'],
+          ['pioneerStatsCenter', 'نص مركز الشكل السداسي', 'Altıgen merkez metni', 'Hexagon centre text'],
+        ]),
+      },
+      {
+        key: 'labelsCapacity',
+        label: L('نصوص بناء القدرات', 'Kapasite etiketleri', 'Capacity building labels'),
+        description: L('عناوين أقسام المدن والمرحلة والتوصيات والمنتدى (تظهر عندما تُستخدم هذه الأقسام)', 'Şehirler, aşama, öneriler ve forum bölümlerinin başlıkları', 'Headings for the cities, phase, recommendations and forum sections (when those sections are used)'),
+        icon: Building2,
+        fields: labelFields('labels', [
+          ['cityMedia', 'عنوان وسائط المدن', 'Şehir medyası', 'City media heading'],
+          ['cityExplorerDescription', 'وصف مستكشف المدن', 'Şehir gezgini açıklaması', 'City explorer description', 'textarea'],
+          ['partner', 'كلمة "الشريك"', 'Ortak', 'Partner'],
+          ['phaseEyebrow', 'السطر فوق المرحلة', 'Aşama üst satırı', 'Line above the phase'],
+          ['recommendationsEyebrow', 'السطر فوق التوصيات', 'Öneriler üst satırı', 'Line above recommendations'],
+          ['recommendationsDescription', 'وصف التوصيات', 'Öneriler açıklaması', 'Recommendations description', 'textarea'],
+          ['forumEyebrow', 'السطر فوق المنتدى', 'Forum üst satırı', 'Line above the forum'],
+          ['forumObjectives', 'عنوان أهداف المنتدى', 'Forum hedefleri', 'Forum objectives heading'],
+        ]),
+      },
+      {
+        key: 'labelsInstitutional',
+        label: L('نصوص التطوير المؤسسي', 'Kurumsal gelişim etiketleri', 'Institutional development labels'),
+        icon: Landmark,
+        fields: labelFields('labels', [
+          ['manifestoEyebrow', 'السطر فوق عنوان الصفحة', 'Sayfa başlığı üst satırı', 'Line above the page title'],
+          ['focusAreas', 'عنوان مجالات التركيز', 'Odak alanları', 'Focus areas heading'],
+          ['focusAreasDescription', 'وصف مجالات التركيز', 'Odak alanları açıklaması', 'Focus areas description', 'textarea'],
+          ['areaLabel', 'كلمة "مجال"', 'Alan kelimesi', '"Area" word'],
+          ['audiences', 'عنوان الفئات المستهدفة', 'Hedef kitleler', 'Audiences heading'],
+          ['audiencesDescription', 'وصف الفئات المستهدفة', 'Hedef kitle açıklaması', 'Audiences description', 'textarea'],
+        ]),
+      },
+      {
+        key: 'labelsAwareness',
+        label: L('نصوص التوعية المجتمعية', 'Toplumsal farkındalık etiketleri', 'Community awareness labels'),
+        icon: Megaphone,
+        fields: labelFields('labels', [
+          ['awarenessEyebrow', 'شارة الواجهة', 'Hero rozeti', 'Hero badge'],
+          ['awarenessHeroNote', 'ملاحظة الواجهة', 'Hero notu', 'Hero note', 'textarea'],
+          ['exploreInitiatives', 'زر استكشاف المنصة', 'Platformu keşfet', 'Explore button'],
+          ['onAirLabel', 'شارة البث المستمر', 'Yayında rozeti', '"On air" badge'],
+          ['awarenessThemes', 'عنوان المحاور', 'Temalar başlığı', 'Themes heading'],
+          ['awarenessThemesDescription', 'وصف المحاور', 'Temalar açıklaması', 'Themes description', 'textarea'],
+          ['themeLabel', 'كلمة "الدائرة"', 'Tema kelimesi', '"Theme" word'],
+          ['awarenessInitiativesEyebrow', 'السطر فوق المبادرات', 'Girişimler üst satırı', 'Line above initiatives'],
+          ['awarenessInitiatives', 'عنوان المبادرات', 'Girişimler başlığı', 'Initiatives heading'],
+          ['awarenessInitiativesDescription', 'وصف المبادرات', 'Girişimler açıklaması', 'Initiatives description', 'textarea'],
         ]),
       },
     ],
@@ -595,14 +878,16 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'about-waqf',
     group: 'about',
     label: L('عن الوقف', 'Vakıf hakkında', 'About the waqf'),
+    description: L('صفحة /about/waqf كاملة', '/about/waqf sayfasının tamamı', 'The whole /about/waqf page'),
     icon: Landmark,
     route: '/about/waqf',
     sections: [
-      { key: 'seo', label: L('تحسين محركات البحث', 'SEO', 'SEO'), icon: Type, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, fields: heroFields() },
+      { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان الكبير أعلى الصفحة ومسار التنقل', 'Sayfanın üstündeki görsel, başlık ve gezinti yolu', 'The image, headline and breadcrumb at the top of the page'), icon: ImageIcon, fields: [...heroFields(), breadcrumbFields()] },
       {
         key: 'intro',
         label: L('المقدمة والحقائق', 'Giriş ve bilgiler', 'Intro & facts'),
+        description: L('أول قسم بعد الواجهة: الفقرات، زر التحميل، وبطاقات الترخيص الأربع', 'Hero sonrası ilk bölüm: paragraflar, indirme butonu ve bilgi kartları', 'The first section after the hero: paragraphs, download button and the fact tiles'),
         icon: Info,
         fields: [
           ...introFields(),
@@ -614,12 +899,13 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'intro.downloadUrl', label: L('رابط التحميل', 'İndirme bağlantısı', 'Download URL'), type: 'text' },
           {
             path: 'intro.facts',
-            label: L('الحقائق', 'Bilgiler', 'Facts'),
+            label: L('بطاقات الحقائق', 'Bilgi kartları', 'Fact tiles'),
             type: 'repeater',
             itemTitleField: 'label',
             itemFields: [
               { path: 'label', label: L('البيان', 'Etiket', 'Label'), type: 'text' },
               { path: 'value', label: L('القيمة', 'Değer', 'Value'), type: 'text' },
+              iconField(),
             ],
           },
         ],
@@ -629,8 +915,8 @@ export const SITE_PAGES: SitePageDef[] = [
         label: L('الفيديو التعريفي', 'Tanıtım videosu', 'Intro video'),
         icon: Video,
         fields: [
-          { path: 'video.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'video.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          { path: 'video.title', label: L('عنوان الفيديو', 'Video başlığı', 'Video title'), type: 'text' },
+          { path: 'video.description', label: L('تعليق تحت الفيديو', 'Video altı açıklama', 'Caption under the video'), type: 'textarea' },
           { path: 'video', label: L('الفيديو', 'Video', 'Video'), type: 'video' },
         ],
       },
@@ -639,15 +925,14 @@ export const SITE_PAGES: SitePageDef[] = [
         label: L('الأهداف', 'Hedefler', 'Goals'),
         icon: Target,
         fields: [
-          { path: 'goals.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'goals.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'goals.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('goals'),
           { path: 'goals.items', label: L('قائمة الأهداف', 'Hedef listesi', 'Goal list'), type: 'list' },
         ],
       },
       {
         key: 'identity',
         label: L('الرؤية والرسالة والقيم', 'Vizyon, misyon, değerler', 'Vision, mission, values'),
+        description: L('التبويبات العمودية في قسم الهوية', 'Kimlik bölümündeki dikey sekmeler', 'The vertical tabs in the identity section'),
         icon: Compass,
         fields: [
           { path: 'identity.visionTitle', label: L('عنوان الرؤية', 'Vizyon başlığı', 'Vision title'), type: 'text' },
@@ -661,11 +946,10 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'methodology',
         label: L('المنهجية', 'Metodoloji', 'Methodology'),
+        description: L('الخط الزمني للمبادئ. عناوين الخطوات وشروحها قائمتان متوازيتان: العنصر الأول مع الأول وهكذا', 'İlkeler zaman çizelgesi. Başlıklar ve açıklamalar sıraya göre eşleşir', 'The principles timeline. Step titles and descriptions are two parallel lists: first with first, and so on'),
         icon: RouteIcon,
         fields: [
-          { path: 'methodology.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'methodology.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'methodology.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
+          ...eyebrowTitleDescription('methodology'),
           { path: 'methodology.stepLabel', label: L('كلمة "خطوة"', 'Adım etiketi', 'Step label'), type: 'text' },
           { path: 'methodology.itemTitles', label: L('عناوين الخطوات', 'Adım başlıkları', 'Step titles'), type: 'list' },
           { path: 'methodology.items', label: L('شرح الخطوات', 'Adım açıklamaları', 'Step descriptions'), type: 'list' },
@@ -686,6 +970,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'cycle',
         label: L('دورة الوقف', 'Vakıf döngüsü', 'Waqf cycle'),
+        description: L('البطاقات المتراكبة في آخر الصفحة', 'Sayfanın sonundaki üst üste binen kartlar', 'The stacked cards at the end of the page'),
         icon: RouteIcon,
         fields: [
           { path: 'cycle.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
@@ -697,8 +982,15 @@ export const SITE_PAGES: SitePageDef[] = [
             itemTitleField: 'title',
             itemFields: [
               { path: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+              {
+                path: 'shortLabel',
+                label: L('اسم قصير للمؤشر', 'Kısa gösterge adı', 'Short indicator name'),
+                type: 'text',
+                help: L('يظهر في شريط التقدم الجانبي؛ يُؤخذ من العنوان إن تُرك فارغاً', 'Yan ilerleme çubuğunda görünür', 'Shown in the side progress bar; taken from the title when empty'),
+              },
               { path: 'description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
               { path: 'bullets', label: L('النقاط', 'Maddeler', 'Bullets'), type: 'list' },
+              iconField(),
             ],
           },
         ],
@@ -711,25 +1003,25 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'governance',
     group: 'about',
     label: L('الحوكمة والسياسات', 'Yönetişim', 'Governance'),
+    description: L('صفحة /about/governance وقائمة السياسات', '/about/governance sayfası ve politika listesi', 'The /about/governance page and its policy list'),
     icon: Scale,
     route: '/about/governance',
     sections: [
-      { key: 'seo', label: L('تحسين محركات البحث', 'SEO', 'SEO'), icon: Type, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, fields: heroFields() },
+      { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, fields: [...heroFields(), breadcrumbFields()] },
       {
         key: 'intro',
         label: L('المقدمة', 'Giriş', 'Intro'),
         icon: Info,
         fields: [
-          { path: 'intro.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
-          { path: 'intro.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
-          { path: 'intro.description', label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' },
-          { path: 'intro.navTitle', label: L('عنوان القائمة', 'Menü başlığı', 'Nav title'), type: 'text' },
+          ...eyebrowTitleDescription('intro'),
+          { path: 'intro.navTitle', label: L('عنوان القائمة الجانبية', 'Yan menü başlığı', 'Side menu title'), type: 'text' },
         ],
       },
       {
         key: 'policies',
         label: L('السياسات', 'Politikalar', 'Policies'),
+        description: L('كل سياسة تظهر كبطاقة قابلة للطي مع رابط مباشر لها', 'Her politika açılır bir kart ve doğrudan bağlantı olarak görünür', 'Each policy is a collapsible card with its own direct link'),
         icon: Scale,
         fields: [
           {
@@ -740,6 +1032,13 @@ export const SITE_PAGES: SitePageDef[] = [
             itemFields: [
               { path: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
               { path: 'summary', label: L('الملخص', 'Özet', 'Summary'), type: 'textarea' },
+              {
+                path: 'id',
+                label: L('اسم الرابط المباشر', 'Doğrudan bağlantı adı', 'Direct-link name'),
+                type: 'text',
+                advanced: true,
+                help: L('بحروف لاتينية بدون مسافات، مثال: whistleblowing', 'Latin harflerle, boşluksuz', 'Latin letters, no spaces, e.g. whistleblowing'),
+              },
               {
                 path: 'blocks',
                 label: L('الأقسام', 'Bloklar', 'Blocks'),
@@ -763,12 +1062,14 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'about-nav',
     group: 'about',
     label: L('قائمة "عن الوقف"', 'Hakkında menüsü', 'About menu'),
+    description: L('روابط القائمة المنسدلة "عن الوقف" في رأس الموقع', 'Üst menüdeki "Hakkında" açılır listesi', 'The links in the "About" dropdown in the site header'),
     icon: ListTree,
     route: '/about/waqf',
     sections: [
       {
         key: 'nav',
         label: L('روابط القائمة', 'Menü bağlantıları', 'Menu links'),
+        description: L('الوجهات المتاحة: /about/waqf و /about/governance', 'Kullanılabilir hedefler: /about/waqf ve /about/governance', 'Available destinations: /about/waqf and /about/governance'),
         icon: ListTree,
         fields: [
           {
@@ -788,33 +1089,32 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'donate-page',
     group: 'involve',
     label: L('صفحة المساهمة', 'Bağış sayfası', 'Donate page'),
+    description: L('نصوص صفحة /donate؛ فرص المساهمة نفسها من قائمة "فرص المساهمة"', '/donate sayfasının metinleri; fırsatlar "Bağış fırsatları" listesinden', 'Copy on /donate; the opportunities come from the "Donation opportunities" list'),
     icon: HandHeart,
     route: '/donate',
     sections: [
-      { key: 'seo', label: L('تحسين محركات البحث', 'SEO', 'SEO'), icon: Type, fields: seoFields() },
-      {
-        key: 'hero',
-        label: L('الواجهة', 'Hero', 'Hero'),
-        icon: ImageIcon,
-        fields: [
-          ...heroFields(),
-          { path: 'hero.imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image alt'), type: 'text' },
-        ],
-      },
+      { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, fields: [...heroFields(), breadcrumbFields()] },
       { key: 'intro', label: L('المقدمة', 'Giriş', 'Intro'), icon: Info, fields: introFields() },
+      {
+        key: 'grid',
+        label: L('عنوان قسم الفرص', 'Fırsatlar bölümü başlığı', 'Opportunities section heading'),
+        icon: LayoutGrid,
+        fields: eyebrowTitleDescription('grid'),
+      },
       {
         key: 'labels',
         label: L('النصوص والأزرار', 'Etiketler', 'Labels'),
         icon: Type,
         fields: labelFields('labels', [
-          ['opportunities', 'الفرص', 'Fırsatlar', 'Opportunities'],
-          ['contributionValue', 'قيمة المساهمة', 'Katkı değeri', 'Contribution value'],
-          ['available', 'متاح', 'Mevcut', 'Available'],
-          ['closed', 'مغلق', 'Kapalı', 'Closed'],
-          ['contribute', 'ساهم', 'Katkıda bulun', 'Contribute'],
-          ['unavailable', 'غير متاح', 'Mevcut değil', 'Unavailable'],
-          ['officialNotice', 'تنبيه رسمي', 'Resmî uyarı', 'Official notice'],
-          ['externalNotice', 'تنبيه رابط خارجي', 'Dış bağlantı uyarısı', 'External notice'],
+          ['opportunities', 'كلمة "فرص المساهمة"', 'Fırsatlar', 'Opportunities'],
+          ['contributionValue', 'كلمة "قيمة المساهمة"', 'Katkı değeri', 'Contribution value'],
+          ['available', 'شارة "متاح"', 'Mevcut', 'Available badge'],
+          ['closed', 'شارة "مغلق"', 'Kapalı', 'Closed badge'],
+          ['contribute', 'زر ساهم', 'Katkıda bulun', 'Contribute button'],
+          ['unavailable', 'زر غير متاح', 'Mevcut değil', 'Unavailable button'],
+          ['officialNotice', 'التنبيه الرسمي', 'Resmî uyarı', 'Official notice', 'textarea'],
+          ['externalNotice', 'تنبيه تحت الزر', 'Buton altı uyarı', 'Notice under the button'],
         ]),
       },
     ],
@@ -825,12 +1125,14 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'participate',
     group: 'involve',
     label: L('صفحات المشاركة', 'Katılım sayfaları', 'Participate pages'),
+    description: L('نماذج شارك بفكرة والشكاوى والتطوع وصفحة تواصل معنا', 'Fikir, şikayet ve gönüllü formları ile iletişim sayfası', 'The share-idea, complaints and volunteer forms and the contact page'),
     icon: MessageSquare,
     route: '/participate/share-ideas',
     sections: [
       {
         key: 'nav',
         label: L('قائمة المشاركة', 'Katılım menüsü', 'Participate menu'),
+        description: L('البطاقات الأربع أعلى صفحات المشاركة', 'Katılım sayfalarının üstündeki dört kart', 'The four cards at the top of the participate pages'),
         icon: ListTree,
         fields: [
           {
@@ -839,8 +1141,20 @@ export const SITE_PAGES: SitePageDef[] = [
             type: 'repeater',
             itemTitleField: 'label',
             itemFields: [
-              { path: 'key', label: L('المفتاح', 'Anahtar', 'Key'), type: 'text' },
-              ...linkItemFields,
+              { path: 'label', label: L('النص', 'Etiket', 'Label'), type: 'text' },
+              {
+                path: 'key',
+                label: L('الصفحة', 'Sayfa', 'Page'),
+                type: 'select',
+                options: participateKeyOptions,
+              },
+              {
+                path: 'href',
+                label: L('الرابط', 'Bağlantı', 'Link'),
+                type: 'text',
+                advanced: true,
+                help: L('يُشتق من الصفحة إن تُرك فارغاً', 'Boşsa sayfadan türetilir', 'Derived from the page when empty'),
+              },
             ],
           },
         ],
@@ -848,34 +1162,40 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'labels',
         label: L('نصوص النماذج', 'Form etiketleri', 'Form labels'),
+        description: L('الأزرار والرسائل المشتركة بين كل النماذج', 'Tüm formlarda ortak butonlar ve mesajlar', 'Buttons and messages shared by all forms'),
         icon: Type,
         fields: labelFields('labels', [
+          ['home', 'مسار التنقل: الرئيسية', 'Gezinti: Ana sayfa', 'Breadcrumb: Home'],
+          ['participate', 'مسار التنقل: شاركنا', 'Gezinti: Katılım', 'Breadcrumb: Participate'],
           ['sectionTitle', 'عنوان القسم', 'Bölüm başlığı', 'Section title'],
-          ['formNotice', 'تنبيه النموذج', 'Form uyarısı', 'Form notice'],
-          ['submit', 'إرسال', 'Gönder', 'Submit'],
-          ['submitting', 'جارٍ الإرسال', 'Gönderiliyor', 'Submitting'],
-          ['next', 'التالي', 'İleri', 'Next'],
-          ['previous', 'السابق', 'Geri', 'Previous'],
-          ['step', 'خطوة', 'Adım', 'Step'],
-          ['requiredMessage', 'رسالة الحقل المطلوب', 'Zorunlu alan mesajı', 'Required message'],
-          ['emailMessage', 'رسالة البريد', 'E-posta mesajı', 'Email message'],
-          ['submitSuccess', 'رسالة النجاح', 'Başarı mesajı', 'Success message'],
-          ['submitError', 'رسالة الخطأ', 'Hata mesajı', 'Error message'],
-          ['selectedFiles', 'الملفات المختارة', 'Seçilen dosyalar', 'Selected files'],
-          ['openLink', 'فتح الرابط', 'Bağlantıyı aç', 'Open link'],
+          ['formNotice', 'ملاحظة تحت النموذج', 'Form altı notu', 'Note under the form', 'textarea'],
+          ['submit', 'زر إرسال', 'Gönder', 'Submit button'],
+          ['submitting', 'نص أثناء الإرسال', 'Gönderiliyor', 'While submitting'],
+          ['next', 'زر التالي', 'İleri', 'Next button'],
+          ['previous', 'زر السابق', 'Geri', 'Previous button'],
+          ['step', 'كلمة "خطوة"', 'Adım', '"Step" word'],
+          ['requiredMessage', 'رسالة الحقل المطلوب', 'Zorunlu alan mesajı', 'Required-field message'],
+          ['emailMessage', 'رسالة البريد غير الصحيح', 'Geçersiz e-posta mesajı', 'Invalid-email message'],
+          ['submitSuccess', 'رسالة النجاح', 'Başarı mesajı', 'Success message', 'textarea'],
+          ['submitError', 'رسالة الخطأ', 'Hata mesajı', 'Error message', 'textarea'],
+          ['selectedFiles', 'كلمة "الملفات المختارة"', 'Seçilen dosyalar', 'Selected files'],
+          ['openLink', 'زر فتح الرابط', 'Bağlantıyı aç', 'Open link button'],
         ]),
       },
       ...(
         [
-          ['shareIdeas', 'شارك بفكرة', 'Fikir paylaş', 'Share an idea'],
-          ['complaintsSuggestions', 'الشكاوى والمقترحات', 'Şikayet ve öneriler', 'Complaints & suggestions'],
-          ['volunteer', 'التطوع', 'Gönüllülük', 'Volunteer'],
-          ['contact', 'تواصل معنا', 'İletişim', 'Contact us'],
+          ['shareIdeas', 'شارك بفكرة', 'Fikir paylaş', 'Share an idea', true],
+          ['complaintsSuggestions', 'الشكاوى والمقترحات', 'Şikayet ve öneriler', 'Complaints & suggestions', true],
+          ['volunteer', 'التطوع', 'Gönüllülük', 'Volunteer', true],
+          ['contact', 'تواصل معنا', 'İletişim', 'Contact us', false],
         ] as const
-      ).map(([key, ar, tr, en]) => ({
+      ).map(([key, ar, tr, en, hasForm]) => ({
         key: `page-${key}`,
         label: L(ar, tr, en),
-        icon: MessageSquare,
+        description: hasForm
+          ? L(`صفحة "${ar}": الواجهة والمقدمة والنموذج بخطواته وحقوله`, `"${tr}" sayfası: hero, giriş ve form`, `The "${en}" page: hero, intro and the form with its steps and fields`)
+          : L('صفحة تواصل معنا: الواجهة والمقدمة وبطاقات التواصل', 'İletişim sayfası: hero, giriş ve iletişim kartları', 'The contact page: hero, intro and contact cards'),
+        icon: hasForm ? MessageSquare : Phone,
         fields: [
           ...seoFields(`pages.${key}.seo`),
           { path: `pages.${key}.hero.title`, label: L('عنوان الواجهة', 'Hero başlığı', 'Hero title'), type: 'text' as const },
@@ -885,48 +1205,116 @@ export const SITE_PAGES: SitePageDef[] = [
             type: 'textarea' as const,
           },
           { path: `pages.${key}.hero.image`, label: L('صورة الواجهة', 'Hero görseli', 'Hero image'), type: 'image' as const },
-          { path: `pages.${key}.intro.eyebrow`, label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' as const },
+          { path: `pages.${key}.hero.imageAlt`, label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' as const },
+          { path: `pages.${key}.intro.eyebrow`, label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' as const },
           { path: `pages.${key}.intro.title`, label: L('عنوان المقدمة', 'Giriş başlığı', 'Intro title'), type: 'text' as const },
           {
             path: `pages.${key}.intro.paragraphs`,
             label: L('فقرات المقدمة', 'Giriş paragrafları', 'Intro paragraphs'),
             type: 'paragraphs' as const,
           },
-          {
-            path: `pages.${key}.form.title`,
-            label: L('عنوان النموذج', 'Form başlığı', 'Form title'),
-            type: 'text' as const,
-          },
-          {
-            path: `pages.${key}.form.description`,
-            label: L('وصف النموذج', 'Form açıklaması', 'Form description'),
-            type: 'textarea' as const,
-          },
-          {
-            path: `pages.${key}.form.fields`,
-            label: L('حقول النموذج', 'Form alanları', 'Form fields'),
-            type: 'repeater' as const,
-            itemTitleField: 'label',
-            itemFields: [
-              {
-                // Form steps reference their fields by this name, so unlike
-                // other records it cannot be generated behind the scenes.
-                path: 'id',
-                label: L('اسم الحقل', 'Alan adı', 'Field name'),
-                type: 'text' as const,
-                help: L(
-                  'يربط الحقل بخطوات النموذج — لا تغيّره إلا عند الضرورة',
-                  'Alanı form adımlarına bağlar — gerekmedikçe değiştirmeyin',
-                  'Links the field to the form steps — change only if necessary',
-                ),
-              },
-              { path: 'label', label: L('العنوان', 'Etiket', 'Label'), type: 'text' as const },
-              { path: 'placeholder', label: L('النص التوضيحي', 'Yer tutucu', 'Placeholder'), type: 'text' as const },
-              { path: 'type', label: L('النوع', 'Tür', 'Type'), type: 'text' as const },
-              { path: 'required', label: L('مطلوب', 'Zorunlu', 'Required'), type: 'boolean' as const },
-              { path: 'options', label: L('الخيارات', 'Seçenekler', 'Options'), type: 'list' as const },
-            ],
-          },
+          ...(hasForm
+            ? ([
+                {
+                  path: `pages.${key}.form.title`,
+                  label: L('عنوان النموذج', 'Form başlığı', 'Form title'),
+                  type: 'text' as const,
+                },
+                {
+                  path: `pages.${key}.form.description`,
+                  label: L('وصف النموذج', 'Form açıklaması', 'Form description'),
+                  type: 'textarea' as const,
+                },
+                {
+                  path: `pages.${key}.form.fields`,
+                  label: L('حقول النموذج', 'Form alanları', 'Form fields'),
+                  type: 'repeater' as const,
+                  itemTitleField: 'label',
+                  help: L('كل حقل يجب أن ينتمي إلى خطوة في "خطوات النموذج" أدناه ليظهر', 'Görünmesi için her alan aşağıdaki bir adıma ait olmalı', 'A field appears only when a step below lists it'),
+                  itemFields: [
+                    {
+                      // Form steps reference their fields by this name, so unlike
+                      // other records it cannot be generated behind the scenes.
+                      path: 'id',
+                      label: L('اسم الحقل (معرّف)', 'Alan adı', 'Field name (id)'),
+                      type: 'text' as const,
+                      help: L(
+                        'بحروف لاتينية بدون مسافات، مثال: fullName — يربط الحقل بخطوات النموذج',
+                        'Latin harflerle, boşluksuz, örnek: fullName',
+                        'Latin letters, no spaces, e.g. fullName — links the field to the form steps',
+                      ),
+                    },
+                    { path: 'label', label: L('العنوان', 'Etiket', 'Label'), type: 'text' as const },
+                    { path: 'placeholder', label: L('النص التوضيحي داخل الحقل', 'Yer tutucu', 'Placeholder'), type: 'text' as const },
+                    { path: 'type', label: L('نوع الحقل', 'Alan türü', 'Field type'), type: 'select' as const, options: formFieldTypeOptions },
+                    { path: 'required', label: L('مطلوب', 'Zorunlu', 'Required'), type: 'boolean' as const },
+                    {
+                      path: 'options',
+                      label: L('الخيارات', 'Seçenekler', 'Options'),
+                      type: 'list' as const,
+                      help: L('لقائمة الاختيار فقط — الخيار الأول هو النص الافتراضي', 'Sadece seçim listesi için; ilk seçenek yer tutucudur', 'Dropdowns only — the first option is the placeholder'),
+                    },
+                    { path: 'rows', label: L('عدد الأسطر', 'Satır sayısı', 'Rows'), type: 'number' as const, advanced: true, help: L('للنص الطويل', 'Uzun metin için', 'Long text only') },
+                    {
+                      path: 'sourceName',
+                      label: L('اسم الحقل في الرسالة المستلمة', 'Alınan mesajdaki alan adı', 'Field name in the received message'),
+                      type: 'text' as const,
+                      advanced: true,
+                      help: L('يُشتق من اسم الحقل إن تُرك فارغاً', 'Boşsa alan adından türetilir', 'Derived from the field name when empty'),
+                    },
+                    { path: 'inputMode', label: L('لوحة مفاتيح الجوال', 'Mobil klavye', 'Mobile keyboard'), type: 'select' as const, options: inputModeOptions, advanced: true },
+                    { path: 'accept', label: L('أنواع الملفات المقبولة', 'Kabul edilen dosya türleri', 'Accepted file types'), type: 'text' as const, advanced: true, help: L('مثال: .pdf,.jpg', 'Örnek: .pdf,.jpg', 'Example: .pdf,.jpg') },
+                  ],
+                },
+                {
+                  path: `pages.${key}.form.groups`,
+                  label: L('خطوات النموذج', 'Form adımları', 'Form steps'),
+                  type: 'repeater' as const,
+                  itemTitleField: 'title',
+                  help: L('خطوة واحدة = نموذج من صفحة واحدة؛ عدة خطوات = نموذج متعدد الصفحات', 'Tek adım = tek sayfa; birden çok adım = çok sayfalı form', 'One step = a single-page form; several steps = a multi-page form'),
+                  itemFields: [
+                    { path: 'title', label: L('عنوان الخطوة', 'Adım başlığı', 'Step title'), type: 'text' as const },
+                    { path: 'description', label: L('وصف الخطوة', 'Adım açıklaması', 'Step description'), type: 'textarea' as const },
+                    {
+                      path: 'fieldIds',
+                      label: L('أسماء الحقول في هذه الخطوة', 'Bu adımdaki alan adları', 'Field names in this step'),
+                      type: 'list' as const,
+                      help: L('اكتب اسم الحقل (المعرّف) كما هو في قائمة الحقول', 'Alan adını alan listesindeki gibi yazın', 'Type the field name (id) exactly as in the fields list'),
+                    },
+                    { path: 'id', label: L('معرّف الخطوة', 'Adım kimliği', 'Step id'), type: 'text' as const, advanced: true },
+                  ],
+                },
+              ] as PageFieldDef[])
+            : ([
+                { path: `pages.${key}.contact.directTitle`, label: L('عنوان بطاقات التواصل المباشر', 'Doğrudan iletişim başlığı', 'Direct contact heading'), type: 'text' as const },
+                { path: `pages.${key}.contact.directDescription`, label: L('وصف التواصل المباشر', 'Doğrudan iletişim açıklaması', 'Direct contact description'), type: 'textarea' as const },
+                {
+                  path: `pages.${key}.contact.directLinks`,
+                  label: L('بطاقات التواصل المباشر', 'Doğrudan iletişim kartları', 'Direct contact cards'),
+                  type: 'repeater' as const,
+                  itemTitleField: 'label',
+                  itemFields: [
+                    { path: 'label', label: L('الاسم', 'Ad', 'Name'), type: 'text' as const },
+                    { path: 'description', label: L('وصف قصير', 'Kısa açıklama', 'Short description'), type: 'text' as const },
+                    { path: 'href', label: L('الرابط', 'Bağlantı', 'Link'), type: 'url' as const, help: L('مثال: https://wa.me/9053xxxxxxx', 'Örnek: https://wa.me/9053xxxxxxx', 'Example: https://wa.me/9053xxxxxxx') },
+                    { path: 'kind', label: L('النوع', 'Tür', 'Kind'), type: 'select' as const, options: contactKindOptions },
+                  ],
+                },
+                { path: `pages.${key}.contact.socialTitle`, label: L('عنوان صفحات التواصل الاجتماعي', 'Sosyal medya başlığı', 'Social pages heading'), type: 'text' as const },
+                { path: `pages.${key}.contact.socialDescription`, label: L('وصف صفحات التواصل الاجتماعي', 'Sosyal medya açıklaması', 'Social pages description'), type: 'textarea' as const },
+                {
+                  path: `pages.${key}.contact.socialLinks`,
+                  label: L('بطاقات التواصل الاجتماعي', 'Sosyal medya kartları', 'Social page cards'),
+                  type: 'repeater' as const,
+                  itemTitleField: 'label',
+                  itemFields: [
+                    { path: 'label', label: L('الاسم', 'Ad', 'Name'), type: 'text' as const },
+                    { path: 'description', label: L('وصف قصير', 'Kısa açıklama', 'Short description'), type: 'text' as const },
+                    { path: 'href', label: L('الرابط', 'Bağlantı', 'Link'), type: 'url' as const },
+                    { path: 'kind', label: L('النوع', 'Tür', 'Kind'), type: 'select' as const, options: contactKindOptions },
+                  ],
+                },
+              ] as PageFieldDef[])),
         ],
       })),
     ],
@@ -937,6 +1325,7 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'library-page',
     group: 'library',
     label: L('صفحة المكتبة', 'Kütüphane sayfası', 'Library page'),
+    description: L('واجهة المكتبة وبطاقات أقسامها ونصوصها؛ المواد نفسها من قوائم المكتبة', 'Kütüphane girişi, bölüm kartları ve metinleri', 'The library hero, its section cards and labels; the items come from the library lists'),
     icon: BookOpen,
     route: '/library',
     sections: [
@@ -945,30 +1334,146 @@ export const SITE_PAGES: SitePageDef[] = [
         label: L('الواجهة', 'Hero', 'Hero'),
         icon: ImageIcon,
         fields: [
-          { path: 'hero.eyebrow', label: L('العنوان الفرعي', 'Üst başlık', 'Eyebrow'), type: 'text' },
+          { path: 'hero.eyebrow', label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
           ...heroFields(),
         ],
       },
+      ...libraryCollectionKeys.map(([slug, ar, tr, en]) => ({
+        key: `collection-${slug}`,
+        label: L(`قسم: ${ar}`, `Bölüm: ${tr}`, `Section: ${en}`),
+        description: L('بطاقة القسم في صفحة المكتبة وواجهة صفحته', 'Kütüphane sayfasındaki bölüm kartı ve bölüm sayfası girişi', 'The section card on the library page and its own page hero'),
+        icon: Library,
+        fields: [
+          { path: `collections.${slug}.title`, label: L('العنوان', 'Başlık', 'Title'), type: 'text' as const },
+          { path: `collections.${slug}.shortTitle`, label: L('الاسم القصير (في القوائم)', 'Kısa ad', 'Short name (in menus)'), type: 'text' as const },
+          { path: `collections.${slug}.eyebrow`, label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' as const },
+          { path: `collections.${slug}.description`, label: L('الوصف', 'Açıklama', 'Description'), type: 'textarea' as const },
+          { path: `collections.${slug}.image`, label: L('صورة واجهة القسم', 'Bölüm hero görseli', 'Section hero image'), type: 'image' as const, help: L('إن تُركت فارغة تُستخدم صورة أول مادة', 'Boşsa ilk öğenin görseli kullanılır', 'When empty, the first item’s image is used') },
+          { path: `collections.${slug}.imageAlt`, label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' as const },
+        ],
+      })),
       {
-        key: 'labels',
-        label: L('نصوص المكتبة', 'Kütüphane etiketleri', 'Library labels'),
+        key: 'search',
+        label: L('البحث الموحّد', 'Birleşik arama', 'Unified search'),
+        description: L('صندوق البحث الكبير في صفحة المكتبة واقتراحاته', 'Kütüphane sayfasındaki büyük arama kutusu ve önerileri', 'The big search box on the library page and its suggestions'),
+        icon: Search,
+        fields: [
+          {
+            path: 'searchSuggestions',
+            label: L('اقتراحات البحث', 'Arama önerileri', 'Search suggestions'),
+            type: 'list',
+          },
+          ...labelFields('labels', [
+            ['searchAll', 'عنوان البحث', 'Arama başlığı', 'Search heading'],
+            ['searchAllPlaceholder', 'النص داخل صندوق البحث', 'Arama yer tutucu', 'Search placeholder'],
+            ['searchHint', 'تلميح البحث', 'Arama ipucu', 'Search hint'],
+            ['suggestions', 'كلمة "جرّب البحث عن"', 'Öneri etiketi', '"Try searching for" label'],
+            ['seeAllIn', 'رابط "كل النتائج في"', 'Tümünü gör', '"All results in" link'],
+            ['results', 'كلمة "نتائج"', 'Sonuçlar', '"Results" word'],
+            ['noResults', 'لا نتائج', 'Sonuç yok', 'No results'],
+          ]),
+          {
+            path: 'layout.searchPerGroup',
+            label: L('عدد النتائج لكل قسم', 'Bölüm başına sonuç', 'Results per section'),
+            type: 'number',
+            advanced: true,
+          },
+        ],
+      },
+      {
+        key: 'labelsIndex',
+        label: L('نصوص صفحة المكتبة', 'Kütüphane sayfası etiketleri', 'Library page labels'),
         icon: Type,
+        fields: [
+          ...labelFields('labels', [
+            ['home', 'مسار التنقل: الرئيسية', 'Gezinti: Ana sayfa', 'Breadcrumb: Home'],
+            ['library', 'كلمة "المكتبة"', 'Kütüphane', '"Library" word'],
+            ['browse', 'زر تصفح القسم', 'Bölüme göz at', 'Browse section button'],
+            ['latest', 'عنوان أحدث المواد', 'En yeniler', 'Latest items heading'],
+            ['latestAcross', 'عنوان "أُضيف حديثاً"', 'Son eklenenler', '"Recently added" heading'],
+            ['sectionsNav', 'عنوان أقسام المكتبة', 'Kütüphane bölümleri', 'Library sections heading'],
+            ['allSections', 'كل الأقسام', 'Tüm bölümler', 'All sections'],
+            ['documentsHub', 'عنوان المستندات والمنشورات', 'Belgeler ve yayınlar', 'Documents & publications heading'],
+            ['items', 'كلمة "مادة/مواد"', 'Öğe', '"Items" word'],
+            ['photos', 'كلمة "صور"', 'Fotoğraflar', '"Photos" word'],
+            ['exploreGallery', 'زر استكشاف المعرض', 'Galeriyi keşfet', 'Explore gallery button'],
+            ['typeArticle', 'نوع: مقال', 'Tür: makale', 'Type: article'],
+            ['typeDocument', 'نوع: مستند', 'Tür: belge', 'Type: document'],
+            ['typeStory', 'نوع: قصة', 'Tür: hikaye', 'Type: story'],
+            ['typeFigure', 'نوع: شخصية', 'Tür: şahsiyet', 'Type: figure'],
+            ['typeImage', 'نوع: صورة', 'Tür: görsel', 'Type: image'],
+            ['showMore', 'زر عرض المزيد', 'Daha fazla', 'Show more'],
+            ['showLess', 'زر عرض أقل', 'Daha az', 'Show less'],
+          ]),
+          { path: 'layout.latestLimit', label: L('عدد المواد في "أُضيف حديثاً"', 'Son eklenen sayısı', 'Items in "recently added"'), type: 'number', advanced: true },
+        ],
+      },
+      {
+        key: 'labelsCollections',
+        label: L('نصوص صفحات الأقسام', 'Bölüm sayfası etiketleri', 'Section page labels'),
+        description: L('الفلاتر والأزرار في صفحات المقالات والمستندات والمعرض', 'Makale, belge ve galeri sayfalarındaki filtre ve butonlar', 'Filters and buttons on the article, document and gallery pages'),
+        icon: SlidersHorizontal,
         fields: labelFields('labels', [
-          ['library', 'المكتبة', 'Kütüphane', 'Library'],
-          ['browse', 'تصفح القسم', 'Bölüme göz at', 'Browse section'],
-          ['latest', 'أحدث المواد', 'En yeniler', 'Latest items'],
-          ['search', 'بحث', 'Ara', 'Search'],
-          ['searchPlaceholder', 'نص حقل البحث', 'Arama yer tutucu', 'Search placeholder'],
-          ['noResults', 'لا نتائج', 'Sonuç yok', 'No results'],
-          ['readArticle', 'قراءة المقال', 'Makaleyi oku', 'Read article'],
-          ['readStory', 'قراءة القصة', 'Hikayeyi oku', 'Read story'],
-          ['openDocument', 'فتح الوثيقة', 'Belgeyi aç', 'Open document'],
-          ['downloadPdf', 'تحميل PDF', 'PDF indir', 'Download PDF'],
-          ['officialSource', 'المصدر الرسمي', 'Resmî kaynak', 'Official source'],
-          ['readingTime', 'وقت القراءة', 'Okuma süresi', 'Reading time'],
-          ['share', 'مشاركة', 'Paylaş', 'Share'],
-          ['donateCta', 'دعوة المساهمة', 'Bağış çağrısı', 'Donate CTA'],
+          ['all', 'كلمة "الكل"', 'Tümü', '"All" word'],
+          ['allYears', 'كل السنوات', 'Tüm yıllar', 'All years'],
+          ['search', 'كلمة "بحث"', 'Ara', '"Search" word'],
+          ['searchPlaceholder', 'النص داخل حقل بحث القسم', 'Bölüm arama yer tutucu', 'Section search placeholder'],
+          ['filters', 'كلمة "الفلاتر"', 'Filtreler', '"Filters" word'],
+          ['clearFilters', 'زر مسح الفلاتر', 'Filtreleri temizle', 'Clear filters button'],
+          ['readArticle', 'زر قراءة المقال', 'Makaleyi oku', 'Read article button'],
+          ['readStory', 'زر قراءة القصة', 'Hikayeyi oku', 'Read story button'],
+          ['openDocument', 'زر فتح الوثيقة', 'Belgeyi aç', 'Open document button'],
+          ['downloadPdf', 'زر تحميل PDF', 'PDF indir', 'Download PDF button'],
+          ['pdfOnly', 'فلتر "ملفات PDF فقط"', 'Sadece PDF', '"PDF only" filter'],
+          ['pdfShort', 'شارة PDF', 'PDF rozeti', 'PDF badge'],
+          ['noPdfShort', 'شارة بدون PDF', 'PDF yok rozeti', 'No-PDF badge'],
+          ['directPdfAvailable', 'ملاحظة توفر PDF مباشر', 'Doğrudan PDF notu', 'Direct PDF note'],
+          ['noDirectPdf', 'ملاحظة عدم توفر PDF', 'PDF yok notu', 'No PDF note'],
+          ['preview', 'زر المعاينة', 'Önizleme', 'Preview button'],
+          ['openInNewTab', 'زر فتح في تبويب جديد', 'Yeni sekmede aç', 'Open in new tab'],
+          ['closePreview', 'زر إغلاق المعاينة', 'Önizlemeyi kapat', 'Close preview'],
+          ['previewUnavailable', 'رسالة تعذر المعاينة', 'Önizleme yok mesajı', 'Preview unavailable message'],
+          ['viewGrid', 'عرض شبكي', 'Izgara görünümü', 'Grid view'],
+          ['viewNews', 'عرض بطاقات', 'Kart görünümü', 'Cards view'],
+          ['viewList', 'عرض قائمة', 'Liste görünümü', 'List view'],
+          ['series', 'كلمة "سلسلة"', 'Seri', '"Series" word'],
+          ['published', 'كلمة "نُشر"', 'Yayınlandı', '"Published" word'],
+          ['openImage', 'فتح الصورة (لقارئ الشاشة)', 'Görseli aç', 'Open image (screen reader)'],
+          ['closeImage', 'إغلاق الصورة', 'Görseli kapat', 'Close image'],
+          ['previousImage', 'الصورة السابقة', 'Önceki görsel', 'Previous image'],
+          ['nextImage', 'الصورة التالية', 'Sonraki görsel', 'Next image'],
+          ['imageCounter', 'كلمة "صورة" في العدّاد', 'Görsel sayacı', 'Image counter word'],
         ]),
+      },
+      {
+        key: 'labelsReading',
+        label: L('نصوص صفحة القراءة', 'Okuma sayfası etiketleri', 'Reading page labels'),
+        description: L('صفحة المقال/القصة الواحدة', 'Tek makale/hikaye sayfası', 'The single article/story page'),
+        icon: BookOpen,
+        fields: [
+          ...labelFields('labels', [
+            ['officialSource', 'عنوان المصدر الرسمي', 'Resmî kaynak', 'Official source heading'],
+            ['sourceLanguage', 'كلمة "لغة المصدر"', 'Kaynak dili', 'Source language'],
+            ['originalLanguageNote', 'ملاحظة النص الأصلي بالعربية', 'Orijinal dil notu', 'Original-language note', 'textarea'],
+            ['readingTime', 'كلمة "دقائق قراءة"', 'Okuma süresi', 'Reading time'],
+            ['tableOfContents', 'عنوان المحتويات', 'İçindekiler', 'Table of contents'],
+            ['readingProgress', 'تقدم القراءة', 'Okuma ilerlemesi', 'Reading progress'],
+            ['author', 'كلمة "الكاتب"', 'Yazar', '"Author" word'],
+            ['partOfSeries', 'ملاحظة "جزء من سلسلة"', 'Seri notu', '"Part of a series" note'],
+            ['partLabel', 'كلمة "الجزء"', 'Bölüm', '"Part" word'],
+            ['related', 'عنوان مواد ذات صلة', 'İlgili', 'Related heading'],
+            ['previousItem', 'زر المادة السابقة', 'Önceki', 'Previous item'],
+            ['nextItem', 'زر المادة التالية', 'Sonraki', 'Next item'],
+            ['backToLibrary', 'زر العودة للمكتبة', 'Kütüphaneye dön', 'Back to library'],
+            ['backToCollection', 'زر العودة للقسم', 'Bölüme dön', 'Back to section'],
+            ['share', 'كلمة "مشاركة"', 'Paylaş', 'Share'],
+            ['copyLink', 'زر نسخ الرابط', 'Bağlantıyı kopyala', 'Copy link'],
+            ['linkCopied', 'رسالة تم النسخ', 'Kopyalandı', 'Link copied'],
+            ['print', 'زر الطباعة', 'Yazdır', 'Print'],
+            ['donateCta', 'زر الدعوة للمساهمة', 'Bağış çağrısı', 'Donate call-to-action'],
+          ]),
+          { path: 'layout.relatedLimit', label: L('عدد المواد ذات الصلة', 'İlgili öğe sayısı', 'Related items count'), type: 'number', advanced: true },
+        ],
       },
     ],
   },
@@ -976,31 +1481,70 @@ export const SITE_PAGES: SitePageDef[] = [
     key: 'news-page',
     group: 'library',
     label: L('صفحة الأخبار', 'Haberler sayfası', 'News page'),
+    description: L('واجهة صفحة الأخبار ونصوصها؛ الأخبار نفسها من قائمة "الأخبار"', 'Haber sayfasının girişi ve metinleri', 'The news page hero and labels; the articles come from the "News" list'),
     icon: Newspaper,
     route: '/news',
     sections: [
       {
         key: 'hero',
-        label: L('الواجهة والنصوص', 'Hero ve etiketler', 'Hero & labels'),
+        label: L('الواجهة', 'Hero', 'Hero'),
         icon: ImageIcon,
+        fields: [
+          ...labelFields('', [
+            ['eyebrow', 'السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'],
+            ['news', 'عنوان الصفحة (كلمة "الأخبار")', 'Sayfa başlığı', 'Page title ("News")'],
+            ['heroDescription', 'وصف الواجهة', 'Hero açıklaması', 'Hero description', 'textarea'],
+          ]),
+          {
+            path: 'hero.image',
+            label: L('صورة الواجهة', 'Hero görseli', 'Hero image'),
+            type: 'image',
+            help: L('إن تُركت فارغة تُستخدم صورة أحدث خبر', 'Boşsa en yeni haberin görseli kullanılır', 'When empty, the newest article’s image is used'),
+          },
+          { path: 'hero.imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' },
+          ...seoFields('seo'),
+        ],
+      },
+      {
+        key: 'labels',
+        label: L('النصوص والأزرار', 'Etiketler', 'Labels'),
+        icon: Type,
         fields: labelFields('', [
-          ['eyebrow', 'العنوان الفرعي', 'Üst başlık', 'Eyebrow'],
-          ['news', 'كلمة "الأخبار"', 'Haberler', 'News'],
-          ['heroDescription', 'وصف الواجهة', 'Hero açıklaması', 'Hero description'],
-          ['featured', 'الخبر المميّز', 'Öne çıkan', 'Featured'],
-          ['latest', 'الأحدث', 'En yeni', 'Latest'],
-          ['readArticle', 'قراءة الخبر', 'Haberi oku', 'Read article'],
-          ['allNews', 'كل الأخبار', 'Tüm haberler', 'All news'],
-          ['search', 'بحث', 'Ara', 'Search'],
-          ['searchPlaceholder', 'نص حقل البحث', 'Arama yer tutucu', 'Search placeholder'],
-          ['allYears', 'كل السنوات', 'Tüm yıllar', 'All years'],
-          ['noResults', 'لا نتائج', 'Sonuç yok', 'No results'],
-          ['published', 'تاريخ النشر', 'Yayın tarihi', 'Published'],
-          ['officialSource', 'المصدر الرسمي', 'Resmî kaynak', 'Official source'],
-          ['related', 'أخبار ذات صلة', 'İlgili haberler', 'Related'],
-          ['backToNews', 'العودة للأخبار', 'Haberlere dön', 'Back to news'],
-          ['share', 'مشاركة', 'Paylaş', 'Share'],
-        ]).map((field) => ({ ...field, path: field.path.replace(/^\./, '') })),
+          ['home', 'مسار التنقل: الرئيسية', 'Gezinti: Ana sayfa', 'Breadcrumb: Home'],
+          ['featured', 'شارة الخبر المميّز', 'Öne çıkan rozeti', 'Featured badge'],
+          ['latest', 'عنوان الأحدث', 'En yeni', 'Latest heading'],
+          ['readArticle', 'زر قراءة الخبر', 'Haberi oku', 'Read article button'],
+          ['readMore', 'زر اقرأ المزيد', 'Devamını oku', 'Read more button'],
+          ['allNews', 'زر كل الأخبار', 'Tüm haberler', 'All news button'],
+          ['search', 'كلمة "بحث"', 'Ara', '"Search" word'],
+          ['searchPlaceholder', 'النص داخل حقل البحث', 'Arama yer tutucu', 'Search placeholder'],
+          ['clearSearch', 'زر مسح البحث', 'Aramayı temizle', 'Clear search'],
+          ['allYears', 'فلتر كل السنوات', 'Tüm yıllar', 'All years filter'],
+          ['results', 'كلمة "نتائج"', 'Sonuçlar', '"Results" word'],
+          ['noResults', 'رسالة لا نتائج', 'Sonuç yok', 'No results message'],
+          ['loadPage', 'كلمة "صفحة" في الترقيم', 'Sayfa', '"Page" word in pagination'],
+          ['sourceLanguage', 'كلمة "لغة المصدر"', 'Kaynak dili', 'Source language'],
+          ['originalLanguageNote', 'ملاحظة النص الأصلي', 'Orijinal metin notu', 'Original-text note', 'textarea'],
+          ['gallery', 'عنوان معرض صور الخبر', 'Haber galerisi', 'Article gallery heading'],
+          ['related', 'عنوان أخبار ذات صلة', 'İlgili haberler', 'Related news heading'],
+          ['backToNews', 'زر العودة للأخبار', 'Haberlere dön', 'Back to news button'],
+          ['share', 'كلمة "مشاركة"', 'Paylaş', '"Share" word'],
+          ['copyLink', 'زر نسخ الرابط', 'Bağlantıyı kopyala', 'Copy link'],
+          ['linkCopied', 'رسالة تم النسخ', 'Kopyalandı', 'Link copied'],
+          ['whatsapp', 'زر واتساب', 'WhatsApp', 'WhatsApp button'],
+          ['facebook', 'زر فيسبوك', 'Facebook', 'Facebook button'],
+          ['x', 'زر X', 'X', 'X button'],
+        ]),
+      },
+      {
+        key: 'layout',
+        label: L('أعداد العرض', 'Görüntüleme sayıları', 'Display counts'),
+        icon: SlidersHorizontal,
+        fields: [
+          { path: 'layout.sideCount', label: L('عدد الأخبار بجانب الخبر الرئيسي', 'Ana haberin yanındaki haber sayısı', 'Articles beside the featured one'), type: 'number' },
+          { path: 'layout.pageSize', label: L('عدد الأخبار في الصفحة', 'Sayfa başına haber', 'Articles per page'), type: 'number' },
+          { path: 'layout.relatedCount', label: L('عدد الأخبار ذات الصلة', 'İlgili haber sayısı', 'Related articles count'), type: 'number' },
+        ],
       },
     ],
   },
@@ -1018,4 +1562,30 @@ export function countPageFields(page: SitePageDef): number {
     (sum, section) => sum + section.fields.reduce((inner, field) => inner + countField(field), 0),
     0,
   );
+}
+
+/**
+ * Flat search index over every page, section and field label, for the
+ * dashboard's "where do I change X?" search.
+ */
+export function pageSearchIndex(locale: Locale) {
+  const entries: { pageKey: string; sectionKey: string; page: string; section: string; field: string }[] = [];
+  for (const page of SITE_PAGES) {
+    for (const section of page.sections) {
+      const walk = (fields: PageFieldDef[]) => {
+        for (const field of fields) {
+          entries.push({
+            pageKey: page.key,
+            sectionKey: section.key,
+            page: page.label[locale],
+            section: section.label[locale],
+            field: field.label[locale],
+          });
+          if (field.itemFields) walk(field.itemFields);
+        }
+      };
+      walk(section.fields);
+    }
+  }
+  return entries;
 }

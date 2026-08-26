@@ -22,7 +22,10 @@ export type LibraryCollectionSlug =
   | 'yemeni-figures'
   | 'success-stories';
 
-export type LibraryDocumentCollection = 'periodicReports' | 'waqfBooks' | 'waqfLiterature' | 'yemeniFigures';
+export type LibraryDocumentCollection = 'periodicReports' | 'waqfBooks' | 'waqfLiterature';
+
+/** Collections rendered as readable articles (news-style cards + a reading page). */
+export type LibraryTextCollectionSlug = 'forum' | 'success-stories' | 'yemeni-figures';
 
 export type LibraryLabels = {
   home: string;
@@ -64,6 +67,7 @@ export type LibraryLabels = {
   documentsHub: string;
   items: string;
   viewGrid: string;
+  viewNews: string;
   viewList: string;
   pdfOnly: string;
   pdfShort: string;
@@ -93,6 +97,7 @@ export type LibraryLabels = {
   typeArticle: string;
   typeDocument: string;
   typeStory: string;
+  typeFigure: string;
   typeImage: string;
   showMore: string;
   showLess: string;
@@ -105,7 +110,9 @@ export type LibraryCollectionInfo = {
   eyebrow: string;
   description: string;
   route: string;
-  sourceUrl: string;
+  /** Optional hero image for the collection page; empty = first item's image. */
+  image?: string;
+  imageAlt?: string;
   kind: 'articles' | 'documents' | 'stories' | 'gallery';
   documentCollection?: LibraryDocumentCollection;
 };
@@ -124,6 +131,8 @@ export type LibraryTextItem = {
   image: string;
   imageAlt: string;
   content: readonly string[];
+  /** Optional attached document (e.g. a book scan) offered for download on the reading page. */
+  pdfUrl: string | null;
 };
 
 export type LibraryDocumentItem = {
@@ -136,6 +145,8 @@ export type LibraryDocumentItem = {
   excerpt: string;
   image: string;
   imageAlt: string;
+  /** Editor-set series name (CMS rows); static items derive it from the title. */
+  series?: string;
 };
 
 export type LibraryGalleryImage = {
@@ -155,15 +166,40 @@ export type LibraryContent = {
     eyebrow: string;
     description: string;
     image: string;
+    imageAlt: string;
   };
   labels: LibraryLabels;
   collections: Record<LibraryCollectionSlug | 'gallery', LibraryCollectionInfo>;
+  /** Suggested search terms shown under the unified search box. */
+  searchSuggestions: string[];
+  /** Counts the client can tune from the admin (advanced fields). */
+  layout: {
+    searchPerGroup: number;
+    latestLimit: number;
+    relatedLimit: number;
+  };
   breadcrumbs: {
     index: BreadcrumbItem[];
   };
 };
 
-const officialPages = libraryCatalog.diagnostics.officialPages;
+const searchSuggestions: Record<Locale, string[]> = {
+  ar: ['اقتصاد الوقف', 'أويس في أرقام', 'الاستثمار الوقفي', 'براءة اختراع', 'التنمية المستدامة'],
+  en: ['Economics of Waqf', 'Owais in Numbers', 'Waqf investment', 'patent', 'sustainable'],
+  tr: ['Vakıf Ekonomisi', 'Owais in Numbers', 'vakıf yatırımı', 'patent', 'sürdürülebilir'],
+};
+
+const defaultLayout: LibraryContent['layout'] = {
+  searchPerGroup: 4,
+  latestLimit: 8,
+  relatedLimit: 4,
+};
+
+/** Coerces an admin-entered count (may arrive as a string or blank) to a usable positive integer. */
+function positiveCount(value: unknown, fallback: number) {
+  const parsed = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
 
 const languageNames: Record<Locale, Record<string, string>> = {
   ar: {
@@ -224,6 +260,7 @@ const labels: Record<Locale, LibraryLabels> = {
     documentsHub: 'الوثائق والإصدارات',
     items: 'مادة',
     viewGrid: 'عرض شبكي',
+    viewNews: 'عرض بطاقات',
     viewList: 'عرض قائمة',
     pdfOnly: 'متاح PDF فقط',
     pdfShort: 'PDF',
@@ -253,6 +290,7 @@ const labels: Record<Locale, LibraryLabels> = {
     typeArticle: 'مقال',
     typeDocument: 'وثيقة',
     typeStory: 'قصة نجاح',
+    typeFigure: 'شخصية يمانية',
     typeImage: 'صورة',
     showMore: 'عرض المزيد',
     showLess: 'عرض أقل',
@@ -297,6 +335,7 @@ const labels: Record<Locale, LibraryLabels> = {
     documentsHub: 'Documents & publications',
     items: 'items',
     viewGrid: 'Grid view',
+    viewNews: 'News cards view',
     viewList: 'List view',
     pdfOnly: 'PDF available only',
     pdfShort: 'PDF',
@@ -326,6 +365,7 @@ const labels: Record<Locale, LibraryLabels> = {
     typeArticle: 'Article',
     typeDocument: 'Document',
     typeStory: 'Success story',
+    typeFigure: 'Yemeni figure',
     typeImage: 'Photo',
     showMore: 'Show more',
     showLess: 'Show less',
@@ -370,6 +410,7 @@ const labels: Record<Locale, LibraryLabels> = {
     documentsHub: 'Belgeler ve yayınlar',
     items: 'içerik',
     viewGrid: 'Izgara görünümü',
+    viewNews: 'Kart görünümü',
     viewList: 'Liste görünümü',
     pdfOnly: 'Yalnızca PDF olanlar',
     pdfShort: 'PDF',
@@ -399,13 +440,17 @@ const labels: Record<Locale, LibraryLabels> = {
     typeArticle: 'Makale',
     typeDocument: 'Belge',
     typeStory: 'Başarı hikayesi',
+    typeFigure: 'Yemenli şahsiyet',
     typeImage: 'Fotoğraf',
     showMore: 'Daha fazla göster',
     showLess: 'Daha az göster',
   },
 };
 
-const collectionText: Record<Locale, Record<LibraryCollectionSlug | 'gallery', Omit<LibraryCollectionInfo, 'slug' | 'route' | 'sourceUrl' | 'kind' | 'documentCollection'>>> = {
+const collectionText: Record<
+  Locale,
+  Record<LibraryCollectionSlug | 'gallery', Pick<LibraryCollectionInfo, 'title' | 'shortTitle' | 'eyebrow' | 'description'>>
+> = {
   ar: {
     forum: {
       title: 'المنتدى الوقفي',
@@ -435,7 +480,7 @@ const collectionText: Record<Locale, Record<LibraryCollectionSlug | 'gallery', O
       title: 'شخصيات يمانية',
       shortTitle: 'شخصيات يمانية',
       eyebrow: 'ذاكرة يمنية',
-      description: 'مواد توثق شخصيات يمنية بارزة كما وردت في المكتبة الرسمية.',
+      description: 'سير ومقالات توثق شخصيات يمنية بارزة في الداخل والمهجر، تُقرأ مباشرة داخل الموقع.',
     },
     'success-stories': {
       title: 'قصص النجاح',
@@ -479,7 +524,7 @@ const collectionText: Record<Locale, Record<LibraryCollectionSlug | 'gallery', O
       title: 'Yemeni Figures',
       shortTitle: 'Yemeni Figures',
       eyebrow: 'Yemeni Memory',
-      description: 'Materials documenting notable Yemeni figures as listed in the official library.',
+      description: 'Profiles and articles documenting notable Yemeni figures at home and abroad, readable on the site.',
     },
     'success-stories': {
       title: 'Success Stories',
@@ -523,7 +568,7 @@ const collectionText: Record<Locale, Record<LibraryCollectionSlug | 'gallery', O
       title: 'Yemenli Şahsiyetler',
       shortTitle: 'Yemenli Şahsiyetler',
       eyebrow: 'Yemen Hafızası',
-      description: 'Resmi kütüphanede yer alan önde gelen Yemenli şahsiyetlere dair materyaller.',
+      description: 'Yurt içinde ve diasporada öne çıkan Yemenli şahsiyetleri belgeleyen, sitede okunabilen profil ve yazılar.',
     },
     'success-stories': {
       title: 'Başarı Hikayeleri',
@@ -542,80 +587,65 @@ const collectionText: Record<Locale, Record<LibraryCollectionSlug | 'gallery', O
 
 const collectionSettings: Record<
   LibraryCollectionSlug | 'gallery',
-  Pick<LibraryCollectionInfo, 'route' | 'sourceUrl' | 'kind' | 'documentCollection'>
+  Pick<LibraryCollectionInfo, 'route' | 'kind' | 'documentCollection'>
 > = {
   forum: {
     route: libraryRoutes.forum,
-    sourceUrl: officialPages.forum,
     kind: 'articles',
   },
   'periodic-reports': {
     route: libraryRoutes.periodicReports,
-    sourceUrl: officialPages.periodicReports,
     kind: 'documents',
     documentCollection: 'periodicReports',
   },
   'waqf-books': {
     route: libraryRoutes.waqfBooks,
-    sourceUrl: officialPages.waqfBooks,
     kind: 'documents',
     documentCollection: 'waqfBooks',
   },
   'waqf-literature': {
     route: libraryRoutes.waqfLiterature,
-    sourceUrl: officialPages.waqfLiterature,
     kind: 'documents',
     documentCollection: 'waqfLiterature',
   },
   'yemeni-figures': {
     route: libraryRoutes.yemeniFigures,
-    sourceUrl: officialPages.yemeniFigures,
-    kind: 'documents',
-    documentCollection: 'yemeniFigures',
+    kind: 'articles',
   },
   'success-stories': {
     route: libraryRoutes.successStories,
-    sourceUrl: officialPages.successStories,
     kind: 'stories',
   },
   gallery: {
     route: libraryRoutes.gallery,
-    sourceUrl: officialPages.gallery,
     kind: 'gallery',
   },
 };
 
 function buildCollections(locale: Locale): Record<LibraryCollectionSlug | 'gallery', LibraryCollectionInfo> {
   const text = collectionText[locale];
+  // image/imageAlt default to '' so the admin paths always have a static value;
+  // components fall back to the first item's image when they are empty.
+  const build = (slug: LibraryCollectionSlug | 'gallery'): LibraryCollectionInfo => ({
+    slug,
+    ...text[slug],
+    image: '',
+    imageAlt: '',
+    ...collectionSettings[slug],
+  });
 
   return {
-    forum: { slug: 'forum', ...text.forum, ...collectionSettings.forum },
-    'periodic-reports': {
-      slug: 'periodic-reports',
-      ...text['periodic-reports'],
-      ...collectionSettings['periodic-reports'],
-    },
-    'waqf-books': { slug: 'waqf-books', ...text['waqf-books'], ...collectionSettings['waqf-books'] },
-    'waqf-literature': {
-      slug: 'waqf-literature',
-      ...text['waqf-literature'],
-      ...collectionSettings['waqf-literature'],
-    },
-    'yemeni-figures': {
-      slug: 'yemeni-figures',
-      ...text['yemeni-figures'],
-      ...collectionSettings['yemeni-figures'],
-    },
-    'success-stories': {
-      slug: 'success-stories',
-      ...text['success-stories'],
-      ...collectionSettings['success-stories'],
-    },
-    gallery: { slug: 'gallery', ...text.gallery, ...collectionSettings.gallery },
+    forum: build('forum'),
+    'periodic-reports': build('periodic-reports'),
+    'waqf-books': build('waqf-books'),
+    'waqf-literature': build('waqf-literature'),
+    'yemeni-figures': build('yemeni-figures'),
+    'success-stories': build('success-stories'),
+    gallery: build('gallery'),
   };
 }
 
-const heroText: Record<Locale, Omit<LibraryContent['hero'], 'image'>> = {
+const heroText: Record<Locale, Omit<LibraryContent['hero'], 'image' | 'imageAlt'>> = {
   ar: {
     title: 'المكتبة',
     eyebrow: 'أرشيف وقف أويس القرني',
@@ -633,15 +663,26 @@ const heroText: Record<Locale, Omit<LibraryContent['hero'], 'image'>> = {
   },
 };
 
-function localizeTextItem<T extends (typeof libraryCatalog.forumArticles)[number] | (typeof libraryCatalog.stories)[number]>(
+export const textCollectionRoutes: Record<LibraryTextCollectionSlug, string> = {
+  forum: libraryRoutes.forum,
+  'success-stories': libraryRoutes.successStories,
+  'yemeni-figures': libraryRoutes.yemeniFigures,
+};
+
+type CatalogTextItem =
+  | (typeof libraryCatalog.forumArticles)[number]
+  | (typeof libraryCatalog.stories)[number]
+  | (typeof libraryCatalog.yemeniFigures)[number];
+
+function localizeTextItem<T extends CatalogTextItem>(
   item: T,
   locale: Locale,
-  section: 'forum' | 'success-stories'
+  section: LibraryTextCollectionSlug
 ): LibraryTextItem {
   return {
     id: item.id,
     slug: item.slug,
-    route: `${section === 'forum' ? libraryRoutes.forum : libraryRoutes.successStories}/${item.slug}`,
+    route: `${textCollectionRoutes[section]}/${item.slug}`,
     title: item.localizedTitle[locale] || item.title,
     originalTitle: item.title,
     sourceUrl: item.sourceUrl,
@@ -652,6 +693,7 @@ function localizeTextItem<T extends (typeof libraryCatalog.forumArticles)[number
     image: item.image,
     imageAlt: item.imageAlt,
     content: item.content,
+    pdfUrl: 'pdfUrl' in item ? item.pdfUrl : null,
   };
 }
 
@@ -669,19 +711,20 @@ function normalize(value: string) {
 }
 
 export function getLibraryContent(locale: Locale): LibraryContent {
-  const collections = buildCollections(locale);
-
-  return cmsPageContent('library-page', locale, {
-    hero: {
-      ...heroText[locale],
-      image: libraryCatalog.forumArticles[0]?.image ?? '/library/forum/waqf-economics-part-three.jpeg',
+  const merged = cmsPageContent('library-page', locale, staticLibraryContent(locale));
+  // Numbers typed in the admin may come back as strings or blanks; never let
+  // them turn into NaN slices that would hide whole sections.
+  return {
+    ...merged,
+    searchSuggestions: Array.isArray(merged.searchSuggestions)
+      ? merged.searchSuggestions.filter((entry): entry is string => typeof entry === 'string' && entry.trim() !== '')
+      : [],
+    layout: {
+      searchPerGroup: positiveCount(merged.layout?.searchPerGroup, defaultLayout.searchPerGroup),
+      latestLimit: positiveCount(merged.layout?.latestLimit, defaultLayout.latestLimit),
+      relatedLimit: positiveCount(merged.layout?.relatedLimit, defaultLayout.relatedLimit),
     },
-    labels: labels[locale],
-    collections,
-    breadcrumbs: {
-      index: [{ label: labels[locale].home, href: '/' }, { label: labels[locale].library }],
-    },
-  });
+  };
 }
 
 export function getLibraryCollectionInfo(locale: Locale, slug: LibraryCollectionSlug | 'gallery') {
@@ -699,7 +742,7 @@ export function getLibraryCollectionBreadcrumbs(locale: Locale, slug: LibraryCol
   ];
 }
 
-export function getLibraryTextBreadcrumbs(locale: Locale, item: LibraryTextItem, parentSlug: 'forum' | 'success-stories'): BreadcrumbItem[] {
+export function getLibraryTextBreadcrumbs(locale: Locale, item: LibraryTextItem, parentSlug: LibraryTextCollectionSlug): BreadcrumbItem[] {
   const content = getLibraryContent(locale);
   const parent = content.collections[parentSlug];
 
@@ -737,12 +780,52 @@ export function getSuccessStory(locale: Locale, slug: string | undefined): Libra
   return getSuccessStories(locale).find((item) => item.slug === slug);
 }
 
+export function getYemeniFigures(locale: Locale): LibraryTextItem[] {
+  return cmsLibraryArticles(
+    'yemeni-figures',
+    locale,
+    libraryCatalog.yemeniFigures.map((item) => localizeTextItem(item, locale, 'yemeni-figures')),
+  );
+}
+
+export function getYemeniFigure(locale: Locale, slug: string | undefined): LibraryTextItem | undefined {
+  if (!slug) return undefined;
+  return getYemeniFigures(locale).find((item) => item.slug === slug);
+}
+
+/** All items of a text collection, newest first (array order). */
+export function getTextItems(locale: Locale, collection: LibraryTextCollectionSlug): LibraryTextItem[] {
+  switch (collection) {
+    case 'forum':
+      return getForumArticles(locale);
+    case 'success-stories':
+      return getSuccessStories(locale);
+    default:
+      return getYemeniFigures(locale);
+  }
+}
+
+export function getTextItem(locale: Locale, collection: LibraryTextCollectionSlug, slug: string | undefined) {
+  if (!slug) return undefined;
+  return getTextItems(locale, collection).find((item) => item.slug === slug);
+}
+
+export function getRelatedTextItems(
+  locale: Locale,
+  collection: LibraryTextCollectionSlug,
+  slug: string,
+  limit = getLibraryContent(locale).layout.relatedLimit,
+) {
+  return getTextItems(locale, collection)
+    .filter((item) => item.slug !== slug)
+    .slice(0, limit);
+}
+
 /** Runtime collection keys mapped to the slugs stored in `library_documents`. */
 const documentCollectionSlugByKey: Record<LibraryDocumentCollection, string> = {
   periodicReports: 'periodic-reports',
   waqfBooks: 'waqf-books',
   waqfLiterature: 'waqf-literature',
-  yemeniFigures: 'yemeni-figures',
 };
 
 export function getDocuments(
@@ -814,14 +897,13 @@ export const documentCollectionSlugs = [
   'periodic-reports',
   'waqf-books',
   'waqf-literature',
-  'yemeni-figures',
 ] as const satisfies readonly LibraryCollectionSlug[];
 
 export type LibraryDocumentCollectionSlug = (typeof documentCollectionSlugs)[number];
 
 export type LibrarySearchHit = {
   id: string;
-  kind: 'article' | 'story' | 'document' | 'image';
+  kind: 'article' | 'story' | 'figure' | 'document' | 'image';
   collection: LibraryCollectionSlug | 'gallery';
   title: string;
   subtitle: string;
@@ -857,13 +939,13 @@ export function getLibraryCounts(locale: Locale): LibraryCounts {
     'periodic-reports': getDocuments('periodicReports', locale).length,
     'waqf-books': getDocuments('waqfBooks', locale).length,
     'waqf-literature': getDocuments('waqfLiterature', locale).length,
-    'yemeni-figures': getDocuments('yemeniFigures', locale).length,
+    'yemeni-figures': getYemeniFigures(locale).length,
     'success-stories': getSuccessStories(locale).length,
     gallery: getGalleryImages(locale).length,
   };
 }
 
-function textHit(item: LibraryTextItem, kind: 'article' | 'story', collection: LibraryCollectionSlug): LibrarySearchHit {
+function textHit(item: LibraryTextItem, kind: 'article' | 'story' | 'figure', collection: LibraryCollectionSlug): LibrarySearchHit {
   return {
     id: item.id,
     kind,
@@ -879,6 +961,9 @@ function textHit(item: LibraryTextItem, kind: 'article' | 'story', collection: L
 }
 
 function documentHit(item: LibraryDocumentItem, collection: LibraryCollectionSlug): LibrarySearchHit {
+  // Without a PDF the hit opens the collection page pre-filtered on the
+  // title; this site is the official source, so nothing links off-site.
+  const hasPdf = Boolean(item.pdfUrl);
   return {
     id: item.id,
     kind: 'document',
@@ -886,25 +971,26 @@ function documentHit(item: LibraryDocumentItem, collection: LibraryCollectionSlu
     title: item.title,
     subtitle: item.excerpt,
     image: item.image,
-    href: item.pdfUrl ?? item.sourceUrl,
-    external: true,
-    hasPdf: Boolean(item.pdfUrl),
+    href: hasPdf ? (item.pdfUrl as string) : `${collectionSettings[collection].route}?q=${encodeURIComponent(item.title)}`,
+    external: hasPdf,
+    hasPdf,
     date: item.date,
   };
 }
 
 /** Search across every library collection at once, grouped by section. */
-export function searchLibrary(locale: Locale, query: string, perGroup = 4): LibrarySearchGroup[] {
+export function searchLibrary(locale: Locale, query: string, perGroup?: number): LibrarySearchGroup[] {
   const needle = normalize(query.trim());
   if (!needle) return [];
 
   const content = getLibraryContent(locale);
+  const groupLimit = perGroup ?? content.layout.searchPerGroup;
   const groups: LibrarySearchGroup[] = [];
 
   const pushGroup = (collection: LibraryCollectionSlug | 'gallery', hits: LibrarySearchHit[]) => {
     if (!hits.length) return;
     const info = content.collections[collection];
-    groups.push({ collection, title: info.shortTitle, route: info.route, total: hits.length, hits: hits.slice(0, perGroup) });
+    groups.push({ collection, title: info.shortTitle, route: info.route, total: hits.length, hits: hits.slice(0, groupLimit) });
   };
 
   pushGroup(
@@ -924,6 +1010,13 @@ export function searchLibrary(locale: Locale, query: string, perGroup = 4): Libr
         .map((item) => documentHit(item, slug))
     );
   }
+
+  pushGroup(
+    'yemeni-figures',
+    getYemeniFigures(locale)
+      .filter((item) => matches(`${item.title} ${item.originalTitle} ${item.excerpt} ${item.year ?? ''}`, needle))
+      .map((item) => textHit(item, 'figure', 'yemeni-figures'))
+  );
 
   pushGroup(
     'success-stories',
@@ -953,21 +1046,25 @@ export function searchLibrary(locale: Locale, query: string, perGroup = 4): Libr
   return groups;
 }
 
-/** Suggested search terms per locale (shown under the unified search box). */
+/** Suggested search terms (shown under the unified search box); editable from the admin. */
 export function getLibrarySearchSuggestions(locale: Locale): string[] {
-  const suggestions: Record<Locale, string[]> = {
-    ar: ['اقتصاد الوقف', 'أويس في أرقام', 'الاستثمار الوقفي', 'براءة اختراع', 'التنمية المستدامة'],
-    en: ['Economics of Waqf', 'Owais in Numbers', 'Waqf investment', 'patent', 'sustainable'],
-    tr: ['Vakıf Ekonomisi', 'Owais in Numbers', 'vakıf yatırımı', 'patent', 'sürdürülebilir'],
-  };
-  return suggestions[locale];
+  return getLibraryContent(locale).searchSuggestions;
+}
+
+/** True when the free-text date column holds something `new Date()` can parse. */
+function hasValidDate(date: string) {
+  return Boolean(date) && !Number.isNaN(Date.parse(date));
 }
 
 /** Latest items across articles, stories, and dated documents, newest first. */
-export function getLatestLibraryItems(locale: Locale, limit = 6): LibrarySearchHit[] {
+export function getLatestLibraryItems(
+  locale: Locale,
+  limit = getLibraryContent(locale).layout.latestLimit,
+): LibrarySearchHit[] {
   const hits: LibrarySearchHit[] = [
     ...getForumArticles(locale).map((item) => textHit(item, 'article', 'forum')),
     ...getSuccessStories(locale).map((item) => textHit(item, 'story', 'success-stories')),
+    ...getYemeniFigures(locale).map((item) => textHit(item, 'figure', 'yemeni-figures')),
   ];
 
   for (const slug of documentCollectionSlugs) {
@@ -975,14 +1072,15 @@ export function getLatestLibraryItems(locale: Locale, limit = 6): LibrarySearchH
     if (!info.documentCollection) continue;
     hits.push(
       ...getDocuments(info.documentCollection, locale)
-        .filter((item) => item.date)
+        .filter((item) => hasValidDate(item.date))
         .map((item) => documentHit(item, slug))
     );
   }
 
+  // Undated / unparsable dates are left out rather than mis-sorted.
   return hits
-    .filter((hit) => hit.date)
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .filter((hit) => hasValidDate(hit.date))
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
     .slice(0, limit);
 }
 
@@ -1042,8 +1140,8 @@ export function getArticleSeries(locale: Locale, slug: string): LibrarySeries | 
 }
 
 /** Previous / next items in a text collection (array order = newest first). */
-export function getAdjacentTextItems(locale: Locale, type: 'forum' | 'success-stories', slug: string) {
-  const items = type === 'forum' ? getForumArticles(locale) : getSuccessStories(locale);
+export function getAdjacentTextItems(locale: Locale, type: LibraryTextCollectionSlug, slug: string) {
+  const items = getTextItems(locale, type);
   const index = items.findIndex((item) => item.slug === slug);
   if (index === -1) return { previous: undefined, next: undefined };
   return {
@@ -1069,8 +1167,11 @@ export function getDocumentSeries(items: LibraryDocumentItem[], minCount = 3): L
     .sort((a, b) => b.count - a.count);
 }
 
-export function getDocumentSeriesKey(item: Pick<LibraryDocumentItem, 'title'>) {
-  const match = item.title.match(/^(.+?)\s+[–—-]\s+/);
+export function getDocumentSeriesKey(item: Pick<LibraryDocumentItem, 'title' | 'series'>) {
+  // An editor-set series wins; the title prefix is only a fallback for static items.
+  const explicit = item.series?.trim();
+  if (explicit) return explicit;
+  const match = (item.title ?? '').match(/^(.+?)\s+[–—-]\s+/);
   return match ? match[1].trim() : null;
 }
 
@@ -1092,9 +1193,12 @@ export function staticLibraryContent(locale: Locale): LibraryContent {
     hero: {
       ...heroText[locale],
       image: libraryCatalog.forumArticles[0]?.image ?? '/library/forum/waqf-economics-part-three.jpeg',
+      imageAlt: heroText[locale].title,
     },
     labels: labels[locale],
     collections: buildCollections(locale),
+    searchSuggestions: searchSuggestions[locale],
+    layout: { ...defaultLayout },
     breadcrumbs: {
       index: [{ label: labels[locale].home, href: '/' }, { label: labels[locale].library }],
     },
@@ -1107,6 +1211,10 @@ export function staticForumArticles(locale: Locale): LibraryTextItem[] {
 
 export function staticSuccessStories(locale: Locale): LibraryTextItem[] {
   return libraryCatalog.stories.map((item) => localizeTextItem(item, locale, 'success-stories'));
+}
+
+export function staticYemeniFigures(locale: Locale): LibraryTextItem[] {
+  return libraryCatalog.yemeniFigures.map((item) => localizeTextItem(item, locale, 'yemeni-figures'));
 }
 
 export function staticDocuments(collection: LibraryDocumentCollection): LibraryDocumentItem[] {

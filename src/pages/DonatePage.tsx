@@ -148,7 +148,7 @@ export default function DonatePage() {
                 {page.intro.title}
               </h2>
               <div className="mx-auto mt-5 max-w-3xl space-y-3 text-base leading-relaxed text-dark-600 md:text-lg">
-                {page.intro.paragraphs.map((paragraph) => (
+                {(page.intro.paragraphs ?? []).map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
@@ -166,17 +166,20 @@ export default function DonatePage() {
               <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <span className="h-px w-8 bg-primary-200" />
-                  <span className="text-sm font-semibold text-primary-700">{page.labels.opportunities}</span>
+                  <span className="text-sm font-semibold text-primary-700">{page.grid.eyebrow}</span>
                   <span className="h-px w-8 bg-primary-200" />
                 </div>
                 <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
-                  {page.labels.opportunities}
+                  {page.grid.title}
                 </h2>
+                {page.grid.description && (
+                  <p className="mt-4 text-base leading-relaxed text-dark-600 md:text-lg">{page.grid.description}</p>
+                )}
               </div>
             </FadeContent>
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {page.opportunities.map((opportunity, index) => (
+              {(page.opportunities ?? []).map((opportunity, index) => (
                 <DonationCard
                   key={opportunity.id}
                   opportunity={opportunity}

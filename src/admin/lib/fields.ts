@@ -18,8 +18,13 @@ export type FieldType =
   | 'stringList'
   | 'localizedRepeater'
   | 'localizedGroup'
+  /** One list shared by all languages; item fields may themselves be localized. */
+  | 'repeater'
+  /** One object shared by all languages; sub-fields may themselves be localized. */
+  | 'group'
   | 'video'
   | 'slug'
+  | 'icon'
   | 'json';
 
 export type SelectOption = { value: string; label: Record<Locale, string> };
@@ -53,6 +58,8 @@ export type ResourceDef = {
   table: string;
   section: 'content' | 'library' | 'engagement' | 'site';
   labelKey: string;
+  /** One line for editors: where on the site these records appear. */
+  description?: Record<Locale, string>;
   titleField: string;
   fields: FieldDef[];
   defaultSort?: { column: string; ascending: boolean };
@@ -60,6 +67,8 @@ export type ResourceDef = {
   filter?: { column: string; options: SelectOption[] };
   /** default values for a freshly created record */
   newDefaults?: Record<string, unknown>;
+  /** Public route of one record, for "open on site" links; `:slug` is replaced. */
+  publicRoute?: string;
 };
 
 /** Returns the empty/default value for a field type (used when creating records). */
@@ -71,9 +80,11 @@ export function emptyValue(type: FieldType): unknown {
     case 'localizedParagraphs':
       return {};
     case 'stringList':
+    case 'repeater':
       return [];
     case 'localizedRepeater':
     case 'localizedGroup':
+    case 'group':
       return {};
     case 'boolean':
       return false;
@@ -81,7 +92,33 @@ export function emptyValue(type: FieldType): unknown {
       return null;
     case 'json':
       return null;
+    // Postgres rejects '' for timestamp columns; "not set" is null.
+    case 'date':
+    case 'datetime':
+    case 'video':
+      return null;
     default:
       return '';
+  }
+}
+
+/**
+ * Coerces a form value into what the column accepts. Empty scalars become
+ * null for typed columns so a blank date/number never reaches Postgres as ''.
+ */
+export function toColumnValue(type: FieldType, value: unknown): unknown {
+  if (value === undefined) return emptyValue(type);
+  switch (type) {
+    case 'date':
+    case 'datetime':
+    case 'number':
+      return value === '' ? null : value;
+    case 'url':
+    case 'file':
+    case 'image':
+    case 'icon':
+      return value === '' ? null : value;
+    default:
+      return value;
   }
 }

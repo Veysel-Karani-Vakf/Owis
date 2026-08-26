@@ -1,6 +1,7 @@
 import type { BreadcrumbItem } from '@/data/about';
 import { participateRoutes } from '@/data/participate';
 import type { Locale } from '@/i18n/content';
+import type { ProgramLayout } from '@/lib/types';
 import { cmsPageContent, cmsPrograms } from '@/cms/adapters';
 import yemenPioneersHero from '@/assets/programs/yemen-pioneers-hero.jpeg';
 import capacityHadramoutCoastImage from '@/assets/programs/capacity-hadramout-coast.jpeg';
@@ -91,12 +92,15 @@ export type ProgramAudience = {
   id: string;
   title: string;
   description: string;
+  /** Icon name from the shared registry; the component falls back to its own default when unset. */
+  icon?: string;
 };
 
 export type ProgramJourneyStep = {
   id: string;
   title: string;
   description: string;
+  icon?: string;
 };
 
 export type ProgramPillar = {
@@ -104,12 +108,14 @@ export type ProgramPillar = {
   title: string;
   body: string;
   points: string[];
+  icon?: string;
 };
 
 export type ProgramTheme = {
   id: string;
   title: string;
   description: string;
+  icon?: string;
 };
 
 /** One knowledge/media format the Owais platform publishes (podcast, visuals, ...). */
@@ -118,6 +124,7 @@ export type ProgramMediaProduct = {
   title: string;
   tagline: string;
   description: string;
+  icon?: string;
 };
 
 /** A featured on-ground moment of the platform, illustrated with real event photos. */
@@ -140,6 +147,8 @@ export type ProgramSectionCopy = {
 export type VolunteerCopy = {
   eyebrow: string;
   joinCta: string;
+  /** Destination of the join buttons; the volunteer form route is used when unset. */
+  joinUrl?: string;
   exploreCta: string;
   slogan: string;
   hashtags: string[];
@@ -185,6 +194,8 @@ export type Program = {
   overviewImage?: string;
   overviewImageAlt?: string;
   officialSourceUrl: string;
+  /** Which page design renders this program; derived from the slug when unset (see resolveProgramLayout). */
+  layout?: ProgramLayout;
   seo: {
     title: string;
     description: string;
@@ -194,6 +205,8 @@ export type Program = {
     title: string;
     description: string;
     button: string;
+    /** Destination of the CTA button; the donate route is used when unset. */
+    url?: string;
   };
   mediaNote?: string;
 };
@@ -203,6 +216,8 @@ export type ProgramsPageContent = {
   labels: {
     home: string;
     programs: string;
+    /** Where the "Programs" breadcrumb points. */
+    programsHref: string;
     overview: string;
     goals: string;
     components: string;
@@ -381,6 +396,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'الرئيسية',
       programs: 'البرامج',
+      programsHref: '/#programs',
       overview: 'التعريف بالبرنامج',
       goals: 'الأهداف',
       components: 'مكونات البرنامج',
@@ -638,7 +654,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'يتواصل معك الفريق',
             description:
-              'يتواصل معك فريق الوحدة لمطابقة اهتمامك بالفرص المتاحة، ويمكنك التواصل المباشر عبر الهاتف +90 536 745 6199 أو البريد volunteering@veysvakfi.org.',
+              'يتواصل معك فريق الوحدة لمطابقة اهتمامك بالفرص المتاحة، ويمكنك التواصل المباشر عبر الهاتف أو البريد.',
           },
           {
             id: 'contribute',
@@ -998,6 +1014,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'Ana Sayfa',
       programs: 'Programlar',
+      programsHref: '/#programs',
       overview: 'Program Ozeti',
       goals: 'Hedefler',
       components: 'Program Bilesenleri',
@@ -1255,7 +1272,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'Ekip sizinle iletisime gecer',
             description:
-              'Birim ekibi ilgi alaninizi mevcut firsatlarla eslestirir; dogrudan iletisim icin telefon +90 536 745 6199 veya e-posta volunteering@veysvakfi.org.',
+              'Birim ekibi ilgi alaninizi mevcut firsatlarla eslestirir; dogrudan iletisim icin telefon veya e-posta kullanabilirsiniz.',
           },
           {
             id: 'contribute',
@@ -1614,6 +1631,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'Home',
       programs: 'Programs',
+      programsHref: '/#programs',
       overview: 'Program Overview',
       goals: 'Goals',
       components: 'Program Components',
@@ -1871,7 +1889,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'The team gets in touch',
             description:
-              'The unit’s team matches your interest with the available opportunities. For direct contact: phone +90 536 745 6199 or email volunteering@veysvakfi.org.',
+              'The unit’s team matches your interest with the available opportunities. You can also reach us directly by phone or email.',
           },
           {
             id: 'contribute',
@@ -2254,7 +2272,45 @@ export function getProgramBreadcrumbs(locale: Locale, program: Program): Breadcr
 
   return [
     { label: content.labels.home, href: '/' },
-    { label: content.labels.programs, href: '/#programs' },
+    { label: content.labels.programs, href: content.labels.programsHref || '/#programs' },
     { label: program.title },
   ];
+}
+
+/**
+ * The page design a program renders with. An explicit admin choice wins; otherwise the
+ * historical slug conventions apply, and any program carrying volunteer copy gets the
+ * volunteer unit layout.
+ */
+export function resolveProgramLayout(program: Program): ProgramLayout {
+  if (program.layout) return program.layout;
+  if (program.slug === 'yemen-pioneers') return 'pioneers';
+  if (program.slug === 'community-awareness') return 'awareness';
+  if (program.slug === 'institutional-development') return 'institutional';
+  if (program.volunteer) return 'volunteer';
+  return 'generic';
+}
+
+/**
+ * Volunteer copy for a program switched to the volunteer layout without its own copy block:
+ * the static capacity-building copy of the same locale keeps the page rendering until the
+ * editor fills the volunteer fields.
+ */
+export function getDefaultVolunteerCopy(locale: Locale): VolunteerCopy {
+  const fallback = localizedPrograms[locale].programs.find((program) => program.volunteer)?.volunteer;
+  return (
+    fallback ?? {
+      eyebrow: '',
+      joinCta: '',
+      exploreCta: '',
+      slogan: '',
+      hashtags: [],
+      contactTitle: '',
+      quoteLabel: '',
+      statement: { eyebrow: '', title: '', description: '' },
+      fields: { eyebrow: '', title: '', description: '' },
+      goals: { eyebrow: '', title: '', description: '' },
+      steps: { eyebrow: '', title: '', description: '' },
+    }
+  );
 }

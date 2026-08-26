@@ -45,8 +45,10 @@ export default function LibraryGalleryPage() {
   }, [images, info.title]);
 
 
+  // Admin-set hero wins; otherwise the first photo, then the library hero.
+  const heroImage = info.image || images[0]?.image || library.hero.image;
+
   const filters = (
-    
     <div className="mb-8 grid gap-3 rounded-[22px] border border-primary-100 bg-white p-3 shadow-[0_18px_48px_rgba(40,12,18,0.07)] md:grid-cols-[1fr_auto] md:items-center md:p-4">
       <label className="relative block">
         <span className="sr-only">{library.labels.search}</span>
@@ -90,15 +92,15 @@ export default function LibraryGalleryPage() {
       <PageSeo
         title={`${info.title} | ${siteContent.siteConfig.name}`}
         description={info.description}
-        image={images[0]?.image}
+        image={heroImage}
         structuredData={structuredData}
       />
       <main className="bg-white">
         <PageHero
           title={info.title}
           description={info.description}
-          image={images[0]?.image ?? library.hero.image}
-          imageAlt={info.title}
+          image={heroImage}
+          imageAlt={info.imageAlt || info.title}
           breadcrumbs={getLibraryCollectionBreadcrumbs(locale, 'gallery')}
         />
 
@@ -121,7 +123,18 @@ export default function LibraryGalleryPage() {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                   <span className="absolute inset-x-3 bottom-3 rounded-2xl bg-dark-950/82 px-3 py-2 text-center text-xs font-bold text-white backdrop-blur-sm">
-                    {library.labels.imageCounter} {index + 1}
+                    {image.title ? (
+                      <>
+                        <span className="line-clamp-2">{image.title}</span>
+                        <span className="mt-0.5 block text-[10px] font-semibold text-white/70">
+                          {library.labels.imageCounter} {index + 1}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {library.labels.imageCounter} {index + 1}
+                      </>
+                    )}
                   </span>
                 </button>
               ))}

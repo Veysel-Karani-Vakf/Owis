@@ -43,6 +43,12 @@ export type DonatePageContent = {
     title: string;
     paragraphs: string[];
   };
+  /** Heading above the opportunity cards. */
+  grid: {
+    eyebrow: string;
+    title: string;
+    description: string;
+  };
   labels: {
     opportunities: string;
     contributionValue: string;
@@ -167,6 +173,11 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
         'بوابة الدفع الإلكتروني الخاصة بالموقع قيد التجهيز؛ حتى إطلاقها ينقلك زر «ساهم الآن» إلى صفحة التواصل داخل الموقع لإتمام مساهمتك، والمشاريع المغلقة تظهر بوضوح كغير متاحة.',
       ],
     },
+    grid: {
+      eyebrow: 'فرص المساهمة',
+      title: 'فرص المساهمة',
+      description: 'اختر فرصة المساهمة المناسبة لك؛ الفرص المتاحة تنقلك إلى صفحة التواصل لإتمام مساهمتك.',
+    },
     labels: {
       opportunities: 'فرص المساهمة',
       contributionValue: 'قيمة السهم أو المساهمة',
@@ -272,6 +283,11 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
         'Sitenin odeme altyapisi hazirlaniyor; o zamana kadar "Katki Sun" butonu sizi site icindeki iletisim sayfasina yonlendirir. Kapali projeler net sekilde pasif gorunur.',
       ],
     },
+    grid: {
+      eyebrow: 'Katki Firsatlari',
+      title: 'Katki Firsatlari',
+      description: 'Size uygun katkı firsatini secin; acik firsatlar katkinizi tamamlamaniz icin sizi iletisim sayfasina yonlendirir.',
+    },
     labels: {
       opportunities: 'Katki Firsatlari',
       contributionValue: 'Hisse veya katkı degeri',
@@ -376,6 +392,11 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
         'This page lists the approved contribution opportunities of Veysel Karani Waqf.',
         "The site's own payment gateway is being prepared; until it launches, the Contribute button takes you to the in-site contact page to arrange your contribution. Closed projects are clearly disabled.",
       ],
+    },
+    grid: {
+      eyebrow: 'Contribution Opportunities',
+      title: 'Contribution Opportunities',
+      description: 'Choose the opportunity that suits you; open opportunities take you to the contact page to arrange your contribution.',
     },
     labels: {
       opportunities: 'Contribution Opportunities',

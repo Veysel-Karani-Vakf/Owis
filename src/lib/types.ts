@@ -7,6 +7,16 @@ export const LOCALES: Locale[] = ['ar', 'tr', 'en'];
 export type Localized = Partial<Record<Locale, string>>;
 /** Localized paragraph arrays: { ar: string[], ... }. */
 export type LocalizedList = Partial<Record<Locale, string[]>>;
+/**
+ * A repeating group stored once per language: { ar: T[], tr: T[], en: T[] }.
+ * This is what the dashboard's repeater controls write and what the seed emits.
+ */
+export type LocalizedRepeater<T = Record<string, unknown>> = Partial<Record<Locale, T[]>>;
+/** A single object stored once per language: { ar: T, tr: T, en: T }. */
+export type LocalizedGroup<T = Record<string, unknown>> = Partial<Record<Locale, T>>;
+
+/** Page layouts a program record can ask for; NULL means "decide by slug". */
+export type ProgramLayout = 'generic' | 'pioneers' | 'volunteer' | 'institutional' | 'awareness';
 
 export type BaseRow = {
   id: string;
@@ -30,7 +40,7 @@ export type NewsRow = BaseRow & {
   content: LocalizedList;
   image: string | null;
   image_alt: Localized;
-  gallery: unknown[];
+  gallery: LocalizedRepeater | unknown[];
   source_images: string[];
 };
 
@@ -46,16 +56,19 @@ export type ProjectRow = BaseRow & {
   image_scale: number | null;
   contribution_value: Localized;
   unit_amount: number | null;
-  facts: unknown[];
+  facts: LocalizedRepeater | unknown[];
   official_contribution_url: string | null;
   official_source_url: string | null;
   returns_title: Localized;
   returns_intro: Localized;
   return_uses: LocalizedList;
-  allocations: unknown[];
-  video: unknown | null;
+  allocations: LocalizedRepeater | unknown[];
+  /** { ar: { title, buttonLabel, videoId, sourceUrl, videoFile?, posterImage? }, … } */
+  video: LocalizedGroup | null;
   cta_title: Localized;
   cta_description: Localized;
+  /** { ar: { title, description }, … } */
+  seo: LocalizedGroup;
 };
 
 export type ProgramRow = BaseRow & {
@@ -66,36 +79,45 @@ export type ProgramRow = BaseRow & {
   hero_image: string | null;
   hero_image_alt: Localized;
   images: string[];
-  image_gallery: unknown[];
-  sections: unknown[];
+  image_gallery: LocalizedRepeater | unknown[];
+  sections: LocalizedRepeater | unknown[];
   goals: LocalizedList;
   components: LocalizedList;
-  statistics: unknown[];
-  videos: unknown[];
+  statistics: LocalizedRepeater | unknown[];
+  videos: LocalizedRepeater | unknown[];
   contact_email: string | null;
-  initiatives: unknown[];
-  cities: unknown[];
-  journey: unknown[];
-  pillars: unknown[];
+  contact_phone: string | null;
+  initiatives: LocalizedRepeater | unknown[];
+  cities: LocalizedRepeater | unknown[];
+  journey: LocalizedRepeater | unknown[];
+  pillars: LocalizedRepeater | unknown[];
   highlights: LocalizedList;
-  phase: unknown | null;
-  audiences: unknown[];
-  themes: unknown[];
+  phase: LocalizedGroup | null;
+  audiences: LocalizedRepeater | unknown[];
+  themes: LocalizedRepeater | unknown[];
   overview_image: string | null;
   overview_image_alt: Localized;
   official_source_url: string | null;
-  seo: Record<string, unknown>;
-  cta: Record<string, unknown>;
+  seo: LocalizedGroup;
+  cta: LocalizedGroup;
   media_note: Localized;
+  /** Volunteer-unit copy block, per language (see VolunteerCopy in data/programs). */
+  volunteer: LocalizedGroup | null;
+  /** Community-awareness media formats, per language arrays. */
+  media_products: LocalizedRepeater | unknown[];
+  /** Community-awareness featured event, per language. */
+  spotlight: LocalizedGroup | null;
+  layout: ProgramLayout | null;
 };
 
 export type LibraryArticleRow = BaseRow & {
-  collection: 'forum' | 'success-stories';
+  collection: 'forum' | 'success-stories' | 'yemeni-figures';
   slug: string;
   route: string | null;
   title: Localized;
   original_title: string | null;
   source_url: string | null;
+  pdf_url: string | null;
   source_language: string | null;
   date: string | null;
   year: number | null;
@@ -106,7 +128,7 @@ export type LibraryArticleRow = BaseRow & {
 };
 
 export type LibraryDocumentRow = BaseRow & {
-  collection: 'periodic-reports' | 'waqf-books' | 'waqf-literature' | 'yemeni-figures';
+  collection: 'periodic-reports' | 'waqf-books' | 'waqf-literature';
   title: Localized;
   source_url: string | null;
   pdf_url: string | null;
@@ -115,6 +137,8 @@ export type LibraryDocumentRow = BaseRow & {
   excerpt: Localized;
   image: string | null;
   image_alt: Localized;
+  /** Series/issue family name shown as a filter chip, e.g. "Owais in numbers". */
+  series: Localized;
 };
 
 export type GalleryImageRow = BaseRow & {
@@ -149,6 +173,10 @@ export type StatRow = BaseRow & {
   label: Localized;
   value: number | null;
   suffix: Localized;
+  /** Sentence shown on the back of the flip card. */
+  detail: Localized;
+  /** Name of the icon drawn on the card (see `iconRegistry` in the components). */
+  icon: string | null;
 };
 
 export type SitePageRow = {

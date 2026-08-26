@@ -1,5 +1,5 @@
 import { Upload } from 'lucide-react';
-import type { ParticipateFormField } from '@/data/participate';
+import { normalizeFieldType, type ParticipateFormField } from '@/data/participate';
 
 type FormFieldProps = {
   field: ParticipateFormField;
@@ -25,16 +25,22 @@ export default function FormField({
 }: FormFieldProps) {
   const errorId = `${field.id}-error`;
   const describedBy = error ? errorId : undefined;
+  const type = normalizeFieldType(field.type);
+  // Only the values <input inputmode> understands; anything else falls back to the browser default.
+  const inputMode =
+    field.inputMode === 'text' || field.inputMode === 'email' || field.inputMode === 'tel' || field.inputMode === 'numeric'
+      ? field.inputMode
+      : undefined;
 
   return (
     <div className="text-start">
-      {field.type !== 'file' && (
+      {type !== 'file' && (
         <label htmlFor={field.id} className="mb-2 block text-sm font-bold text-dark-800">
           {field.label}
         </label>
       )}
 
-      {field.type === 'textarea' ? (
+      {type === 'textarea' ? (
         <textarea
           id={field.id}
           name={field.id}
@@ -47,7 +53,7 @@ export default function FormField({
           onChange={(event) => onChange(field.id, event.target.value)}
           className={`${inputClass} resize-y leading-relaxed`}
         />
-      ) : field.type === 'select' ? (
+      ) : type === 'select' ? (
         <select
           id={field.id}
           name={field.id}
@@ -58,13 +64,13 @@ export default function FormField({
           onChange={(event) => onChange(field.id, event.target.value)}
           className={`${inputClass} appearance-none`}
         >
-          {field.options?.map((option, index) => (
-            <option key={`${field.id}-${option}`} value={index === 0 ? '' : option}>
+          {(field.options ?? []).map((option, index) => (
+            <option key={`${field.id}-${index}-${option}`} value={index === 0 ? '' : option}>
               {option}
             </option>
           ))}
         </select>
-      ) : field.type === 'file' ? (
+      ) : type === 'file' ? (
         <div>
           <label
             htmlFor={field.id}
@@ -77,7 +83,7 @@ export default function FormField({
             id={field.id}
             name={field.id}
             type="file"
-            accept={field.accept}
+            accept={field.accept || undefined}
             aria-invalid={Boolean(error)}
             aria-describedby={describedBy}
             onChange={(event) => onFileChange(field.id, Array.from(event.target.files ?? []))}
@@ -94,10 +100,10 @@ export default function FormField({
         <input
           id={field.id}
           name={field.id}
-          type={field.type}
+          type={type}
           value={value}
           required={field.required}
-          inputMode={field.inputMode}
+          inputMode={inputMode}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
           placeholder={field.placeholder}

@@ -5,17 +5,26 @@ import type { ProgramSpotlight } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
 
 type AwarenessSpotlightProps = {
-  spotlight: ProgramSpotlight;
+  spotlight?: ProgramSpotlight;
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
+const linkClass =
+  'group inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-dark-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0';
 
 /** A featured platform event, told with the real photos mirrored in this site's news. */
 export default function AwarenessSpotlight({ spotlight }: AwarenessSpotlightProps) {
   const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
-  const images = spotlight.images.slice(0, 3);
+
+  // The admin may clear the block entirely; render nothing rather than an empty dark panel.
+  if (!spotlight || (!spotlight.title && !spotlight.description)) return null;
+
+  // The layout is drawn for one wide photo plus two small ones, so the cap of 3 stays.
+  const images = (spotlight.images ?? []).filter((image) => image?.src).slice(0, 3);
+  const linkTo = spotlight.route || '';
+  const isExternal = /^https?:\/\//.test(linkTo);
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -68,31 +77,45 @@ export default function AwarenessSpotlight({ spotlight }: AwarenessSpotlightProp
               {spotlight.description}
             </motion.p>
 
-            <motion.div
-              initial={reduced ? { opacity: 1 } : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
-              transition={{ duration: 0.55, ease: smoothEase, delay: 0.34 }}
-              className="mt-8"
-            >
-              <Link
-                to={spotlight.route}
-                className="group inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-dark-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0"
+            {linkTo && spotlight.linkLabel && (
+              <motion.div
+                initial={reduced ? { opacity: 1 } : { opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.55, ease: smoothEase, delay: 0.34 }}
+                className="mt-8"
               >
-                {spotlight.linkLabel}
-                <ArrowIcon
-                  className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}
-                  aria-hidden="true"
-                />
-              </Link>
-            </motion.div>
+                {isExternal ? (
+                  <a
+                    href={linkTo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass}
+                  >
+                    {spotlight.linkLabel}
+                    <ArrowIcon
+                      className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}
+                      aria-hidden="true"
+                    />
+                  </a>
+                ) : (
+                  <Link to={linkTo} className={linkClass}>
+                    {spotlight.linkLabel}
+                    <ArrowIcon
+                      className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}
+                      aria-hidden="true"
+                    />
+                  </Link>
+                )}
+              </motion.div>
+            )}
           </div>
 
           {images.length > 0 && (
             <div className="relative mx-auto grid w-full max-w-lg grid-cols-2 gap-4 lg:max-w-none">
               {images.map((image, index) => (
                 <motion.figure
-                  key={image.src}
+                  key={`${image.src}-${index}`}
                   initial={reduced ? { opacity: 1 } : { opacity: 0, y: 30, rotate: 0 }}
                   whileInView={{ opacity: 1, y: 0, rotate: reduced ? 0 : index === 1 ? 2 : -2 }}
                   viewport={{ once: true, amount: 0.3 }}

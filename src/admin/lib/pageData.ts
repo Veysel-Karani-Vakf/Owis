@@ -28,9 +28,14 @@ export function normalizePageData(data: unknown): PageData {
   for (const locale of LOCALES) {
     const scoped: PageData = {};
     for (const [section, value] of Object.entries(data)) {
-      // A section already split by language contributes only its own copy;
-      // anything else is shared and copied to every language.
-      scoped[section] = isLocaleKeyed(value) ? value[locale as Locale] : value;
+      if (isLocaleKeyed(value)) {
+        // A section already split by language contributes only its own copy.
+        if (value[locale as Locale] !== undefined) scoped[section] = value[locale as Locale];
+      } else if (locale === 'ar') {
+        // Text that was never split was written in the site's first language;
+        // the other languages keep their own static copy instead of inheriting it.
+        scoped[section] = value;
+      }
     }
     out[locale] = scoped;
   }

@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ChevronDown,
   ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Eye,
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
   Save,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/i18n/useI18n';
@@ -15,12 +20,17 @@ import { hydrateCms } from '@/cms/hydrate';
 import { setPublished } from '@/cms/store';
 import type { CmsSnapshot } from '@/cms/store';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useSaveShortcut } from '../hooks/useSaveShortcut';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
+import { LocaleSwitch, localeName } from '../components/EditingLocale';
+import { translateDbError } from '../lib/errors';
 import {
   PAGE_GROUPS,
   SITE_PAGES,
-  countPageFields,
+  type PageFieldDef,
   type PageSectionDef,
-  type SitePageDef,
 } from '../lib/pageSchema';
 import { buildPageValue } from '../lib/pageDefaults';
 import { getAtPath, setAtPath } from '../lib/paths';
@@ -32,9 +42,9 @@ type RawPages = Record<string, Record<string, unknown>>;
 /** Form state keyed by `pageKey:locale`. */
 type Drafts = Record<string, unknown>;
 
-const localeName: Record<Locale, string> = { ar: 'العربية', tr: 'Türkçe', en: 'English' };
-
 const PREVIEW_PREFERENCE = 'vkv-admin-preview';
+/** localStorage prefix for in-progress edits, so a refresh does not lose them. */
+const DRAFT_PREFIX = 'vkv-admin-draft:';
 
 function readPreviewPreference(): boolean {
   try {
@@ -42,6 +52,35 @@ function readPreviewPreference(): boolean {
   } catch {
     return false;
   }
+}
+
+function readStoredDraft(draftKey: string): unknown | undefined {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_PREFIX + draftKey);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredDraft(draftKey: string, value: unknown) {
+  try {
+    window.localStorage.setItem(DRAFT_PREFIX + draftKey, JSON.stringify(value));
+  } catch {
+    // Storage full or private browsing: the in-memory draft still works.
+  }
+}
+
+function clearStoredDraft(draftKey: string) {
+  try {
+    window.localStorage.removeItem(DRAFT_PREFIX + draftKey);
+  } catch {
+    // Nothing to clean up.
+  }
+}
+
+function isLocale(value: string | undefined): value is Locale {
+  return Boolean(value) && (LOCALES as readonly string[]).includes(value as string);
 }
 
 /**
@@ -72,21 +111,40 @@ function useMediaQuery(query: string): boolean {
 export default function ContentManagementPage() {
   const strings = useAdminStrings();
   const { locale: uiLocale } = useI18n();
+  const navigate = useNavigate();
+  const params = useParams<{ pageKey?: string; locale?: string }>();
+  const [searchParams] = useSearchParams();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [rawPages, setRawPages] = useState<RawPages>({});
   const [drafts, setDrafts] = useState<Drafts>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
+  /** Drafts found in localStorage that differ from the live value, awaiting a decision. */
+  const [storedDrafts, setStoredDrafts] = useState<Drafts>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeKey, setActiveKey] = useState(SITE_PAGES[0].key);
-  const [contentLocale, setContentLocale] = useState<Locale>(uiLocale);
-  // One section at a time: a page can hold a dozen of them, and having several
-  // expanded turns the column into a wall of inputs.
-  const [openSection, setOpenSection] = useState<string | null>(SITE_PAGES[0].sections[0].key);
+  // Page, language and open section are read from the URL so a link can point
+  // at "edit the donate page in Turkish" and the back button works.
+  const activeKey = SITE_PAGES.some((item) => item.key === params.pageKey)
+    ? (params.pageKey as string)
+    : SITE_PAGES[0].key;
+  const contentLocale: Locale = isLocale(params.locale) ? params.locale : uiLocale;
+  const sectionParam = searchParams.get('section');
+
+  useEffect(() => {
+    if (params.pageKey !== activeKey || params.locale !== contentLocale) {
+      const suffix = sectionParam ? `?section=${sectionParam}` : '';
+      navigate(`/admin/content/${activeKey}/${contentLocale}${suffix}`, { replace: true });
+    }
+  }, [params.pageKey, params.locale, activeKey, contentLocale, sectionParam, navigate]);
+
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [highlight, setHighlight] = useState<string | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   // The preview is opt-in: side by side it crowds the form, and most edits are
   // plain text the form already shows. The choice is remembered per browser.
   const [showPreview, setShowPreview] = useState(readPreviewPreference);
@@ -110,6 +168,23 @@ export default function ContentManagementPage() {
   );
   const draftKey = `${activeKey}:${contentLocale}`;
 
+  // Opening a page expands its first section; `?section=` (from search or the
+  // dashboard) expands and scrolls to that one instead.
+  useEffect(() => {
+    const target =
+      sectionParam && page.sections.some((section) => section.key === sectionParam)
+        ? sectionParam
+        : page.sections[0]?.key;
+    setOpenSections(target ? new Set([target]) : new Set());
+    setHighlight(null);
+  }, [page, sectionParam]);
+
+  useEffect(() => {
+    if (loading || !sectionParam) return;
+    const element = sectionRefs.current[sectionParam];
+    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading, sectionParam, page]);
+
   useEffect(() => {
     let active = true;
     supabase
@@ -117,7 +192,7 @@ export default function ContentManagementPage() {
       .select('key, data')
       .then(({ data, error: loadError }) => {
         if (!active) return;
-        if (loadError) setError(loadError.message);
+        if (loadError) setError(translateDbError(loadError, uiLocale));
         const next: RawPages = {};
         for (const row of data ?? []) {
           const record = row as { key: string; data: Record<string, unknown> | null };
@@ -129,14 +204,24 @@ export default function ContentManagementPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [uiLocale]);
 
-  // Forms open pre-filled with what the site currently renders.
+  // Forms open pre-filled with what the site currently renders. A draft left in
+  // localStorage by an earlier session is offered back rather than applied.
   useEffect(() => {
     if (loading) return;
     setDrafts((current) => {
       if (draftKey in current) return current;
-      return { ...current, [draftKey]: buildPageValue(activeKey, contentLocale) };
+      const built = buildPageValue(activeKey, contentLocale);
+      const stored = readStoredDraft(draftKey);
+      if (stored !== undefined) {
+        if (JSON.stringify(stored) !== JSON.stringify(built)) {
+          setStoredDrafts((pending) => ({ ...pending, [draftKey]: stored }));
+        } else {
+          clearStoredDraft(draftKey);
+        }
+      }
+      return { ...current, [draftKey]: built };
     });
   }, [draftKey, activeKey, contentLocale, loading]);
 
@@ -144,30 +229,74 @@ export default function ContentManagementPage() {
 
   const updateField = useCallback(
     (path: string, next: unknown) => {
-      setDrafts((current) => ({ ...current, [draftKey]: setAtPath(current[draftKey] ?? {}, path, next) }));
+      setDrafts((current) => {
+        const updated = setAtPath(current[draftKey] ?? {}, path, next);
+        writeStoredDraft(draftKey, updated);
+        return { ...current, [draftKey]: updated };
+      });
       setDirty((current) => new Set(current).add(draftKey));
-      setSavedAt(false);
     },
     [draftKey],
   );
 
-  const revert = useCallback(() => {
+  const forgetStoredDraft = useCallback((key: string) => {
+    clearStoredDraft(key);
+    setStoredDrafts((pending) => {
+      if (!(key in pending)) return pending;
+      const next = { ...pending };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  const restoreStoredDraft = useCallback(() => {
+    const stored = storedDrafts[draftKey];
+    if (stored === undefined) return;
+    setDrafts((current) => ({ ...current, [draftKey]: stored }));
+    setDirty((current) => new Set(current).add(draftKey));
+    setStoredDrafts((pending) => {
+      const next = { ...pending };
+      delete next[draftKey];
+      return next;
+    });
+  }, [draftKey, storedDrafts]);
+
+  const label = useCallback(
+    (ar: string, tr: string, en: string) => (uiLocale === 'ar' ? ar : uiLocale === 'tr' ? tr : en),
+    [uiLocale],
+  );
+
+  const revert = useCallback(async () => {
+    const ok = await confirm({
+      title: label('التراجع عن التعديلات؟', 'Değişiklikler geri alınsın mı?', 'Discard the edits?'),
+      body: label(
+        `ستعود صفحة «${page.label.ar}» (${localeName[contentLocale]}) إلى آخر نسخة محفوظة.`,
+        `«${page.label.tr}» (${localeName[contentLocale]}) son kaydedilen hâline dönecek.`,
+        `“${page.label.en}” (${localeName[contentLocale]}) will return to its last saved version.`,
+      ),
+      confirmLabel: label('تراجع', 'Geri al', 'Discard'),
+      destructive: true,
+    });
+    if (ok !== true) return;
     setDrafts((current) => ({ ...current, [draftKey]: buildPageValue(activeKey, contentLocale) }));
     setDirty((current) => {
       const next = new Set(current);
       next.delete(draftKey);
       return next;
     });
-  }, [draftKey, activeKey, contentLocale]);
+    forgetStoredDraft(draftKey);
+  }, [confirm, label, page, contentLocale, draftKey, activeKey, forgetStoredDraft]);
 
-  const save = useCallback(async () => {
+  /** Persists every edited page/locale pair. Resolves `true` when nothing is left unsaved. */
+  const save = useCallback(async (): Promise<boolean> => {
+    if (dirty.size === 0) return true;
     setSaving(true);
     setError(null);
 
-    // Persist every edited page/locale pair, not just the one on screen.
     const byPage = new Map<string, Record<string, unknown>>();
     for (const key of dirty) {
       const [pageKey, editedLocale] = key.split(':');
+      // A page with no row yet starts from an empty object; other locales stay untouched.
       const existing = byPage.get(pageKey) ?? { ...(rawPages[pageKey] ?? {}) };
       existing[editedLocale] = drafts[key];
       byPage.set(pageKey, existing);
@@ -178,16 +307,13 @@ export default function ContentManagementPage() {
       return { key: pageKey, label: definition?.label ?? {}, data };
     });
 
-    if (rows.length === 0) {
-      setSaving(false);
-      return;
-    }
-
     const { error: saveError } = await supabase.from('site_pages').upsert(rows, { onConflict: 'key' });
     if (saveError) {
-      setError(saveError.message);
+      const message = translateDbError(saveError, uiLocale);
+      setError(message);
+      toast.error(message);
       setSaving(false);
-      return;
+      return false;
     }
 
     setRawPages((current) => {
@@ -195,13 +321,37 @@ export default function ContentManagementPage() {
       for (const [pageKey, data] of byPage) next[pageKey] = data;
       return next;
     });
+    for (const key of dirty) forgetStoredDraft(key);
     setDirty(new Set());
     // Refresh the shared snapshot so the dashboard reads back what it wrote.
     hydrateCms().then(setPublished).catch(() => undefined);
     setSaving(false);
-    setSavedAt(true);
-    window.setTimeout(() => setSavedAt(false), 2000);
-  }, [dirty, drafts, rawPages]);
+    setLastSaved(
+      new Date().toLocaleTimeString(uiLocale === 'ar' ? 'ar-EG' : uiLocale, {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    );
+    toast.success(strings.savedToast);
+    return true;
+  }, [dirty, drafts, rawPages, uiLocale, toast, strings.savedToast, forgetStoredDraft]);
+
+  // Drafts survive switching page or language inside this editor, so those
+  // navigations must not trigger the leave-page dialog. The guard is lifted
+  // synchronously (flushSync re-registers the blocker) for the one navigate call.
+  const [guardSuspended, setGuardSuspended] = useState(false);
+  useUnsavedChanges(dirty.size > 0 && !guardSuspended, save);
+  useSaveShortcut(dirty.size > 0 && !saving ? save : null);
+
+  const goTo = useCallback(
+    (pageKey: string, locale: Locale, section?: string | null) => {
+      flushSync(() => setGuardSuspended(true));
+      const suffix = section ? `?section=${section}` : '';
+      navigate(`/admin/content/${pageKey}/${locale}${suffix}`);
+      setGuardSuspended(false);
+    },
+    [navigate],
+  );
 
   const draftSnapshot = useMemo<CmsSnapshot>(
     () => ({
@@ -211,46 +361,55 @@ export default function ContentManagementPage() {
     [activeKey, contentLocale, rawPages, value],
   );
 
-  const label = (ar: string, tr: string, en: string) =>
-    uiLocale === 'ar' ? ar : uiLocale === 'tr' ? tr : en;
+  const previewAsOverlay = showPreview && !roomForColumn;
+  useEffect(() => {
+    if (!previewAsOverlay) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') togglePreview();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewAsOverlay, togglePreview]);
 
   const toggleSection = (key: string) =>
-    setOpenSection((current) => (current === key ? null : key));
+    setOpenSections((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const focusSection = (section: PageSectionDef) => {
+    if (!section.anchor) return;
+    if (!showPreview) togglePreview();
+    setHighlight(section.anchor);
+  };
+
+  const dirtyList = [...dirty].map((key) => {
+    const [pageKey, locale] = key.split(':');
+    const definition = SITE_PAGES.find((item) => item.key === pageKey);
+    return `${definition?.label[uiLocale] ?? pageKey} (${localeName[locale as Locale] ?? locale})`;
+  });
+
+  const pendingDraft = storedDrafts[draftKey] !== undefined;
+  const allOpen = page.sections.every((section) => openSections.has(section.key));
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:h-[calc(100vh-7rem)]">
       {/* Header ------------------------------------------------------------ */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {label('إدارة المحتوى', 'İçerik yönetimi', 'Content management')}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">{strings.sitePages}</h1>
           <p className="text-sm text-slate-500">
             {label(
-              'حرّر كل نص وصورة في الموقع',
-              'Sitedeki her metni ve görseli düzenleyin',
-              'Edit every text and image on the site',
+              'نصوص الصفحات وصورها وأزرارها — القوائم المتجددة (الأخبار، المشاريع…) لها صفحاتها الخاصة في القائمة الجانبية',
+              'Sayfa metinleri, görselleri ve butonları — güncellenen listeler (haberler, projeler…) kenar çubuğunda kendi sayfalarına sahiptir',
+              'Page texts, images and buttons — growing lists (news, projects…) have their own pages in the sidebar',
             )}
           </p>
         </div>
 
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-          {LOCALES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setContentLocale(option)}
-              className={
-                'rounded-md px-3 py-1.5 text-xs font-semibold transition ' +
-                (contentLocale === option
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700')
-              }
-            >
-              {localeName[option]}
-            </button>
-          ))}
-        </div>
+        <LocaleSwitch value={contentLocale} onChange={(next) => goTo(activeKey, next)} size="md" />
 
         <button
           type="button"
@@ -276,30 +435,32 @@ export default function ContentManagementPage() {
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving || dirty.size === 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40"
-        >
-          <Save size={16} />
-          {saving ? strings.saving : savedAt ? strings.saved : strings.save}
-          {dirty.size > 0 && !saving && (
-            <span className="rounded-full bg-white/20 px-1.5 text-xs">{dirty.size}</span>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || dirty.size === 0}
+            title={dirty.size > 0 ? dirtyList.join('\n') : strings.noChanges}
+            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40"
+          >
+            <Save size={16} />
+            {saving ? strings.saving : strings.save}
+            {dirty.size > 0 && !saving && <span className="tabular-nums">· {dirty.size}</span>}
+          </button>
+          {lastSaved && dirty.size === 0 && (
+            <span className="text-[11px] text-slate-400">
+              {strings.lastSaved} {lastSaved}
+            </span>
           )}
-        </button>
+        </div>
       </div>
 
-      {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600" dir="ltr">
-          {error}
-        </p>
-      )}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
       {/* Body -------------------------------------------------------------- */}
       <div
         className={
-          'grid min-h-0 flex-1 gap-4 ' +
+          'grid gap-4 lg:min-h-0 lg:flex-1 ' +
           (showPreview && roomForColumn
             ? 'lg:grid-cols-[210px_minmax(0,1fr)_minmax(0,1fr)]'
             : 'lg:grid-cols-[210px_minmax(0,1fr)]')
@@ -307,12 +468,7 @@ export default function ContentManagementPage() {
       >
         <PageList
           activeKey={activeKey}
-          onSelect={(key) => {
-            setActiveKey(key);
-            const definition = SITE_PAGES.find((item) => item.key === key);
-            setOpenSection(definition ? definition.sections[0].key : null);
-            setHighlight(null);
-          }}
+          onSelect={(key) => goTo(key, contentLocale)}
           dirty={dirty}
         />
 
@@ -320,7 +476,7 @@ export default function ContentManagementPage() {
             of a large screen, which makes long lines hard to scan. */}
         <div
           className={
-            'min-h-0 overflow-y-auto pe-1 ' +
+            'lg:min-h-0 lg:overflow-y-auto lg:pe-1 ' +
             (showPreview && roomForColumn ? '' : 'w-full max-w-4xl')
           }
         >
@@ -328,15 +484,64 @@ export default function ContentManagementPage() {
             <p className="p-4 text-sm text-slate-400">{strings.loading}</p>
           ) : (
             <div className="space-y-3">
+              {pendingDraft && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+                  <span className="min-w-0 flex-1">
+                    {label(
+                      'لديك مسودة غير محفوظة من قبل',
+                      'Daha önce kaydedilmemiş bir taslağınız var',
+                      'You have an unsaved draft from earlier',
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={restoreStoredDraft}
+                    className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-700"
+                  >
+                    {label('استعادة', 'Geri getir', 'Restore')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => forgetStoredDraft(draftKey)}
+                    className="rounded-md px-3 py-1 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                  >
+                    {label('تجاهل', 'Yok say', 'Discard')}
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-2 px-1">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-800">{page.label[uiLocale]}</p>
+                  {page.description && (
+                    <p className="truncate text-xs text-slate-400">{page.description[uiLocale]}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenSections(allOpen ? new Set() : new Set(page.sections.map((s) => s.key)))
+                  }
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                >
+                  {allOpen ? <ChevronsDownUp size={14} /> : <ChevronsUpDown size={14} />}
+                  {allOpen
+                    ? label('طيّ الكل', 'Tümünü daralt', 'Collapse all')
+                    : label('فتح الكل', 'Tümünü aç', 'Expand all')}
+                </button>
+              </div>
+
               {page.sections.map((section) => (
                 <SectionCard
                   key={section.key}
+                  sectionRef={(element) => {
+                    sectionRefs.current[section.key] = element;
+                  }}
                   section={section}
-                  page={page}
-                  open={openSection === section.key}
+                  open={openSections.has(section.key)}
                   onToggle={() => toggleSection(section.key)}
-                  onFocus={() => setHighlight(section.anchor ?? null)}
-                  focused={Boolean(section.anchor) && highlight === section.anchor}
+                  onFocus={() => focusSection(section)}
+                  focused={Boolean(section.anchor) && showPreview && highlight === section.anchor}
                   value={value}
                   onChange={updateField}
                   contentLocale={contentLocale}
@@ -361,8 +566,10 @@ export default function ContentManagementPage() {
             return roomForColumn ? (
               <div className="min-h-0">{preview}</div>
             ) : (
-              <div className="fixed inset-0 z-40 bg-slate-900/40 p-3">
-                <div className="h-full">{preview}</div>
+              <div className="fixed inset-0 z-40 bg-slate-900/40 p-3" onClick={togglePreview}>
+                <div className="h-full" onClick={(event) => event.stopPropagation()}>
+                  {preview}
+                </div>
               </div>
             );
           })()}
@@ -383,14 +590,33 @@ function PageList({
 }) {
   const { locale } = useI18n();
   const hasEdits = (pageKey: string) => [...dirty].some((key) => key.startsWith(`${pageKey}:`));
+  const groups = PAGE_GROUPS.map((group) => ({
+    group,
+    items: SITE_PAGES.filter((page) => page.group === group.key),
+  })).filter(({ items }) => items.length > 0);
 
   return (
-    <div className="min-h-0 space-y-5 overflow-y-auto">
-      {PAGE_GROUPS.map((group) => {
-        const items = SITE_PAGES.filter((page) => page.group === group.key);
-        if (items.length === 0) return null;
+    <>
+      {/* A phone has no room for a sidebar column; a select does the same job. */}
+      <select
+        value={activeKey}
+        onChange={(event) => onSelect(event.target.value)}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100 lg:hidden"
+      >
+        {groups.map(({ group, items }) => (
+          <optgroup key={group.key} label={group.label[locale]}>
+            {items.map((page) => (
+              <option key={page.key} value={page.key}>
+                {page.label[locale]}
+                {hasEdits(page.key) ? ' •' : ''}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
 
-        return (
+      <div className="hidden min-h-0 space-y-5 overflow-y-auto lg:block">
+        {groups.map(({ group, items }) => (
           <div key={group.key}>
             <p className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               {group.label[locale]}
@@ -404,6 +630,7 @@ function PageList({
                     key={page.key}
                     type="button"
                     onClick={() => onSelect(page.key)}
+                    title={page.description?.[locale]}
                     className={
                       'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-start text-sm transition ' +
                       (active
@@ -412,41 +639,38 @@ function PageList({
                     }
                   >
                     <Icon size={16} className="shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{page.label[locale]}</span>
-                    {hasEdits(page.key) && (
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                    )}
-                    <span
-                      className={
-                        'shrink-0 text-xs tabular-nums ' + (active ? 'text-white/50' : 'text-slate-400')
-                      }
-                    >
-                      {countPageFields(page)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{page.label[locale]}</span>
+                      {page.description && (
+                        <span
+                          className={
+                            'block truncate text-[11px] font-normal ' +
+                            (active ? 'text-white/60' : 'text-slate-400')
+                          }
+                        >
+                          {page.description[locale]}
+                        </span>
+                      )}
                     </span>
+                    {hasEdits(page.key) && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full bg-amber-400"
+                        title={locale === 'ar' ? 'تعديلات غير محفوظة' : locale === 'tr' ? 'Kaydedilmemiş değişiklikler' : 'Unsaved edits'}
+                      />
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 
-function SectionCard({
-  section,
-  page,
-  open,
-  onToggle,
-  onFocus,
-  focused,
-  value,
-  onChange,
-  contentLocale,
-}: {
+type SectionCardProps = {
   section: PageSectionDef;
-  page: SitePageDef;
   open: boolean;
   onToggle: () => void;
   onFocus: () => void;
@@ -454,29 +678,74 @@ function SectionCard({
   value: unknown;
   onChange: (path: string, next: unknown) => void;
   contentLocale: Locale;
-}) {
+  /** Lets the page scroll to this card when `?section=` names it. */
+  sectionRef?: (element: HTMLElement | null) => void;
+};
+
+function SectionCard({
+  section,
+  open,
+  onToggle,
+  onFocus,
+  focused,
+  value,
+  onChange,
+  contentLocale,
+  sectionRef,
+}: SectionCardProps) {
   const { locale } = useI18n();
+  const strings = useAdminStrings();
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const Icon = section.icon;
   const dir = contentDir[contentLocale];
+  const mainFields = section.fields.filter((field) => !field.advanced);
+  const advancedFields = section.fields.filter((field) => field.advanced);
+
+  const renderField = (field: PageFieldDef) => {
+    const wide =
+      field.full || ['textarea', 'paragraphs', 'list', 'repeater', 'image'].includes(field.type);
+    return (
+      <div key={field.path || section.key} className={wide ? 'md:col-span-2' : ''}>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">{field.label[locale]}</label>
+        <PageFieldControl
+          field={field}
+          dir={dir}
+          value={getAtPath(value, field.path)}
+          onChange={(next) => onChange(field.path, next)}
+        />
+        {field.help && <p className="mt-1 text-xs text-slate-400">{field.help[locale]}</p>}
+      </div>
+    );
+  };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <section
+      ref={sectionRef}
+      id={`section-${section.key}`}
+      className="scroll-mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white"
+    >
       <div className="flex items-center gap-2 px-4 py-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
           <Icon size={16} />
         </span>
         <button type="button" onClick={onToggle} className="min-w-0 flex-1 text-start">
           <span className="block truncate font-semibold text-slate-800">{section.label[locale]}</span>
-          <span className="text-xs text-slate-400">
-            {section.fields.length} {locale === 'ar' ? 'حقل' : locale === 'tr' ? 'alan' : 'fields'}
-          </span>
+          {section.description && (
+            <span className="block text-xs text-slate-400">{section.description[locale]}</span>
+          )}
         </button>
 
         {section.anchor && (
           <button
             type="button"
             onClick={onFocus}
-            title={page.route}
+            title={
+              locale === 'ar'
+                ? 'إظهار هذا القسم في المعاينة'
+                : locale === 'tr'
+                  ? 'Bu bölümü önizlemede göster'
+                  : 'Show this section in the preview'
+            }
             className={
               'rounded-md p-1.5 transition ' +
               (focused ? 'bg-primary-50 text-primary-600' : 'text-slate-400 hover:text-slate-600')
@@ -495,25 +764,31 @@ function SectionCard({
       </div>
 
       {open && (
-        <div className="grid grid-cols-1 gap-5 border-t border-slate-100 p-4 md:grid-cols-2">
-          {section.fields.map((field) => {
-            const wide =
-              field.full || ['textarea', 'paragraphs', 'list', 'repeater', 'image'].includes(field.type);
-            return (
-              <div key={field.path || section.key} className={wide ? 'md:col-span-2' : ''}>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  {field.label[locale]}
-                </label>
-                <PageFieldControl
-                  field={field}
-                  dir={dir}
-                  value={getAtPath(value, field.path)}
-                  onChange={(next) => onChange(field.path, next)}
-                />
-                {field.help && <p className="mt-1 text-xs text-slate-400">{field.help[locale]}</p>}
-              </div>
-            );
-          })}
+        <div className="border-t border-slate-100 p-4">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">{mainFields.map(renderField)}</div>
+
+          {advancedFields.length > 0 && (
+            <div className="mt-4 rounded-lg border border-dashed border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((current) => !current)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-start text-xs font-medium text-slate-500 transition hover:text-slate-800"
+              >
+                <SlidersHorizontal size={14} />
+                <span className="flex-1">{strings.moreSettings}</span>
+                {showAdvanced ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronRight size={14} className="rtl:rotate-180" />
+                )}
+              </button>
+              {showAdvanced && (
+                <div className="grid grid-cols-1 gap-5 border-t border-dashed border-slate-200 p-3 md:grid-cols-2">
+                  {advancedFields.map(renderField)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>

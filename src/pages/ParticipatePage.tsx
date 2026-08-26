@@ -11,19 +11,24 @@ import {
   getParticipateContent,
   getParticipatePageBySlug,
   participateRoutes,
+  routeByKey,
   type ParticipatePageKey,
 } from '@/data/participate';
 import { useI18n } from '@/i18n/useI18n';
+import { LOCALES, type Locale } from '@/lib/types';
 
-const navIcons = {
+// Keyed loosely: `key` is admin-editable, so unknown values must still resolve.
+const navIcons: Record<string, typeof Lightbulb> = {
   shareIdeas: Lightbulb,
   complaintsSuggestions: MessageSquare,
   volunteer: Handshake,
   contact: PhoneCall,
-} satisfies Record<ParticipatePageKey, typeof Lightbulb>;
+};
 
-function phoneFromWhatsapp(href: string) {
-  const match = href.match(/wa\.me\/(\d+)/i);
+const languageNames: Record<Locale, string> = { ar: 'Arabic', tr: 'Turkish', en: 'English' };
+
+function phoneFromWhatsapp(href: string | undefined) {
+  const match = (href ?? '').match(/wa\.me\/(\d+)/i);
   return match ? `+${match[1]}` : undefined;
 }
 
@@ -36,9 +41,18 @@ export default function ParticipatePage() {
   const shouldReduceMotion = useReducedMotion();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
+  // The contact page has no form; a partial `form` object saved from the admin
+  // (title only) must not switch the form on.
+  const hasForm = Boolean(page?.form?.fields?.length);
+  const contact = page?.contact;
+  // Admin repeaters may be emptied; render nothing rather than crash.
+  const directLinks = useMemo(() => contact?.directLinks ?? [], [contact]);
+  const socialLinks = useMemo(() => contact?.socialLinks ?? [], [contact]);
+
   const structuredData = useMemo(() => {
     if (!page?.contact) return undefined;
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
+    const availableLanguage = LOCALES.map((code) => languageNames[code]);
 
     return {
       '@context': 'https://schema.org',
@@ -50,26 +64,34 @@ export default function ParticipatePage() {
         '@type': 'Organization',
         name: siteContent.siteConfig.name,
         url: origin,
-        sameAs: page.contact.socialLinks.map((link) => link.href),
-        contactPoint: page.contact.directLinks.map((link) => ({
+        sameAs: socialLinks.map((link) => link.href).filter(Boolean),
+        contactPoint: directLinks.map((link) => ({
           '@type': 'ContactPoint',
           contactType: link.label,
           telephone: phoneFromWhatsapp(link.href),
-          availableLanguage: ['Arabic', 'Turkish'],
+          availableLanguage,
         })),
       },
     };
-  }, [page, siteContent.siteConfig.name]);
+  }, [page, directLinks, socialLinks, siteContent.siteConfig.name]);
 
   if (!page) {
     return <Navigate to={participateRoutes.shareIdeas} replace />;
   }
 
+  /** Where a nav card should scroll on its target page: the form if it has one, else the contact cards. */
+  const hashForRoute = (href: string) => {
+    const target = Object.values(participate.pages).find((candidate) => candidate.route === href);
+    if (target && !target.form?.fields?.length && target.contact) return '#participate-contact';
+    return '#participate-form';
+  };
+
   return (
     <>
       <PageSeo
-        title={`${page.hero.title} | ${siteContent.siteConfig.name}`}
-        description={page.seo.description}
+        title={page.seo?.title || `${page.hero.title} | ${siteContent.siteConfig.name}`}
+        description={page.seo?.description}
+        canonical={page.seo?.canonical}
         image={page.hero.image}
         structuredData={structuredData}
       />
@@ -92,7 +114,7 @@ export default function ParticipatePage() {
                 </div>
                 <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">{page.intro.title}</h2>
                 <div className="mt-5 space-y-4 text-base leading-relaxed text-dark-600">
-                  {page.intro.paragraphs.map((paragraph) => (
+                  {(page.intro?.paragraphs ?? []).map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
@@ -103,15 +125,17 @@ export default function ParticipatePage() {
               <aside className="rounded-[22px] border border-primary-100 bg-[#faf8f8] p-5 text-start shadow-[0_18px_48px_rgba(40,12,18,0.06)] md:p-6">
                 <h2 className="text-xl font-bold text-dark-950">{participate.labels.sectionTitle}</h2>
                 <div className="mt-5 grid gap-3">
-                  {participate.nav.map((item) => {
-                    const Icon = navIcons[item.key];
-                    const active = location.pathname === item.href;
-                    const targetHash = item.key === 'contact' ? '#participate-contact' : '#participate-form';
+                  {participate.nav.map((item, index) => {
+                    const Icon = navIcons[item.key] ?? MessageSquare;
+                    const href =
+                      item.href || routeByKey[item.key as ParticipatePageKey] || participateRoutes.shareIdeas;
+                    const active = location.pathname === href;
+                    const targetHash = hashForRoute(href);
 
                     return (
                       <Link
-                        key={item.href}
-                        to={`${item.href}${targetHash}`}
+                        key={`${index}-${href}`}
+                        to={`${href}${targetHash}`}
                         onClick={() => {
                           if (!active) return;
                           const target = document.getElementById(targetHash.slice(1));
@@ -151,7 +175,7 @@ export default function ParticipatePage() {
           </div>
         </section>
 
-        {page.form && (
+        {hasForm && page.form && (
           <section id="participate-form" className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-5xl px-4 md:px-8">
               <motion.div
@@ -189,8 +213,8 @@ export default function ParticipatePage() {
                 </FadeContent>
 
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                  {page.contact.directLinks.map((link, index) => (
-                    <ContactCard key={link.id} link={link} labels={participate.labels} index={index} />
+                  {directLinks.map((link, index) => (
+                    <ContactCard key={link.id ?? `${index}-${link.href}`} link={link} labels={participate.labels} index={index} />
                   ))}
                 </div>
               </div>
@@ -212,8 +236,8 @@ export default function ParticipatePage() {
                 </FadeContent>
 
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                  {page.contact.socialLinks.map((link, index) => (
-                    <ContactCard key={link.id} link={link} labels={participate.labels} index={index} />
+                  {socialLinks.map((link, index) => (
+                    <ContactCard key={link.id ?? `${index}-${link.href}`} link={link} labels={participate.labels} index={index} />
                   ))}
                 </div>
               </div>

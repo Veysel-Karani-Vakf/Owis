@@ -8,20 +8,19 @@ import PageSeo from '@/components/internal/PageSeo';
 import NewsCard from '@/components/news/NewsCard';
 import NewsSearchControls from '@/components/news/NewsSearchControls';
 import {
+  absoluteUrl,
   formatNewsDate,
   getFeaturedNews,
-  getNewsArticles,
   getNewsBreadcrumbs,
   getNewsYears,
   getNewsLabels,
+  getOrderedNews,
   searchNewsArticles,
   type LocalizedNewsArticle,
   type NewsLabels,
 } from '@/data/news';
 import type { Locale } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
-
-const pageSize = 9;
 
 type NewsMiniCardProps = {
   article: LocalizedNewsArticle;
@@ -65,17 +64,26 @@ export default function NewsIndexPage() {
   const [year, setYear] = useState('all');
   const [page, setPage] = useState(1);
 
-  const articles = getNewsArticles(locale);
+  // Featured article first (admin toggle), then the rest by date.
+  const articles = getOrderedNews(locale);
   const featured = getFeaturedNews(locale);
   const years = getNewsYears(locale);
+  const { sideCount, pageSize } = labels.layout;
   const filtered = useMemo(() => searchNewsArticles(articles, query, year), [articles, query, year]);
   const hasActiveFilter = query.trim() !== '' || year !== 'all';
 
   const spotlight = hasActiveFilter ? undefined : filtered[0];
-  const sideArticles = hasActiveFilter ? [] : filtered.slice(1, 3);
-  const gridArticles = hasActiveFilter ? filtered : filtered.slice(3);
+  const sideArticles = hasActiveFilter ? [] : filtered.slice(1, 1 + sideCount);
+  const gridArticles = hasActiveFilter ? filtered : filtered.slice(1 + sideCount);
   const pageCount = Math.max(1, Math.ceil(gridArticles.length / pageSize));
-  const visibleArticles = gridArticles.slice((page - 1) * pageSize, page * pageSize);
+  // Clamp so a smaller page size chosen in the admin never strands the reader on an empty page.
+  const currentPage = Math.min(page, pageCount);
+  const visibleArticles = gridArticles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const heroImage = labels.hero.image || featured?.image || '';
+  const heroImageAlt = labels.hero.imageAlt || featured?.imageAlt || '';
+  const seoTitle = labels.seo.title || `${labels.news} | ${siteContent.siteConfig.name}`;
+  const seoDescription = labels.seo.description || labels.heroDescription;
 
   const structuredData = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
@@ -84,16 +92,16 @@ export default function NewsIndexPage() {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       name: labels.news,
-      description: labels.heroDescription,
+      description: seoDescription,
       hasPart: articles.map((article) => ({
         '@type': 'NewsArticle',
         headline: article.title,
         datePublished: article.publishedAt,
-        url: `${origin}${article.route}`,
-        image: `${origin}${article.image}`,
+        url: absoluteUrl(origin, article.route),
+        image: absoluteUrl(origin, article.image),
       })),
     };
-  }, [articles, labels.heroDescription, labels.news]);
+  }, [articles, labels.news, seoDescription]);
 
   const updateQuery = (value: string) => {
     setQuery(value);
@@ -108,17 +116,18 @@ export default function NewsIndexPage() {
   return (
     <>
       <PageSeo
-        title={`${labels.news} | ${siteContent.siteConfig.name}`}
-        description={labels.heroDescription}
-        image={featured.image}
+        title={seoTitle}
+        description={seoDescription}
+        canonical={labels.seo.canonical || undefined}
+        image={heroImage || undefined}
         structuredData={structuredData}
       />
       <main className="bg-white">
         <PageHero
           title={labels.news}
           description={labels.heroDescription}
-          image={featured.image}
-          imageAlt={featured.imageAlt}
+          image={heroImage}
+          imageAlt={heroImageAlt}
           breadcrumbs={getNewsBreadcrumbs(locale)}
         />
 
@@ -244,9 +253,9 @@ export default function NewsIndexPage() {
                     key={item}
                     type="button"
                     onClick={() => setPage(item)}
-                    aria-current={item === page ? 'page' : undefined}
+                    aria-current={item === currentPage ? 'page' : undefined}
                     className={`flex h-11 min-w-11 items-center justify-center rounded-full px-4 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
-                      item === page
+                      item === currentPage
                         ? 'bg-primary-600 text-white'
                         : 'border border-primary-100 bg-white text-primary-700 hover:bg-primary-50'
                     }`}

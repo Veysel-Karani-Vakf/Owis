@@ -3,6 +3,7 @@ import { ArrowDown, Clapperboard, MessagesSquare, Mic, PenLine, Radio, Sparkles,
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Program } from '@/data/programs';
+import { resolveIcon } from '@/lib/icons';
 
 type AwarenessHeroProps = {
   program: Program;
@@ -17,12 +18,14 @@ type AwarenessHeroProps = {
 };
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
+// Defaults keyed by the seeded product ids; an editor-chosen icon name wins over them.
 const productIcons: Record<string, LucideIcon> = {
   podcast: Mic,
   visuals: Clapperboard,
   diwaniya: MessagesSquare,
   blog: PenLine,
 };
+const fallbackIcons: LucideIcon[] = [Sparkles];
 
 function PulseRings({ reduced }: { reduced: boolean }) {
   const rings = [0, 1, 2];
@@ -167,11 +170,11 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
               className="mt-8 flex flex-wrap items-center gap-2.5"
             >
               {products.map((product, index) => {
-                const Icon = productIcons[product.id] ?? Sparkles;
+                const Icon = resolveIcon(product.icon, [productIcons[product.id] ?? fallbackIcons[0]], index);
 
                 return (
                   <motion.li
-                    key={product.id}
+                    key={product.id || `${product.title}-${index}`}
                     initial={{ opacity: 0, y: reduced ? 0 : 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration, delay: reduced ? 0 : 0.38 + index * 0.08, ease: heroEase }}

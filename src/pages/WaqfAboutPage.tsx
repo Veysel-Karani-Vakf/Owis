@@ -23,10 +23,13 @@ import WaqfIdentityTabs, { type IdentityTab } from '@/components/sections/WaqfId
 import WaqfMethodologyTimeline from '@/components/sections/WaqfMethodologyTimeline';
 import { getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
+// Position-based defaults; an editor-chosen icon name (ICON_REGISTRY) wins over these.
 const phaseIcons: LucideIcon[] = [Landmark, TrendingUp, HandHeart];
 const factIcons: LucideIcon[] = [FileText, Landmark, FileText, Check];
+const identityIcons: LucideIcon[] = [Eye, Target, Landmark, Gem];
 const sectionReveal = {
   duration: 520,
   easing: 'ease-out',
@@ -66,30 +69,33 @@ export default function WaqfAboutPage() {
     {
       key: 'vision',
       title: page.identity.visionTitle,
-      icon: Eye,
+      icon: resolveIcon(undefined, identityIcons, 0),
       body: page.identity.vision,
     },
     {
       key: 'mission',
       title: page.identity.missionTitle,
-      icon: Target,
+      icon: resolveIcon(undefined, identityIcons, 1),
       body: page.identity.mission,
     },
     {
       key: 'goals',
       title: page.goals.title,
-      icon: Landmark,
-      bullets: page.goals.items,
+      icon: resolveIcon(undefined, identityIcons, 2),
+      bullets: page.goals.items ?? [],
     },
     {
       key: 'values',
       title: page.identity.valuesTitle,
-      icon: Gem,
-      chips: page.identity.values,
+      icon: resolveIcon(undefined, identityIcons, 3),
+      chips: page.identity.values ?? [],
     },
   ];
-  const cycleStepLabels = page.cycle.phases.map((phase) => {
-    const [, ...labelParts] = phase.title.split(/[:：]/);
+  const cyclePhases = page.cycle.phases ?? [];
+  const cycleStepLabels = cyclePhases.map((phase) => {
+    // An explicit short label wins; otherwise take the part after "Stage N:".
+    if (phase.shortLabel?.trim()) return phase.shortLabel.trim();
+    const [, ...labelParts] = (phase.title ?? '').split(/[:：]/);
     const label = labelParts.join(':').trim();
     return label || phase.title;
   });
@@ -151,7 +157,7 @@ export default function WaqfAboutPage() {
       <main className="bg-white">
         <ScrollMask
           src={page.hero.image}
-          alt=""
+          alt={page.hero.imageAlt ?? ''}
           variant="wipe"
           angle={108}
           originY={52}
@@ -167,7 +173,7 @@ export default function WaqfAboutPage() {
           </div>
           <div className="max-w-3xl text-start">
             <h1 className="text-balance text-2xl font-bold leading-tight text-white sm:text-3xl md:text-5xl lg:text-5xl">
-              {page.intro.title}
+              {page.hero.title}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/85 md:text-lg">
               {page.hero.description}
@@ -185,7 +191,7 @@ export default function WaqfAboutPage() {
                 </div>
                 <h2 className="text-3xl font-bold text-dark-900 md:text-4xl">{page.intro.title}</h2>
                 <div className="mt-6 space-y-4 text-base leading-relaxed text-dark-600">
-                  {page.intro.paragraphs.map((paragraph) => (
+                  {(page.intro.paragraphs ?? []).map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
@@ -237,7 +243,7 @@ export default function WaqfAboutPage() {
                   <>
                     <img
                       src={page.hero.image}
-                      alt=""
+                      alt={page.hero.imageAlt ?? ''}
                       loading="lazy"
                       className="h-full w-full object-cover opacity-80"
                     />
@@ -245,6 +251,9 @@ export default function WaqfAboutPage() {
                   </>
                 )}
               </div>
+              {page.video.description && (
+                <p className="mt-3 text-start text-sm leading-relaxed text-dark-500">{page.video.description}</p>
+              )}
             </FadeContent>
           </div>
         </section>
@@ -253,12 +262,12 @@ export default function WaqfAboutPage() {
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent {...sectionReveal}>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {page.intro.facts.map((fact, index) => {
-                  const FactIcon = factIcons[index] ?? FileText;
+                {(page.intro.facts ?? []).map((fact, index) => {
+                  const FactIcon = resolveIcon(fact.icon, factIcons, index);
 
                   return (
                     <CreditTiltCard
-                      key={fact.label}
+                      key={`${fact.label}-${index}`}
                       hoverShadow="0 26px 62px rgba(35, 15, 20, 0.14)"
                       parallaxIntensity={1.08}
                       rotationIntensity={8}
@@ -302,8 +311,8 @@ export default function WaqfAboutPage() {
               title={page.methodology.title}
               description={page.methodology.description}
               stepLabel={page.methodology.stepLabel}
-              itemTitles={page.methodology.itemTitles}
-              items={page.methodology.items}
+              itemTitles={page.methodology.itemTitles ?? []}
+              items={page.methodology.items ?? []}
             />
           </div>
         </section>
@@ -327,7 +336,7 @@ export default function WaqfAboutPage() {
                 <h2 className="text-3xl font-bold md:text-4xl">{page.president.name}</h2>
                 <p className="mt-2 text-primary-200">{page.president.role}</p>
                 <div className="mt-8 space-y-4 text-base leading-relaxed text-white/75">
-                  {page.president.paragraphs.map((paragraph) => (
+                  {(page.president.paragraphs ?? []).map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
@@ -390,12 +399,12 @@ export default function WaqfAboutPage() {
               showProgress
               showCounter
             >
-              {page.cycle.phases.map((phase, index) => {
-                const PhaseIcon = phaseIcons[index] ?? Landmark;
+              {cyclePhases.map((phase, index) => {
+                const PhaseIcon = resolveIcon(phase.icon, phaseIcons, index);
 
                 return (
                   <article
-                    key={phase.title}
+                    key={`${phase.title}-${index}`}
                     className="waqf-cycle-card text-start"
                   >
                     <div className="waqf-cycle-card-grid">
@@ -409,7 +418,7 @@ export default function WaqfAboutPage() {
                           </div>
                           <p className="waqf-cycle-counter" dir="ltr">
                             {String(index + 1).padStart(2, '0')} /{' '}
-                            {String(page.cycle.phases.length).padStart(2, '0')}
+                            {String(cyclePhases.length).padStart(2, '0')}
                           </p>
                         </div>
                         <h3
@@ -426,7 +435,7 @@ export default function WaqfAboutPage() {
                         >
                           {phase.description}
                         </p>
-                        {phase.bullets && (
+                        {phase.bullets && phase.bullets.length > 0 && (
                           <ul className="mt-6 space-y-3">
                             {phase.bullets.map((bullet, bulletIndex) => (
                               <li

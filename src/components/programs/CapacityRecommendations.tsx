@@ -35,7 +35,9 @@ const ringVariants = (reduced: boolean): Variants => ({
 export default function CapacityRecommendations({ eyebrow, description, section }: CapacityRecommendationsProps) {
   const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
-  const items = section.bullets ?? [];
+  const items = section?.bullets ?? [];
+
+  if (!section) return null;
 
   return (
     <div className="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
@@ -81,7 +83,7 @@ export default function CapacityRecommendations({ eyebrow, description, section 
 
           return (
             <motion.li
-              key={item}
+              key={`${index}-${item}`}
               variants={rowVariants(reduced, isRtl)}
               className={`group relative isolate flex items-center gap-5 p-5 text-start md:gap-7 md:p-7 ${
                 isLast ? '' : 'border-b border-primary-100'

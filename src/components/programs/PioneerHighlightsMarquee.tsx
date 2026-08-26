@@ -11,7 +11,7 @@ export default function PioneerHighlightsMarquee({ label, items }: PioneerHighli
   const { isRtl } = useI18n();
   const shouldReduceMotion = useReducedMotion();
 
-  if (!items.length) return null;
+  if (!items?.length) return null;
 
   const track = [...items, ...items];
 
@@ -35,8 +35,8 @@ export default function PioneerHighlightsMarquee({ label, items }: PioneerHighli
 
       {shouldReduceMotion ? (
         <ul className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-4 text-sm font-bold md:px-8">
-          {items.map((item) => (
-            <li key={item} className="inline-flex items-center gap-2">
+          {items.map((item, index) => (
+            <li key={`${index}-${item}`} className="inline-flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-primary-200" aria-hidden="true" />
               {item}
             </li>

@@ -1,6 +1,7 @@
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Clapperboard, MessagesSquare, Mic, PenLine, Sparkles, type LucideIcon } from 'lucide-react';
 import type { ProgramMediaProduct } from '@/data/programs';
+import { resolveIcon } from '@/lib/icons';
 
 type AwarenessMediaProps = {
   eyebrow: string;
@@ -10,6 +11,7 @@ type AwarenessMediaProps = {
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
+// Defaults keyed by the seeded product ids; an editor-chosen icon name wins over them.
 const productIcons: Record<string, LucideIcon> = {
   podcast: Mic,
   visuals: Clapperboard,
@@ -52,7 +54,7 @@ function WaveLine({ reduced }: { reduced: boolean }) {
 export default function AwarenessMedia({ eyebrow, title, description, products }: AwarenessMediaProps) {
   const reduced = !!useReducedMotion();
 
-  if (!products.length) return null;
+  if (!products?.length) return null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -76,13 +78,13 @@ export default function AwarenessMedia({ eyebrow, title, description, products }
         className="grid gap-6 md:grid-cols-2"
       >
         {products.map((product, index) => {
-          const Icon = productIcons[product.id] ?? Sparkles;
+          const Icon = resolveIcon(product.icon, [productIcons[product.id] ?? Sparkles], index);
           const dark = index === 0;
           const number = String(index + 1).padStart(2, '0');
 
           return (
             <motion.article
-              key={product.id}
+              key={product.id || `${product.title}-${index}`}
               variants={cardVariants(reduced)}
               className={`group relative isolate flex flex-col overflow-hidden rounded-[28px] p-7 text-start transition-transform duration-500 hover:-translate-y-1.5 motion-reduce:hover:translate-y-0 md:p-9 ${
                 dark

@@ -109,12 +109,20 @@ export default function ProjectDetailPage() {
 
   const relatedProjects = getOtherProjects(locale, project.slug);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  // Editors may empty any of these lists; an empty list hides its block
+  // rather than leaving a stray heading behind.
+  const hasFacts = project.facts.length > 0;
+  const hasAllocations = Boolean(project.allocations && project.allocations.length > 0);
+  const hasReturnUses = project.returnUses.length > 0;
+  const showReturnsSection = Boolean(project.returnsTitle || project.returnsIntro) || hasAllocations || hasReturnUses;
+  const videoPoster = project.video?.posterImage || project.image;
 
   return (
     <>
       <PageSeo
-        title={`${project.title} | ${content.siteConfig.name}`}
-        description={project.shortDescription}
+        title={project.seo?.title || `${project.title} | ${content.siteConfig.name}`}
+        description={project.seo?.description || project.shortDescription}
+        canonical={project.seo?.canonical || project.route}
         type="article"
         image={project.image}
         structuredData={articleSchema}
@@ -124,6 +132,7 @@ export default function ProjectDetailPage() {
           title={project.title}
           description={project.shortDescription}
           image={project.image}
+          imageAlt={project.imageAlt}
           breadcrumbs={detailBreadcrumbs}
         />
 
@@ -156,17 +165,24 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  {project.facts.map((fact) => (
-                    <div
-                      key={`${fact.label}-${fact.value}`}
-                      className="rounded-2xl border border-primary-100 bg-white p-4 shadow-[0_10px_24px_rgba(40,12,18,0.05)]"
-                    >
-                      <p className="text-xs font-semibold text-primary-700">{fact.label}</p>
-                      <p className="mt-1 text-base font-bold leading-snug text-dark-950">{fact.value}</p>
+                {hasFacts && (
+                  <div className="mt-8">
+                    {page.labels.facts && (
+                      <h3 className="mb-3 text-sm font-semibold text-primary-700">{page.labels.facts}</h3>
+                    )}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {project.facts.map((fact, index) => (
+                        <div
+                          key={`${fact.label}-${fact.value}-${index}`}
+                          className="rounded-2xl border border-primary-100 bg-white p-4 shadow-[0_10px_24px_rgba(40,12,18,0.05)]"
+                        >
+                          <p className="text-xs font-semibold text-primary-700">{fact.label}</p>
+                          <p className="mt-1 text-base font-bold leading-snug text-dark-950">{fact.value}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link
@@ -184,15 +200,18 @@ export default function ProjectDetailPage() {
           </div>
         </section>
 
+        {showReturnsSection && (
         <section className="bg-[#faf8f8] py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent {...reveal}>
               <div className="mx-auto max-w-3xl text-center">
-                <div className="mb-4 flex items-center justify-center gap-2">
-                  <span className="h-px w-8 bg-primary-200" />
-                  <span className="text-sm font-semibold text-primary-700">{page.labels.returns}</span>
-                  <span className="h-px w-8 bg-primary-200" />
-                </div>
+                {page.labels.returns && (
+                  <div className="mb-4 flex items-center justify-center gap-2">
+                    <span className="h-px w-8 bg-primary-200" />
+                    <span className="text-sm font-semibold text-primary-700">{page.labels.returns}</span>
+                    <span className="h-px w-8 bg-primary-200" />
+                  </div>
+                )}
                 <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
                   {project.returnsTitle}
                 </h2>
@@ -204,10 +223,10 @@ export default function ProjectDetailPage() {
               </div>
             </FadeContent>
 
-            {project.allocations && (
+            {hasAllocations && (
               <div className="mt-10 grid gap-5 md:grid-cols-2">
-                {project.allocations.map((allocation, index) => (
-                  <FadeContent key={allocation.percent} {...reveal} delay={index * 70}>
+                {project.allocations?.map((allocation, index) => (
+                  <FadeContent key={`${allocation.percent}-${index}`} {...reveal} delay={index * 70}>
                     <div className="h-full rounded-[22px] border border-primary-100 bg-white p-6 text-start shadow-[0_16px_44px_rgba(40,12,18,0.06)]">
                       <p className="text-4xl font-black text-primary-700">{allocation.percent}</p>
                       <h3 className="mt-4 text-xl font-bold text-dark-950">{allocation.title}</h3>
@@ -218,11 +237,12 @@ export default function ProjectDetailPage() {
               </div>
             )}
 
-            <FadeContent {...reveal} delay={project.allocations ? 120 : 70}>
+            {hasReturnUses && (
+            <FadeContent {...reveal} delay={hasAllocations ? 120 : 70}>
               <ul className="mx-auto mt-10 grid max-w-5xl gap-3 md:grid-cols-2">
-                {project.returnUses.map((item) => (
+                {project.returnUses.map((item, index) => (
                   <li
-                    key={item}
+                    key={`${item}-${index}`}
                     className="flex gap-3 rounded-2xl border border-primary-100 bg-white p-4 text-start text-dark-700 shadow-[0_10px_26px_rgba(40,12,18,0.05)]"
                   >
                     <Check className="mt-1 h-4 w-4 shrink-0 text-primary-700" aria-hidden="true" />
@@ -231,18 +251,22 @@ export default function ProjectDetailPage() {
                 ))}
               </ul>
             </FadeContent>
+            )}
           </div>
         </section>
+        )}
 
         {project.video && (
           <section className="bg-white py-16 md:py-24">
             <div className="mx-auto grid max-w-7xl gap-8 px-4 md:px-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
               <FadeContent {...reveal}>
                 <div className="text-start">
-                  <div className="mb-4 flex items-center gap-2">
-                    <span className="h-px w-8 bg-primary-200" />
-                    <span className="text-sm font-semibold text-primary-700">{page.labels.video}</span>
-                  </div>
+                  {page.labels.video && (
+                    <div className="mb-4 flex items-center gap-2">
+                      <span className="h-px w-8 bg-primary-200" />
+                      <span className="text-sm font-semibold text-primary-700">{page.labels.video}</span>
+                    </div>
+                  )}
                   <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
                     {project.video.title}
                   </h2>
@@ -268,7 +292,7 @@ export default function ProjectDetailPage() {
                   className="group relative aspect-video w-full overflow-hidden rounded-[22px] border border-primary-100 bg-dark-950 shadow-[0_20px_60px_rgba(40,12,18,0.13)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   <img
-                    src={project.image}
+                    src={videoPoster}
                     alt=""
                     width={1080}
                     height={1080}
@@ -310,15 +334,18 @@ export default function ProjectDetailPage() {
           </div>
         </section>
 
+        {relatedProjects.length > 0 && (
         <section className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent {...reveal}>
               <div className="mb-10 flex flex-col gap-4 text-start sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <div className="mb-4 flex items-center gap-2">
-                    <span className="h-px w-8 bg-primary-200" />
-                    <span className="text-sm font-semibold text-primary-700">{page.labels.otherProjects}</span>
-                  </div>
+                  {page.labels.otherProjects && (
+                    <div className="mb-4 flex items-center gap-2">
+                      <span className="h-px w-8 bg-primary-200" />
+                      <span className="text-sm font-semibold text-primary-700">{page.labels.otherProjects}</span>
+                    </div>
+                  )}
                   <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
                     {page.labels.otherProjects}
                   </h2>
@@ -350,6 +377,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </section>
+        )}
       </main>
 
       {project.video && (
@@ -359,7 +387,8 @@ export default function ProjectDetailPage() {
           onExitComplete={() => undefined}
           videoId={project.video.videoId}
           videoFile={project.video.videoFile}
-          posterImage={project.image}
+          posterImage={videoPoster}
+          title={project.video.title}
         />
       )}
     </>

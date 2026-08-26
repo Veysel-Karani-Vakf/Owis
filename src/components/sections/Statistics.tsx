@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
-const icons: LucideIcon[] = [TrendingUp, Users, HeartHandshake, Briefcase];
+// Defaults by position; an indicator's own `icon` name (from the dashboard) wins.
+const defaultIcons: LucideIcon[] = [TrendingUp, Users, HeartHandshake, Briefcase];
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 const AUTO_FLIP_MS = 3600;
 
-type Indicator = { label: string; value: number | null; suffix: string; detail: string };
+type Indicator = { label: string; value: number | null; suffix?: string; detail?: string; icon?: string };
 
 function FlipCard({
   indicator,
@@ -34,10 +36,10 @@ function FlipCard({
   onFlip: () => void;
   onUnflip: () => void;
 }) {
-  const Icon = icons[index % icons.length];
-  const animated = useCountUp(indicator.value ?? 0, 2000, inView && indicator.value !== null);
-  const valueText =
-    indicator.value !== null ? `${formatNumber(animated)}${indicator.suffix}` : unavailableLabel;
+  const Icon = resolveIcon(indicator.icon, defaultIcons, index);
+  const hasValue = indicator.value !== null && indicator.value !== undefined;
+  const animated = useCountUp(indicator.value ?? 0, 2000, inView && hasValue);
+  const valueText = hasValue ? `${formatNumber(animated)}${indicator.suffix ?? ''}` : unavailableLabel;
   // Flip away from the reading direction so the motion feels natural in RTL too.
   const angle = isRtl ? -180 : 180;
 
@@ -105,9 +107,11 @@ function FlipCard({
           </span>
           <span className="block text-xl font-bold tabular-nums md:text-2xl">{valueText}</span>
           <span className="mt-1 block text-sm font-bold leading-snug">{indicator.label}</span>
-          <span className="mt-3 block max-w-[16rem] text-xs leading-relaxed text-white/85 md:text-sm">
-            {indicator.detail}
-          </span>
+          {indicator.detail && (
+            <span className="mt-3 block max-w-[16rem] text-xs leading-relaxed text-white/85 md:text-sm">
+              {indicator.detail}
+            </span>
+          )}
         </span>
       </button>
     </motion.div>
@@ -118,7 +122,8 @@ export default function Statistics() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, t, isRtl, formatNumber } = useI18n();
   const statisticsContent = content.statistics;
-  const indicators = statisticsContent.indicators;
+  const indicators = statisticsContent.indicators ?? [];
+  const source = statisticsContent.source;
   const reduced = !!useReducedMotion();
 
   // Which card is flipped: auto-cycles one at a time; hover/focus takes over.
@@ -165,7 +170,7 @@ export default function Statistics() {
         >
           {indicators.map((indicator, i) => (
             <FlipCard
-              key={indicator.label}
+              key={`${indicator.label}-${i}`}
               indicator={indicator}
               index={i}
               flipped={activeIndex === i}
@@ -180,17 +185,19 @@ export default function Statistics() {
           ))}
         </div>
 
-        <motion.a
-          href={statisticsContent.source.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-8 block text-center text-xs text-dark-400 underline-offset-4 transition-colors hover:text-primary-600 hover:underline md:text-sm"
-        >
-          {statisticsContent.source.label}
-        </motion.a>
+        {source?.label && (
+          <motion.a
+            href={source.url || undefined}
+            target={source.url ? '_blank' : undefined}
+            rel={source.url ? 'noopener noreferrer' : undefined}
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-8 block text-center text-xs text-dark-400 underline-offset-4 transition-colors hover:text-primary-600 hover:underline md:text-sm"
+          >
+            {source.label}
+          </motion.a>
+        )}
       </div>
     </section>
   );

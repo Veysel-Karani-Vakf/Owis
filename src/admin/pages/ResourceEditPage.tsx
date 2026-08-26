@@ -1,14 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Save, Trash2, ExternalLink } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
+import { supabase } from '@/lib/supabase';
+import type { Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
+import { useSaveShortcut } from '../hooks/useSaveShortcut';
 import { adminStrings } from '../i18n';
-import { getResource } from '../lib/resources';
-import { emptyValue } from '../lib/fields';
-import { getRow, insertRow, updateRow, deleteRow } from '../lib/api';
-import { FormEngine } from '../components/FormEngine';
+import { getResource, type FullResourceDef } from '../lib/resources';
+import { emptyValue, toColumnValue } from '../lib/fields';
+import { getRow, insertRow, updateRow, deleteRow, countRows, pickLocalized } from '../lib/api';
+import { validateRecord, filledLocales } from '../lib/validate';
+import { translateDbError } from '../lib/errors';
 import { slugFromTitle } from '../lib/slug';
+import { FormEngine } from '../components/FormEngine';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
+import { EditingLocaleProvider, LocaleSwitch, useEditingLocale } from '../components/EditingLocale';
+
+type Values = Record<string, unknown>;
 
 /** First non-empty string in a localized value. */
 function firstFilled(value: unknown): string {
@@ -21,9 +32,8 @@ function firstFilled(value: unknown): string {
   return '';
 }
 
-function buildDefaults(resource: ReturnType<typeof getResource>): Record<string, unknown> {
-  if (!resource) return {};
-  const values: Record<string, unknown> = {};
+function buildDefaults(resource: FullResourceDef): Values {
+  const values: Values = {};
   resource.fields.forEach((f) => {
     values[f.key] = emptyValue(f.type);
   });
@@ -33,47 +43,108 @@ function buildDefaults(resource: ReturnType<typeof getResource>): Record<string,
   return values;
 }
 
+/** Public URL of a record, or null when the resource has no page per record. */
+function publicUrlFor(resource: FullResourceDef, row: Values): string | null {
+  if (!resource.publicRoute || typeof row.slug !== 'string' || !row.slug) return null;
+  let url = resource.publicRoute.replace(':slug', row.slug);
+  if (url.includes(':collection')) {
+    if (typeof row.collection !== 'string' || !row.collection) return null;
+    url = url.replace(':collection', row.collection);
+  }
+  return url;
+}
+
+function formatTime(value: unknown, locale: Locale): string {
+  if (typeof value !== 'string' || !value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString(locale === 'ar' ? 'ar-EG' : locale === 'tr' ? 'tr-TR' : 'en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function ResourceEditPage() {
   const { key = '', id = '' } = useParams();
   const resource = getResource(key);
+  const s = useAdminStrings();
+  if (!resource) return <p className="text-slate-500">{s.noAccess}</p>;
+  // Keyed so a jump from one record straight to another resets the form.
+  return (
+    <EditingLocaleProvider key={`${key}/${id}`}>
+      <RecordEditor resource={resource} id={id} />
+    </EditingLocaleProvider>
+  );
+}
+
+function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string }) {
   const isNew = id === 'new';
   const s = useAdminStrings();
   const { locale, isRtl } = useI18n();
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const editing = useEditingLocale();
 
-  const [values, setValues] = useState<Record<string, unknown>>({});
+  const [values, setValues] = useState<Values>({});
+  // JSON of the last loaded/saved row; the form is dirty when values differ.
+  const [baseline, setBaseline] = useState<string>('');
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedFlash, setSavedFlash] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  // After a create we move to the record's own URL once the form is clean,
+  // otherwise the unsaved-changes blocker would stop our own redirect.
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
   // Set once the editor types an address by hand, which stops it tracking the title.
   const slugTouched = useRef(false);
+  // The "link will change" confirmation is asked once per record, not per save.
+  const slugChangeConfirmed = useRef(false);
 
   useEffect(() => {
-    if (!resource) return;
+    slugTouched.current = false;
+    slugChangeConfirmed.current = false;
+    setFieldErrors({});
+    setError(null);
     if (isNew) {
-      setValues(buildDefaults(resource));
+      const defaults = buildDefaults(resource);
+      setValues(defaults);
+      setBaseline(JSON.stringify(defaults));
+      setLastSavedAt(null);
       setLoading(false);
       return;
     }
     let active = true;
     setLoading(true);
     getRow(resource.table, id)
-      .then((row) => active && setValues(row))
-      .catch((e) => active && setError(e.message))
+      .then((row) => {
+        if (!active) return;
+        setValues(row);
+        setBaseline(JSON.stringify(row));
+        setLastSavedAt(typeof row.updated_at === 'string' ? row.updated_at : null);
+      })
+      .catch((e) => active && setError(translateDbError(e, locale)))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [resource, id, isNew]);
+  }, [resource, id, isNew, locale]);
 
-  if (!resource) return <p className="text-slate-500">{s.noAccess}</p>;
+  const dirty = useMemo(() => baseline !== '' && JSON.stringify(values) !== baseline, [values, baseline]);
 
-  const title = adminStrings[locale].sections[resource.labelKey] ?? resource.key;
+  const listTitle = adminStrings[locale].sections[resource.labelKey] ?? resource.key;
   const hasSlug = resource.fields.some((field) => field.key === 'slug');
+  const label = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
 
   const setField = (k: string, v: unknown) => {
     if (k === 'slug') slugTouched.current = true;
+    setFieldErrors((prev) => {
+      if (!(k in prev)) return prev;
+      const next = { ...prev };
+      delete next[k];
+      return next;
+    });
 
     setValues((prev) => {
       const next = { ...prev, [k]: v };
@@ -88,58 +159,163 @@ export default function ResourceEditPage() {
     });
   };
 
-  const save = async () => {
+  const showFieldErrors = (errors: Record<string, string>) => {
+    setFieldErrors(errors);
+    const first = Object.keys(errors)[0];
+    const el = first ? document.querySelector(`[data-field-key="${first}"]`) : null;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  /** Looks for another row using the same slug (and section, for articles). */
+  const slugTaken = async (slug: string): Promise<boolean> => {
+    let query = supabase.from(resource.table).select('id').eq('slug', slug).limit(1);
+    if (resource.table === 'library_articles' && typeof values.collection === 'string') {
+      query = query.eq('collection', values.collection);
+    }
+    if (!isNew) query = query.neq('id', id);
+    const { data, error: queryError } = await query;
+    if (queryError) throw new Error(queryError.message);
+    return (data ?? []).length > 0;
+  };
+
+  /** Validates, saves and reports whether the record is now persisted. */
+  const saveAndReport = useCallback(async (): Promise<boolean> => {
+    if (saving) return false;
+    const errors = validateRecord(resource, values, locale);
+    if (Object.keys(errors).length > 0) {
+      showFieldErrors(errors);
+      toast.error(s.fixErrors);
+      return false;
+    }
+
     setSaving(true);
     setError(null);
-    // Only send known columns.
-    const payload: Record<string, unknown> = {};
-    resource.fields.forEach((f) => {
-      payload[f.key] = values[f.key] ?? emptyValue(f.type);
-    });
     try {
-      if (isNew) {
-        const created = await insertRow(resource.table, payload);
-        navigate(`/admin/r/${resource.key}/${created.id}`, { replace: true });
-      } else {
-        await updateRow(resource.table, id, payload);
+      if (hasSlug && typeof values.slug === 'string' && values.slug) {
+        const loaded = baseline ? (JSON.parse(baseline) as Values) : {};
+        if (!isNew && loaded.slug !== values.slug && !slugChangeConfirmed.current) {
+          const ok = await confirm({
+            title: label('تغيير رابط الصفحة؟', 'Sayfa bağlantısı değişsin mi?', 'Change the page link?'),
+            body: label(
+              'سيتغير رابط الصفحة على الموقع، وأي رابط قديم منشور أو مشارَك لن يعمل بعد الآن.',
+              'Sayfanın adresi değişecek; daha önce paylaşılan eski bağlantılar artık çalışmayacak.',
+              'The page address on the site will change; any old link already shared will stop working.',
+            ),
+            confirmLabel: s.confirm,
+          });
+          if (ok !== true) return false;
+          slugChangeConfirmed.current = true;
+        }
+        if (await slugTaken(values.slug)) {
+          const message = translateDbError('duplicate key slug', locale);
+          showFieldErrors({ slug: message });
+          toast.error(message);
+          return false;
+        }
       }
-      setError(null);
-      flash();
+
+      // Only send known columns, coerced so blank dates/numbers reach Postgres as null.
+      const payload: Values = {};
+      resource.fields.forEach((f) => {
+        payload[f.key] = toColumnValue(f.type, values[f.key]);
+      });
+
+      let saved: Values;
+      if (isNew) {
+        Object.entries(resource.newDefaults ?? {}).forEach(([k, v]) => {
+          if (payload[k] === undefined || payload[k] === null || payload[k] === '') payload[k] = v;
+        });
+        if (payload.is_published === undefined) payload.is_published = true;
+        // New records go to the end of the list.
+        payload.sort_order = await countRows(resource.table);
+        saved = await insertRow(resource.table, payload);
+      } else {
+        saved = await updateRow(resource.table, id, payload);
+      }
+
+      setValues(saved);
+      setBaseline(JSON.stringify(saved));
+      setLastSavedAt(typeof saved.updated_at === 'string' ? saved.updated_at : new Date().toISOString());
+      setFieldErrors({});
+      toast.success(s.savedToast);
+      if (isNew) setRedirectTo(`/admin/r/${resource.key}/${saved.id}`);
+      return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : s.saveError);
+      const message = translateDbError(e, locale);
+      setError(message);
+      toast.error(message);
+      return false;
     } finally {
       setSaving(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saving, resource, values, locale, hasSlug, baseline, isNew, id, s, toast, confirm]);
 
-  const flash = () => {
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1800);
+  useEffect(() => {
+    if (redirectTo && !dirty) navigate(redirectTo, { replace: true });
+  }, [redirectTo, dirty, navigate]);
+
+  useUnsavedChanges(dirty, saveAndReport);
+  useSaveShortcut(dirty && !saving ? saveAndReport : null);
+
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate(`/admin/r/${resource.key}`);
   };
 
   const remove = async () => {
-    if (!window.confirm(s.confirmDelete)) return;
+    const name = pickLocalized(values[resource.titleField], locale) || s.newItem;
+    const ok = await confirm({
+      title: s.deleteTitle.replace('{name}', name),
+      body: s.deleteBody,
+      confirmLabel: s.delete,
+      destructive: true,
+    });
+    if (ok !== true) return;
     try {
       await deleteRow(resource.table, id);
-      navigate(`/admin/r/${resource.key}`, { replace: true });
+      // The record is gone; nothing left to protect from the blocker, so mark
+      // the form clean and let the redirect effect leave once that lands.
+      setBaseline(JSON.stringify(values));
+      toast.success(s.deletedToast);
+      setRedirectTo(`/admin/r/${resource.key}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : s.saveError);
+      toast.error(translateDbError(e, locale));
     }
   };
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+  const recordTitle = pickLocalized(values[resource.titleField], locale);
+  const siteUrl = !isNew && values.is_published ? publicUrlFor(resource, values) : null;
+  const titleFilled = filledLocales(values[resource.titleField]);
+  const counts = { ar: titleFilled.includes('ar'), tr: titleFilled.includes('tr'), en: titleFilled.includes('en') };
+  const savedTime = formatTime(lastSavedAt, locale);
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <button
-          onClick={() => navigate(`/admin/r/${resource.key}`)}
+          onClick={goBack}
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"
         >
-          <BackIcon size={16} /> {title}
+          <BackIcon size={16} /> {listTitle}
         </button>
-        <div className="flex items-center gap-2">
-          {savedFlash && <span className="text-sm font-medium text-emerald-600">{s.saved}</span>}
+        <div className="flex flex-wrap items-center gap-2">
+          {savedTime && !dirty && (
+            <span className="text-xs text-slate-500">
+              {s.lastSaved} {savedTime}
+            </span>
+          )}
+          {siteUrl && (
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            >
+              <ExternalLink size={15} /> {s.openOnSite}
+            </a>
+          )}
           {!isNew && (
             <button
               onClick={remove}
@@ -149,8 +325,9 @@ export default function ResourceEditPage() {
             </button>
           )}
           <button
-            onClick={save}
-            disabled={saving}
+            onClick={() => void saveAndReport()}
+            disabled={saving || !dirty}
+            title={!dirty ? s.noChanges : undefined}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
           >
             <Save size={15} /> {saving ? s.saving : s.save}
@@ -158,7 +335,20 @@ export default function ResourceEditPage() {
         </div>
       </div>
 
-      <h1 className="mb-5 text-2xl font-bold text-slate-900">{isNew ? s.newItem : s.edit}</h1>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-bold text-slate-900">
+            {isNew ? s.newItem : recordTitle || s.edit}
+          </h1>
+          {resource.description && (
+            <p className="mt-1 text-sm text-slate-500">{resource.description[locale]}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-500">{s.editingLanguage}</span>
+          <LocaleSwitch value={editing.locale} onChange={editing.setLocale} counts={counts} />
+        </div>
+      </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
@@ -166,7 +356,7 @@ export default function ResourceEditPage() {
         <p className="text-sm text-slate-400">{s.loading}</p>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <FormEngine fields={resource.fields} values={values} onChange={setField} />
+          <FormEngine fields={resource.fields} values={values} onChange={setField} errors={fieldErrors} />
         </div>
       )}
     </div>

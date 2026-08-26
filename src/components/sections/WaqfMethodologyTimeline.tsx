@@ -1,7 +1,8 @@
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, type Variants } from 'framer-motion';
 import { Handshake, PieChart, TrendingUp, UserCheck, Users, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
 type WaqfMethodologyTimelineProps = {
   eyebrow: string;
@@ -12,6 +13,7 @@ type WaqfMethodologyTimelineProps = {
   items: string[];
 };
 
+// Position-based defaults, cycled when the editor adds more steps than there are icons.
 const stepIcons: LucideIcon[] = [Users, UserCheck, TrendingUp, PieChart, Handshake];
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 
@@ -37,6 +39,18 @@ export default function WaqfMethodologyTimeline({
   const shouldReduceMotion = useReducedMotion();
   const listRef = useRef<HTMLOListElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  // Titles and descriptions are two parallel lists edited separately; zip them
+  // by the longer length so a mismatch shows a partial step instead of dropping it.
+  const steps = useMemo(() => {
+    const titles = itemTitles ?? [];
+    const bodies = items ?? [];
+    const length = Math.max(titles.length, bodies.length);
+    return Array.from({ length }, (_, index) => ({
+      title: titles[index] ?? '',
+      body: bodies[index] ?? '',
+    }));
+  }, [itemTitles, items]);
+  const stepCount = steps.length;
 
   const { scrollYProgress } = useScroll({
     target: listRef,
@@ -47,13 +61,13 @@ export default function WaqfMethodologyTimeline({
 
   useEffect(() => {
     const unsubscribe = scrollYProgress.on('change', (value) => {
-      const next = Math.min(items.length - 1, Math.max(0, Math.round(value * (items.length - 1))));
+      const next = Math.min(stepCount - 1, Math.max(0, Math.round(value * (stepCount - 1))));
       setActiveStep(next);
     });
     return () => unsubscribe();
-  }, [scrollYProgress, items.length]);
+  }, [scrollYProgress, stepCount]);
 
-  const progressPercent = items.length > 1 ? (activeStep / (items.length - 1)) * 100 : 100;
+  const progressPercent = stepCount > 1 ? (activeStep / (stepCount - 1)) * 100 : 100;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-14">
@@ -73,7 +87,7 @@ export default function WaqfMethodologyTimeline({
               {stepLabel} <span dir="ltr">{String(activeStep + 1).padStart(2, '0')}</span>
             </span>
             <span dir="ltr" className="tabular-nums text-dark-400">
-              {String(activeStep + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}
+              {String(activeStep + 1).padStart(2, '0')} / {String(stepCount).padStart(2, '0')}
             </span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary-50">
@@ -91,7 +105,7 @@ export default function WaqfMethodologyTimeline({
             transition={{ duration: 0.3, ease: smoothEase }}
             className="mt-2.5 text-sm font-bold text-dark-900"
           >
-            {itemTitles[activeStep] ?? ''}
+            {steps[activeStep]?.title ?? ''}
           </motion.p>
         </div>
       </div>
@@ -107,13 +121,13 @@ export default function WaqfMethodologyTimeline({
           className="absolute bottom-4 top-4 start-[1.1rem] w-px bg-gradient-to-b from-primary-600 via-primary-500 to-primary-300 md:start-[1.35rem]"
         />
 
-        {items.map((item, index) => {
-          const Icon = stepIcons[index] ?? Users;
+        {steps.map((step, index) => {
+          const Icon = resolveIcon(undefined, stepIcons, index);
           const isActive = index === activeStep;
 
           return (
             <motion.li
-              key={item}
+              key={`${step.title}-${index}`}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.35 }}
@@ -159,8 +173,8 @@ export default function WaqfMethodologyTimeline({
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="text-base font-bold text-dark-900">{itemTitles[index] ?? ''}</h3>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-dark-600 md:text-sm">{item}</p>
+                    <h3 className="text-base font-bold text-dark-900">{step.title}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-dark-600 md:text-sm">{step.body}</p>
                   </div>
                 </div>
               </motion.article>

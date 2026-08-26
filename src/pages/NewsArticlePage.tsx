@@ -8,11 +8,13 @@ import LibraryLightbox from '@/components/library/LibraryLightbox';
 import NewsCard from '@/components/news/NewsCard';
 import NewsShareActions from '@/components/news/NewsShareActions';
 import {
+  absoluteUrl,
   formatNewsDate,
   getNewsArticle,
   getNewsBreadcrumbs,
   getRelatedNewsArticles,
   getNewsLabels,
+  getSourceLanguageName,
   newsRoutes,
 } from '@/data/news';
 import { getLibraryContent } from '@/data/library';
@@ -41,8 +43,8 @@ export default function NewsArticlePage() {
       headline: article.title,
       description: article.excerpt,
       datePublished: article.publishedAt,
-      image: [`${origin}${article.image}`],
-      mainEntityOfPage: `${origin}${article.route}`,
+      image: [absoluteUrl(origin, article.image)],
+      mainEntityOfPage: absoluteUrl(origin, article.route),
       publisher: {
         '@type': 'Organization',
         name: siteContent.siteConfig.name,
@@ -56,12 +58,15 @@ export default function NewsArticlePage() {
 
   if (!article) return <Navigate to={newsRoutes.index} replace />;
 
-  const related = getRelatedNewsArticles(locale, article.slug, 3);
+  const related = getRelatedNewsArticles(locale, article.slug, labels.layout.relatedCount);
   const date = formatNewsDate(locale, article.publishedAt);
   const crumbTitle = article.title.length > 60 ? `${article.title.slice(0, 60).trim()}…` : article.title;
+  // getNewsBreadcrumbs already reads labels.home / labels.news from the CMS page.
   const breadcrumbs = getNewsBreadcrumbs(locale, article).map((crumb, index, list) =>
     index === list.length - 1 ? { ...crumb, label: crumbTitle } : crumb
   );
+  const sourceLanguageName = getSourceLanguageName(locale, article.sourceLanguage);
+  const showOriginalLanguageNote = Boolean(article.sourceLanguage) && article.sourceLanguage !== locale;
 
   return (
     <>
@@ -97,13 +102,17 @@ export default function NewsArticlePage() {
                   <Calendar className="h-4 w-4 text-primary-300" aria-hidden="true" />
                   <time dateTime={article.publishedAt}>{date}</time>
                 </span>
-                <span className="inline-flex min-h-10 items-center rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
-                  {article.category}
-                </span>
-                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
-                  <Languages className="h-4 w-4 text-primary-300" aria-hidden="true" />
-                  {labels.sourceLanguage}: العربية
-                </span>
+                {article.category && (
+                  <span className="inline-flex min-h-10 items-center rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
+                    {article.category}
+                  </span>
+                )}
+                {sourceLanguageName && (
+                  <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-4 text-white backdrop-blur-sm">
+                    <Languages className="h-4 w-4 text-primary-300" aria-hidden="true" />
+                    {labels.sourceLanguage}: {sourceLanguageName}
+                  </span>
+                )}
               </div>
 
               <h1 className="max-w-4xl text-balance text-2xl font-bold leading-snug text-white md:text-3xl md:leading-snug lg:text-4xl lg:leading-tight">
@@ -129,7 +138,7 @@ export default function NewsArticlePage() {
             </motion.figure>
 
             <div className="mx-auto max-w-[820px] text-start">
-              {locale !== 'ar' && (
+              {showOriginalLanguageNote && labels.originalLanguageNote && (
                 <p className="mb-8 rounded-[20px] border border-primary-100 bg-primary-50 px-5 py-4 text-sm font-semibold leading-relaxed text-primary-800">
                   {labels.originalLanguageNote}
                 </p>
@@ -155,14 +164,14 @@ export default function NewsArticlePage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {article.gallery.map((image, index) => (
                     <button
-                      key={image.id}
+                      key={image.id || `${article.id}-${index}`}
                       type="button"
                       onClick={() => setActiveImageIndex(index)}
                       className="group relative aspect-[16/10] overflow-hidden rounded-[20px] border border-white bg-warm text-start shadow-[0_16px_42px_rgba(35,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_52px_rgba(35,12,18,0.11)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                       aria-label={`${libraryLabels.openImage}: ${image.title}`}
                     >
                       <img
-                        src={image.thumbnail}
+                        src={image.thumbnail || image.image}
                         alt={image.imageAlt}
                         loading="lazy"
                         className="h-full w-full object-contain"

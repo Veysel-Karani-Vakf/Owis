@@ -2,12 +2,14 @@ import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Send } from 'lucide-r
 import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 import FormField from '@/components/participate/FormField';
-import type { ParticipateFormContent, ParticipateLabels } from '@/data/participate';
 import {
-  ParticipateFormError,
-  submitParticipateForm,
-  type ParticipateSubmissionField,
-} from '@/services/participateForms';
+  normalizeFieldType,
+  type ParticipateFormContent,
+  type ParticipateFormField,
+  type ParticipateFormGroup,
+  type ParticipateLabels,
+} from '@/data/participate';
+import { submitParticipateForm, type ParticipateSubmissionField } from '@/services/participateForms';
 
 type ParticipateFormProps = {
   form: ParticipateFormContent;
@@ -29,9 +31,54 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+/**
+ * Admin-edited fields may arrive with a blank id or an unknown type; give each
+ * a stable id and a supported widget so nothing silently disappears.
+ */
+function normalizeFields(fields: ParticipateFormField[] | undefined): ParticipateFormField[] {
+  return (fields ?? []).map((field, index) => ({
+    ...field,
+    id: (field.id ?? '').trim() || `field-${index + 1}`,
+    type: normalizeFieldType(field.type),
+    required: Boolean(field.required),
+  }));
+}
+
+/**
+ * Resolves the steps to render. Fields no step references (a field the client
+ * just added) are appended to the LAST step, so they are never invisible yet
+ * validated; a form with no steps at all becomes a single step.
+ */
+function resolveGroups(form: ParticipateFormContent, fields: ParticipateFormField[]): ParticipateFormGroup[] {
+  const knownIds = new Set(fields.map((field) => field.id));
+  const groups = (form.groups ?? [])
+    .map((group, index) => ({
+      ...group,
+      id: (group.id ?? '').trim() || `step-${index + 1}`,
+      fieldIds: (group.fieldIds ?? []).filter((fieldId) => knownIds.has(fieldId)),
+    }));
+
+  const referenced = new Set(groups.flatMap((group) => group.fieldIds));
+  const orphans = fields.map((field) => field.id).filter((fieldId) => !referenced.has(fieldId));
+
+  if (groups.length === 0) {
+    return [{ id: 'all', title: form.title, fieldIds: orphans }];
+  }
+
+  if (orphans.length > 0) {
+    const last = groups[groups.length - 1];
+    groups[groups.length - 1] = { ...last, fieldIds: [...last.fieldIds, ...orphans] };
+  }
+
+  return groups;
+}
+
 export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: ParticipateFormProps) {
+  const fields = useMemo(() => normalizeFields(form.fields), [form.fields]);
+  const groups = useMemo(() => resolveGroups(form, fields), [form, fields]);
+
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(form.fields.map((field) => [field.id, '']))
+    Object.fromEntries(fields.map((field) => [field.id, '']))
   );
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,16 +87,20 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
   const [submitting, setSubmitting] = useState(false);
   const NextIcon = isRtl ? ArrowLeft : ArrowRight;
   const PreviousIcon = isRtl ? ArrowRight : ArrowLeft;
-  const currentGroup = form.groups[stepIndex] ?? form.groups[0];
-  const isLastStep = stepIndex === form.groups.length - 1;
+  const currentGroup = groups[stepIndex] ?? groups[0];
+  const isLastStep = stepIndex >= groups.length - 1;
+  const multiStep = groups.length > 1;
 
   const fieldsById = useMemo(() => {
-    return new Map(form.fields.map((field) => [field.id, field]));
-  }, [form.fields]);
+    return new Map(fields.map((field) => [field.id, field]));
+  }, [fields]);
 
   const currentFields = useMemo(() => {
     return currentGroup.fieldIds.map((fieldId) => fieldsById.get(fieldId)).filter(Boolean);
   }, [currentGroup.fieldIds, fieldsById]);
+
+  // Only fields that actually render somewhere take part in validation/submission.
+  const renderedFieldIds = useMemo(() => groups.flatMap((group) => group.fieldIds), [groups]);
 
   const validateField = (fieldId: string) => {
     const field = fieldsById.get(fieldId);
@@ -85,7 +136,7 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
   };
 
   const validateAll = () => {
-    return validateFields(form.fields.map((field) => field.id));
+    return validateFields(renderedFieldIds);
   };
 
   const updateValue = (fieldId: string, value: string) => {
@@ -109,12 +160,17 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
   };
 
   const buildSubmissionFields = (): ParticipateSubmissionField[] => {
-    return form.fields.map((field) => {
+    return renderedFieldIds.flatMap((fieldId) => {
+      const field = fieldsById.get(fieldId);
+      if (!field) return [];
+      // Admin-added fields carry no sourceName; the id is the stable payload key then.
+      const sourceName = (field.sourceName ?? '').trim() || field.id;
+
       if (field.type === 'file') {
         return {
           id: field.id,
-          sourceName: field.sourceName,
-          label: cleanLabel(field.label),
+          sourceName,
+          label: cleanLabel(field.label ?? ''),
           value: (files[field.id] ?? []).map((file) => ({
             name: file.name,
             size: file.size,
@@ -125,8 +181,8 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
 
       return {
         id: field.id,
-        sourceName: field.sourceName,
-        label: cleanLabel(field.label),
+        sourceName,
+        label: cleanLabel(field.label ?? ''),
         value: values[field.id] ?? '',
       };
     });
@@ -138,7 +194,7 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
 
     if (!isLastStep) {
       if (validateFields(currentGroup.fieldIds)) {
-        setStepIndex((current) => Math.min(current + 1, form.groups.length - 1));
+        setStepIndex((current) => Math.min(current + 1, groups.length - 1));
       }
       return;
     }
@@ -154,15 +210,12 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
         files,
       });
       setStatus({ type: 'success', message: labels.submitSuccess });
-      setValues(Object.fromEntries(form.fields.map((field) => [field.id, ''])));
+      setValues(Object.fromEntries(fields.map((field) => [field.id, ''])));
       setFiles({});
       setStepIndex(0);
-    } catch (error) {
-      if (error instanceof ParticipateFormError && error.code === 'missing-endpoint') {
-        setStatus({ type: 'error', message: labels.integrationMissing });
-      } else {
-        setStatus({ type: 'error', message: labels.submitError });
-      }
+    } catch {
+      // Submissions go straight to Supabase; any failure is a plain "try later".
+      setStatus({ type: 'error', message: labels.submitError });
     } finally {
       setSubmitting(false);
     }
@@ -179,16 +232,16 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
         <p className="mt-3 text-sm leading-relaxed text-dark-600">{form.description}</p>
       </div>
 
-      {form.groups.length > 1 && (
+      {multiStep && (
         <div className="mb-7">
           <div className="mb-3 flex items-center justify-between gap-3 text-xs font-bold text-dark-500">
             <span>
-              {labels.step} {stepIndex + 1} / {form.groups.length}
+              {labels.step} {stepIndex + 1} / {groups.length}
             </span>
             <span className="text-primary-700">{currentGroup.title}</span>
           </div>
-          <div className="grid grid-cols-4 gap-2">
-            {form.groups.map((group, index) => (
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))` }}>
+            {groups.map((group, index) => (
               <span
                 key={group.id}
                 className={`h-2 rounded-full transition-colors ${
@@ -201,12 +254,16 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
         </div>
       )}
 
-      <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50/55 p-4">
-        <h3 className="text-base font-bold text-dark-950">{currentGroup.title}</h3>
-        {currentGroup.description && (
-          <p className="mt-2 text-sm leading-relaxed text-dark-600">{currentGroup.description}</p>
-        )}
-      </div>
+      {/* A single-step form already shows its title/description above; the
+          step card would only repeat them. */}
+      {multiStep && (
+        <div className="mb-6 rounded-2xl border border-primary-100 bg-primary-50/55 p-4">
+          <h3 className="text-base font-bold text-dark-950">{currentGroup.title}</h3>
+          {currentGroup.description && (
+            <p className="mt-2 text-sm leading-relaxed text-dark-600">{currentGroup.description}</p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-5 md:grid-cols-2">
         {currentFields.map((field) => {

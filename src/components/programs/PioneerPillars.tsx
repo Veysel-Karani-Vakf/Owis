@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer
 import { CheckCircle2, Compass, GraduationCap, HeartHandshake, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ProgramPillar } from '@/data/programs';
+import { resolveIcon } from '@/lib/icons';
 
 type PioneerPillarsProps = {
   eyebrow: string;
@@ -51,7 +52,7 @@ export default function PioneerPillars({
   const sectionRef = useRef<HTMLDivElement>(null);
 
   const active = pillars[activeIndex] ?? pillars[0];
-  const ActiveIcon = pillarIcons[activeIndex % pillarIcons.length];
+  const ActiveIcon = resolveIcon(active?.icon, pillarIcons, activeIndex);
   const rotating = !shouldReduceMotion && !paused && inView && autoRotateMs > 0 && pillars.length > 1;
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function PioneerPillars({
     setCycle((value) => value + 1);
   };
 
-  if (!pillars.length) return null;
+  if (!pillars.length || !active) return null;
 
   return (
     <div
@@ -100,7 +101,7 @@ export default function PioneerPillars({
 
         <div role="tablist" aria-orientation="vertical" aria-label={title} className="mt-8 grid gap-3">
           {pillars.map((pillar, index) => {
-            const Icon = pillarIcons[index % pillarIcons.length];
+            const Icon = resolveIcon(pillar.icon, pillarIcons, index);
             const isActive = index === activeIndex;
 
             return (
@@ -216,7 +217,7 @@ export default function PioneerPillars({
               animate="show"
               className="relative mt-6 grid gap-3"
             >
-              {active.points.map((point) => (
+              {(active.points ?? []).map((point) => (
                 <motion.li
                   key={point}
                   variants={shouldReduceMotion ? undefined : pointVariants}

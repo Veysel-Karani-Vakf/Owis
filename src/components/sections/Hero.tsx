@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
@@ -81,6 +82,8 @@ export default function Hero() {
       : false,
   );
   const { content, t, isRtl, locale } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
   const heroContent = content.hero;
   const isLatinScript = locale !== 'ar';
   const titleTyped = typedTitle === heroContent.title;
@@ -118,9 +121,27 @@ export default function Hero() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const scrollToParticipate = () => {
-    const el = document.querySelector('#participate');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  // The button destination is editable: "#anchor" scrolls on the page,
+  // "/path" navigates, anything else (full URL) opens as a normal link.
+  const openButtonTarget = () => {
+    const href = heroContent.secondaryUrl || '#participate';
+
+    if (href.startsWith('#')) {
+      if (location.pathname !== '/') {
+        navigate({ pathname: '/', hash: href });
+        return;
+      }
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    if (href.startsWith('/')) {
+      navigate(href);
+      return;
+    }
+
+    window.open(href, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -195,7 +216,7 @@ export default function Hero() {
               aria-hidden={!titleTyped}
             >
               <button
-                onClick={scrollToParticipate}
+                onClick={openButtonTarget}
                 tabIndex={titleTyped ? 0 : -1}
                 className={`inline-flex min-w-[9.5rem] items-center justify-center rounded-md border border-white/75 bg-black/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-[2px] transition-all duration-300 hover:border-white hover:bg-white hover:text-dark-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 ${
                   isLatinScript ? 'uppercase tracking-[0.06em]' : 'text-base'

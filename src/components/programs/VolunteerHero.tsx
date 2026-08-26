@@ -9,6 +9,7 @@ type VolunteerHeroProps = {
   program: Program;
   breadcrumbs: BreadcrumbItem[];
   copy: VolunteerCopy;
+  /** Fallback join destination; `copy.joinUrl` set in the admin wins over it. */
   volunteerRoute: string;
   exploreAnchor: string;
 };
@@ -24,6 +25,7 @@ export default function VolunteerHero({
 }: VolunteerHeroProps) {
   const reduced = !!useReducedMotion();
   const duration = reduced ? 0.01 : 0.7;
+  const joinTo = copy.joinUrl || volunteerRoute;
 
   const scrollToExplore = () => {
     const el = document.getElementById(exploreAnchor);
@@ -90,7 +92,7 @@ export default function VolunteerHero({
             className="mt-8 flex flex-wrap items-center gap-3"
           >
             <Link
-              to={volunteerRoute}
+              to={joinTo}
               className="group inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0"
             >
               <HandHeart className="h-4 w-4" aria-hidden="true" />
@@ -133,7 +135,7 @@ export default function VolunteerHero({
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3.5 text-start md:px-8">
           <span className="text-sm font-bold text-white/80">{copy.slogan}</span>
           <span aria-hidden="true" className="hidden h-4 w-px bg-white/20 sm:block" />
-          {copy.hashtags.map((tag) => (
+          {(copy.hashtags ?? []).map((tag) => (
             <span key={tag} className="text-sm font-black text-primary-300">
               {tag}
             </span>

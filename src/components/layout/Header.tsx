@@ -9,6 +9,7 @@ import { donateRoute } from '@/data/donate';
 import { getProgramsContent } from '@/data/programs';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import MobileMenu from './MobileMenu';
+import { navMenuFor } from '@/i18n/content';
 
 export default function Header() {
   const scrolled = useScrolled(60);
@@ -16,7 +17,9 @@ export default function Header() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [programsOpen, setProgramsOpen] = useState(false);
   const { content, t, locale } = useI18n();
-  const { navLinks, siteConfig } = content;
+  const { siteConfig } = content;
+  const navLinks = content.navLinks ?? [];
+  const donateUrl = siteConfig.donateUrl || donateRoute;
   const aboutNavItems = getAboutContent(locale).nav;
   const programNavItems = getProgramsContent(locale).nav;
   const location = useLocation();
@@ -130,7 +133,11 @@ export default function Header() {
       return;
     }
 
-    if (!href.startsWith('#')) return;
+    if (!href.startsWith('#')) {
+      // A full URL typed by the editor (e.g. an external payment page).
+      if (href) window.open(href, '_blank', 'noopener,noreferrer');
+      return;
+    }
 
     if (location.pathname !== '/') {
       navigate({ pathname: '/', hash: href });
@@ -199,11 +206,14 @@ export default function Header() {
           </a>
 
           <nav className="hidden items-center gap-0.5 xl:flex 2xl:gap-1">
-            {navLinks.map((link) => {
-              if (link.href === '#about') {
+            {navLinks.map((link, index) => {
+              const menu = navMenuFor(link);
+              const linkKey = `${link.href}-${index}`;
+
+              if (menu === 'about') {
                 return (
                   <div
-                    key={link.href}
+                    key={linkKey}
                     ref={aboutMenuRef}
                     className="relative"
                     onMouseEnter={() => {
@@ -309,10 +319,10 @@ export default function Header() {
                 );
               }
 
-              if (link.href === '#programs') {
+              if (menu === 'programs') {
                 return (
                   <div
-                    key={link.href}
+                    key={linkKey}
                     ref={programsMenuRef}
                     className="relative"
                     onMouseEnter={() => {
@@ -422,7 +432,7 @@ export default function Header() {
 
               return (
                 <a
-                  key={link.href}
+                  key={linkKey}
                   href={link.href}
                   aria-current={active ? 'page' : undefined}
                   onClick={(event) => {
@@ -444,7 +454,7 @@ export default function Header() {
 
             <button
               type="button"
-              onClick={() => handleNavClick(donateRoute)}
+              onClick={() => handleNavClick(donateUrl)}
               className={`hidden min-h-11 items-center justify-center whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-bold shadow-[0_8px_18px_rgba(20,0,4,0.18)] transition-all duration-300 hover:-translate-y-0.5 sm:inline-flex ${
                 scrolled
                   ? 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-[0_10px_22px_rgba(156,16,6,0.28)]'

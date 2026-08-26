@@ -27,6 +27,18 @@ type CapacityCitiesProps = {
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 
+// The dashboard's video widget stores `sourceUrl` / `posterImage`, while the static
+// city shape uses `videoSourceUrl` / `image`; both spellings are honoured here.
+type CityRecord = ProgramCity & { sourceUrl?: string; posterImage?: string };
+
+function citySourceUrl(city: CityRecord) {
+  return city.videoSourceUrl || city.sourceUrl || undefined;
+}
+
+function cityImage(city: CityRecord) {
+  return city.image || city.posterImage || '';
+}
+
 export default function CapacityCities({
   eyebrow,
   title,
@@ -45,8 +57,9 @@ export default function CapacityCities({
   const [cycle, setCycle] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const active = cities[activeIndex] ?? cities[0];
-  const rotating = !reduced && !paused && inView && autoRotateMs > 0 && cities.length > 1;
+  const list: CityRecord[] = cities ?? [];
+  const active = list[activeIndex] ?? list[0];
+  const rotating = !reduced && !paused && inView && autoRotateMs > 0 && list.length > 1;
 
   useEffect(() => {
     const element = sectionRef.current;
@@ -60,13 +73,15 @@ export default function CapacityCities({
     if (!rotating) return;
     const timer = window.setTimeout(() => {
       setDirection(1);
-      setActiveIndex((current) => (current + 1) % cities.length);
+      setActiveIndex((current) => (current + 1) % list.length);
       setCycle((value) => value + 1);
     }, autoRotateMs);
     return () => window.clearTimeout(timer);
-  }, [rotating, activeIndex, autoRotateMs, cities.length, cycle]);
+  }, [rotating, activeIndex, autoRotateMs, list.length, cycle]);
 
   if (!active) return null;
+
+  const activeSourceUrl = citySourceUrl(active);
 
   const goTo = (index: number) => {
     if (index === activeIndex) return;
@@ -99,7 +114,7 @@ export default function CapacityCities({
       <div className="grid gap-6 lg:grid-cols-[0.38fr_0.62fr] lg:gap-8">
         {/* City selector */}
         <div role="tablist" aria-label={title} className="order-2 flex gap-3 overflow-x-auto pb-2 lg:order-1 lg:flex-col lg:overflow-visible lg:pb-0">
-          {cities.map((city, index) => {
+          {list.map((city, index) => {
             const isActive = index === activeIndex;
             return (
               <button
@@ -130,7 +145,7 @@ export default function CapacityCities({
                   }`}
                 >
                   <img
-                    src={city.image}
+                    src={cityImage(city)}
                     alt=""
                     aria-hidden="true"
                     loading="lazy"
@@ -188,8 +203,8 @@ export default function CapacityCities({
             <AnimatePresence initial={false} custom={slideX} mode="popLayout">
               <motion.img
                 key={active.id}
-                src={active.image}
-                alt={active.imageAlt}
+                src={cityImage(active)}
+                alt={active.imageAlt ?? ''}
                 custom={slideX}
                 initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 1.08, x: `${6 * slideX}%` }}
                 animate={{ opacity: 1, scale: 1, x: '0%' }}
@@ -207,7 +222,7 @@ export default function CapacityCities({
             <div className="absolute start-5 top-5 flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur">
               <MapPin className="h-3.5 w-3.5 text-primary-200" aria-hidden="true" />
               <span dir="ltr" className="tabular-nums">
-                {String(activeIndex + 1).padStart(2, '0')} / {String(cities.length).padStart(2, '0')}
+                {String(activeIndex + 1).padStart(2, '0')} / {String(list.length).padStart(2, '0')}
               </span>
             </div>
 
@@ -239,8 +254,8 @@ export default function CapacityCities({
                     onVideoSelect({
                       videoId: active.videoId,
                       videoFile: active.videoFile,
-                      title: active.videoTitle,
-                      posterImage: active.image,
+                      title: active.videoTitle || active.name,
+                      posterImage: cityImage(active),
                     })
                   }
                   className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
@@ -257,15 +272,17 @@ export default function CapacityCities({
                   </span>
                   {labels.watchVideo}
                 </button>
-                <a
-                  href={active.videoSourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                >
-                  {labels.officialSource}
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                </a>
+                {activeSourceUrl && (
+                  <a
+                    href={activeSourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  >
+                    {labels.officialSource}
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                )}
               </div>
             </div>
           </div>

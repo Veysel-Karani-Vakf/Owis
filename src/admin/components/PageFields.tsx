@@ -1,12 +1,30 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Settings2,
+} from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
-import type { Locale } from '@/lib/types';
+import { LOCALES, type Locale } from '@/lib/types';
 import type { PageFieldDef } from '../lib/pageSchema';
 import { getAtPath, setAtPath } from '../lib/paths';
 import { useAdminStrings } from '../hooks/useAdmin';
-import { ImageInput } from './FieldControls';
+import { hasAnyLocale } from '../lib/validate';
+import {
+  ImageInput,
+  LocalizedInput,
+  ParagraphTextarea,
+  SelectControl,
+  paragraphsHint,
+} from './FieldControls';
 import { VideoInput } from './VideoInput';
+import { IconPicker } from './IconPicker';
+import { useConfirm } from './ConfirmDialog';
 
 const inputBase =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ' +
@@ -14,16 +32,25 @@ const inputBase =
 
 export const contentDir: Record<Locale, 'rtl' | 'ltr'> = { ar: 'rtl', tr: 'ltr', en: 'ltr' };
 
+/** Item keys that hold whole numbers; the browser then refuses decimals. */
+const INTEGER_KEYS = new Set(['sort_order', 'width', 'height', 'value', 'rows']);
+
+export function isIntegerKey(key: string): boolean {
+  return INTEGER_KEYS.has(key.split('.').pop() ?? key);
+}
+
 type ControlProps = {
   field: PageFieldDef;
   value: unknown;
   onChange: (value: unknown) => void;
   /** Direction of the content locale being edited. */
   dir: 'rtl' | 'ltr';
+  /** Natural size of a chosen image, when sibling width/height fields exist. */
+  onDimensions?: (width: number, height: number) => void;
 };
 
 /** Renders one schema field. Repeaters recurse through `RepeaterInput`. */
-export function PageFieldControl({ field, value, onChange, dir }: ControlProps) {
+export function PageFieldControl({ field, value, onChange, dir, onDimensions }: ControlProps) {
   switch (field.type) {
     case 'textarea':
       return (
@@ -42,13 +69,15 @@ export function PageFieldControl({ field, value, onChange, dir }: ControlProps) 
       return <ListInput value={value} onChange={onChange} dir={dir} />;
 
     case 'image':
-      return <ImageInput value={asString(value)} onChange={onChange} />;
+      return <ImageInput value={asString(value)} onChange={onChange} onDimensions={onDimensions} />;
 
     case 'number':
       return (
         <input
           type="number"
           dir="ltr"
+          inputMode={isIntegerKey(field.path) ? 'numeric' : 'decimal'}
+          step={isIntegerKey(field.path) ? 1 : undefined}
           className={inputBase}
           value={value === null || value === undefined ? '' : String(value)}
           onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
@@ -80,6 +109,22 @@ export function PageFieldControl({ field, value, onChange, dir }: ControlProps) 
 
     case 'video':
       return <VideoInput value={value} onChange={onChange} />;
+
+    case 'select':
+      return <SelectControl value={value} onChange={onChange} options={field.options ?? []} />;
+
+    case 'icon':
+      return <IconPicker value={value} onChange={onChange} />;
+
+    case 'localized':
+    case 'localizedTextarea':
+      return (
+        <LocalizedInput
+          value={(value && typeof value === 'object' ? value : {}) as never}
+          onChange={onChange}
+          multiline={field.type === 'localizedTextarea'}
+        />
+      );
 
     case 'repeater':
       return <RepeaterInput field={field} value={value} onChange={onChange} dir={dir} />;
@@ -117,25 +162,13 @@ function ParagraphsInput({
 
   return (
     <div>
-      <textarea
-        className={`${inputBase} min-h-[170px] resize-y leading-relaxed`}
+      <ParagraphTextarea
+        paragraphs={items}
+        onCommit={onChange}
         dir={dir}
-        value={items.join('\n\n')}
-        onChange={(event) =>
-          onChange(
-            event.target.value
-              .split(/\n\s*\n/)
-              .map((paragraph) => paragraph.trim())
-              .filter(Boolean),
-          )
-        }
+        className={`${inputBase} min-h-[170px] resize-y leading-relaxed`}
       />
-      <p className="mt-1 text-xs text-slate-400">
-        {items.length}{' '}
-        {locale === 'ar' ? 'فقرة' : locale === 'tr' ? 'paragraf' : items.length === 1 ? 'paragraph' : 'paragraphs'}
-        {' — '}
-        {locale === 'ar' ? 'افصل بين الفقرات بسطر فارغ' : locale === 'tr' ? 'Paragrafları boş satırla ayırın' : 'separate paragraphs with a blank line'}
-      </p>
+      <p className="mt-1 text-xs text-slate-400">{paragraphsHint(locale, items.length)}</p>
     </div>
   );
 }
@@ -151,6 +184,7 @@ function ListInput({
   dir: 'rtl' | 'ltr';
 }) {
   const strings = useAdminStrings();
+  const confirm = useConfirm();
   const items = Array.isArray(value) ? (value as string[]) : [];
 
   const move = (index: number, delta: -1 | 1) => {
@@ -159,6 +193,15 @@ function ListInput({
     const next = [...items];
     [next[index], next[target]] = [next[target], next[index]];
     onChange(next);
+  };
+
+  const remove = async (index: number) => {
+    const text = (items[index] ?? '').trim();
+    if (text) {
+      const ok = await confirm({ title: strings.deleteTitle.replace('{name}', truncate(text)), destructive: true });
+      if (!ok) return;
+    }
+    onChange(items.filter((_, position) => position !== index));
   };
 
   return (
@@ -182,11 +225,8 @@ function ListInput({
           <IconButton title={strings.moveDown} onClick={() => move(index, 1)}>
             <ArrowDown size={15} />
           </IconButton>
-          <IconButton
-            title={strings.removeItem}
-            danger
-            onClick={() => onChange(items.filter((_, position) => position !== index))}
-          >
+          <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden="true" />
+          <IconButton title={strings.removeItem} danger onClick={() => remove(index)}>
             <Trash2 size={15} />
           </IconButton>
         </div>
@@ -194,6 +234,68 @@ function ListInput({
       <AddButton label={strings.addItem} onClick={() => onChange([...items, ''])} />
     </div>
   );
+}
+
+function truncate(text: string, max = 60): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/** True when any item field holds something the editor typed or uploaded. */
+export function itemHasContent(item: Record<string, unknown>, fields: PageFieldDef[]): boolean {
+  return fields.some((field) => {
+    const raw = field.path ? getAtPath(item, field.path) : item;
+    if (raw === null || raw === undefined) return false;
+    if (typeof raw === 'string') return raw.trim() !== '';
+    if (typeof raw === 'number') return true;
+    if (typeof raw === 'boolean') return false;
+    if (Array.isArray(raw)) return raw.length > 0;
+    if (field.type === 'video') {
+      const v = raw as Record<string, unknown>;
+      return ['videoFile', 'videoId', 'sourceUrl', 'posterImage'].some(
+        (key) => typeof v[key] === 'string' && (v[key] as string).trim() !== '',
+      );
+    }
+    if (field.type === 'localized' || field.type === 'localizedTextarea') return hasAnyLocale(raw);
+    return Object.keys(raw as object).length > 0;
+  });
+}
+
+/**
+ * Older news rows stored their gallery per language — { ar: [...], tr: [...], en: [...] }
+ * with plain-string titles — although the photos are the same in every
+ * language. Folds that into one list whose localized fields hold all three
+ * texts, so the editor sees one gallery. Written back as a plain array.
+ */
+export function normalizePlainRepeater(value: unknown, itemFields: PageFieldDef[]): Record<string, unknown>[] {
+  if (Array.isArray(value)) return value as Record<string, unknown>[];
+  if (!value || typeof value !== 'object') return [];
+
+  const container = value as Record<string, unknown>;
+  const lists: Partial<Record<Locale, Record<string, unknown>[]>> = {};
+  for (const locale of LOCALES) {
+    if (Array.isArray(container[locale])) lists[locale] = container[locale] as Record<string, unknown>[];
+  }
+  const base = lists.ar ?? lists.tr ?? lists.en;
+  if (!base) return [];
+
+  const localizedPaths = itemFields
+    .filter((field) => field.type === 'localized' || field.type === 'localizedTextarea')
+    .map((field) => field.path);
+
+  return base.map((entry, index) => {
+    let item: Record<string, unknown> = { ...entry };
+    for (const path of localizedPaths) {
+      const existing = getAtPath(item, path);
+      if (existing && typeof existing === 'object') continue; // already localized
+      const map: Partial<Record<Locale, string>> = {};
+      for (const locale of LOCALES) {
+        const text = getAtPath(lists[locale]?.[index] ?? {}, path);
+        if (typeof text === 'string' && text !== '') map[locale] = text;
+      }
+      item = setAtPath(item, path, map);
+    }
+    return item;
+  });
 }
 
 /** Collapsible rows of objects described by `field.itemFields`. */
@@ -210,9 +312,17 @@ export function RepeaterInput({
 }) {
   const strings = useAdminStrings();
   const { locale } = useI18n();
+  const confirm = useConfirm();
   const [openRow, setOpenRow] = useState<number | null>(0);
+  const [advancedRows, setAdvancedRows] = useState<Set<number>>(new Set());
   const items = Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
   const itemFields = field.itemFields ?? [];
+  const mainFields = itemFields.filter((itemField) => !itemField.advanced);
+  const advancedFields = itemFields.filter((itemField) => itemField.advanced);
+  const atMax = typeof field.max === 'number' && items.length >= field.max;
+
+  const label = (ar: string, tr: string, en: string) =>
+    locale === 'ar' ? ar : locale === 'tr' ? tr : en;
 
   const update = (index: number, next: Record<string, unknown>) => {
     const copy = [...items];
@@ -231,15 +341,76 @@ export function RepeaterInput({
 
   const rowTitle = (item: Record<string, unknown>, index: number) => {
     const raw = field.itemTitleField ? getAtPath(item, field.itemTitleField) : undefined;
-    const text = typeof raw === 'string' ? raw.trim() : '';
-    if (text) return text.length > 60 ? `${text.slice(0, 60)}…` : text;
-    return `${locale === 'ar' ? 'عنصر' : locale === 'tr' ? 'Öğe' : 'Item'} ${index + 1}`;
+    let text = typeof raw === 'string' ? raw.trim() : '';
+    if (!text && raw && typeof raw === 'object') {
+      // Localized title inside a plain repeater: show the editor's language first.
+      const map = raw as Record<string, unknown>;
+      const pick = [locale, ...LOCALES].find((l) => typeof map[l] === 'string' && (map[l] as string).trim());
+      text = pick ? (map[pick] as string).trim() : '';
+    }
+    if (text) return truncate(text);
+    return `${label('عنصر', 'Öğe', 'Item')} ${index + 1}`;
+  };
+
+  const remove = async (index: number) => {
+    if (itemHasContent(items[index] ?? {}, itemFields)) {
+      const ok = await confirm({
+        title: strings.deleteTitle.replace('{name}', rowTitle(items[index], index)),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    onChange(items.filter((_, position) => position !== index));
+    setOpenRow(null);
+  };
+
+  const toggleAdvanced = (index: number) =>
+    setAdvancedRows((current) => {
+      const next = new Set(current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+
+  // An image next to width/height fields fills them from the file itself.
+  const hasPath = (path: string) => itemFields.some((itemField) => itemField.path === path);
+  const dimensionsFor = (itemField: PageFieldDef, index: number) =>
+    itemField.type === 'image' && hasPath('width') && hasPath('height')
+      ? (width: number, height: number) => {
+          const current = items[index] ?? {};
+          update(index, setAtPath(setAtPath(current, 'width', width), 'height', height));
+        }
+      : undefined;
+
+  const renderField = (itemField: PageFieldDef, item: Record<string, unknown>, index: number) => {
+    const wide =
+      itemField.full ||
+      ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(itemField.type);
+    return (
+      <div key={itemField.path || itemField.type} className={wide ? 'md:col-span-2' : ''}>
+        <label className="mb-1 block text-xs font-medium text-slate-600">{itemField.label[locale]}</label>
+        <PageFieldControl
+          field={itemField}
+          dir={dir}
+          value={itemField.path ? getAtPath(item, itemField.path) : item}
+          onChange={(next) =>
+            update(
+              index,
+              itemField.path ? setAtPath(item, itemField.path, next) : (next as Record<string, unknown>),
+            )
+          }
+          onDimensions={dimensionsFor(itemField, index)}
+        />
+        {itemField.help && <p className="mt-1 text-xs text-slate-400">{itemField.help[locale]}</p>}
+      </div>
+    );
   };
 
   return (
     <div className="space-y-2">
       {items.map((item, index) => {
         const open = openRow === index;
+        const advancedOpen = advancedRows.has(index);
         return (
           <div key={index} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/60">
             <div className="flex items-center gap-1 px-2 py-1.5">
@@ -258,51 +429,59 @@ export function RepeaterInput({
               <IconButton title={strings.moveDown} onClick={() => move(index, 1)}>
                 <ArrowDown size={15} />
               </IconButton>
-              <IconButton
-                title={strings.removeItem}
-                danger
-                onClick={() => {
-                  onChange(items.filter((_, position) => position !== index));
-                  setOpenRow(null);
-                }}
-              >
+              <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden="true" />
+              <IconButton title={strings.removeItem} danger onClick={() => remove(index)}>
                 <Trash2 size={15} />
               </IconButton>
             </div>
 
             {open && (
-              <div className="grid grid-cols-1 gap-4 border-t border-slate-200 bg-white p-3 md:grid-cols-2">
-                {itemFields.map((itemField) => {
-                  const wide =
-                    itemField.full ||
-                    ['textarea', 'paragraphs', 'list', 'repeater', 'image'].includes(itemField.type);
-                  return (
-                    <div key={itemField.path} className={wide ? 'md:col-span-2' : ''}>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">
-                        {itemField.label[locale]}
-                      </label>
-                      <PageFieldControl
-                        field={itemField}
-                        dir={dir}
-                        value={getAtPath(item, itemField.path)}
-                        onChange={(next) => update(index, setAtPath(item, itemField.path, next))}
-                      />
-                    </div>
-                  );
-                })}
+              <div className="border-t border-slate-200 bg-white p-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {mainFields.map((itemField) => renderField(itemField, item, index))}
+                </div>
+
+                {advancedFields.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => toggleAdvanced(index)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-start text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                    >
+                      <Settings2 size={14} />
+                      {strings.moreSettings}
+                      {advancedOpen ? (
+                        <ChevronDown size={14} className="ms-auto" />
+                      ) : (
+                        <ChevronRight size={14} className="ms-auto rtl:rotate-180" />
+                      )}
+                    </button>
+                    {advancedOpen && (
+                      <div className="grid grid-cols-1 gap-4 border-t border-slate-100 p-3 md:grid-cols-2">
+                        {advancedFields.map((itemField) => renderField(itemField, item, index))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         );
       })}
 
-      <AddButton
-        label={strings.addItem}
-        onClick={() => {
-          onChange([...items, blankItem(itemFields)]);
-          setOpenRow(items.length);
-        }}
-      />
+      {atMax ? (
+        <p className="text-xs text-slate-400">
+          {label(`الحد الأقصى ${field.max}`, `En fazla ${field.max}`, `Maximum ${field.max}`)}
+        </p>
+      ) : (
+        <AddButton
+          label={strings.addItem}
+          onClick={() => {
+            onChange([...items, blankItem(itemFields)]);
+            setOpenRow(items.length);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -322,6 +501,8 @@ function generateItemId(): string {
 function blankItem(fields: PageFieldDef[]): Record<string, unknown> {
   let item: Record<string, unknown> = { id: generateItemId() };
   for (const field of fields) {
+    // A video field with an empty path edits the item itself; nothing to seed.
+    if (!field.path) continue;
     const empty =
       field.type === 'list' || field.type === 'paragraphs' || field.type === 'repeater'
         ? []
@@ -329,7 +510,11 @@ function blankItem(fields: PageFieldDef[]): Record<string, unknown> {
           ? false
           : field.type === 'number'
             ? null
-            : '';
+            : field.type === 'localized' || field.type === 'localizedTextarea'
+              ? {}
+              : field.type === 'select'
+                ? (field.options?.[0]?.value ?? '')
+                : '';
     item = setAtPath(item, field.path, empty);
   }
   return item;
@@ -350,6 +535,7 @@ function IconButton({
     <button
       type="button"
       title={title}
+      aria-label={title}
       onClick={onClick}
       className={
         'shrink-0 rounded-md p-1.5 transition hover:bg-slate-200 ' +

@@ -117,6 +117,8 @@ function GoalCard({ text, index, reduced }: { text: string; index: number; reduc
 export default function PioneerGoals({ eyebrow, title, items }: PioneerGoalsProps) {
   const shouldReduceMotion = !!useReducedMotion();
 
+  if (!items?.length) return null;
+
   return (
     <div>
       <div className="mx-auto mb-10 max-w-3xl text-center">
@@ -136,7 +138,7 @@ export default function PioneerGoals({ eyebrow, title, items }: PioneerGoalsProp
         className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
       >
         {items.map((item, index) => (
-          <GoalCard key={item} text={item} index={index} reduced={shouldReduceMotion} />
+          <GoalCard key={`${index}-${item}`} text={item} index={index} reduced={shouldReduceMotion} />
         ))}
       </motion.ol>
     </div>

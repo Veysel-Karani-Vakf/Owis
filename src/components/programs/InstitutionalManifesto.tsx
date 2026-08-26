@@ -1,5 +1,5 @@
 import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion';
-import { ExternalLink, Quote } from 'lucide-react';
+import { Quote } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import type { Program } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
@@ -99,18 +99,6 @@ export default function InstitutionalManifesto({ program, labels }: Institutiona
             className="hidden h-px w-24 origin-left bg-gradient-to-r from-primary-600 to-primary-200 rtl:origin-right sm:block"
           />
           {intro?.title && <span className="text-sm font-bold text-dark-900">{intro.title}</span>}
-          <a
-            href={program.officialSourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-200 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-          >
-            {labels.officialSource}
-            <ExternalLink
-              className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'} group-hover:-translate-y-0.5`}
-              aria-hidden="true"
-            />
-          </a>
         </motion.div>
       </div>
     </div>

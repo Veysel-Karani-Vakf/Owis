@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Check, HeartHandshake, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ProgramPillar, VolunteerCopy } from '@/data/programs';
+import { resolveIcon } from '@/lib/icons';
 
 type VolunteerFieldsProps = {
   fields: ProgramPillar[];
@@ -9,6 +10,7 @@ type VolunteerFieldsProps = {
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
+// Positional defaults, used when a field carries no icon chosen in the admin.
 const fieldIcons: LucideIcon[] = [HeartHandshake, Sparkles, Users];
 
 /**
@@ -19,7 +21,7 @@ export default function VolunteerFields({ fields, copy }: VolunteerFieldsProps) 
   const [activeIndex, setActiveIndex] = useState(0);
   const reduced = !!useReducedMotion();
 
-  if (!fields.length) return null;
+  if (!fields?.length) return null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -33,13 +35,13 @@ export default function VolunteerFields({ fields, copy }: VolunteerFieldsProps) 
 
       <div className="mt-10 flex flex-col gap-4 lg:h-[26rem] lg:flex-row">
         {fields.map((field, index) => {
-          const Icon = fieldIcons[index % fieldIcons.length];
+          const Icon = resolveIcon(field.icon, fieldIcons, index);
           const isActive = index === activeIndex;
           const number = String(index + 1).padStart(2, '0');
 
           return (
             <motion.button
-              key={field.id}
+              key={field.id || `${field.title}-${index}`}
               type="button"
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
@@ -106,7 +108,7 @@ export default function VolunteerFields({ fields, copy }: VolunteerFieldsProps) 
                     isActive ? 'mt-5 max-h-48 opacity-100' : 'mt-0 max-h-0 opacity-0 lg:max-h-0'
                   }`}
                 >
-                  {field.points.map((point) => (
+                  {(field.points ?? []).map((point) => (
                     <li key={point} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-600/90 text-white">
                         <Check className="h-3 w-3" aria-hidden="true" />

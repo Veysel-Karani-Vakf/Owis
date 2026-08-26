@@ -1,10 +1,15 @@
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
-import { ExternalLink } from 'lucide-react';
+import { BookOpen, Globe2, GraduationCap, Users, type LucideIcon } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInView } from '@/hooks/useInView';
+import { resolveIcon } from '@/lib/icons';
 
-type Indicator = { label: string; value: number | null };
+type Indicator = { label: string; value: number | null; icon?: string };
+
+// Same defaults as the home-page cards, so both views of the indicators agree when
+// the editor has not picked an icon.
+const indicatorIcons: LucideIcon[] = [GraduationCap, BookOpen, Users, Globe2];
 
 type PioneerStatsHexProps = {
   eyebrow: string;
@@ -13,7 +18,6 @@ type PioneerStatsHexProps = {
   centerTitle: string;
   centerLabel: string;
   indicators: Indicator[];
-  source: { label: string; url: string };
   unavailableLabel: string;
   formatNumber: (value: number) => string;
   isRtl: boolean;
@@ -24,52 +28,70 @@ const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 const HEX_GRADIENT = 'linear-gradient(160deg, #ff7184 0%, #da0812 48%, #7d070c 100%)';
 
 // Diagram geometry (desktop): a 1000x600 canvas. The centre hexagon sits at (500,300) and the
-// four stat badges sit on an orbit ring around it. The ring itself is the connector: it is
-// drawn clockwise as four arc segments, each one arriving at the next badge.
+// stat badges sit on an orbit ring around it. The ring itself is the connector: it is
+// drawn clockwise as one arc segment per badge, each one arriving at the next badge.
 const CANVAS = { width: 1000, height: 600 } as const;
 const CENTER = { x: 500, y: 300 } as const;
 const RING_RADIUS = 230;
-const RING_ANGLE = 38; // degrees above/below the horizontal axis
+const RING_ANGLE = 38; // degrees above/below the horizontal axis (the classic 4-badge layout)
 const NODE_HEX_RADIUS = 45;
 
 type Side = 'left' | 'right';
 type Anchor = { key: string; angle: number; side: Side; x: number; y: number };
 
-function makeAnchor(key: string, angle: number, side: Side): Anchor {
+// SVG angles run clockwise from the +x axis (y grows downwards). Angles are normalised to
+// [0, 360) so clockwise ordering is a plain numeric sort.
+function makeAnchor(key: string, rawAngle: number): Anchor {
+  const angle = ((rawAngle % 360) + 360) % 360;
   const rad = (angle * Math.PI) / 180;
+  const x = CENTER.x + RING_RADIUS * Math.cos(rad);
   return {
     key,
     angle,
-    side,
-    x: CENTER.x + RING_RADIUS * Math.cos(rad),
+    side: x >= CENTER.x ? 'right' : 'left',
+    x,
     y: CENTER.y + RING_RADIUS * Math.sin(rad),
   };
 }
 
-// SVG angles run clockwise from the +x axis (y grows downwards).
-const ANCHORS = {
-  topRight: makeAnchor('topRight', -RING_ANGLE, 'right'),
-  bottomRight: makeAnchor('bottomRight', RING_ANGLE, 'right'),
-  bottomLeft: makeAnchor('bottomLeft', 180 - RING_ANGLE, 'left'),
-  topLeft: makeAnchor('topLeft', 180 + RING_ANGLE, 'left'),
-};
-const CLOCKWISE: Anchor[] = [ANCHORS.topRight, ANCHORS.bottomRight, ANCHORS.bottomLeft, ANCHORS.topLeft];
+// Ring anchors for any number of badges. Exactly four keeps the original two-per-side look;
+// any other count is spread evenly around the ring, mirrored about the vertical axis so the
+// diagram stays balanced whatever the editor adds or removes.
+function makeAnchors(count: number): Anchor[] {
+  if (count === 4) {
+    return [
+      makeAnchor('topRight', -RING_ANGLE),
+      makeAnchor('bottomRight', RING_ANGLE),
+      makeAnchor('bottomLeft', 180 - RING_ANGLE),
+      makeAnchor('topLeft', 180 + RING_ANGLE),
+    ];
+  }
+  return Array.from({ length: count }, (_, index) =>
+    makeAnchor(`ring-${index}`, -90 + 180 / count + (360 * index) / count),
+  );
+}
 
-// Reading order follows the page direction: RTL starts at the top-right, LTR at the top-left.
-function readingOrder(isRtl: boolean): Anchor[] {
-  return isRtl
-    ? [ANCHORS.topRight, ANCHORS.topLeft, ANCHORS.bottomRight, ANCHORS.bottomLeft]
-    : [ANCHORS.topLeft, ANCHORS.topRight, ANCHORS.bottomLeft, ANCHORS.bottomRight];
+// Reading order follows the page direction: top rows first, then RTL reads right-to-left and
+// LTR left-to-right within a row.
+function readingOrder(anchors: Anchor[], isRtl: boolean): Anchor[] {
+  return [...anchors].sort((a, b) => {
+    // Anchors on the same row (within a pixel) are ordered by the writing direction.
+    if (Math.abs(a.y - b.y) > 1) return a.y - b.y;
+    return isRtl ? b.x - a.x : a.x - b.x;
+  });
 }
 
 // The ring is drawn clockwise starting from the first badge in reading order.
-function ringOrder(isRtl: boolean): Anchor[] {
-  const start = CLOCKWISE.indexOf(isRtl ? ANCHORS.topRight : ANCHORS.topLeft);
-  return CLOCKWISE.map((_, index) => CLOCKWISE[(start + index) % CLOCKWISE.length]);
+function ringOrder(anchors: Anchor[], start: Anchor | undefined): Anchor[] {
+  const clockwise = [...anchors].sort((a, b) => a.angle - b.angle);
+  const from = start ? clockwise.indexOf(start) : 0;
+  return clockwise.map((_, index) => clockwise[(from + index) % clockwise.length]);
 }
 
 function arcPath(from: Anchor, to: Anchor) {
-  return `M ${from.x} ${from.y} A ${RING_RADIUS} ${RING_RADIUS} 0 0 1 ${to.x} ${to.y}`;
+  const sweep = (((to.angle - from.angle) % 360) + 360) % 360;
+  const largeArc = sweep > 180 ? 1 : 0;
+  return `M ${from.x} ${from.y} A ${RING_RADIUS} ${RING_RADIUS} 0 ${largeArc} 1 ${to.x} ${to.y}`;
 }
 
 const FULL_RING_PATH = [
@@ -155,6 +177,7 @@ function StatNode({
   // from both the requested side and the page direction.
   const rowClass = hexOnLeft !== isRtl ? 'flex-row' : 'flex-row-reverse';
   const pillClass = hexOnLeft ? '-ml-9 pl-12 pr-6' : '-mr-9 pr-12 pl-6';
+  const Icon = resolveIcon(indicator.icon, indicatorIcons, index);
 
   return (
     <motion.div
@@ -185,7 +208,10 @@ function StatNode({
       <div
         className={`flex min-h-[58px] min-w-[170px] max-w-[230px] items-center justify-center rounded-full border border-primary-100 bg-white py-3 text-center shadow-[0_16px_38px_rgba(40,12,18,0.09)] transition-[box-shadow,border-color] duration-300 group-hover:border-primary-200 group-hover:shadow-[0_22px_48px_rgba(156,16,6,0.16)] ${pillClass}`}
       >
-        <span className="text-sm font-bold leading-snug text-dark-800 md:text-[15px]">{indicator.label}</span>
+        <span className="inline-flex items-center gap-2 text-sm font-bold leading-snug text-dark-800 md:text-[15px]">
+          <Icon className="h-4 w-4 shrink-0 text-primary-600" aria-hidden="true" />
+          {indicator.label}
+        </span>
       </div>
     </motion.div>
   );
@@ -251,18 +277,16 @@ export default function PioneerStatsHex({
   centerTitle,
   centerLabel,
   indicators,
-  source,
   unavailableLabel,
   formatNumber,
   isRtl,
 }: PioneerStatsHexProps) {
   const reduced = !!useReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.3 });
-  const reading = readingOrder(isRtl);
-  const ring = ringOrder(isRtl);
-  const nodes = indicators.slice(0, reading.length);
-  // Only the badges that actually exist take part in the ring animation.
-  const activeRing = ring.filter((anchor) => reading.indexOf(anchor) < nodes.length);
+  const nodes = indicators ?? [];
+  // One anchor per indicator, however many the editor has entered.
+  const reading = readingOrder(makeAnchors(nodes.length), isRtl);
+  const activeRing = ringOrder(reading, reading[0]);
 
   const headingVariants: Variants = {
     hidden: reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 },
@@ -311,8 +335,8 @@ export default function PioneerStatsHex({
               vectorEffect="non-scaling-stroke"
             />
 
-            {/* The ring drawn clockwise, one arc per badge */}
-            {activeRing.map((from, index) => {
+            {/* The ring drawn clockwise, one arc per badge (a lone badge has nowhere to go) */}
+            {activeRing.length > 1 && activeRing.map((from, index) => {
               const to = activeRing[(index + 1) % activeRing.length];
               return (
                 <motion.path
@@ -360,6 +384,7 @@ export default function PioneerStatsHex({
 
           {nodes.map((indicator, index) => {
             const anchor = reading[index];
+            if (!anchor) return null;
             // The hexagon of a right-hand badge faces the centre, i.e. it sits on the badge's left.
             const hexOnLeft = anchor.side === 'right';
             const anchorStyle =
@@ -371,7 +396,7 @@ export default function PioneerStatsHex({
 
             return (
               <div
-                key={`${indicator.label}-${anchor.key}`}
+                key={`${index}-${anchor.key}`}
                 className="absolute"
                 style={{ ...anchorStyle, top: `${(anchor.y / CANVAS.height) * 100}%`, transform: 'translateY(-50%)' }}
               >
@@ -398,7 +423,7 @@ export default function PioneerStatsHex({
           </div>
           <ol className="relative mx-auto max-w-[20rem] space-y-6 border-s-2 border-primary-200 ps-8">
             {nodes.map((indicator, index) => (
-              <li key={`${indicator.label}-mobile`} className="relative">
+              <li key={`${index}-mobile`} className="relative">
                 {/* A short curve that peels off the trunk and lands on the hexagon's centre line. */}
                 <svg
                   aria-hidden="true"
@@ -437,18 +462,6 @@ export default function PioneerStatsHex({
         </div>
       </div>
 
-      <motion.a
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        initial={reduced ? { opacity: 1 } : { opacity: 0 }}
-        animate={inView ? { opacity: 1 } : undefined}
-        transition={{ duration: reduced ? 0.01 : 0.6, delay: reduced ? 0 : 1.8 }}
-        className="mx-auto mt-10 flex w-fit items-center gap-1.5 text-xs font-semibold text-dark-500 underline decoration-primary-200 underline-offset-4 transition-colors hover:text-primary-700"
-      >
-        {source.label}
-        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      </motion.a>
     </div>
   );
 }

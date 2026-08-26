@@ -63,7 +63,8 @@ function App() {
         <Route path="/library/periodic-reports" element={<LibraryDocumentsPage collection="periodic-reports" />} />
         <Route path="/library/waqf-books" element={<LibraryDocumentsPage collection="waqf-books" />} />
         <Route path="/library/waqf-literature" element={<LibraryDocumentsPage collection="waqf-literature" />} />
-        <Route path="/library/yemeni-figures" element={<LibraryDocumentsPage collection="yemeni-figures" />} />
+        <Route path="/library/yemeni-figures" element={<LibraryCollectionPage collection="yemeni-figures" />} />
+        <Route path="/library/yemeni-figures/:slug" element={<LibraryTextPage type="yemeni-figures" />} />
         <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
         <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
         <Route path="/library/gallery" element={<LibraryGalleryPage />} />

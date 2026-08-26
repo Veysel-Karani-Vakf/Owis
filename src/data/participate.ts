@@ -14,23 +14,36 @@ export const participateRoutes = {
 export type ParticipatePageKey = 'shareIdeas' | 'complaintsSuggestions' | 'volunteer' | 'contact';
 
 export type ParticipateNavItem = {
-  key: ParticipatePageKey;
+  // The admin offers a select, but a stored value may still be anything, so
+  // consumers must treat this as a loose string and fall back gracefully.
+  key: ParticipatePageKey | string;
   label: string;
+  // May be empty when edited in the admin; derive it from `key` then.
   href: string;
 };
 
 export type ParticipateFieldType = 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'file';
 
+const FIELD_TYPES: readonly string[] = ['text', 'email', 'tel', 'textarea', 'select', 'file'];
+
+/** Coerces whatever the admin stored ("Text", "dropdown", "") to a supported widget. */
+export function normalizeFieldType(type: string | undefined | null): ParticipateFieldType {
+  const value = (type ?? '').trim().toLowerCase();
+  return (FIELD_TYPES.includes(value) ? value : 'text') as ParticipateFieldType;
+}
+
 export type ParticipateFormField = {
   id: string;
-  sourceName: string;
+  /** Key used in the submission payload; derived from `id` when missing. */
+  sourceName?: string;
   label: string;
   placeholder?: string;
-  type: ParticipateFieldType;
+  /** Any string from the admin; normalised with `normalizeFieldType` before use. */
+  type: ParticipateFieldType | string;
   required: boolean;
   options?: string[];
   rows?: number;
-  inputMode?: 'text' | 'email' | 'tel' | 'numeric';
+  inputMode?: 'text' | 'email' | 'tel' | 'numeric' | string;
   accept?: string;
 };
 
@@ -50,11 +63,13 @@ export type ParticipateFormContent = {
 };
 
 export type ParticipateContactLink = {
-  id: string;
+  /** Static defaults carry an id; admin-added cards do not. */
+  id?: string;
   label: string;
   description?: string;
   href: string;
-  kind: 'whatsapp' | 'social';
+  /** 'whatsapp' | 'social' from the admin select; anything else gets a generic icon. */
+  kind?: 'whatsapp' | 'social' | string;
 };
 
 export type ParticipatePageContent = {
@@ -65,6 +80,7 @@ export type ParticipatePageContent = {
   seo: {
     title: string;
     description: string;
+    canonical?: string;
   };
   hero: {
     title: string;
@@ -90,9 +106,10 @@ export type ParticipatePageContent = {
 };
 
 export type ParticipateLabels = {
+  /** Breadcrumb labels shared by every participate page. */
+  home: string;
+  participate: string;
   sectionTitle: string;
-  officialSource: string;
-  openOfficialSource: string;
   formNotice: string;
   submit: string;
   submitting: string;
@@ -101,7 +118,6 @@ export type ParticipateLabels = {
   step: string;
   requiredMessage: string;
   emailMessage: string;
-  integrationMissing: string;
   submitSuccess: string;
   submitError: string;
   selectedFiles: string;
@@ -121,7 +137,7 @@ export const participateSources = {
   contact: '/participate/contact',
 } as const;
 
-const routeByKey: Record<ParticipatePageKey, string> = {
+export const routeByKey: Record<ParticipatePageKey, string> = {
   shareIdeas: participateRoutes.shareIdeas,
   complaintsSuggestions: participateRoutes.complaintsSuggestions,
   volunteer: participateRoutes.volunteer,
@@ -490,7 +506,7 @@ const volunteerFields: ParticipateFormField[] = [
   },
   {
     id: 'job',
-    sourceName: 'text-700',
+    sourceName: 'job',
     label: 'الوظيفة*',
     placeholder: 'مهندس',
     type: 'text',
@@ -530,7 +546,7 @@ const volunteerFields: ParticipateFormField[] = [
   },
   {
     id: 'experience',
-    sourceName: 'text-700',
+    sourceName: 'experience',
     label: 'الخبرات*',
     placeholder: 'الخبرات',
     type: 'text',
@@ -538,7 +554,7 @@ const volunteerFields: ParticipateFormField[] = [
   },
   {
     id: 'volunteerField',
-    sourceName: 'text-702',
+    sourceName: 'volunteer-field',
     label: 'مجال التطوع*',
     placeholder: 'مجال التطوع',
     type: 'text',
@@ -546,7 +562,7 @@ const volunteerFields: ParticipateFormField[] = [
   },
   {
     id: 'desiredActivities',
-    sourceName: 'text-702',
+    sourceName: 'desired-activities',
     label: 'الأنشطة التطوعية التي ترغب بالتطوع فيها*',
     placeholder: 'الأنشطة التطوعية التي ترغب بالتطوع فيها',
     type: 'textarea',
@@ -605,11 +621,11 @@ const navLabels: Record<Locale, ParticipateNavItem[]> = {
 
 const labels: Record<Locale, ParticipateLabels> = {
   ar: {
+    home: 'الرئيسية',
+    participate: 'شاركنا',
     sectionTitle: 'أقسام شاركنا',
-    officialSource: 'المصدر الرسمي',
-    openOfficialSource: 'فتح المصدر الرسمي',
     formNotice:
-      'سيتم إرسال النموذج عند ربطه بخدمة استقبال فعلية عبر VITE_PARTICIPATE_FORM_ENDPOINT. لا يعرض الموقع نجاحًا وهميًا قبل تفعيل الربط.',
+      'تُرسل بياناتك مباشرة إلى فريق الوقف عبر هذا الموقع، وتُستخدم فقط للرد عليك ومتابعة طلبك، ولا تُنشر أو تُشارك مع أي جهة أخرى.',
     submit: 'إرسال',
     submitting: 'جار الإرسال',
     next: 'التالي',
@@ -617,19 +633,17 @@ const labels: Record<Locale, ParticipateLabels> = {
     step: 'خطوة',
     requiredMessage: 'هذا الحقل مطلوب.',
     emailMessage: 'يرجى إدخال بريد إلكتروني صحيح.',
-    integrationMissing:
-      'لم يتم تفعيل خدمة استقبال النماذج بعد. يرجى ضبط VITE_PARTICIPATE_FORM_ENDPOINT أو استخدام رابط المصدر الرسمي.',
     submitSuccess: 'تم إرسال النموذج عبر خدمة الاستقبال المفعلة.',
     submitError: 'تعذر إرسال النموذج حاليًا. يرجى المحاولة لاحقًا أو التواصل عبر الروابط الرسمية.',
     selectedFiles: 'الملفات المختارة',
     openLink: 'فتح الرابط',
   },
   en: {
+    home: 'Home',
+    participate: 'Participate',
     sectionTitle: 'Participate Sections',
-    officialSource: 'Official Source',
-    openOfficialSource: 'Open official source',
     formNotice:
-      'Forms are submitted only after a real endpoint is configured through VITE_PARTICIPATE_FORM_ENDPOINT. The site does not show a fake success state.',
+      'Your details are sent directly to the waqf team through this website. They are used only to reply to you and follow up on your request, and are never published or shared with third parties.',
     submit: 'Submit',
     submitting: 'Submitting',
     next: 'Next',
@@ -637,19 +651,17 @@ const labels: Record<Locale, ParticipateLabels> = {
     step: 'Step',
     requiredMessage: 'This field is required.',
     emailMessage: 'Please enter a valid email address.',
-    integrationMissing:
-      'The form receiving service is not active yet. Configure VITE_PARTICIPATE_FORM_ENDPOINT or use the official source link.',
     submitSuccess: 'The form was sent through the configured receiving service.',
     submitError: 'The form could not be sent now. Please try later or use the official contact links.',
     selectedFiles: 'Selected files',
     openLink: 'Open link',
   },
   tr: {
+    home: 'Ana Sayfa',
+    participate: 'Katıl',
     sectionTitle: 'Katılım Bölümleri',
-    officialSource: 'Resmi Kaynak',
-    openOfficialSource: 'Resmi kaynağı aç',
     formNotice:
-      'Formlar yalnızca VITE_PARTICIPATE_FORM_ENDPOINT ile gerçek bir uç nokta tanımlandığında gönderilir. Site sahte başarı durumu göstermez.',
+      'Bilgileriniz bu site üzerinden doğrudan vakıf ekibine iletilir; yalnızca size yanıt vermek ve talebinizi takip etmek için kullanılır, yayımlanmaz ve üçüncü taraflarla paylaşılmaz.',
     submit: 'Gönder',
     submitting: 'Gönderiliyor',
     next: 'Sonraki',
@@ -657,8 +669,6 @@ const labels: Record<Locale, ParticipateLabels> = {
     step: 'Adım',
     requiredMessage: 'Bu alan zorunludur.',
     emailMessage: 'Lütfen geçerli bir e-posta adresi girin.',
-    integrationMissing:
-      'Form alma servisi henüz etkin değil. VITE_PARTICIPATE_FORM_ENDPOINT değerini tanımlayın veya resmi kaynak bağlantısını kullanın.',
     submitSuccess: 'Form, tanımlı alma servisi üzerinden gönderildi.',
     submitError: 'Form şu anda gönderilemedi. Lütfen daha sonra tekrar deneyin veya resmi iletişim bağlantılarını kullanın.',
     selectedFiles: 'Seçilen dosyalar',
@@ -668,9 +678,13 @@ const labels: Record<Locale, ParticipateLabels> = {
 
 const localizedText = {
   ar: {
-    home: 'الرئيسية',
-    participate: 'شاركنا',
     heroAlt: 'صورة رسمية لقسم تطوع معنا في وقف أويس القرني',
+    volunteerSteps: {
+      basic: 'البيانات الأساسية',
+      residence: 'الجنسية والإقامة',
+      volunteering: 'الخبرات والتطوع',
+      contact: 'بيانات التواصل',
+    },
     pages: {
       shareIdeas: {
         title: 'شاركنا بأفكارك',
@@ -718,9 +732,13 @@ const localizedText = {
     },
   },
   en: {
-    home: 'Home',
-    participate: 'Participate',
     heroAlt: 'Official volunteer section image from Veysel Karani Waqf',
+    volunteerSteps: {
+      basic: 'Basic Details',
+      residence: 'Nationality and Residence',
+      volunteering: 'Experience and Volunteering',
+      contact: 'Contact Details',
+    },
     pages: {
       shareIdeas: {
         title: 'Share Your Ideas',
@@ -768,9 +786,13 @@ const localizedText = {
     },
   },
   tr: {
-    home: 'Ana Sayfa',
-    participate: 'Katıl',
     heroAlt: 'Veysel Karani Vakfı gönüllülük bölümü resmi görseli',
+    volunteerSteps: {
+      basic: 'Temel Bilgiler',
+      residence: 'Uyruk ve İkamet',
+      volunteering: 'Deneyim ve Gönüllülük',
+      contact: 'İletişim Bilgileri',
+    },
     pages: {
       shareIdeas: {
         title: 'Fikirlerinizi Paylaşın',
@@ -873,18 +895,20 @@ const socialLinks: ParticipateContactLink[] = [
   },
 ];
 
-function pageBreadcrumbs(locale: Locale, pageTitle: string): BreadcrumbItem[] {
-  const text = localizedText[locale];
-
+function pageBreadcrumbs(
+  crumbs: Pick<ParticipateLabels, 'home' | 'participate'>,
+  pageTitle: string,
+): BreadcrumbItem[] {
   return [
-    { label: text.home, href: '/' },
-    { label: text.participate, href: participateRoutes.shareIdeas },
+    { label: crumbs.home, href: '/' },
+    { label: crumbs.participate, href: participateRoutes.shareIdeas },
     { label: pageTitle },
   ];
 }
 
 function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageContent> {
   const text = localizedText[locale];
+  const crumbs = labels[locale];
   const share = text.pages.shareIdeas;
   const complaints = text.pages.complaintsSuggestions;
   const volunteer = text.pages.volunteer;
@@ -906,7 +930,7 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
         image: participateHeroImage,
         imageAlt: text.heroAlt,
       },
-      breadcrumbs: pageBreadcrumbs(locale, share.title),
+      breadcrumbs: pageBreadcrumbs(crumbs,share.title),
       intro: {
         eyebrow: share.eyebrow,
         title: share.introTitle,
@@ -942,7 +966,7 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
         image: participateHeroImage,
         imageAlt: text.heroAlt,
       },
-      breadcrumbs: pageBreadcrumbs(locale, complaints.title),
+      breadcrumbs: pageBreadcrumbs(crumbs,complaints.title),
       intro: {
         eyebrow: complaints.eyebrow,
         title: complaints.introTitle,
@@ -978,7 +1002,7 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
         image: participateHeroImage,
         imageAlt: text.heroAlt,
       },
-      breadcrumbs: pageBreadcrumbs(locale, volunteer.title),
+      breadcrumbs: pageBreadcrumbs(crumbs,volunteer.title),
       intro: {
         eyebrow: volunteer.eyebrow,
         title: volunteer.introTitle,
@@ -992,22 +1016,22 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
         groups: [
           {
             id: 'basic',
-            title: locale === 'ar' ? 'البيانات الأساسية' : locale === 'tr' ? 'Temel Bilgiler' : 'Basic Details',
+            title: text.volunteerSteps.basic,
             fieldIds: ['fullName', 'age', 'education', 'job'],
           },
           {
             id: 'residence',
-            title: locale === 'ar' ? 'الجنسية والإقامة' : locale === 'tr' ? 'Uyruk ve İkamet' : 'Nationality and Residence',
+            title: text.volunteerSteps.residence,
             fieldIds: ['nationality', 'gender', 'residenceCountry', 'city'],
           },
           {
             id: 'volunteering',
-            title: locale === 'ar' ? 'الخبرات والتطوع' : locale === 'tr' ? 'Deneyim ve Gönüllülük' : 'Experience and Volunteering',
+            title: text.volunteerSteps.volunteering,
             fieldIds: ['experience', 'volunteerField', 'desiredActivities'],
           },
           {
             id: 'contact',
-            title: locale === 'ar' ? 'بيانات التواصل' : locale === 'tr' ? 'İletişim Bilgileri' : 'Contact Details',
+            title: text.volunteerSteps.contact,
             fieldIds: ['mobile', 'whatsapp', 'email'],
           },
         ],
@@ -1028,7 +1052,7 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
         image: participateHeroImage,
         imageAlt: text.heroAlt,
       },
-      breadcrumbs: pageBreadcrumbs(locale, contact.title),
+      breadcrumbs: pageBreadcrumbs(crumbs,contact.title),
       intro: {
         eyebrow: contact.eyebrow,
         title: contact.introTitle,
@@ -1047,11 +1071,23 @@ function buildPages(locale: Locale): Record<ParticipatePageKey, ParticipatePageC
 }
 
 export function getParticipateContent(locale: Locale): ParticipateContent {
-  return cmsPageContent('participate', locale, {
+  const merged = cmsPageContent('participate', locale, {
     nav: navLabels[locale],
     labels: labels[locale],
     pages: buildPages(locale),
   });
+
+  // Breadcrumbs are not edited directly; they follow the (editable) crumb
+  // labels and each page's hero title, so rebuild them after the CMS merge.
+  const crumbs = { home: merged.labels.home, participate: merged.labels.participate };
+  const pages = Object.fromEntries(
+    Object.entries(merged.pages).map(([key, page]) => [
+      key,
+      { ...page, breadcrumbs: pageBreadcrumbs(crumbs, page.hero?.title ?? '') },
+    ]),
+  ) as Record<ParticipatePageKey, ParticipatePageContent>;
+
+  return { ...merged, nav: merged.nav ?? [], pages };
 }
 
 export function getParticipatePage(locale: Locale, key: ParticipatePageKey): ParticipatePageContent {

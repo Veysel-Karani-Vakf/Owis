@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, type Variants } from 'framer-motion';
-import { type LucideIcon } from 'lucide-react';
+import { Sparkles as EmptyIcon, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -87,7 +87,8 @@ export default function WaqfIdentityTabs({
   const sectionRef = useRef<HTMLElement>(null);
   const inViewRef = useRef(false);
 
-  const active = tabs[activeIndex] ?? tabs[0];
+  // Lists may be emptied from the dashboard; keep hooks order stable and bail out below.
+  const active: IdentityTab = tabs[activeIndex] ?? tabs[0] ?? { key: 'empty', title: '', icon: EmptyIcon };
   const ActiveIcon = active.icon;
   const rotating = !pinned && !shouldReduceMotion && !paused && autoRotateMs > 0;
 
@@ -174,7 +175,9 @@ export default function WaqfIdentityTabs({
     return () => window.clearInterval(id);
   }, [rotating, autoRotateMs, tabs.length, cycle]);
 
-  const pinnedHeight = pinned ? `calc(100vh + ${(tabs.length - 1) * stepVh}vh)` : undefined;
+  const pinnedHeight = pinned ? `calc(100vh + ${Math.max(tabs.length - 1, 0) * stepVh}vh)` : undefined;
+
+  if (tabs.length === 0) return null;
 
   return (
     <section ref={sectionRef} className="relative bg-white" style={{ height: pinnedHeight }}>

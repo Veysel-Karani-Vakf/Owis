@@ -53,6 +53,51 @@ export type AdminStrings = {
   view: string;
   jsonInvalid: string;
   connectionMissing: string;
+  // Dialogs and feedback
+  confirm: string;
+  typeToConfirm: string;
+  unsavedTitle: string;
+  unsavedBody: string;
+  leaveWithoutSaving: string;
+  stay: string;
+  saveAndLeave: string;
+  savedToast: string;
+  deletedToast: string;
+  undo: string;
+  deleteTitle: string;
+  deleteBody: string;
+  noChanges: string;
+  lastSaved: string;
+  fixErrors: string;
+  // Lists
+  publish: string;
+  unpublish: string;
+  openOnSite: string;
+  translations: string;
+  all: string;
+  clear: string;
+  items: string;
+  addFirst: string;
+  updatedAt: string;
+  // Navigation groups
+  navSitePages: string;
+  navRecords: string;
+  navLibrary: string;
+  navInbox: string;
+  navTools: string;
+  sitePages: string;
+  mediaLibrary: string;
+  restoreContent: string;
+  searchEverything: string;
+  searchHint: string;
+  noSearchResults: string;
+  editingLanguage: string;
+  copyFrom: string;
+  chooseFromLibrary: string;
+  moreSettings: string;
+  whereItAppears: string;
+  help: string;
+  noAccessHint: string;
   sections: Record<string, string>;
 };
 
@@ -108,6 +153,48 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     view: 'عرض',
     jsonInvalid: 'صيغة JSON غير صحيحة',
     connectionMissing: 'لم يتم ضبط الاتصال بقاعدة البيانات',
+    confirm: 'تأكيد',
+    typeToConfirm: 'اكتب "{word}" للتأكيد',
+    unsavedTitle: 'لديك تغييرات غير محفوظة',
+    unsavedBody: 'إذا غادرت الآن ستضيع التعديلات التي لم تحفظها.',
+    leaveWithoutSaving: 'مغادرة بدون حفظ',
+    stay: 'البقاء هنا',
+    saveAndLeave: 'حفظ ثم مغادرة',
+    savedToast: 'تم الحفظ — التغييرات ظاهرة الآن على الموقع',
+    deletedToast: 'تم الحذف',
+    undo: 'تراجع',
+    deleteTitle: 'حذف "{name}"؟',
+    deleteBody: 'سيُحذف نهائياً ولا يمكن استرجاعه. إن أردت إخفاءه مؤقتاً فألغِ النشر بدلاً من الحذف.',
+    noChanges: 'لا توجد تغييرات',
+    lastSaved: 'آخر حفظ',
+    fixErrors: 'أكمل الحقول المطلوبة أولاً',
+    publish: 'نشر',
+    unpublish: 'إلغاء النشر',
+    openOnSite: 'فتح على الموقع',
+    translations: 'الترجمات',
+    all: 'الكل',
+    clear: 'مسح',
+    items: 'عنصر',
+    addFirst: 'أضف أول عنصر',
+    updatedAt: 'آخر تعديل',
+    navSitePages: 'صفحات الموقع',
+    navRecords: 'المحتوى المتجدد',
+    navLibrary: 'المكتبة',
+    navInbox: 'الرسائل',
+    navTools: 'الأدوات',
+    sitePages: 'نصوص الصفحات وصورها',
+    mediaLibrary: 'مكتبة الوسائط',
+    restoreContent: 'استعادة المحتوى الأصلي',
+    searchEverything: 'ابحث عن أي شيء تريد تعديله…',
+    searchHint: 'اكتب اسم صفحة أو قسم أو عنوان مادة',
+    noSearchResults: 'لا نتائج',
+    editingLanguage: 'لغة التحرير',
+    copyFrom: 'نسخ من',
+    chooseFromLibrary: 'اختيار من المكتبة',
+    moreSettings: 'إعدادات إضافية',
+    whereItAppears: 'أين يظهر',
+    help: 'دليل الاستخدام',
+    noAccessHint: 'حسابك مسجّل لكنه ليس ضمن قائمة المشرفين. اطلب من المسؤول التقني إضافة هذا البريد إلى قائمة المشرفين.',
     sections: {
       overview: 'نظرة عامة',
       content: 'المحتوى',
@@ -117,14 +204,14 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       news: 'الأخبار',
       projects: 'المشاريع',
       programs: 'البرامج',
-      donations: 'فرص التبرع',
+      donations: 'فرص المساهمة',
       partners: 'الشركاء',
-      statistics: 'الإحصائيات',
+      statistics: 'الإحصائيات والأرقام',
       library_articles: 'المقالات والقصص',
-      library_documents: 'المستندات',
+      library_documents: 'المستندات (PDF)',
       gallery: 'معرض الصور',
       submissions: 'رسائل النماذج',
-      subscribers: 'المشتركون',
+      subscribers: 'المشتركون في النشرة',
       pages: 'صفحات الموقع',
     },
   },
@@ -179,6 +266,48 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     view: 'Görüntüle',
     jsonInvalid: 'Geçersiz JSON',
     connectionMissing: 'Veritabanı bağlantısı yapılandırılmamış',
+    confirm: 'Onayla',
+    typeToConfirm: 'Onaylamak için "{word}" yazın',
+    unsavedTitle: 'Kaydedilmemiş değişiklikler var',
+    unsavedBody: 'Şimdi ayrılırsanız kaydetmediğiniz düzenlemeler kaybolur.',
+    leaveWithoutSaving: 'Kaydetmeden ayrıl',
+    stay: 'Burada kal',
+    saveAndLeave: 'Kaydet ve ayrıl',
+    savedToast: 'Kaydedildi — değişiklikler sitede yayında',
+    deletedToast: 'Silindi',
+    undo: 'Geri al',
+    deleteTitle: '"{name}" silinsin mi?',
+    deleteBody: 'Kalıcı olarak silinir ve geri alınamaz. Geçici olarak gizlemek için silmek yerine yayından kaldırın.',
+    noChanges: 'Değişiklik yok',
+    lastSaved: 'Son kayıt',
+    fixErrors: 'Önce zorunlu alanları doldurun',
+    publish: 'Yayınla',
+    unpublish: 'Yayından kaldır',
+    openOnSite: 'Sitede aç',
+    translations: 'Çeviriler',
+    all: 'Tümü',
+    clear: 'Temizle',
+    items: 'öğe',
+    addFirst: 'İlk öğeyi ekle',
+    updatedAt: 'Son düzenleme',
+    navSitePages: 'Site sayfaları',
+    navRecords: 'Güncel içerik',
+    navLibrary: 'Kütüphane',
+    navInbox: 'Mesajlar',
+    navTools: 'Araçlar',
+    sitePages: 'Sayfa metinleri ve görselleri',
+    mediaLibrary: 'Medya kütüphanesi',
+    restoreContent: 'Özgün içeriği geri yükle',
+    searchEverything: 'Düzenlemek istediğiniz şeyi arayın…',
+    searchHint: 'Sayfa, bölüm veya kayıt başlığı yazın',
+    noSearchResults: 'Sonuç yok',
+    editingLanguage: 'Düzenleme dili',
+    copyFrom: 'Kopyala:',
+    chooseFromLibrary: 'Kütüphaneden seç',
+    moreSettings: 'Ek ayarlar',
+    whereItAppears: 'Nerede görünür',
+    help: 'Kullanım kılavuzu',
+    noAccessHint: 'Hesabınız kayıtlı ancak yönetici listesinde değil. Bu e-postanın yönetici listesine eklenmesi için teknik sorumluya başvurun.',
     sections: {
       overview: 'Genel bakış',
       content: 'İçerik',
@@ -190,12 +319,12 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       programs: 'Programlar',
       donations: 'Bağış fırsatları',
       partners: 'Ortaklar',
-      statistics: 'İstatistikler',
+      statistics: 'İstatistikler ve rakamlar',
       library_articles: 'Makale ve hikayeler',
-      library_documents: 'Belgeler',
+      library_documents: 'Belgeler (PDF)',
       gallery: 'Galeri',
       submissions: 'Form mesajları',
-      subscribers: 'Aboneler',
+      subscribers: 'Bülten aboneleri',
       pages: 'Site sayfaları',
     },
   },
@@ -250,6 +379,48 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     view: 'View',
     jsonInvalid: 'Invalid JSON',
     connectionMissing: 'Database connection is not configured',
+    confirm: 'Confirm',
+    typeToConfirm: 'Type "{word}" to confirm',
+    unsavedTitle: 'You have unsaved changes',
+    unsavedBody: 'If you leave now, the edits you have not saved will be lost.',
+    leaveWithoutSaving: 'Leave without saving',
+    stay: 'Stay here',
+    saveAndLeave: 'Save and leave',
+    savedToast: 'Saved — the changes are live on the site',
+    deletedToast: 'Deleted',
+    undo: 'Undo',
+    deleteTitle: 'Delete "{name}"?',
+    deleteBody: 'It will be removed permanently and cannot be recovered. To hide it temporarily, unpublish it instead.',
+    noChanges: 'No changes',
+    lastSaved: 'Last saved',
+    fixErrors: 'Fill in the required fields first',
+    publish: 'Publish',
+    unpublish: 'Unpublish',
+    openOnSite: 'Open on site',
+    translations: 'Translations',
+    all: 'All',
+    clear: 'Clear',
+    items: 'items',
+    addFirst: 'Add the first item',
+    updatedAt: 'Last edited',
+    navSitePages: 'Site pages',
+    navRecords: 'Content',
+    navLibrary: 'Library',
+    navInbox: 'Inbox',
+    navTools: 'Tools',
+    sitePages: 'Page texts & images',
+    mediaLibrary: 'Media library',
+    restoreContent: 'Restore original content',
+    searchEverything: 'Search for anything you want to change…',
+    searchHint: 'Type a page, section or item title',
+    noSearchResults: 'No results',
+    editingLanguage: 'Editing language',
+    copyFrom: 'Copy from',
+    chooseFromLibrary: 'Choose from library',
+    moreSettings: 'More settings',
+    whereItAppears: 'Where it appears',
+    help: 'User guide',
+    noAccessHint: 'Your account exists but is not on the administrators list. Ask the technical administrator to add this email to it.',
     sections: {
       overview: 'Overview',
       content: 'Content',
@@ -259,14 +430,14 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       news: 'News',
       projects: 'Projects',
       programs: 'Programs',
-      donations: 'Donations',
+      donations: 'Donation opportunities',
       partners: 'Partners',
-      statistics: 'Statistics',
+      statistics: 'Statistics & figures',
       library_articles: 'Articles & stories',
-      library_documents: 'Documents',
+      library_documents: 'Documents (PDF)',
       gallery: 'Gallery',
       submissions: 'Form submissions',
-      subscribers: 'Subscribers',
+      subscribers: 'Newsletter subscribers',
       pages: 'Site pages',
     },
   },

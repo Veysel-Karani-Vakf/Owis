@@ -12,6 +12,11 @@ import { Link } from 'react-router-dom';
 import { type Program } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 
+/** Stable key for a card, whether it came from code (has id) or the dashboard (no id). */
+function programKey(program: Program, index: number) {
+  return program.id ?? program.url ?? String(index);
+}
+
 function smoothStep(value: number, start: number, end: number) {
   if (end <= start) return value >= end ? 1 : 0;
 
@@ -32,7 +37,7 @@ function ProgramActions({
 
   return (
     <Link
-      to={program.url}
+      to={program.url || '/'}
       className="inline-flex h-12 items-center justify-center gap-3 rounded-full bg-primary-500 px-6 text-sm font-black text-white shadow-xl shadow-dark-950/25 transition-all hover:bg-primary-600 focus-visible:outline-white"
     >
       {label}
@@ -56,7 +61,7 @@ function ProgramCardContent({
     <>
       <img
         src={program.image}
-        alt={program.title}
+        alt={program.imageAlt || program.title}
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
         onError={(e) => {
@@ -137,7 +142,7 @@ function StackedProgramCard({
 
   return (
     <motion.article
-      data-program-card={program.id}
+      data-program-card={programKey(program, index)}
       style={{ y, scale, zIndex: index + 1 }}
       className="absolute inset-0 origin-center overflow-hidden bg-dark-950 will-change-transform"
     >
@@ -164,7 +169,7 @@ function StaticProgramCard({
 }) {
   return (
     <article
-      data-program-card={program.id}
+      data-program-card={programKey(program, index)}
       className="relative min-h-[24rem] overflow-hidden rounded-[1.5rem] border border-white/12 bg-dark-950 shadow-xl shadow-dark-950/15 md:min-h-[26rem]"
     >
       <ProgramCardContent
@@ -218,7 +223,7 @@ export default function Programs() {
   const stackRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
   const programsContent = content.programs;
-  const programs = programsContent.items;
+  const programs = programsContent.items ?? [];
   const actionLabel = t('common.learnMore');
   const { scrollYProgress } = useScroll({
     target: stackRef,
@@ -230,6 +235,9 @@ export default function Programs() {
     mass: 0.82,
   });
   const cardProgress = useTransform(smoothProgress, [0, 0.86, 1], [0, 1, 1]);
+
+  // The editor may empty the list; hide the section rather than pin an empty stage.
+  if (programs.length === 0) return null;
 
   if (shouldReduceMotion) {
     return (
@@ -247,7 +255,7 @@ export default function Programs() {
           <div className="space-y-6 md:space-y-8">
             {programs.map((program, index) => (
               <StaticProgramCard
-                key={program.id}
+                key={programKey(program, index)}
                 program={program}
                 index={index}
                 actionLabel={actionLabel}
@@ -275,7 +283,7 @@ export default function Programs() {
         <div className="space-y-6 md:hidden">
           {programs.map((program, index) => (
             <motion.div
-              key={program.id}
+              key={programKey(program, index)}
               initial={{ opacity: 0, y: 44 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.25 }}
@@ -307,7 +315,7 @@ export default function Programs() {
             <div className="relative h-full overflow-hidden rounded-[1.75rem] border-[10px] border-dark-950/25 bg-dark-950 shadow-2xl shadow-dark-950/25 md:rounded-[2.1rem]">
               {programs.map((program, index) => (
                 <StackedProgramCard
-                  key={program.id}
+                  key={programKey(program, index)}
                   program={program}
                   index={index}
                   total={programs.length}
