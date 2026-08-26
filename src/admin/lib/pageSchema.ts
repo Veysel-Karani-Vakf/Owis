@@ -650,7 +650,6 @@ export const SITE_PAGES: SitePageDef[] = [
         label: L('الرؤية والرسالة والقيم', 'Vizyon, misyon, değerler', 'Vision, mission, values'),
         icon: Compass,
         fields: [
-          { path: 'identity.ctaLabel', label: L('نص الزر', 'Buton metni', 'CTA label'), type: 'text' },
           { path: 'identity.visionTitle', label: L('عنوان الرؤية', 'Vizyon başlığı', 'Vision title'), type: 'text' },
           { path: 'identity.vision', label: L('الرؤية', 'Vizyon', 'Vision'), type: 'textarea' },
           { path: 'identity.missionTitle', label: L('عنوان الرسالة', 'Misyon başlığı', 'Mission title'), type: 'text' },

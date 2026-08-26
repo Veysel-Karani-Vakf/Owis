@@ -1,8 +1,10 @@
 import { cmsNews, cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 import type { BreadcrumbItem } from '@/data/about';
+import { archivedNewsArticles } from './newsArchive.generated';
 
-type LocalizedString = Record<Locale, string>;
+type LocalizedString = Partial<Record<Locale, string>> & { ar: string };
+type LocalizedParagraphs = Partial<Record<Locale, string[]>> & { ar: string[] };
 
 export type NewsGalleryImage = {
   id: string;
@@ -26,7 +28,7 @@ export type NewsArticle = {
   category: LocalizedString;
   title: LocalizedString;
   excerpt: LocalizedString;
-  content: Record<Locale, string[]>;
+  content: LocalizedParagraphs;
   image: string;
   imageAlt: LocalizedString;
   gallery: NewsGalleryImage[];
@@ -198,7 +200,7 @@ export const newsLabels: Record<Locale, NewsLabels> = {
   },
 };
 
-export const newsArticles = [
+const curatedNewsArticles = [
   {
     "id": "24011",
     "slug": "shura-member-condolences-sheikh-hamad",
@@ -1356,6 +1358,16 @@ export const newsArticles = [
   }
 ] as const satisfies readonly NewsArticle[];
 
+/**
+ * The newest stories retain their reviewed English/Turkish summaries and
+ * hand-picked galleries. The generated archive contains every older public
+ * WordPress story and is refreshed by `npm run import:news`.
+ */
+export const newsArticles: NewsArticle[] = [
+  ...curatedNewsArticles,
+  ...archivedNewsArticles,
+].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+
 const dateLocales: Record<Locale, string> = {
   ar: 'ar',
   en: 'en-US',
@@ -1364,6 +1376,14 @@ const dateLocales: Record<Locale, string> = {
 
 function normalize(value: string) {
   return value.toLowerCase().normalize('NFKD');
+}
+
+function localizedText(value: LocalizedString, locale: Locale) {
+  return value[locale]?.trim() || value.ar;
+}
+
+function localizedParagraphs(value: LocalizedParagraphs, locale: Locale) {
+  return value[locale]?.length ? value[locale] : value.ar;
 }
 
 function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArticle {
@@ -1376,19 +1396,19 @@ function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArt
     publishedAt: article.publishedAt,
     year: article.year,
     sourceLanguage: article.sourceLanguage,
-    category: article.category[locale],
-    title: article.title[locale],
-    excerpt: article.excerpt[locale],
-    content: article.content[locale],
+    category: localizedText(article.category, locale),
+    title: localizedText(article.title, locale),
+    excerpt: localizedText(article.excerpt, locale),
+    content: localizedParagraphs(article.content, locale),
     image: article.image,
-    imageAlt: article.imageAlt[locale],
+    imageAlt: localizedText(article.imageAlt, locale),
     gallery: article.gallery.map((image) => ({
       id: image.id,
       image: image.image,
       thumbnail: image.thumbnail,
       sourceUrl: image.sourceUrl,
-      title: image.title[locale],
-      imageAlt: image.imageAlt[locale],
+      title: localizedText(image.title, locale),
+      imageAlt: localizedText(image.imageAlt, locale),
       width: image.width,
       height: image.height,
     })),

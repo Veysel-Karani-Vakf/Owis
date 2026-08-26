@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowDown, ExternalLink, Radio } from 'lucide-react';
+import { ArrowDown, Clapperboard, MessagesSquare, Mic, PenLine, Radio, Sparkles, type LucideIcon } from 'lucide-react';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Program } from '@/data/programs';
@@ -11,12 +11,18 @@ type AwarenessHeroProps = {
     eyebrow: string;
     heroNote: string;
     exploreCta: string;
-    officialSource: string;
+    onAir: string;
   };
   initiativesAnchor: string;
 };
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
+const productIcons: Record<string, LucideIcon> = {
+  podcast: Mic,
+  visuals: Clapperboard,
+  diwaniya: MessagesSquare,
+  blog: PenLine,
+};
 
 function PulseRings({ reduced }: { reduced: boolean }) {
   const rings = [0, 1, 2];
@@ -66,10 +72,34 @@ function PulseRings({ reduced }: { reduced: boolean }) {
   );
 }
 
+/** Radio-style equalizer bars that keep breathing under the platform logo. */
+function Equalizer({ reduced }: { reduced: boolean }) {
+  const bars = [0.45, 0.85, 0.6, 1, 0.5, 0.75, 0.35, 0.9, 0.55];
+
+  return (
+    <div aria-hidden="true" className="flex h-8 items-end justify-center gap-1.5" dir="ltr">
+      {bars.map((peak, index) => (
+        <motion.span
+          key={index}
+          initial={{ scaleY: 0.3 }}
+          animate={reduced ? { scaleY: peak } : { scaleY: [0.3, peak, 0.4, peak * 0.8, 0.3] }}
+          transition={
+            reduced
+              ? { duration: 0.01 }
+              : { duration: 1.6 + (index % 3) * 0.4, repeat: Infinity, ease: 'easeInOut', delay: index * 0.12 }
+          }
+          className="w-1.5 origin-bottom rounded-full bg-gradient-to-t from-primary-700 to-primary-400"
+          style={{ height: `${peak * 100}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function AwarenessHero({ program, breadcrumbs, labels, initiativesAnchor }: AwarenessHeroProps) {
   const reduced = !!useReducedMotion();
   const duration = reduced ? 0.01 : 0.7;
-  const badges = program.initiatives ?? [];
+  const products = program.mediaProducts ?? [];
 
   const scrollToInitiatives = () => {
     const el = document.getElementById(initiativesAnchor);
@@ -88,7 +118,7 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
       />
       <PulseRings reduced={reduced} />
 
-      <div className="relative mx-auto grid w-full max-w-7xl gap-12 px-4 pb-16 md:px-8 md:pb-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-8">
+      <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-4 pb-16 md:px-8 md:pb-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-8">
         <div className="text-start">
           <motion.div
             initial={{ opacity: 0, y: reduced ? 0 : 16 }}
@@ -129,10 +159,36 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
             {program.summary}
           </motion.p>
 
+          {products.length > 0 && (
+            <motion.ul
+              initial={{ opacity: 0, y: reduced ? 0 : 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration, delay: reduced ? 0 : 0.34, ease: heroEase }}
+              className="mt-8 flex flex-wrap items-center gap-2.5"
+            >
+              {products.map((product, index) => {
+                const Icon = productIcons[product.id] ?? Sparkles;
+
+                return (
+                  <motion.li
+                    key={product.id}
+                    initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration, delay: reduced ? 0 : 0.38 + index * 0.08, ease: heroEase }}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-sm font-bold text-white/80 backdrop-blur transition-colors hover:border-primary-400/60 hover:text-white"
+                  >
+                    <Icon className="h-4 w-4 text-primary-400" aria-hidden="true" />
+                    {product.title}
+                  </motion.li>
+                );
+              })}
+            </motion.ul>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: reduced ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration, delay: reduced ? 0 : 0.36, ease: heroEase }}
+            transition={{ duration, delay: reduced ? 0 : 0.46, ease: heroEase }}
             className="mt-9 flex flex-wrap items-center gap-3"
           >
             <button
@@ -143,21 +199,12 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
               {labels.exploreCta}
               <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" aria-hidden="true" />
             </button>
-            <a
-              href={program.officialSourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-            >
-              {labels.officialSource}
-              <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            </a>
           </motion.div>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration, delay: reduced ? 0 : 0.5, ease: heroEase }}
+            transition={{ duration, delay: reduced ? 0 : 0.56, ease: heroEase }}
             className="mt-8 flex max-w-xl items-start gap-3 text-sm leading-relaxed text-white/55"
           >
             <Radio className="mt-0.5 h-4 w-4 shrink-0 text-primary-400" aria-hidden="true" />
@@ -165,61 +212,53 @@ export default function AwarenessHero({ program, breadcrumbs, labels, initiative
           </motion.p>
         </div>
 
-        {badges.length > 0 && (
-          <div className="relative mx-auto flex w-full max-w-md items-center justify-center lg:max-w-none lg:justify-end">
-            <div className="relative grid w-full grid-cols-2 gap-4 sm:gap-5 lg:max-w-[30rem]">
-              {badges.slice(0, 2).map((initiative, index) => (
-                <motion.figure
-                  key={initiative.title}
-                  initial={{ opacity: 0, y: reduced ? 0 : 36, rotate: 0 }}
-                  animate={{
-                    opacity: 1,
-                    y: reduced ? 0 : [0, index === 0 ? -10 : 8, 0],
-                    rotate: reduced ? 0 : index === 0 ? -3 : 3,
-                  }}
-                  transition={{
-                    opacity: {
-                      duration,
-                      delay: reduced ? 0 : 0.3 + index * 0.14,
-                      ease: heroEase,
-                    },
-                    rotate: {
-                      duration,
-                      delay: reduced ? 0 : 0.3 + index * 0.14,
-                      ease: heroEase,
-                    },
-                    y: reduced
-                      ? { duration: 0.01 }
-                      : {
-                          duration: 7 + index,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          delay: 0.9 + index * 0.6,
-                        },
-                  }}
-                  className={`relative overflow-hidden rounded-[28px] bg-white p-3 text-center shadow-[0_30px_70px_rgba(0,0,0,0.45)] ring-1 ring-white/30 ${
-                    index === 1 ? 'mt-10 sm:mt-14' : ''
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(218,8,18,0.08),transparent_55%)]"
-                  />
-                  <img
-                    src={initiative.image}
-                    alt={initiative.imageAlt}
-                    width={1080}
-                    height={1080}
-                    className="aspect-square w-full rounded-[20px] object-cover"
-                  />
-                  <figcaption className="px-2 pb-2 pt-1 text-xs font-bold text-dark-700 sm:text-sm">
-                    {initiative.title}
-                  </figcaption>
-                </motion.figure>
-              ))}
+        <div className="relative mx-auto flex w-full max-w-sm items-center justify-center lg:max-w-none lg:justify-end">
+          <motion.figure
+            initial={{ opacity: 0, y: reduced ? 0 : 36, rotate: 0 }}
+            animate={{
+              opacity: 1,
+              y: reduced ? 0 : [0, -10, 0],
+              rotate: reduced ? 0 : -2,
+            }}
+            transition={{
+              opacity: { duration, delay: reduced ? 0 : 0.3, ease: heroEase },
+              rotate: { duration, delay: reduced ? 0 : 0.3, ease: heroEase },
+              y: reduced
+                ? { duration: 0.01 }
+                : { duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 },
+            }}
+            className="relative w-full max-w-sm overflow-hidden rounded-[32px] bg-white p-4 text-center shadow-[0_30px_70px_rgba(0,0,0,0.45)] ring-1 ring-white/30"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(218,8,18,0.08),transparent_55%)]"
+            />
+            <div className="flex items-center justify-between px-2 pt-1" dir="ltr">
+              <span aria-hidden="true" className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-primary-600/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-dark-200" />
+                <span className="h-2.5 w-2.5 rounded-full bg-dark-200" />
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                </span>
+                {labels.onAir}
+              </span>
             </div>
-          </div>
-        )}
+            <img
+              src={program.heroImage}
+              alt={program.heroImageAlt}
+              width={1080}
+              height={1080}
+              className="mt-2 aspect-square w-full rounded-[22px] object-cover"
+            />
+            <figcaption className="px-2 pb-3">
+              <Equalizer reduced={reduced} />
+            </figcaption>
+          </motion.figure>
+        </div>
       </div>
     </section>
   );

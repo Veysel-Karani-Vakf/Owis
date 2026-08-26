@@ -108,6 +108,8 @@ export function cmsPrograms(locale: Locale, fallback: Program[]): Program[] {
       // No dashboard columns yet: these stay with the static definition.
       contactPhone: base?.contactPhone,
       volunteer: base?.volunteer,
+      mediaProducts: base?.mediaProducts,
+      spotlight: base?.spotlight,
       seo: localizedObject(row.seo, locale, base?.seo),
       cta: localizedObject(row.cta, locale, base?.cta),
       mediaNote: loc(row.media_note, locale, base?.mediaNote ?? ''),

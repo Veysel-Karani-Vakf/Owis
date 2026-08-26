@@ -64,7 +64,6 @@ export type WaqfPageContent = {
     items: string[];
   };
   identity: {
-    ctaLabel: string;
     valuesTitle: string;
     values: string[];
     missionTitle: string;
@@ -738,7 +737,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'اكتشف المزيد',
         valuesTitle: 'قيمنا',
         values: ['المبادرة', 'الطموح', 'الشراكة', 'الشفافية', 'المؤسسية', 'الاستدامة'],
         missionTitle: 'رسالتنا',
@@ -897,7 +895,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'Explore More',
         valuesTitle: 'Our Values',
         values: ['Initiative', 'Ambition', 'Partnership', 'Transparency', 'Institutionalism', 'Sustainability'],
         missionTitle: 'Our Mission',
@@ -1036,7 +1033,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'Daha Fazla Keşfet',
         valuesTitle: 'Değerlerimiz',
         values: ['Girişim', 'Hırs', 'Ortaklık', 'Şeffaflık', 'Kurumsallık', 'Sürdürülebilirlik'],
         missionTitle: 'Misyonumuz',

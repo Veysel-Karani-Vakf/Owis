@@ -15,7 +15,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import AwarenessHero from '@/components/programs/AwarenessHero';
-import AwarenessInitiatives from '@/components/programs/AwarenessInitiatives';
+import AwarenessMedia from '@/components/programs/AwarenessMedia';
+import AwarenessSpotlight from '@/components/programs/AwarenessSpotlight';
 import AwarenessThemes from '@/components/programs/AwarenessThemes';
 import CapacityCities from '@/components/programs/CapacityCities';
 import CapacityForum from '@/components/programs/CapacityForum';
@@ -23,8 +24,12 @@ import CapacityOverview from '@/components/programs/CapacityOverview';
 import CapacityPhaseStory from '@/components/programs/CapacityPhaseStory';
 import CapacityRecommendations from '@/components/programs/CapacityRecommendations';
 import InstitutionalAudiences from '@/components/programs/InstitutionalAudiences';
+import InstitutionalHeroNew from '@/components/programs/InstitutionalHeroNew';
 import InstitutionalManifesto from '@/components/programs/InstitutionalManifesto';
 import InstitutionalMap from '@/components/programs/InstitutionalMap';
+import InstitutionalPillarsNew from '@/components/programs/InstitutionalPillarsNew';
+import InstitutionalSegmentsNew from '@/components/programs/InstitutionalSegmentsNew';
+import InstitutionalImpactSection from '@/components/programs/InstitutionalImpactSection';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneerGoals from '@/components/programs/PioneerGoals';
@@ -32,6 +37,7 @@ import PioneerHighlightsMarquee from '@/components/programs/PioneerHighlightsMar
 import PioneerJourney from '@/components/programs/PioneerJourney';
 import PioneerOverview from '@/components/programs/PioneerOverview';
 import PioneerPillars from '@/components/programs/PioneerPillars';
+import PioneerStatsHex from '@/components/programs/PioneerStatsHex';
 import PioneerVideoCarousel from '@/components/programs/PioneerVideoCarousel';
 import VolunteerFields from '@/components/programs/VolunteerFields';
 import VolunteerGoals from '@/components/programs/VolunteerGoals';
@@ -174,6 +180,32 @@ function StatisticsSection({
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
+  const { content, t, formatNumber, isRtl } = useI18n();
+
+  // Yemen Pioneers mirrors the verified indicators shown on the home page (CMS-aware), laid
+  // out as a hexagon summary diagram instead of the plain card grid.
+  if (program.slug === 'yemen-pioneers') {
+    const pioneers = content.yemenPioneers;
+    return (
+      <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <PioneerStatsHex
+            eyebrow={labels.pioneerStatsEyebrow}
+            title={labels.pioneerStatsTitle}
+            description={labels.pioneerStatsDescription}
+            centerTitle={pioneers.title}
+            centerLabel={labels.pioneerStatsCenter}
+            indicators={pioneers.indicators}
+            source={pioneers.statisticsSource}
+            unavailableLabel={t('common.unavailable')}
+            formatNumber={formatNumber}
+            isRtl={isRtl}
+          />
+        </div>
+      </section>
+    );
+  }
+
   if (!program.statistics?.length) {
     return program.mediaNote ? (
       <section className="bg-[#faf8f8] py-12 md:py-16">
@@ -727,40 +759,30 @@ function InstitutionalShowcase({
 
   return (
     <>
-      <section className="overflow-hidden bg-white py-20 md:py-28">
-        <InstitutionalManifesto program={program} labels={labels} />
-      </section>
+      {/* New Hero Section */}
+      <InstitutionalHeroNew program={program} />
 
+      {/* Focus Areas / Core Pillars */}
       {areas.length > 0 && (
-        <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
-          <InstitutionalMap
-            eyebrow={labels.focusAreas}
-            title={labels.focusAreas}
-            description={labels.focusAreasDescription}
-            areaLabel={labels.areaLabel}
-            hubTitle={program.title}
-            hubSubtitle={intro?.title}
-            items={areas}
-          />
+        <section className="overflow-hidden">
+          <InstitutionalPillarsNew items={areas} section={intro} />
         </section>
       )}
 
+      {/* Statistics Section */}
+      {program.statistics?.length > 0 && (
+        <InstitutionalImpactSection statistics={program.statistics} />
+      )}
+
+      {/* Target Audiences */}
       {audiences.length > 0 && (
-        <section className="bg-white py-16 md:py-24">
-          <InstitutionalAudiences
-            eyebrow={labels.audiences}
-            title={labels.audiences}
-            description={labels.audiencesDescription}
-            audiences={audiences}
-            areas={areas}
-            image={program.heroImage}
-            donateLabel={labels.donate}
-          />
+        <section className="overflow-hidden">
+          <InstitutionalSegmentsNew audiences={audiences} />
         </section>
       )}
 
       {program.mediaNote && (
-        <section className="bg-[#faf8f8] py-10 md:py-12">
+        <section className="bg-white py-10 md:py-12">
           <div className="mx-auto max-w-4xl px-4 md:px-8">
             <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
               <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
@@ -818,7 +840,7 @@ function VolunteerShowcase({
   );
 }
 
-const awarenessInitiativesAnchor = 'awareness-initiatives';
+const awarenessMediaAnchor = 'awareness-media';
 
 function AwarenessShowcase({
   program,
@@ -828,7 +850,7 @@ function AwarenessShowcase({
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
   const themes = program.themes ?? [];
-  const initiatives = program.initiatives ?? [];
+  const mediaProducts = program.mediaProducts ?? [];
 
   return (
     <>
@@ -839,22 +861,26 @@ function AwarenessShowcase({
             title={labels.awarenessThemes}
             description={labels.awarenessThemesDescription}
             themeLabel={labels.themeLabel}
-            hubTitle={program.title}
+            hubTitle={labels.awarenessEyebrow}
             themes={themes}
           />
         </section>
       )}
 
-      {initiatives.length > 0 && (
-        <section id={awarenessInitiativesAnchor} className="scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
-          <AwarenessInitiatives
+      {mediaProducts.length > 0 && (
+        <section id={awarenessMediaAnchor} className="scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          <AwarenessMedia
             eyebrow={labels.awarenessInitiativesEyebrow}
             title={labels.awarenessInitiatives}
             description={labels.awarenessInitiativesDescription}
-            initiatives={initiatives}
-            volunteerRoute={participateRoutes.volunteer}
-            labels={labels}
+            products={mediaProducts}
           />
+        </section>
+      )}
+
+      {program.spotlight && (
+        <section className="overflow-hidden bg-white py-16 md:py-24">
+          <AwarenessSpotlight spotlight={program.spotlight} />
         </section>
       )}
 
@@ -944,9 +970,9 @@ export default function ProgramPage() {
               eyebrow: page.labels.awarenessEyebrow,
               heroNote: page.labels.awarenessHeroNote,
               exploreCta: page.labels.exploreInitiatives,
-              officialSource: page.labels.officialSource,
+              onAir: page.labels.onAirLabel,
             }}
-            initiativesAnchor={awarenessInitiativesAnchor}
+            initiativesAnchor={awarenessMediaAnchor}
           />
         ) : (
           <PageHero

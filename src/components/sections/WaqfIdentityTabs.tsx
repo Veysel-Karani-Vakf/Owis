@@ -1,7 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, type Variants } from 'framer-motion';
-import { ArrowUpRight, type LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useI18n } from '@/i18n/useI18n';
 
 export type IdentityTab = {
@@ -11,7 +10,6 @@ export type IdentityTab = {
   body?: string;
   bullets?: string[];
   chips?: string[];
-  href: string;
 };
 
 type WaqfIdentityTabsProps = {
@@ -19,7 +17,6 @@ type WaqfIdentityTabsProps = {
   title: string;
   description: string;
   tabs: IdentityTab[];
-  ctaLabel: string;
   ariaLabel: string;
   /** Auto-rotate interval used only when the section is NOT scroll-pinned (mobile / reduced motion). 0 disables. */
   autoRotateMs?: number;
@@ -74,7 +71,6 @@ export default function WaqfIdentityTabs({
   title,
   description,
   tabs,
-  ctaLabel,
   ariaLabel,
   autoRotateMs = 7000,
   stepVh = 70,
@@ -383,16 +379,6 @@ export default function WaqfIdentityTabs({
                       ))}
                     </motion.ul>
                   )}
-                </div>
-
-                <div className="mt-auto pt-6">
-                  <Link
-                    to={active.href}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-800 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-700"
-                  >
-                    {ctaLabel}
-                    <ArrowUpRight className={`h-4 w-4 ${isRtl ? '-scale-x-100' : ''}`} />
-                  </Link>
                 </div>
               </motion.div>
             </AnimatePresence>

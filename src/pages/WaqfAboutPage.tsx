@@ -21,7 +21,7 @@ import ScrollStack from '@/components/effects/ScrollStack';
 import ParticipationCTA from '@/components/sections/ParticipationCTA';
 import WaqfIdentityTabs, { type IdentityTab } from '@/components/sections/WaqfIdentityTabs';
 import WaqfMethodologyTimeline from '@/components/sections/WaqfMethodologyTimeline';
-import { aboutRoutes, getAboutContent } from '@/data/about';
+import { getAboutContent } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
 import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
@@ -68,28 +68,24 @@ export default function WaqfAboutPage() {
       title: page.identity.visionTitle,
       icon: Eye,
       body: page.identity.vision,
-      href: '/projects',
     },
     {
       key: 'mission',
       title: page.identity.missionTitle,
       icon: Target,
       body: page.identity.mission,
-      href: '/participate',
     },
     {
       key: 'goals',
       title: page.goals.title,
       icon: Landmark,
       bullets: page.goals.items,
-      href: '/participate',
     },
     {
       key: 'values',
       title: page.identity.valuesTitle,
       icon: Gem,
       chips: page.identity.values,
-      href: aboutRoutes.governance,
     },
   ];
   const cycleStepLabels = page.cycle.phases.map((phase) => {
@@ -296,7 +292,6 @@ export default function WaqfAboutPage() {
           title={page.goals.title}
           description={page.goals.description}
           tabs={identityTabs}
-          ctaLabel={page.identity.ctaLabel}
           ariaLabel={t('accessibility.aboutTabs')}
         />
 
@@ -406,11 +401,11 @@ export default function WaqfAboutPage() {
                     <div className="waqf-cycle-card-grid">
                       <div className="waqf-cycle-stage-side">
                         <div
-                          className="waqf-cycle-reveal flex items-center gap-4"
+                          className="waqf-cycle-reveal flex flex-col items-center gap-3"
                           style={{ '--cycle-reveal-delay': '0ms' } as CSSProperties}
                         >
                           <div className="waqf-cycle-icon">
-                            <PhaseIcon className="h-7 w-7" />
+                            <PhaseIcon className="h-8 w-8" />
                           </div>
                           <p className="waqf-cycle-counter" dir="ltr">
                             {String(index + 1).padStart(2, '0')} /{' '}
@@ -418,7 +413,7 @@ export default function WaqfAboutPage() {
                           </p>
                         </div>
                         <h3
-                          className="waqf-cycle-reveal mt-5 text-2xl font-bold leading-tight text-dark-900 md:text-3xl"
+                          className="waqf-cycle-reveal mt-5 text-center text-2xl font-bold leading-tight text-dark-900 md:text-3xl"
                           style={{ '--cycle-reveal-delay': '70ms' } as CSSProperties}
                         >
                           {phase.title}

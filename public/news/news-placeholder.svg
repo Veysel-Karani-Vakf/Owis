@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+  <title id="title">Owais Waqf news</title>
+  <desc id="desc">A neutral news image carrying the Owais Waqf mark.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffafa"/>
+      <stop offset="1" stop-color="#f3e5e7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#background)"/>
+  <circle cx="600" cy="375" r="164" fill="#7f1d2d"/>
+  <path d="M505 278h190c18 0 32 14 32 32v166c0 18-14 32-32 32H505c-18 0-32-14-32-32V310c0-18 14-32 32-32Z" fill="#fff"/>
+  <path d="M525 333h150M525 378h150M525 423h92" fill="none" stroke="#7f1d2d" stroke-linecap="round" stroke-width="18"/>
+  <circle cx="676" cy="454" r="27" fill="#d00818"/>
+</svg>
