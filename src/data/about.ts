@@ -39,13 +39,16 @@ export type WaqfPageContent = {
     title: string;
     description: string;
     image: string;
+    /** Alt text for the hero image and the video poster; empty = decorative. */
+    imageAlt?: string;
   };
   breadcrumbs: BreadcrumbItem[];
   intro: {
     eyebrow: string;
     title: string;
     paragraphs: string[];
-    facts: { label: string; value: string }[];
+    /** `icon` is an ICON_REGISTRY name; unset falls back to the page's default per position. */
+    facts: { label: string; value: string; icon?: string }[];
     downloadLabel: string;
     downloadUrl: string;
   };
@@ -64,7 +67,6 @@ export type WaqfPageContent = {
     items: string[];
   };
   identity: {
-    ctaLabel: string;
     valuesTitle: string;
     values: string[];
     missionTitle: string;
@@ -92,8 +94,12 @@ export type WaqfPageContent = {
     description: string;
     phases: {
       title: string;
+      /** Short name shown in the ScrollStack indicator; derived from the title after ':' when unset. */
+      shortLabel?: string;
       description: string;
       bullets?: string[];
+      /** ICON_REGISTRY name; unset falls back to the page's default per position. */
+      icon?: string;
     }[];
   };
 };
@@ -108,6 +114,8 @@ export type GovernancePageContent = {
     title: string;
     description: string;
     image: string;
+    /** Alt text for the hero image; empty = decorative. */
+    imageAlt?: string;
   };
   breadcrumbs: BreadcrumbItem[];
   intro: {
@@ -697,6 +705,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'وقف أويس',
         description: 'مؤسسة تنموية ذات طبيعة وقفية لإيجاد أكبر وقف نوعي تشاركي في تاريخ اليمن.',
         image: assets.waqfHero,
+        imageAlt: 'وقف أويس',
       },
       breadcrumbs: [
         { label: 'الرئيسية', href: '/' },
@@ -738,7 +747,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'اكتشف المزيد',
         valuesTitle: 'قيمنا',
         values: ['المبادرة', 'الطموح', 'الشراكة', 'الشفافية', 'المؤسسية', 'الاستدامة'],
         missionTitle: 'رسالتنا',
@@ -826,6 +834,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'نظام الحوكمة',
         description: 'سياسات حاكمة تعزز المؤسسية والشفافية والامتثال وإدارة المخاطر في عمل الوقف.',
         image: assets.governanceHero,
+        imageAlt: 'نظام الحوكمة',
       },
       breadcrumbs: [
         { label: 'الرئيسية', href: '/' },
@@ -856,6 +865,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'Veysel Karani Waqf',
         description: 'A development institution with a waqf nature that seeks to establish a major participatory waqf for Yemen.',
         image: assets.waqfHero,
+        imageAlt: 'Veysel Karani Waqf',
       },
       breadcrumbs: [
         { label: 'Home', href: '/' },
@@ -897,7 +907,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'Explore More',
         valuesTitle: 'Our Values',
         values: ['Initiative', 'Ambition', 'Partnership', 'Transparency', 'Institutionalism', 'Sustainability'],
         missionTitle: 'Our Mission',
@@ -965,6 +974,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'Governance System',
         description: 'Policies that strengthen institutional work, transparency, compliance, and risk management in the waqf.',
         image: assets.governanceHero,
+        imageAlt: 'Governance System',
       },
       breadcrumbs: [
         { label: 'Home', href: '/' },
@@ -995,6 +1005,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'Veysel Karani Vakfı',
         description: 'Yemen için büyük ve katılımcı bir vakıf kurmayı hedefleyen vakıf niteliğinde bir kalkınma kurumu.',
         image: assets.waqfHero,
+        imageAlt: 'Veysel Karani Vakfı',
       },
       breadcrumbs: [
         { label: 'Ana Sayfa', href: '/' },
@@ -1036,7 +1047,6 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         ],
       },
       identity: {
-        ctaLabel: 'Daha Fazla Keşfet',
         valuesTitle: 'Değerlerimiz',
         values: ['Girişim', 'Hırs', 'Ortaklık', 'Şeffaflık', 'Kurumsallık', 'Sürdürülebilirlik'],
         missionTitle: 'Misyonumuz',
@@ -1104,6 +1114,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
         title: 'Yönetişim Sistemi',
         description: 'Vakfın kurumsallığını, şeffaflığını, uyumunu ve risk yönetimini güçlendiren politikalar.',
         image: assets.governanceHero,
+        imageAlt: 'Yönetişim Sistemi',
       },
       breadcrumbs: [
         { label: 'Ana Sayfa', href: '/' },

@@ -27,9 +27,11 @@ export default function NewsCard({ article, labels, locale, isRtl, compact = fal
           loading="lazy"
           className="h-full w-full object-contain"
         />
-        <span className="absolute start-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-primary-700 shadow-sm">
-          {article.category}
-        </span>
+        {article.category && (
+          <span className="absolute start-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-primary-700 shadow-sm">
+            {article.category}
+          </span>
+        )}
       </Link>
 
       <div className={compact ? 'flex flex-1 flex-col p-5' : 'flex flex-1 flex-col p-5 md:p-6'}>

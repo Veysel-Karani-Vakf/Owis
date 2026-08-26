@@ -22,7 +22,7 @@ const revealVariants = (reduced: boolean): Variants => ({
 export default function VolunteerStatement({ program, copy }: VolunteerStatementProps) {
   const reduced = !!useReducedMotion();
 
-  const paragraphs = (program.sections[0]?.paragraphs ?? []).filter(Boolean);
+  const paragraphs = (program.sections?.[0]?.paragraphs ?? []).filter(Boolean);
   // The closing paragraph is the belief; anything before it sets it up.
   const headline = paragraphs.length > 1 ? paragraphs[paragraphs.length - 1] : paragraphs[0];
   const intro = paragraphs.length > 1 ? paragraphs.slice(0, -1) : [];
@@ -108,7 +108,7 @@ export default function VolunteerStatement({ program, copy }: VolunteerStatement
               <span className="text-sm font-bold text-white/70">{copy.slogan}</span>
               <span aria-hidden="true" className="hidden h-4 w-px bg-white/20 sm:block" />
               <ul className="flex flex-wrap gap-2">
-                {copy.hashtags.map((tag) => (
+                {(copy.hashtags ?? []).map((tag) => (
                   <li
                     key={tag}
                     className="rounded-full bg-primary-600/90 px-3.5 py-1.5 text-sm font-black text-white"

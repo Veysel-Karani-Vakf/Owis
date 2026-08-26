@@ -1,6 +1,7 @@
 import type { BreadcrumbItem } from '@/data/about';
 import { participateRoutes } from '@/data/participate';
 import type { Locale } from '@/i18n/content';
+import type { ProgramLayout } from '@/lib/types';
 import { cmsPageContent, cmsPrograms } from '@/cms/adapters';
 import yemenPioneersHero from '@/assets/programs/yemen-pioneers-hero.jpeg';
 import capacityHadramoutCoastImage from '@/assets/programs/capacity-hadramout-coast.jpeg';
@@ -91,12 +92,15 @@ export type ProgramAudience = {
   id: string;
   title: string;
   description: string;
+  /** Icon name from the shared registry; the component falls back to its own default when unset. */
+  icon?: string;
 };
 
 export type ProgramJourneyStep = {
   id: string;
   title: string;
   description: string;
+  icon?: string;
 };
 
 export type ProgramPillar = {
@@ -104,12 +108,33 @@ export type ProgramPillar = {
   title: string;
   body: string;
   points: string[];
+  icon?: string;
 };
 
 export type ProgramTheme = {
   id: string;
   title: string;
   description: string;
+  icon?: string;
+};
+
+/** One knowledge/media format the Owais platform publishes (podcast, visuals, ...). */
+export type ProgramMediaProduct = {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  icon?: string;
+};
+
+/** A featured on-ground moment of the platform, illustrated with real event photos. */
+export type ProgramSpotlight = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  images: { src: string; alt: string }[];
+  linkLabel: string;
+  route: string;
 };
 
 export type ProgramSectionCopy = {
@@ -122,6 +147,8 @@ export type ProgramSectionCopy = {
 export type VolunteerCopy = {
   eyebrow: string;
   joinCta: string;
+  /** Destination of the join buttons; the volunteer form route is used when unset. */
+  joinUrl?: string;
   exploreCta: string;
   slogan: string;
   hashtags: string[];
@@ -153,6 +180,10 @@ export type Program = {
   /** Present only on the volunteer unit program, which renders its own layout. */
   volunteer?: VolunteerCopy;
   initiatives?: ProgramInitiative[];
+  /** Present only on community awareness: the Owais platform's media formats. */
+  mediaProducts?: ProgramMediaProduct[];
+  /** Present only on community awareness: a featured platform event with photos. */
+  spotlight?: ProgramSpotlight;
   cities?: ProgramCity[];
   journey?: ProgramJourneyStep[];
   pillars?: ProgramPillar[];
@@ -163,6 +194,8 @@ export type Program = {
   overviewImage?: string;
   overviewImageAlt?: string;
   officialSourceUrl: string;
+  /** Which page design renders this program; derived from the slug when unset (see resolveProgramLayout). */
+  layout?: ProgramLayout;
   seo: {
     title: string;
     description: string;
@@ -172,6 +205,8 @@ export type Program = {
     title: string;
     description: string;
     button: string;
+    /** Destination of the CTA button; the donate route is used when unset. */
+    url?: string;
   };
   mediaNote?: string;
 };
@@ -181,6 +216,8 @@ export type ProgramsPageContent = {
   labels: {
     home: string;
     programs: string;
+    /** Where the "Programs" breadcrumb points. */
+    programsHref: string;
     overview: string;
     goals: string;
     components: string;
@@ -233,10 +270,11 @@ export type ProgramsPageContent = {
     awarenessInitiativesEyebrow: string;
     awarenessInitiatives: string;
     awarenessInitiativesDescription: string;
-    initiativeLabel: string;
-    visitInitiative: string;
-    volunteerCta: string;
-    volunteerCtaDescription: string;
+    onAirLabel: string;
+    pioneerStatsEyebrow: string;
+    pioneerStatsTitle: string;
+    pioneerStatsDescription: string;
+    pioneerStatsCenter: string;
   };
   programs: Program[];
 };
@@ -358,6 +396,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'الرئيسية',
       programs: 'البرامج',
+      programsHref: '/#programs',
       overview: 'التعريف بالبرنامج',
       goals: 'الأهداف',
       components: 'مكونات البرنامج',
@@ -406,7 +445,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       audiences: 'من يخدم المسار؟',
       audiencesDescription: 'يتوجه المسار إلى نوعين من المؤسسات، ويعمل معهما على المجالات الثلاثة نفسها.',
       awarenessEyebrow: 'منصة أويس',
-      awarenessHeroNote: 'منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري وصناعة الوعي الجمعي.',
+      awarenessHeroNote: 'منصة معرفية وإعلامية تُعنى بقضايا الفكر والنهوض الحضاري وصناعة الوعي الجمعي.',
       exploreInitiatives: 'تعرّف على المنصة',
       awarenessThemes: 'ثلاث دوائر تشتغل عليها المنصة',
       awarenessThemesDescription:
@@ -416,10 +455,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       awarenessInitiatives: 'مواد وبرامج معرفية',
       awarenessInitiativesDescription:
         'قنوات متنوعة تصل بها المنصة إلى جمهورها، من البودكاست والديوانية إلى المواد المرئية والمدونة.',
-      initiativeLabel: 'المنصة',
-      visitInitiative: 'زيارة المبادرة',
-      volunteerCta: 'انضم كمتطوع',
-      volunteerCtaDescription: 'سجّل اهتمامك عبر نموذج التطوع داخل الموقع، وسيتواصل معك فريق الوحدة.',
+      onAirLabel: 'بث معرفي مستمر',
+      pioneerStatsEyebrow: 'خلاصات البرنامج',
+      pioneerStatsTitle: 'رواد اليمن في أرقام',
+      pioneerStatsDescription:
+        'أرقام موثقة من التقرير الرسمي «أويس في أرقام» تلخّص ما قدّمه البرنامج للرواد حتى ديسمبر 2025.',
+      pioneerStatsCenter: 'خلاصات',
     },
     programs: [
       {
@@ -539,7 +580,6 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             'تفتح صفحة المساهمة فرص الدعم الرسمية المنشورة لدى وقف أويس القرني دون إنشاء نظام دفع داخلي.',
           button: 'اذهب إلى صفحة المساهمة',
         },
-        mediaNote: 'إحصائيات الطلاب والمحافظات والجامعات والتخصصات لم تُعرض لأنها ظهرت صفراً في المصدر ولم تُتحقق كأرقام فعلية.',
         seo: {
           title: 'برنامج رواد اليمن | وقف أويس القرني',
           description:
@@ -614,7 +654,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'يتواصل معك الفريق',
             description:
-              'يتواصل معك فريق الوحدة لمطابقة اهتمامك بالفرص المتاحة، ويمكنك التواصل المباشر عبر الهاتف +90 536 745 6199 أو البريد volunteering@veysvakfi.org.',
+              'يتواصل معك فريق الوحدة لمطابقة اهتمامك بالفرص المتاحة، ويمكنك التواصل المباشر عبر الهاتف أو البريد.',
           },
           {
             id: 'contribute',
@@ -858,8 +898,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         ...programShared['community-awareness'],
         title: 'التوعية المجتمعية',
         summary:
-          'منصة أويس: منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري، وتسعى لتعزيز الوعي الجمعي عبر مواد وبرامج معرفية مختلفة.',
-        heroImageAlt: 'منصة أويس في وقف أويس القرني',
+          'منصة أويس: منصة معرفية وإعلامية تُعنى بقضايا الفكر والنهوض الحضاري، وتصنع الوعي الجمعي عبر البودكاست والمواد المرئية والديوانية والمدونة.',
+        heroImageAlt: 'شعار منصة أويس',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -868,6 +908,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
+        ],
+        highlights: [
+          'قراءة التاريخ',
+          'دراسة الحاضر',
+          'استشراف المستقبل',
+          'بودكاست أويس',
+          'ديوانية أويس',
+          'مواد مرئية',
+          'مدونة أويس',
+          'صناعة الوعي الجمعي',
         ],
         sections: [
           {
@@ -896,16 +946,49 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             description: 'وعي جمعي يرسّخ قيم النهوض الحضاري والعيش المشترك ويستشرف ما هو آتٍ.',
           },
         ],
-        initiatives: [
+        mediaProducts: [
           {
-            title: 'منصة أويس',
+            id: 'podcast',
+            title: 'بودكاست أويس',
+            tagline: 'حوارات مسموعة',
             description:
-              'تُترجم المنصة اهتمامها بالفكر والنهوض الحضاري إلى مواد وبرامج معرفية متنوعة يجدها المتابع في القنوات التالية.',
-            image: awarenessOwaisPlatformImage,
-            imageAlt: 'شعار منصة أويس',
-            products: ['بودكاست أويس', 'مواد مرئية متفرقة', 'ديوانية أويس', 'المدونة'],
+              'حلقات حوارية معمّقة مع مفكرين وباحثين حول قضايا الوعي والنهضة، تصل إلى المستمع أينما كان.',
+          },
+          {
+            id: 'visuals',
+            title: 'المواد المرئية',
+            tagline: 'محتوى مرئي',
+            description:
+              'مقاطع وفيديوهات معرفية مكثّفة تقرّب الأفكار الكبيرة إلى الجمهور بلغة بصرية معاصرة.',
+          },
+          {
+            id: 'diwaniya',
+            title: 'ديوانية أويس',
+            tagline: 'مجلس فكري',
+            description:
+              'مجلس دوري يجمع النخب والمهتمين لمدارسة قضايا الفكر والنهوض الحضاري في لقاءات مباشرة.',
+          },
+          {
+            id: 'blog',
+            title: 'المدونة',
+            tagline: 'مقالات ورؤى',
+            description:
+              'مساحة مكتوبة تنشر المقالات والقراءات والرؤى التي تعمّق النقاش وتوثّق نتاج المنصة.',
           },
         ],
+        spotlight: {
+          eyebrow: 'من فعاليات المنصة',
+          title: 'تدشين كتاب «من الصحوة إلى الشهود» في إسطنبول',
+          description:
+            'أقامت منصة أويس حفل تدشين كتاب الأديب والمفكر اليمني الراحل فؤاد الحميري في الذكرى الأولى لرحيله، بحضور نخبة من المفكرين والأدباء والأكاديميين والإعلاميين.',
+          images: [
+            { src: '/news/05-fuad-al-himyari-book-launch-1.jpeg', alt: 'حفل تدشين كتاب من الصحوة إلى الشهود' },
+            { src: '/news/05-fuad-al-himyari-book-launch-3.jpeg', alt: 'جانب من حضور فعالية منصة أويس' },
+            { src: '/news/05-fuad-al-himyari-book-launch-5.jpeg', alt: 'من فقرات ندوة منصة أويس' },
+          ],
+          linkLabel: 'اقرأ الخبر كاملًا',
+          route: '/news/fuad-al-himyari-book-launch',
+        },
         cta: {
           title: 'ادعم منصة أويس',
           description:
@@ -915,7 +998,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         seo: {
           title: 'التوعية المجتمعية | وقف أويس القرني',
           description:
-            'منصة أويس: منصة معرفية تُعنى بقضايا الفكر والنهوض الحضاري وتعزيز الوعي الجمعي في وقف أويس القرني.',
+            'منصة أويس: منصة معرفية وإعلامية تُعنى بقضايا الفكر والنهوض الحضاري وتعزيز الوعي الجمعي في وقف أويس القرني.',
           canonical: officialSources.communityAwareness,
         },
       },
@@ -931,6 +1014,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'Ana Sayfa',
       programs: 'Programlar',
+      programsHref: '/#programs',
       overview: 'Program Ozeti',
       goals: 'Hedefler',
       components: 'Program Bilesenleri',
@@ -979,7 +1063,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       audiences: 'Program Kimlere Hizmet Eder?',
       audiencesDescription: 'Program iki tur kuruma yonelir ve her ikisiyle ayni uc alanda calisir.',
       awarenessEyebrow: 'Owais Platformu',
-      awarenessHeroNote: 'Dusunce ve medeniyet kalkinisi konularina odaklanan, kolektif bilinci guclendiren bir bilgi platformu.',
+      awarenessHeroNote: 'Dusunce ve medeniyet kalkinisi konularina odaklanan, kolektif bilinci guclendiren bir bilgi ve medya platformu.',
       exploreInitiatives: 'Platformu Kesfet',
       awarenessThemes: 'Platformun calistigi uc halka',
       awarenessThemesDescription:
@@ -989,10 +1073,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       awarenessInitiatives: 'Bilgi materyalleri ve programlar',
       awarenessInitiativesDescription:
         'Platformun izleyicisine ulastigi cesitli kanallar: podcast ve divandan gorsel materyallere ve bloga.',
-      initiativeLabel: 'Platform',
-      visitInitiative: 'Girisimi Ziyaret Et',
-      volunteerCta: 'Gonullu Ol',
-      volunteerCtaDescription: 'Sitedeki gonulluluk formu uzerinden ilginizi kaydedin; birim ekibi sizinle iletisime gececek.',
+      onAirLabel: 'Kesintisiz bilgi yayini',
+      pioneerStatsEyebrow: 'Programin Ozeti',
+      pioneerStatsTitle: 'Rakamlarla Yemen Onculeri',
+      pioneerStatsDescription:
+        'Resmi "Rakamlarla Uveys" raporundan alinan ve programin Aralik 2025 itibariyla onculere sundugunu ozetleyen dogrulanmis rakamlar.',
+      pioneerStatsCenter: 'Ozet',
     },
     programs: [
       {
@@ -1112,8 +1198,6 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             'Katki sayfasi, vakfin resmi destek firsatlarini dahili bir odeme sistemi kurmadan gosterir.',
           button: 'Katki Sayfasina Git',
         },
-        mediaNote:
-          'Ogrenci, il, universite ve uzmanlik sayilari kaynakta sifir olarak gorundugu ve dogrulanmadigi icin gosterilmedi.',
         seo: {
           title: 'Yemen Onculeri Programi | Veysel Karani Vakfi',
           description:
@@ -1188,7 +1272,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'Ekip sizinle iletisime gecer',
             description:
-              'Birim ekibi ilgi alaninizi mevcut firsatlarla eslestirir; dogrudan iletisim icin telefon +90 536 745 6199 veya e-posta volunteering@veysvakfi.org.',
+              'Birim ekibi ilgi alaninizi mevcut firsatlarla eslestirir; dogrudan iletisim icin telefon veya e-posta kullanabilirsiniz.',
           },
           {
             id: 'contribute',
@@ -1431,8 +1515,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         ...programShared['community-awareness'],
         title: 'Toplumsal Farkindalik',
         summary:
-          'Owais Platformu: dusunce ve medeniyet kalkinisi konularina odaklanan, farkli bilgi materyalleri ve programlarla kolektif bilinci guclendiren bir platform.',
-        heroImageAlt: 'Veysel Karani Vakfi Owais Platformu',
+          'Owais Platformu: dusunce ve medeniyet kalkinisi konularina odaklanan; podcast, gorsel icerikler, divan ve blog araciligiyla kolektif bilinci guclendiren bir bilgi ve medya platformu.',
+        heroImageAlt: 'Owais Platformu logosu',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -1441,6 +1525,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
+        ],
+        highlights: [
+          'Tarihi okumak',
+          'Bugunu incelemek',
+          'Gelecegi ongormek',
+          'Owais Podcast',
+          'Owais Divani',
+          'Gorsel icerikler',
+          'Owais Blog',
+          'Kolektif bilinc insasi',
         ],
         sections: [
           {
@@ -1469,16 +1563,49 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             description: 'Medeni kalkinis ve ortak yasam degerlerini koklestiren, geleceni ongoren kolektif bir bilinc.',
           },
         ],
-        initiatives: [
+        mediaProducts: [
           {
-            title: 'Owais Platformu',
+            id: 'podcast',
+            title: 'Owais Podcast',
+            tagline: 'Sesli sohbetler',
             description:
-              'Platform, dusunce ve medeniyet kalkinisina duydugu ilgiyi izleyicisine su kanallar uzerinden ulasan cesitli bilgi materyallerine ve programlara cevirir.',
-            image: awarenessOwaisPlatformImage,
-            imageAlt: 'Owais Platformu logosu',
-            products: ['Owais Podcast', 'Cesitli gorsel icerikler', 'Owais Divani', 'Blog'],
+              'Bilinc ve kalkinis meseleleri uzerine dusunur ve arastirmacilarla derinlemesine sohbet bolumleri; dinleyiciye her yerde ulasir.',
+          },
+          {
+            id: 'visuals',
+            title: 'Gorsel Icerikler',
+            tagline: 'Video icerik',
+            description:
+              'Buyuk fikirleri cagdas bir gorsel dille izleyiciye yaklastiran yogun bilgi videolari ve kisa icerikler.',
+          },
+          {
+            id: 'diwaniya',
+            title: 'Owais Divani',
+            tagline: 'Fikir meclisi',
+            description:
+              'Dusunce ve medeniyet kalkinisi meselelerini yuz yuze muzakere etmek icin seckinleri ve ilgilileri bulusturan periyodik meclis.',
+          },
+          {
+            id: 'blog',
+            title: 'Blog',
+            tagline: 'Makale ve gorusler',
+            description:
+              'Tartismayi derinlestiren ve platformun uretimini kayit altina alan makale, okuma ve goruslerin yayimlandigi yazili alan.',
           },
         ],
+        spotlight: {
+          eyebrow: 'Platform etkinliklerinden',
+          title: '"Uyanistan Sahitlige" kitabinin Istanbul lansmani',
+          description:
+            'Owais Platformu, merhum Yemenli edebiyatci ve dusunur Fuad el-Himyari’nin kitabinin lansmanini, vefatinin birinci yildonumunde dusunurler, edebiyatcilar, akademisyenler ve medya mensuplarinin katilimiyla gerceklestirdi.',
+          images: [
+            { src: '/news/05-fuad-al-himyari-book-launch-1.jpeg', alt: 'Kitap lansman toreni' },
+            { src: '/news/05-fuad-al-himyari-book-launch-3.jpeg', alt: 'Owais Platformu etkinliginden katilimcilar' },
+            { src: '/news/05-fuad-al-himyari-book-launch-5.jpeg', alt: 'Owais Platformu panelinden bir kare' },
+          ],
+          linkLabel: 'Haberin tamamini oku',
+          route: '/news/fuad-al-himyari-book-launch',
+        },
         cta: {
           title: 'Owais Platformunu Destekleyin',
           description:
@@ -1504,6 +1631,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
     labels: {
       home: 'Home',
       programs: 'Programs',
+      programsHref: '/#programs',
       overview: 'Program Overview',
       goals: 'Goals',
       components: 'Program Components',
@@ -1552,7 +1680,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       audiences: 'Who Does the Track Serve?',
       audiencesDescription: 'The track addresses two types of institutions and works with both on the same three areas.',
       awarenessEyebrow: 'Owais Platform',
-      awarenessHeroNote: 'A knowledge platform devoted to thought and civilizational advancement, shaping collective awareness.',
+      awarenessHeroNote: 'A knowledge and media platform devoted to thought and civilizational advancement, shaping collective awareness.',
       exploreInitiatives: 'Explore the Platform',
       awarenessThemes: 'Three circles the platform works on',
       awarenessThemesDescription:
@@ -1562,10 +1690,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       awarenessInitiatives: 'Knowledge materials and programs',
       awarenessInitiativesDescription:
         'The varied channels through which the platform reaches its audience, from the podcast and diwaniya to visual materials and the blog.',
-      initiativeLabel: 'Platform',
-      visitInitiative: 'Visit the Initiative',
-      volunteerCta: 'Join as a Volunteer',
-      volunteerCtaDescription: 'Register your interest through the volunteer form on this site and the unit’s team will get in touch.',
+      onAirLabel: 'Always-on knowledge broadcast',
+      pioneerStatsEyebrow: 'Program Summary',
+      pioneerStatsTitle: 'Yemen Pioneers in Numbers',
+      pioneerStatsDescription:
+        'Verified figures from the official "Owais in Numbers" report, summarising what the program has delivered for its pioneers through December 2025.',
+      pioneerStatsCenter: 'At a Glance',
     },
     programs: [
       {
@@ -1685,8 +1815,6 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             'The contribution page presents the official support opportunities published by Veysel Karani Waqf without creating an internal payment system.',
           button: 'Go to Contribution Page',
         },
-        mediaNote:
-          'Student, governorate, university and specialization counts were not displayed because the source showed zeros and the values could not be verified.',
         seo: {
           title: 'Yemen Pioneers Program | Veysel Karani Waqf',
           description:
@@ -1761,7 +1889,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             id: 'match',
             title: 'The team gets in touch',
             description:
-              'The unit’s team matches your interest with the available opportunities. For direct contact: phone +90 536 745 6199 or email volunteering@veysvakfi.org.',
+              'The unit’s team matches your interest with the available opportunities. You can also reach us directly by phone or email.',
           },
           {
             id: 'contribute',
@@ -2005,8 +2133,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         ...programShared['community-awareness'],
         title: 'Community Awareness',
         summary:
-          'Owais Platform: a knowledge platform devoted to thought and civilizational advancement, strengthening collective awareness through varied materials and programs.',
-        heroImageAlt: 'Owais Platform of Veysel Karani Waqf',
+          'Owais Platform: a knowledge and media platform devoted to thought and civilizational advancement, strengthening collective awareness through the podcast, visual materials, the diwaniya and the blog.',
+        heroImageAlt: 'Owais Platform logo',
         imageGallery: [
           {
             src: awarenessOwaisPlatformImage,
@@ -2015,6 +2143,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             width: 1080,
             height: 1080,
           },
+        ],
+        highlights: [
+          'Reading history',
+          'Studying the present',
+          'Anticipating the future',
+          'Owais Podcast',
+          'Owais Diwaniya',
+          'Visual materials',
+          'Owais Blog',
+          'Shaping collective awareness',
         ],
         sections: [
           {
@@ -2043,16 +2181,49 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             description: 'A collective awareness that roots the values of advancement and living together, and looks ahead.',
           },
         ],
-        initiatives: [
+        mediaProducts: [
           {
-            title: 'Owais Platform',
+            id: 'podcast',
+            title: 'Owais Podcast',
+            tagline: 'Conversations in audio',
             description:
-              'The platform turns its concern with thought and civilizational advancement into varied knowledge materials and programs, reaching its audience through the following channels.',
-            image: awarenessOwaisPlatformImage,
-            imageAlt: 'Owais Platform logo',
-            products: ['Owais Podcast', 'Various visual materials', 'Owais Diwaniya', 'Blog'],
+              'In-depth episodes with thinkers and researchers on questions of awareness and advancement, reaching listeners wherever they are.',
+          },
+          {
+            id: 'visuals',
+            title: 'Visual Materials',
+            tagline: 'Video content',
+            description:
+              'Condensed knowledge videos and clips that bring big ideas closer to the audience in a contemporary visual language.',
+          },
+          {
+            id: 'diwaniya',
+            title: 'Owais Diwaniya',
+            tagline: 'A gathering of ideas',
+            description:
+              'A recurring majlis that brings together thinkers and interested audiences to discuss thought and civilizational advancement face to face.',
+          },
+          {
+            id: 'blog',
+            title: 'The Blog',
+            tagline: 'Articles and views',
+            description:
+              'A written space publishing articles, readings and perspectives that deepen the discussion and document the platform’s output.',
           },
         ],
+        spotlight: {
+          eyebrow: 'From the platform’s events',
+          title: 'Launching “From Awakening to Witness” in Istanbul',
+          description:
+            'Owais Platform launched the book of the late Yemeni writer and thinker Fuad Al-Himyari on the first anniversary of his passing, attended by thinkers, writers, academics and media figures.',
+          images: [
+            { src: '/news/05-fuad-al-himyari-book-launch-1.jpeg', alt: 'Book launch ceremony' },
+            { src: '/news/05-fuad-al-himyari-book-launch-3.jpeg', alt: 'Audience at the Owais Platform event' },
+            { src: '/news/05-fuad-al-himyari-book-launch-5.jpeg', alt: 'A moment from the Owais Platform seminar' },
+          ],
+          linkLabel: 'Read the full story',
+          route: '/news/fuad-al-himyari-book-launch',
+        },
         cta: {
           title: 'Support Owais Platform',
           description:
@@ -2062,7 +2233,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         seo: {
           title: 'Community Awareness | Veysel Karani Waqf',
           description:
-            'Owais Platform: a knowledge platform devoted to thought and civilizational advancement and to strengthening collective awareness.',
+            'Owais Platform: a knowledge and media platform devoted to thought and civilizational advancement and to strengthening collective awareness.',
           canonical: officialSources.communityAwareness,
         },
       },
@@ -2101,7 +2272,45 @@ export function getProgramBreadcrumbs(locale: Locale, program: Program): Breadcr
 
   return [
     { label: content.labels.home, href: '/' },
-    { label: content.labels.programs, href: '/#programs' },
+    { label: content.labels.programs, href: content.labels.programsHref || '/#programs' },
     { label: program.title },
   ];
+}
+
+/**
+ * The page design a program renders with. An explicit admin choice wins; otherwise the
+ * historical slug conventions apply, and any program carrying volunteer copy gets the
+ * volunteer unit layout.
+ */
+export function resolveProgramLayout(program: Program): ProgramLayout {
+  if (program.layout) return program.layout;
+  if (program.slug === 'yemen-pioneers') return 'pioneers';
+  if (program.slug === 'community-awareness') return 'awareness';
+  if (program.slug === 'institutional-development') return 'institutional';
+  if (program.volunteer) return 'volunteer';
+  return 'generic';
+}
+
+/**
+ * Volunteer copy for a program switched to the volunteer layout without its own copy block:
+ * the static capacity-building copy of the same locale keeps the page rendering until the
+ * editor fills the volunteer fields.
+ */
+export function getDefaultVolunteerCopy(locale: Locale): VolunteerCopy {
+  const fallback = localizedPrograms[locale].programs.find((program) => program.volunteer)?.volunteer;
+  return (
+    fallback ?? {
+      eyebrow: '',
+      joinCta: '',
+      exploreCta: '',
+      slogan: '',
+      hashtags: [],
+      contactTitle: '',
+      quoteLabel: '',
+      statement: { eyebrow: '', title: '', description: '' },
+      fields: { eyebrow: '', title: '', description: '' },
+      goals: { eyebrow: '', title: '', description: '' },
+      steps: { eyebrow: '', title: '', description: '' },
+    }
+  );
 }

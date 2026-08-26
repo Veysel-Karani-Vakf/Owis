@@ -7,10 +7,9 @@ import {
   useTransform,
   type Variants,
 } from 'framer-motion';
-import { Building2, CalendarRange, ExternalLink, Landmark, MapPin, Users, type LucideIcon } from 'lucide-react';
+import { Building2, CalendarRange, Landmark, MapPin, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Program, ProgramSection, ProgramStatistic } from '@/data/programs';
-import { useI18n } from '@/i18n/useI18n';
 
 type CapacityOverviewProps = {
   program: Program;
@@ -133,9 +132,8 @@ function StatCell({ stat, index, reduced }: { stat: ProgramStatistic; index: num
 }
 
 export default function CapacityOverview({ program, intro: introProp, labels }: CapacityOverviewProps) {
-  const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
-  const intro = introProp ?? program.sections[0];
+  const intro = introProp ?? program.sections?.[0];
   const lead = intro?.paragraphs?.[0];
   const stats = program.statistics ?? [];
   const phase = program.phase;
@@ -199,20 +197,7 @@ export default function CapacityOverview({ program, intro: introProp, labels }: 
           </motion.div>
         )}
 
-        <motion.div variants={itemVariants(reduced)} className="mt-6 flex flex-wrap items-center gap-3">
-          <a
-            href={program.officialSourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-200 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-          >
-            {labels.officialSource}
-            <ExternalLink
-              className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'} group-hover:-translate-y-0.5`}
-              aria-hidden="true"
-            />
-          </a>
-        </motion.div>
+        <motion.div variants={itemVariants(reduced)} className="mt-6 flex flex-wrap items-center gap-3"></motion.div>
       </motion.div>
 
       {stats.length > 0 && (
@@ -261,7 +246,7 @@ export default function CapacityOverview({ program, intro: introProp, labels }: 
               className="grid grid-cols-1 sm:grid-cols-2"
             >
               {stats.map((stat, index) => (
-                <StatCell key={`${stat.value}-${stat.label}`} stat={stat} index={index} reduced={reduced} />
+                <StatCell key={`${index}-${stat.value}-${stat.label}`} stat={stat} index={index} reduced={reduced} />
               ))}
             </motion.ul>
           </motion.div>

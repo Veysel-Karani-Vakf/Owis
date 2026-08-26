@@ -1,11 +1,40 @@
 import { motion } from 'framer-motion';
-import { Mail, MapPin, Facebook, Twitter, Instagram, Youtube, ArrowLeft, ArrowRight } from 'lucide-react';
+import {
+  Mail,
+  MapPin,
+  Phone,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  Linkedin,
+  Music2,
+  MessageCircle,
+  Send,
+  ArrowLeft,
+  ArrowRight,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 import { donateRoute } from '@/data/donate';
 import { supabase } from '@/lib/supabase';
+import type { SocialLinks } from '@/i18n/content';
+
+// Every network the settings page can hold, in display order. Lucide has no
+// TikTok/WhatsApp/Telegram marks, so close generic glyphs stand in.
+const SOCIAL_NETWORKS: { key: keyof SocialLinks; icon: LucideIcon }[] = [
+  { key: 'facebook', icon: Facebook },
+  { key: 'twitter', icon: Twitter },
+  { key: 'instagram', icon: Instagram },
+  { key: 'youtube', icon: Youtube },
+  { key: 'linkedin', icon: Linkedin },
+  { key: 'tiktok', icon: Music2 },
+  { key: 'whatsapp', icon: MessageCircle },
+  { key: 'telegram', icon: Send },
+];
 
 export default function Footer() {
   const { ref, inView } = useInView<HTMLElement>();
@@ -18,12 +47,17 @@ export default function Footer() {
   const footerContent = content.footer;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
-  const socialIcons = [
-    { icon: Facebook, url: siteConfig.socialLinks.facebook, label: t('social.facebook') },
-    { icon: Twitter, url: siteConfig.socialLinks.twitter, label: t('social.twitter') },
-    { icon: Instagram, url: siteConfig.socialLinks.instagram, label: t('social.instagram') },
-    { icon: Youtube, url: siteConfig.socialLinks.youtube, label: t('social.youtube') },
-  ];
+  const donateUrl = siteConfig.donateUrl || donateRoute;
+  const socialLinks = siteConfig.socialLinks ?? {};
+  // A cleared URL removes the icon rather than leaving a dead link.
+  const socialIcons = SOCIAL_NETWORKS.map(({ key, icon }) => ({
+    key,
+    icon,
+    url: (socialLinks as Partial<SocialLinks>)[key]?.trim() ?? '',
+    label: t(`social.${key}`),
+  })).filter((social) => social.url);
+  const phone = footerContent.contactInfo?.phone?.trim() ?? '';
+  const phoneHref = `tel:${phone.replace(/[^\d+]/g, '')}`;
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +78,11 @@ export default function Footer() {
       return;
     }
 
-    if (!href.startsWith('#')) return;
+    if (!href.startsWith('#')) {
+      // A full URL typed by the editor (e.g. a PDF of bank accounts).
+      if (href) window.open(href, '_blank', 'noopener,noreferrer');
+      return;
+    }
 
     if (location.pathname !== '/') {
       navigate({ pathname: '/', hash: href });
@@ -89,11 +127,21 @@ export default function Footer() {
             </p>
 
             <div className="flex flex-col gap-3 text-sm text-white/70">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 shrink-0 text-primary-400" />
-                <span>{footerContent.contactInfo.address}</span>
-              </div>
-              {footerContent.contactInfo.email && (
+              {footerContent.contactInfo?.address && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 shrink-0 text-primary-400" />
+                  <span className="whitespace-pre-line">{footerContent.contactInfo.address}</span>
+                </div>
+              )}
+              {phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 shrink-0 text-primary-400" />
+                  <a href={phoneHref} dir="ltr" className="transition-colors hover:text-primary-400">
+                    {phone}
+                  </a>
+                </div>
+              )}
+              {footerContent.contactInfo?.email && (
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 shrink-0 text-primary-400" />
                   <a
@@ -106,10 +154,10 @@ export default function Footer() {
               )}
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               {socialIcons.map((social) => (
                 <a
-                  key={social.label}
+                  key={social.key}
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -130,8 +178,8 @@ export default function Footer() {
           >
             <h3 className="mb-5 text-sm font-bold text-white">{t('common.quickLinks')}</h3>
             <ul className="flex flex-col gap-3">
-              {footerContent.quickLinks.map((link) => (
-                <li key={link.href}>
+              {(footerContent.quickLinks ?? []).map((link, index) => (
+                <li key={`${link.href}-${index}`}>
                   <a
                     href={link.href}
                     onClick={(e) => {
@@ -146,14 +194,20 @@ export default function Footer() {
                   </a>
                 </li>
               ))}
-              <li>
-                <a
-                  href="#"
-                  className="text-sm text-gold-400 transition-colors hover:text-gold-300"
-                >
-                  {footerContent.bankAccountsLink}
-                </a>
-              </li>
+              {footerContent.bankAccountsLink && (
+                <li>
+                  <a
+                    href={footerContent.bankAccountsUrl || donateRoute}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick(footerContent.bankAccountsUrl || donateRoute);
+                    }}
+                    className="text-sm text-gold-400 transition-colors hover:text-gold-300"
+                  >
+                    {footerContent.bankAccountsLink}
+                  </a>
+                </li>
+              )}
             </ul>
           </motion.div>
 
@@ -189,7 +243,7 @@ export default function Footer() {
 
             <button
               type="button"
-              onClick={() => handleNavClick(donateRoute)}
+              onClick={() => handleNavClick(donateUrl)}
               className="mt-4 w-full rounded-full border border-gold-400/30 bg-gold-400/10 px-4 py-2.5 text-sm font-semibold text-gold-300 transition-all hover:bg-gold-400/20"
             >
               {t('common.donateNow')}
@@ -206,7 +260,7 @@ export default function Footer() {
               {t('footer.courtDecisionPrefix')}: {siteConfig.courtDecision} -{' '}
               {t('footer.taxNumberPrefix')}: {siteConfig.taxNumber}
             </p>
-            <p>{t('common.taxExempt')}</p>
+            {siteConfig.taxExempt && <p>{t('common.taxExempt')}</p>}
           </div>
           <p className="text-xs text-white/40">
             {t('footer.rightsReserved')} © {siteConfig.name} {new Date().getFullYear()}

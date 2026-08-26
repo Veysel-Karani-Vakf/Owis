@@ -133,6 +133,7 @@ export default function ProjectsPage() {
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
+          imageAlt={page.hero.imageAlt}
           breadcrumbs={page.breadcrumbs}
         />
 

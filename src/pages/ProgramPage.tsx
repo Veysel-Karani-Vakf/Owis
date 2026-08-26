@@ -4,7 +4,6 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
-  ExternalLink,
   HandHeart,
   Images,
   Layers3,
@@ -15,16 +14,12 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import AwarenessHero from '@/components/programs/AwarenessHero';
-import AwarenessInitiatives from '@/components/programs/AwarenessInitiatives';
+import AwarenessMedia from '@/components/programs/AwarenessMedia';
+import AwarenessSpotlight from '@/components/programs/AwarenessSpotlight';
 import AwarenessThemes from '@/components/programs/AwarenessThemes';
-import CapacityCities from '@/components/programs/CapacityCities';
-import CapacityForum from '@/components/programs/CapacityForum';
-import CapacityOverview from '@/components/programs/CapacityOverview';
-import CapacityPhaseStory from '@/components/programs/CapacityPhaseStory';
-import CapacityRecommendations from '@/components/programs/CapacityRecommendations';
-import InstitutionalAudiences from '@/components/programs/InstitutionalAudiences';
-import InstitutionalManifesto from '@/components/programs/InstitutionalManifesto';
-import InstitutionalMap from '@/components/programs/InstitutionalMap';
+import InstitutionalHeroNew from '@/components/programs/InstitutionalHeroNew';
+import InstitutionalSegmentsNew from '@/components/programs/InstitutionalSegmentsNew';
+import InstitutionalImpactSection from '@/components/programs/InstitutionalImpactSection';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneerGoals from '@/components/programs/PioneerGoals';
@@ -32,6 +27,7 @@ import PioneerHighlightsMarquee from '@/components/programs/PioneerHighlightsMar
 import PioneerJourney from '@/components/programs/PioneerJourney';
 import PioneerOverview from '@/components/programs/PioneerOverview';
 import PioneerPillars from '@/components/programs/PioneerPillars';
+import PioneerStatsHex from '@/components/programs/PioneerStatsHex';
 import PioneerVideoCarousel from '@/components/programs/PioneerVideoCarousel';
 import VolunteerFields from '@/components/programs/VolunteerFields';
 import VolunteerGoals from '@/components/programs/VolunteerGoals';
@@ -42,10 +38,12 @@ import VideoModal from '@/components/ui/VideoModal';
 import { donateRoute } from '@/data/donate';
 import { participateRoutes } from '@/data/participate';
 import {
+  getDefaultVolunteerCopy,
   getOtherPrograms,
   getProgram,
   getProgramBreadcrumbs,
   getProgramsContent,
+  resolveProgramLayout,
   type Program,
   type ProgramCity,
   type ProgramSection,
@@ -175,10 +173,38 @@ function NumberedList({
 function StatisticsSection({
   program,
   labels,
+  hexStats,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
+  /** True for the pioneers layout: the verified home-page indicators drawn as a hexagon diagram. */
+  hexStats: boolean;
 }) {
+  const { content, t, formatNumber, isRtl } = useI18n();
+
+  // The pioneers layout mirrors the verified indicators shown on the home page (CMS-aware), laid
+  // out as a hexagon summary diagram instead of the plain card grid.
+  if (hexStats) {
+    const pioneers = content.yemenPioneers;
+    return (
+      <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <PioneerStatsHex
+            eyebrow={labels.pioneerStatsEyebrow}
+            title={labels.pioneerStatsTitle}
+            description={labels.pioneerStatsDescription}
+            centerTitle={pioneers.title}
+            centerLabel={labels.pioneerStatsCenter}
+            indicators={pioneers.indicators}
+            unavailableLabel={t('common.unavailable')}
+            formatNumber={formatNumber}
+            isRtl={isRtl}
+          />
+        </div>
+      </section>
+    );
+  }
+
   if (!program.statistics?.length) {
     return program.mediaNote ? (
       <section className="bg-[#faf8f8] py-12 md:py-16">
@@ -300,15 +326,6 @@ function CityMedia({
                 <Play className="h-4 w-4" aria-hidden="true" />
                 {labels.watchVideo}
               </button>
-              <a
-                href={selectedCity.videoSourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex w-fit items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
-              >
-                {labels.officialSource}
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
             </div>
           </article>
         </FadeContent>
@@ -476,15 +493,6 @@ function VideoCard({
         <div className="p-5">
           <h3 className="text-lg font-bold text-dark-950">{video.title}</h3>
           <p className="mt-2 text-sm leading-relaxed text-dark-600">{video.description}</p>
-          <a
-            href={video.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
-          >
-            {labels.officialSource}
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-          </a>
         </div>
       </article>
     </FadeContent>
@@ -498,6 +506,9 @@ function InitiativesSection({
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
+  const { isRtl } = useI18n();
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+
   if (!program.initiatives?.length) return null;
 
   return (
@@ -505,20 +516,17 @@ function InitiativesSection({
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading eyebrow={labels.initiatives} title={labels.initiatives} centered />
         <div className="grid gap-6 md:grid-cols-2">
-          {program.initiatives.map((initiative) => {
+          {program.initiatives.map((initiative, index) => {
             const products = initiative.products ?? [];
+            const url = initiative.url?.trim();
+            const isExternal = !!url && /^https?:\/\//.test(url);
+            const cardClass =
+              'flex h-full flex-col overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)]';
+            const linkClass = `${cardClass} group transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0`;
 
-            return (
-              <FadeContent
-                key={initiative.title}
-                blur={false}
-                duration={620}
-                initialOpacity={0}
-                yOffset={16}
-                threshold={0.18}
-                once
-              >
-                <article className="flex h-full flex-col overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)]">
+            const body = (
+              <>
+                {initiative.image && (
                   <div className="aspect-[16/10] overflow-hidden bg-primary-50">
                     <img
                       src={initiative.image}
@@ -529,28 +537,66 @@ function InitiativesSection({
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <div className="flex flex-1 flex-col p-6">
-                    <h3 className="text-2xl font-bold text-dark-950">{initiative.title}</h3>
-                    <p className="mt-3 text-base leading-relaxed text-dark-600">{initiative.description}</p>
+                )}
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="text-2xl font-bold text-dark-950">{initiative.title}</h3>
+                  <p className="mt-3 text-base leading-relaxed text-dark-600">{initiative.description}</p>
 
-                    {products.length > 0 && (
-                      <div className="mt-5">
-                        <p className="text-sm font-bold text-primary-700">{labels.products}</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {products.map((product) => (
-                            <span
-                              key={product}
-                              className="rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700"
-                            >
-                              {product}
-                            </span>
-                          ))}
-                        </div>
+                  {products.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-sm font-bold text-primary-700">{labels.products}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {products.map((product) => (
+                          <span
+                            key={product}
+                            className="rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700"
+                          >
+                            {product}
+                          </span>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                  </div>
-                </article>
+                  {url && (
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700">
+                      {labels.details}
+                      <ArrowIcon
+                        className={`h-4 w-4 transition-transform ${
+                          isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </span>
+                  )}
+                </div>
+              </>
+            );
+
+            return (
+              <FadeContent
+                key={`${initiative.title}-${index}`}
+                blur={false}
+                duration={620}
+                initialOpacity={0}
+                yOffset={16}
+                threshold={0.18}
+                once
+              >
+                {/* An initiative with a destination becomes one big link; without one it stays a plain card. */}
+                {url ? (
+                  isExternal ? (
+                    <a href={url} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                      {body}
+                    </a>
+                  ) : (
+                    <Link to={url} className={linkClass}>
+                      {body}
+                    </Link>
+                  )
+                ) : (
+                  <article className={cardClass}>{body}</article>
+                )}
               </FadeContent>
             );
           })}
@@ -568,6 +614,23 @@ function DonateCta({
   isRtl: boolean;
 }) {
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  const cta = program.cta;
+
+  // The admin may blank the whole block; then the band disappears instead of showing an empty card.
+  if (!cta || (!cta.title && !cta.description && !cta.button)) return null;
+
+  const to = cta.url?.trim() || donateRoute;
+  const isExternal = /^https?:\/\//.test(to);
+  const buttonClass =
+    'group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold-400 px-7 py-3 text-sm font-black text-dark-950 transition-colors hover:bg-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300';
+  const arrow = (
+    <ArrowIcon
+      className={`h-4 w-4 transition-transform ${
+        isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+      }`}
+      aria-hidden="true"
+    />
+  );
 
   return (
     <section className="bg-dark-950 py-16 text-white md:py-20">
@@ -576,21 +639,21 @@ function DonateCta({
           <div className="grid gap-8 rounded-[24px] border border-white/10 bg-white/[0.06] p-6 text-start shadow-[0_22px_56px_rgba(0,0,0,0.2)] backdrop-blur md:grid-cols-[1fr_auto] md:items-center md:p-8">
             <div>
               <HandHeart className="h-9 w-9 text-gold-300" aria-hidden="true" />
-              <h2 className="mt-4 text-3xl font-bold leading-tight text-white md:text-4xl">{program.cta.title}</h2>
-              <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/72">{program.cta.description}</p>
+              <h2 className="mt-4 text-3xl font-bold leading-tight text-white md:text-4xl">{cta.title}</h2>
+              <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/72">{cta.description}</p>
             </div>
-            <Link
-              to={donateRoute}
-              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold-400 px-7 py-3 text-sm font-black text-dark-950 transition-colors hover:bg-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300"
-            >
-              {program.cta.button}
-              <ArrowIcon
-                className={`h-4 w-4 transition-transform ${
-                  isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
-                }`}
-                aria-hidden="true"
-              />
-            </Link>
+            {cta.button &&
+              (isExternal ? (
+                <a href={to} target="_blank" rel="noopener noreferrer" className={buttonClass}>
+                  {cta.button}
+                  {arrow}
+                </a>
+              ) : (
+                <Link to={to} className={buttonClass}>
+                  {cta.button}
+                  {arrow}
+                </Link>
+              ))}
           </div>
         </FadeContent>
       </div>
@@ -659,76 +722,6 @@ function OtherPrograms({
   );
 }
 
-function CapacityShowcase({
-  program,
-  labels,
-  onVideoSelect,
-}: {
-  program: Program;
-  labels: ReturnType<typeof getProgramsContent>['labels'];
-  onVideoSelect: (video: ActiveVideo) => void;
-}) {
-  const findSection = (id: string) => program.sections.find((section) => section.id === id);
-  // The capacity story now rides on the institutional page, so it opens with its own intro section.
-  const intro = findSection('capacity-intro') ?? program.sections[0];
-  const statement = findSection('closing-statement');
-  const recommendations = findSection('recommendations');
-  const forum = findSection('forum');
-  const cities = program.cities ?? [];
-  const forumImage = program.images[program.images.length - 1] ?? program.heroImage;
-
-  return (
-    <>
-      <section className="overflow-hidden bg-white py-16 md:py-24">
-        <CapacityOverview program={program} intro={intro} labels={labels} />
-      </section>
-
-      {cities.length > 0 && (
-        <section className="bg-[#faf8f8] py-16 md:py-24">
-          <CapacityCities
-            eyebrow={labels.phaseEyebrow}
-            title={labels.cityMedia}
-            description={labels.cityExplorerDescription}
-            cities={cities}
-            labels={labels}
-            onVideoSelect={onVideoSelect}
-          />
-        </section>
-      )}
-
-      {statement && (
-        <section className="overflow-hidden bg-white py-16 md:py-24">
-          <CapacityPhaseStory
-            eyebrow={labels.phaseEyebrow}
-            section={statement}
-            phase={program.phase}
-            images={program.images}
-          />
-        </section>
-      )}
-
-      {recommendations?.bullets?.length ? (
-        <section className="bg-[#faf8f8] py-16 md:py-24">
-          <CapacityRecommendations
-            eyebrow={labels.recommendationsEyebrow}
-            description={labels.recommendationsDescription}
-            section={recommendations}
-          />
-        </section>
-      ) : null}
-
-      {forum && (
-        <CapacityForum
-          eyebrow={labels.forumEyebrow}
-          objectivesLabel={labels.forumObjectives}
-          section={forum}
-          image={forumImage}
-        />
-      )}
-    </>
-  );
-}
-
 function InstitutionalShowcase({
   program,
   labels,
@@ -736,46 +729,33 @@ function InstitutionalShowcase({
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
-  const intro = program.sections[0];
-  const areas = intro?.bullets ?? [];
   const audiences = program.audiences ?? [];
+  const statistics = program.statistics ?? [];
 
   return (
     <>
-      <section className="overflow-hidden bg-white py-20 md:py-28">
-        <InstitutionalManifesto program={program} labels={labels} />
-      </section>
-
-      {areas.length > 0 && (
-        <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
-          <InstitutionalMap
-            eyebrow={labels.focusAreas}
-            title={labels.focusAreas}
-            description={labels.focusAreasDescription}
-            areaLabel={labels.areaLabel}
-            hubTitle={program.title}
-            hubSubtitle={intro?.title}
-            items={areas}
-          />
-        </section>
+      {/* Statistics Section */}
+      {statistics.length > 0 && (
+        <InstitutionalImpactSection
+          statistics={statistics}
+          eyebrow={labels.statsEyebrow}
+          title={labels.statistics}
+        />
       )}
 
+      {/* Target Audiences */}
       {audiences.length > 0 && (
-        <section className="bg-white py-16 md:py-24">
-          <InstitutionalAudiences
-            eyebrow={labels.audiences}
+        <section className="overflow-hidden">
+          <InstitutionalSegmentsNew
+            audiences={audiences}
             title={labels.audiences}
             description={labels.audiencesDescription}
-            audiences={audiences}
-            areas={areas}
-            image={program.heroImage}
-            donateLabel={labels.donate}
           />
         </section>
       )}
 
       {program.mediaNote && (
-        <section className="bg-[#faf8f8] py-10 md:py-12">
+        <section className="bg-white py-10 md:py-12">
           <div className="mx-auto max-w-4xl px-4 md:px-8">
             <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
               <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
@@ -826,14 +806,20 @@ function VolunteerShowcase({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_10%,rgba(218,8,18,0.3),transparent_50%)]"
           />
-          <VolunteerSteps steps={steps} copy={copy} volunteerRoute={participateRoutes.volunteer} />
+          <VolunteerSteps
+            steps={steps}
+            copy={copy}
+            volunteerRoute={participateRoutes.volunteer}
+            contactEmail={program.contactEmail}
+            contactPhone={program.contactPhone}
+          />
         </section>
       )}
     </>
   );
 }
 
-const awarenessInitiativesAnchor = 'awareness-initiatives';
+const awarenessMediaAnchor = 'awareness-media';
 
 function AwarenessShowcase({
   program,
@@ -843,7 +829,7 @@ function AwarenessShowcase({
   labels: ReturnType<typeof getProgramsContent>['labels'];
 }) {
   const themes = program.themes ?? [];
-  const initiatives = program.initiatives ?? [];
+  const mediaProducts = program.mediaProducts ?? [];
 
   return (
     <>
@@ -854,22 +840,26 @@ function AwarenessShowcase({
             title={labels.awarenessThemes}
             description={labels.awarenessThemesDescription}
             themeLabel={labels.themeLabel}
-            hubTitle={program.title}
+            hubTitle={labels.awarenessEyebrow}
             themes={themes}
           />
         </section>
       )}
 
-      {initiatives.length > 0 && (
-        <section id={awarenessInitiativesAnchor} className="scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
-          <AwarenessInitiatives
+      {mediaProducts.length > 0 && (
+        <section id={awarenessMediaAnchor} className="scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          <AwarenessMedia
             eyebrow={labels.awarenessInitiativesEyebrow}
             title={labels.awarenessInitiatives}
             description={labels.awarenessInitiativesDescription}
-            initiatives={initiatives}
-            volunteerRoute={participateRoutes.volunteer}
-            labels={labels}
+            products={mediaProducts}
           />
+        </section>
+      )}
+
+      {program.spotlight && (program.spotlight.title || program.spotlight.description) && (
+        <section className="overflow-hidden bg-white py-16 md:py-24">
+          <AwarenessSpotlight spotlight={program.spotlight} />
         </section>
       )}
 
@@ -889,10 +879,11 @@ function AwarenessShowcase({
 
 export default function ProgramPage() {
   const { slug } = useParams();
-  const { locale, isRtl } = useI18n();
+  const { locale, isRtl, content } = useI18n();
   const program = getProgram(locale, slug);
   const page = getProgramsContent(locale);
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
+  const siteName = content.siteConfig.name;
 
   const structuredData = useMemo(() => {
     if (!program) return undefined;
@@ -906,10 +897,10 @@ export default function ProgramPage() {
       mainEntityOfPage: absoluteUrl(program.route),
       publisher: {
         '@type': 'Organization',
-        name: 'Veysel Karani Waqf',
+        name: siteName,
       },
     };
-  }, [program]);
+  }, [program, siteName]);
 
   if (!program) {
     return <Navigate to="/" replace />;
@@ -921,23 +912,27 @@ export default function ProgramPage() {
   const journey = program.journey ?? [];
   const pillars = program.pillars ?? [];
   const highlights = program.highlights ?? [];
-  // Programs that ship journey/pillar content get the richer, animated showcase layout.
-  const isShowcase = journey.length > 0 || pillars.length > 0;
-  // Community awareness has logo-only media, so it gets a typographic hero plus a radar/initiative layout.
-  const isAwareness = program.slug === 'community-awareness';
-  // Institutional development carries its own typographic layout plus the field story of the
-  // capacity raising program that runs under it.
-  const isInstitutional = program.slug === 'institutional-development';
-  const hasCityStory = (program.cities?.length ?? 0) > 0;
-  // Capacity building hosts the volunteer unit, which ships its own sections end to end.
-  const volunteerCopy = program.volunteer;
-  const hasCustomLayout = isAwareness || isInstitutional || !!volunteerCopy;
+  const sections = program.sections ?? [];
+  // The admin picks the page design; slug conventions only fill in when it left the choice open.
+  const layout = resolveProgramLayout(program);
+  const isPioneers = layout === 'pioneers';
+  const isAwareness = layout === 'awareness';
+  const isInstitutional = layout === 'institutional';
+  const isVolunteer = layout === 'volunteer';
+  // Programs that ship journey/pillar content get the richer, animated showcase layout;
+  // the pioneers layout always does, so its hex statistics and overview stay in place.
+  const isShowcase = isPioneers || journey.length > 0 || pillars.length > 0;
+  // A program switched to the volunteer layout without its own copy still renders, using the
+  // static volunteer copy of this locale until the editor fills the volunteer fields.
+  const volunteerCopy = isVolunteer ? (program.volunteer ?? getDefaultVolunteerCopy(locale)) : undefined;
+  const hasCustomLayout = isAwareness || isInstitutional || isVolunteer;
 
   return (
     <>
       <PageSeo
-        title={program.seo.title}
-        description={program.seo.description}
+        title={program.seo?.title ?? program.title}
+        description={program.seo?.description ?? program.summary}
+        canonical={program.seo?.canonical || program.route}
         type="article"
         image={program.heroImage}
         structuredData={structuredData}
@@ -959,9 +954,15 @@ export default function ProgramPage() {
               eyebrow: page.labels.awarenessEyebrow,
               heroNote: page.labels.awarenessHeroNote,
               exploreCta: page.labels.exploreInitiatives,
-              officialSource: page.labels.officialSource,
+              onAir: page.labels.onAirLabel,
             }}
-            initiativesAnchor={awarenessInitiativesAnchor}
+            initiativesAnchor={awarenessMediaAnchor}
+          />
+        ) : isInstitutional ? (
+          <InstitutionalHeroNew
+            program={program}
+            breadcrumbs={breadcrumbs}
+            eyebrow={page.labels.manifestoEyebrow}
           />
         ) : (
           <PageHero
@@ -982,12 +983,7 @@ export default function ProgramPage() {
         ) : isAwareness ? (
           <AwarenessShowcase program={program} labels={page.labels} />
         ) : isInstitutional ? (
-          <>
-            <InstitutionalShowcase program={program} labels={page.labels} />
-            {hasCityStory && (
-              <CapacityShowcase program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
-            )}
-          </>
+          <InstitutionalShowcase program={program} labels={page.labels} />
         ) : isShowcase ? (
           <section className="overflow-hidden bg-white py-14 md:py-20">
             <PioneerOverview program={program} labels={page.labels} />
@@ -1013,8 +1009,8 @@ export default function ProgramPage() {
             </FadeContent>
 
             <div className="grid gap-5">
-              {program.sections.slice(0, 1).map((section) => (
-                <ProgramSectionBlock key={section.id} section={section} />
+              {sections.slice(0, 1).map((section, index) => (
+                <ProgramSectionBlock key={section.id || index} section={section} />
               ))}
             </div>
             </div>
@@ -1076,19 +1072,19 @@ export default function ProgramPage() {
 
         {!hasCustomLayout && (
           <>
-            <StatisticsSection program={program} labels={page.labels} />
+            <StatisticsSection program={program} labels={page.labels} hexStats={isPioneers} />
             <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
           </>
         )}
-        {!isAwareness && <InitiativesSection program={program} labels={page.labels} />}
+        <InitiativesSection program={program} labels={page.labels} />
 
-        {!hasCustomLayout && program.sections.length > 1 && (
+        {!hasCustomLayout && sections.length > 1 && (
           <section className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-5xl px-4 md:px-8">
               <SectionHeading eyebrow={page.labels.information} title={page.labels.information} centered />
               <div className="grid gap-5">
-                {program.sections.slice(1).map((section) => (
-                  <ProgramSectionBlock key={section.id} section={section} />
+                {sections.slice(1).map((section, index) => (
+                  <ProgramSectionBlock key={section.id || index} section={section} />
                 ))}
               </div>
             </div>

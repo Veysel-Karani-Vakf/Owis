@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Seeds Supabase from the site's existing static content modules.
+// Copies the site's built-in content (src/data, src/i18n) into Supabase.
+//
+// Two modes:
+//  * 'fill'  — adds only what is missing. Existing rows and edited pages are
+//              never touched. Safe to run any time; this is the default.
+//  * 'reset' — replaces everything with the built-in copy. Destroys edits;
+//              the dashboard asks for a typed confirmation before running it.
+//
 // Runs client-side (authenticated admin) so Vite-resolved asset URLs are used as-is.
 import { supabase } from '@/lib/supabase';
 import type { Locale } from '@/lib/types';
@@ -11,12 +18,15 @@ import { localizedDonateContent } from '@/data/donate';
 import {
   staticForumArticles,
   staticSuccessStories,
+  staticYemeniFigures,
   staticDocuments,
   staticGalleryImages,
 } from '@/data/library';
 import { LOCALES } from '@/lib/types';
 import { buildAllPageRows } from './pageDefaults';
 import { localizedContent } from '@/i18n/content';
+
+export type SeedMode = 'fill' | 'reset';
 
 const L3: Locale[] = ['ar', 'tr', 'en'];
 type Report = (line: string) => void;
@@ -28,8 +38,9 @@ function locArrays(byLoc: Record<Locale, any[]>, i: number, key: string) {
   return out;
 }
 
-/** Build { ar, tr, en } from the same object field of each locale's variant. */
+/** Build { ar, tr, en } from the same object field of each locale's variant; null when absent. */
 function locObjects(byLoc: Record<Locale, any[]>, i: number, key: string) {
+  if (!byLoc.ar?.[i]?.[key]) return null;
   const out: Record<string, unknown> = {};
   for (const l of L3) out[l] = byLoc[l]?.[i]?.[key] ?? null;
   return out;
@@ -42,13 +53,87 @@ function loc3<T>(byLoc: Record<Locale, T[]>, i: number, pick: (t: T) => string |
   return out;
 }
 
+/**
+ * One shared list whose text leaves are translation maps — the shape the
+ * dashboard's plain repeaters write ([{ label: { ar, tr, en }, value: {…} }]).
+ * `textKeys` are localized; every other key is copied from the first language.
+ */
+function sharedList(byLoc: Record<Locale, any[]>, i: number, key: string, textKeys: string[]) {
+  const first: any[] = byLoc.ar?.[i]?.[key] ?? [];
+  return first.map((item: any, j: number) => {
+    const out: Record<string, unknown> = { ...item };
+    for (const textKey of textKeys) {
+      out[textKey] = Object.fromEntries(L3.map((l) => [l, byLoc[l]?.[i]?.[key]?.[j]?.[textKey] ?? '']));
+    }
+    return out;
+  });
+}
+
+/** One shared object whose text leaves are translation maps. */
+function sharedObject(byLoc: Record<Locale, any[]>, i: number, key: string, textKeys: string[]) {
+  const first = byLoc.ar?.[i]?.[key];
+  if (!first) return null;
+  const out: Record<string, unknown> = { ...first };
+  for (const textKey of textKeys) {
+    out[textKey] = Object.fromEntries(L3.map((l) => [l, byLoc[l]?.[i]?.[key]?.[textKey] ?? '']));
+  }
+  return out;
+}
+
+/**
+ * This repo is the official site now: links to the retired domain must never
+ * reach the database, where they would look like something to keep.
+ */
+function stripOldDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return /veysvakfi\.org/i.test(url) ? null : url;
+}
+
 async function clearTable(table: string) {
   // delete everything (id is never all-zero uuid)
-  await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+  if (error) throw new Error(`${table}: ${error.message}`);
+}
+
+async function countRows(table: string): Promise<number> {
+  const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return count ?? 0;
+}
+
+/**
+ * Writes rows that have a natural key (slug). In 'fill' mode existing rows are
+ * left exactly as they are; in 'reset' mode every column is overwritten.
+ */
+async function upsertKeyed(table: string, rows: any[], onConflict: string, mode: SeedMode, report: Report) {
+  const { error } = await supabase
+    .from(table)
+    .upsert(rows, { onConflict, ignoreDuplicates: mode === 'fill' });
+  if (error) throw new Error(`${table}: ${error.message}`);
+  report(`✔ ${table} (${rows.length})`);
+}
+
+/**
+ * Writes rows that have no natural key (partners, stats, documents, gallery).
+ * 'fill' only populates an empty table; 'reset' replaces the whole table.
+ */
+async function insertKeyless(table: string, rows: any[], mode: SeedMode, report: Report) {
+  if (mode === 'reset') {
+    await clearTable(table);
+  } else if ((await countRows(table)) > 0) {
+    report(`• ${table}: kept existing rows`);
+    return;
+  }
+  const { error } = await supabase.from(table).insert(rows);
+  if (error) throw new Error(`${table}: ${error.message}`);
+  report(`✔ ${table} (${rows.length})`);
 }
 
 // --- NEWS -------------------------------------------------------------------
-async function seedNews(report: Report) {
+async function seedNews(report: Report, mode: SeedMode) {
   const rows = (newsArticles as unknown as any[]).map((a, i) => ({
     slug: a.slug,
     source_slug: a.sourceSlug ?? null,
@@ -63,27 +148,26 @@ async function seedNews(report: Report) {
     content: a.content ?? {},
     image: a.image ?? null,
     image_alt: a.imageAlt ?? {},
-    gallery: Object.fromEntries(
-      L3.map((l) => [
-        l,
-        (a.gallery ?? []).map((g: any) => ({
-          ...g,
-          title: g.title?.[l] ?? '',
-          imageAlt: g.imageAlt?.[l] ?? '',
-        })),
-      ]),
-    ),
+    // One shared list; only the texts carry a language.
+    gallery: (a.gallery ?? []).map((g: any) => ({
+      id: g.id,
+      image: g.image,
+      thumbnail: g.thumbnail,
+      sourceUrl: g.sourceUrl,
+      width: g.width,
+      height: g.height,
+      title: g.title ?? {},
+      imageAlt: g.imageAlt ?? {},
+    })),
     source_images: a.sourceImages ?? [],
     sort_order: i,
     is_published: true,
   }));
-  const { error } = await supabase.from('news').upsert(rows, { onConflict: 'slug' });
-  if (error) throw new Error('news: ' + error.message);
-  report(`✔ news (${rows.length})`);
+  await upsertKeyed('news', rows, 'slug', mode, report);
 }
 
 // --- PROJECTS ---------------------------------------------------------------
-async function seedProjects(report: Report) {
+async function seedProjects(report: Report, mode: SeedMode) {
   const byLoc = {
     ar: staticProjectsContent('ar').projects,
     tr: staticProjectsContent('tr').projects,
@@ -92,7 +176,7 @@ async function seedProjects(report: Report) {
 
   const rows = byLoc.ar.map((base: any, i: number) => ({
     slug: base.slug,
-    route: base.route ?? null,
+    route: null,
     title: loc3(byLoc, i, (p) => p.title),
     category: loc3(byLoc, i, (p) => p.category),
     short_description: loc3(byLoc, i, (p) => p.shortDescription),
@@ -106,7 +190,7 @@ async function seedProjects(report: Report) {
     image_scale: base.imageScale ?? null,
     contribution_value: loc3(byLoc, i, (p) => p.contributionValue),
     unit_amount: base.unitAmount ?? null,
-    facts: locArrays(byLoc, i, 'facts'),
+    facts: sharedList(byLoc, i, 'facts', ['label', 'value']),
     official_contribution_url: base.officialContributionUrl ?? null,
     official_source_url: base.officialSourceUrl ?? null,
     returns_title: loc3(byLoc, i, (p) => p.returnsTitle),
@@ -116,21 +200,20 @@ async function seedProjects(report: Report) {
       tr: byLoc.tr[i].returnUses ?? [],
       en: byLoc.en[i].returnUses ?? [],
     },
-    allocations: locArrays(byLoc, i, 'allocations'),
-    video: base.video ? locObjects(byLoc, i, 'video') : null,
+    allocations: sharedList(byLoc, i, 'allocations', ['title', 'description']),
+    video: sharedObject(byLoc, i, 'video', ['title', 'buttonLabel']),
     cta_title: loc3(byLoc, i, (p) => p.ctaTitle),
     cta_description: loc3(byLoc, i, (p) => p.ctaDescription),
+    seo: locObjects(byLoc, i, 'seo') ?? {},
     sort_order: i,
     is_published: true,
   }));
 
-  const { error } = await supabase.from('projects').upsert(rows, { onConflict: 'slug' });
-  if (error) throw new Error('projects: ' + error.message);
-  report(`✔ projects (${rows.length})`);
+  await upsertKeyed('projects', rows, 'slug', mode, report);
 }
 
 // --- PROGRAMS ---------------------------------------------------------------
-async function seedPrograms(report: Report) {
+async function seedPrograms(report: Report, mode: SeedMode) {
   const byLoc = {
     ar: localizedPrograms.ar.programs,
     tr: localizedPrograms.tr.programs,
@@ -145,7 +228,7 @@ async function seedPrograms(report: Report) {
 
   const rows = byLoc.ar.map((base: any, i: number) => ({
     slug: base.slug,
-    route: base.route ?? null,
+    route: null,
     title: loc3(byLoc, i, (p) => p.title),
     summary: loc3(byLoc, i, (p) => p.summary),
     hero_image: base.heroImage ?? null,
@@ -158,6 +241,7 @@ async function seedPrograms(report: Report) {
     statistics: locArrays(byLoc, i, 'statistics'),
     videos: locArrays(byLoc, i, 'videos'),
     contact_email: base.contactEmail ?? null,
+    contact_phone: base.contactPhone ?? null,
     initiatives: locArrays(byLoc, i, 'initiatives'),
     cities: locArrays(byLoc, i, 'cities'),
     journey: locArrays(byLoc, i, 'journey'),
@@ -169,32 +253,35 @@ async function seedPrograms(report: Report) {
     overview_image: base.overviewImage ?? null,
     overview_image_alt: loc3(byLoc, i, (p) => p.overviewImageAlt),
     official_source_url: base.officialSourceUrl ?? null,
-    seo: locObjects(byLoc, i, 'seo'),
-    cta: locObjects(byLoc, i, 'cta'),
+    volunteer: locObjects(byLoc, i, 'volunteer'),
+    media_products: locArrays(byLoc, i, 'mediaProducts'),
+    spotlight: locObjects(byLoc, i, 'spotlight'),
+    layout: base.layout ?? null,
+    seo: locObjects(byLoc, i, 'seo') ?? {},
+    cta: locObjects(byLoc, i, 'cta') ?? {},
     media_note: loc3(byLoc, i, (p) => p.mediaNote),
     sort_order: i,
     is_published: true,
   }));
 
-  const { error } = await supabase.from('programs').upsert(rows, { onConflict: 'slug' });
-  if (error) throw new Error('programs: ' + error.message);
-  report(`✔ programs (${rows.length})`);
+  await upsertKeyed('programs', rows, 'slug', mode, report);
 }
 
 // --- LIBRARY ARTICLES -------------------------------------------------------
-async function seedLibraryArticles(report: Report) {
+async function seedLibraryArticles(report: Report, mode: SeedMode) {
   const build = (
-    collection: 'forum' | 'success-stories',
+    collection: 'forum' | 'success-stories' | 'yemeni-figures',
     getter: (l: Locale) => any[],
   ) => {
     const byLoc = { ar: getter('ar'), tr: getter('tr'), en: getter('en') } as Record<Locale, any[]>;
     return byLoc.ar.map((base: any, i: number) => ({
       collection,
       slug: base.slug,
-      route: base.route ?? null,
+      route: null,
       title: loc3(byLoc, i, (a) => a.title),
       original_title: base.originalTitle ?? null,
-      source_url: base.sourceUrl ?? null,
+      source_url: stripOldDomain(base.sourceUrl),
+      pdf_url: base.pdfUrl ?? null,
       source_language: base.sourceLanguage ?? 'ar',
       date: base.date || null,
       year: base.year ?? null,
@@ -210,21 +297,18 @@ async function seedLibraryArticles(report: Report) {
   const rows = [
     ...build('forum', staticForumArticles),
     ...build('success-stories', staticSuccessStories),
+    ...build('yemeni-figures', staticYemeniFigures),
   ];
-  const { error } = await supabase.from('library_articles').upsert(rows, { onConflict: 'collection,slug' });
-  if (error) throw new Error('library_articles: ' + error.message);
-  report(`✔ library_articles (${rows.length})`);
+  await upsertKeyed('library_articles', rows, 'collection,slug', mode, report);
 }
 
 // --- LIBRARY DOCUMENTS ------------------------------------------------------
-async function seedLibraryDocuments(report: Report) {
+async function seedLibraryDocuments(report: Report, mode: SeedMode) {
   const map: Array<[string, any]> = [
     ['periodic-reports', 'periodicReports'],
     ['waqf-books', 'waqfBooks'],
     ['waqf-literature', 'waqfLiterature'],
-    ['yemeni-figures', 'yemeniFigures'],
   ];
-  await clearTable('library_documents');
   const rows: any[] = [];
   for (const [dbSlug, runtimeKey] of map) {
     const items = staticDocuments(runtimeKey) as any[];
@@ -232,45 +316,41 @@ async function seedLibraryDocuments(report: Report) {
       rows.push({
         collection: dbSlug,
         title: { ar: d.title ?? '' },
-        source_url: d.sourceUrl ?? null,
+        source_url: stripOldDomain(d.sourceUrl),
         pdf_url: d.pdfUrl ?? null,
         date: d.date || null,
         year: d.year ?? null,
         excerpt: { ar: d.excerpt ?? '' },
         image: d.image ?? null,
         image_alt: { ar: d.imageAlt ?? '' },
+        series: {},
         sort_order: i,
         is_published: true,
       });
     });
   }
-  const { error } = await supabase.from('library_documents').insert(rows);
-  if (error) throw new Error('library_documents: ' + error.message);
-  report(`✔ library_documents (${rows.length})`);
+  await insertKeyless('library_documents', rows, mode, report);
 }
 
 // --- GALLERY ----------------------------------------------------------------
-async function seedGallery(report: Report) {
-  await clearTable('gallery_images');
+async function seedGallery(report: Report, mode: SeedMode) {
   const items = staticGalleryImages() as any[];
   const rows = items.map((g, i) => ({
     title: { ar: g.title ?? '' },
     image: g.image ?? null,
     thumbnail: g.thumbnail ?? null,
-    source_url: g.sourceUrl ?? null,
+    source_url: stripOldDomain(g.sourceUrl),
     image_alt: { ar: g.imageAlt ?? '' },
     width: g.width ?? null,
     height: g.height ?? null,
     sort_order: i,
     is_published: true,
   }));
-  const { error } = await supabase.from('gallery_images').insert(rows);
-  if (error) throw new Error('gallery_images: ' + error.message);
-  report(`✔ gallery_images (${rows.length})`);
+  await insertKeyless('gallery_images', rows, mode, report);
 }
 
 // --- DONATIONS --------------------------------------------------------------
-async function seedDonations(report: Report) {
+async function seedDonations(report: Report, mode: SeedMode) {
   const byLoc = {
     ar: localizedDonateContent.ar.opportunities,
     tr: localizedDonateContent.tr.opportunities,
@@ -288,14 +368,11 @@ async function seedDonations(report: Report) {
     sort_order: i,
     is_published: true,
   }));
-  const { error } = await supabase.from('donation_opportunities').upsert(rows, { onConflict: 'slug' });
-  if (error) throw new Error('donations: ' + error.message);
-  report(`✔ donation_opportunities (${rows.length})`);
+  await upsertKeyed('donation_opportunities', rows, 'slug', mode, report);
 }
 
 // --- PARTNERS ---------------------------------------------------------------
-async function seedPartners(report: Report) {
-  await clearTable('partners');
+async function seedPartners(report: Report, mode: SeedMode) {
   const byLoc = {
     ar: (localizedContent.ar as any).partners.items as any[],
     tr: (localizedContent.tr as any).partners.items as any[],
@@ -308,14 +385,11 @@ async function seedPartners(report: Report) {
     sort_order: i,
     is_published: true,
   }));
-  const { error } = await supabase.from('partners').insert(rows);
-  if (error) throw new Error('partners: ' + error.message);
-  report(`✔ partners (${rows.length})`);
+  await insertKeyless('partners', rows, mode, report);
 }
 
 // --- STATISTICS -------------------------------------------------------------
-async function seedStats(report: Report) {
-  await clearTable('stat_indicators');
+async function seedStats(report: Report, mode: SeedMode) {
   const groups: Array<['yemen-pioneers' | 'statistics', string]> = [
     ['yemen-pioneers', 'yemenPioneers'],
     ['statistics', 'statistics'],
@@ -333,28 +407,54 @@ async function seedStats(report: Report) {
         label: loc3(byLoc, i, (s) => s.label),
         value: base.value ?? null,
         suffix: loc3(byLoc, i, (s) => s.suffix ?? ''),
+        detail: loc3(byLoc, i, (s) => s.detail ?? ''),
+        icon: base.icon ?? null,
         sort_order: i,
         is_published: true,
       });
     });
   }
-  const { error } = await supabase.from('stat_indicators').insert(rows);
-  if (error) throw new Error('stat_indicators: ' + error.message);
-  report(`✔ stat_indicators (${rows.length})`);
+  await insertKeyless('stat_indicators', rows, mode, report);
 }
 
 // --- SITE PAGES -------------------------------------------------------------
 // Every page in the dashboard schema, written locale-first so the editor and
 // the site's accessors read the same shape.
-async function seedSitePages(report: Report) {
-  const pages = buildAllPageRows(LOCALES);
+async function seedSitePages(report: Report, mode: SeedMode) {
+  let pages = buildAllPageRows(LOCALES);
+  if (mode === 'fill') {
+    const { data, error } = await supabase.from('site_pages').select('key');
+    if (error) throw new Error('site_pages: ' + error.message);
+    const existing = new Set((data ?? []).map((row) => (row as { key: string }).key));
+    const skipped = pages.filter((page) => existing.has(page.key)).length;
+    pages = pages.filter((page) => !existing.has(page.key));
+    if (skipped) report(`• site_pages: kept ${skipped} edited page(s)`);
+    if (pages.length === 0) return;
+  }
   const { error } = await supabase.from('site_pages').upsert(pages, { onConflict: 'key' });
   if (error) throw new Error('site_pages: ' + error.message);
   report(`✔ site_pages (${pages.length})`);
 }
 
-export async function runSeed(report: Report) {
-  const steps: Array<[string, (r: Report) => Promise<void>]> = [
+/** Tables the seed writes, with their current row counts — for the confirmation dialog. */
+export async function seedTargets(): Promise<{ table: string; rows: number }[]> {
+  const tables = [
+    'news',
+    'projects',
+    'programs',
+    'library_articles',
+    'library_documents',
+    'gallery_images',
+    'donation_opportunities',
+    'partners',
+    'stat_indicators',
+    'site_pages',
+  ];
+  return Promise.all(tables.map(async (table) => ({ table, rows: await countRows(table).catch(() => 0) })));
+}
+
+export async function runSeed(report: Report, mode: SeedMode = 'fill') {
+  const steps: Array<[string, (r: Report, m: SeedMode) => Promise<void>]> = [
     ['news', seedNews],
     ['projects', seedProjects],
     ['programs', seedPrograms],
@@ -368,7 +468,7 @@ export async function runSeed(report: Report) {
   ];
   for (const [name, fn] of steps) {
     try {
-      await fn(report);
+      await fn(report, mode);
     } catch (e) {
       report(`✖ ${name}: ${e instanceof Error ? e.message : String(e)}`);
       throw e;

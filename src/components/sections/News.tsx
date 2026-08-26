@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatNewsDate, getLatestNews, getNewsLabels, newsRoutes } from '@/data/news';
+import { formatNewsDate, getFeaturedNews, getLatestNews, getNewsLabels, newsRoutes } from '@/data/news';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -10,11 +10,19 @@ export default function News() {
   const { content, t, isRtl, locale } = useI18n();
   const newsContent = content.news;
   const labels = getNewsLabels(locale);
-  const news = getLatestNews(locale, 3);
-  const featured = news[0];
-  const others = news.slice(1, 3);
+  // The editor sets how many articles show; the featured one always leads.
+  const count = Math.max(1, Math.floor(Number(newsContent.count) || 3));
+  const featured = getFeaturedNews(locale) ?? getLatestNews(locale, 1)[0];
+  const others = featured
+    ? getLatestNews(locale, count + 1)
+        .filter((item) => item.id !== featured.id)
+        .slice(0, count - 1)
+    : [];
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const arrowHoverClass = isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1';
+
+  // Nothing published yet: the section has nothing to show.
+  if (!featured) return null;
 
   return (
     <section id="news" className="relative overflow-hidden bg-white py-14 md:py-20">
@@ -42,7 +50,7 @@ export default function News() {
           </Link>
         </motion.div>
 
-        <div className="grid gap-5 lg:grid-cols-2 lg:gap-6">
+        <div className={`grid gap-5 lg:gap-6 ${others.length > 0 ? 'lg:grid-cols-2' : ''}`}>
           <motion.article
             initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -89,6 +97,7 @@ export default function News() {
             </div>
           </motion.article>
 
+          {others.length > 0 && (
           <div className="flex flex-col gap-5 lg:gap-6">
             {others.map((item, i) => (
               <motion.article
@@ -135,6 +144,7 @@ export default function News() {
               </motion.article>
             ))}
           </div>
+          )}
         </div>
       </div>
     </section>

@@ -7,6 +7,7 @@ import { donateRoute } from '@/data/donate';
 import { getProgramsContent } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import { navMenuFor } from '@/i18n/content';
 
 type MobileMenuProps = {
   onClose: () => void;
@@ -15,7 +16,9 @@ type MobileMenuProps = {
 
 export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
   const { content, t, isRtl, locale } = useI18n();
-  const { navLinks, siteConfig } = content;
+  const { siteConfig } = content;
+  const navLinks = content.navLinks ?? [];
+  const donateUrl = siteConfig.donateUrl || donateRoute;
   const aboutNavItems = getAboutContent(locale).nav;
   const programNavItems = getProgramsContent(locale).nav;
   const location = useLocation();
@@ -83,12 +86,15 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden p-4">
         {navLinks.map((link, index) => {
-          if (link.href === '#about') {
+          const menu = navMenuFor(link);
+          const linkKey = `${link.href}-${index}`;
+
+          if (menu === 'about') {
             const active = location.pathname.startsWith('/about/');
 
             return (
               <motion.div
-                key={link.href}
+                key={linkKey}
                 initial={{ opacity: 0, x: isRtl ? 30 : -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * index + 0.1 }}
@@ -154,12 +160,12 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
             );
           }
 
-          if (link.href === '#programs') {
+          if (menu === 'programs') {
             const active = location.pathname.startsWith('/programs/');
 
             return (
               <motion.div
-                key={link.href}
+                key={linkKey}
                 initial={{ opacity: 0, x: isRtl ? 30 : -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * index + 0.1 }}
@@ -229,7 +235,7 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
 
           return (
             <motion.a
-              key={link.href}
+              key={linkKey}
               href={link.href}
               aria-current={active ? 'page' : undefined}
               initial={{ opacity: 0, x: isRtl ? 30 : -30 }}
@@ -251,7 +257,7 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
 
       <div className="border-t border-white/10 p-4">
         <button
-          onClick={() => onNavClick(donateRoute)}
+          onClick={() => onNavClick(donateUrl)}
           className="w-full rounded-full bg-primary-500 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-primary-600"
         >
           {t('common.donateNow')}

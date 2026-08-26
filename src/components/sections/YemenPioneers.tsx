@@ -3,21 +3,25 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  ExternalLink,
   Globe2,
   GraduationCap,
   Users,
+  type LucideIcon,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
-const icons = [GraduationCap, BookOpen, Users, Globe2];
+// Defaults by position; an indicator's own `icon` name (from the dashboard) wins.
+const defaultIcons: LucideIcon[] = [GraduationCap, BookOpen, Users, Globe2];
 
 function PioneersStatCard({
   icon: Icon,
   label,
   value,
+  suffix,
   index,
   inView,
   isRtl,
@@ -25,9 +29,10 @@ function PioneersStatCard({
   unavailableLabel,
   formatNumber,
 }: {
-  icon: typeof GraduationCap;
+  icon: LucideIcon;
   label: string;
   value: number | null;
+  suffix?: string;
   index: number;
   inView: boolean;
   isRtl: boolean;
@@ -35,7 +40,7 @@ function PioneersStatCard({
   unavailableLabel: string;
   formatNumber: (value: number) => string;
 }) {
-  const hasValue = value !== null;
+  const hasValue = value !== null && value !== undefined;
   const animatedValue = useCountUp(value ?? 0, 2000, inView && hasValue);
   const delay = reduceMotion ? 0 : index * 0.15;
 
@@ -64,7 +69,7 @@ function PioneersStatCard({
           <Icon className="h-6 w-6" />
         </motion.div>
         <div className="mb-1 text-3xl font-bold tabular-nums text-white">
-          {hasValue ? formatNumber(animatedValue) : unavailableLabel}
+          {hasValue ? `${formatNumber(animatedValue)}${suffix ?? ''}` : unavailableLabel}
         </div>
         <p className="pioneers-stat-label text-sm">{label}</p>
         <span
@@ -84,7 +89,23 @@ export default function YemenPioneers() {
   const shouldReduceMotion = useReducedMotion();
   const { content, t, isRtl, formatNumber } = useI18n();
   const yemenPioneersContent = content.yemenPioneers;
+  const indicators = yemenPioneersContent.indicators ?? [];
+  const source = yemenPioneersContent.statisticsSource;
+  const buttonUrl = yemenPioneersContent.url || '/programs/yemen-pioneers';
+  const isExternalButton = buttonUrl.startsWith('http');
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  const buttonClassName =
+    'pioneers-button group flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-300';
+  const buttonBody = (
+    <>
+      {yemenPioneersContent.button}
+      <ArrowIcon
+        className={`h-4 w-4 transition-transform ${
+          isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+        }`}
+      />
+    </>
+  );
 
   return (
     <section
@@ -147,50 +168,66 @@ export default function YemenPioneers() {
               {yemenPioneersContent.description}
             </motion.p>
 
-            <motion.button
-              type="button"
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="pioneers-button group flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-300"
-            >
-              {yemenPioneersContent.button}
-              <ArrowIcon
-                className={`h-4 w-4 transition-transform ${
-                  isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
-                }`}
-              />
-            </motion.button>
+            {yemenPioneersContent.button && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                {isExternalButton ? (
+                  <a
+                    href={buttonUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonClassName}
+                  >
+                    {buttonBody}
+                  </a>
+                ) : (
+                  <Link to={buttonUrl} className={buttonClassName}>
+                    {buttonBody}
+                  </Link>
+                )}
+              </motion.div>
+            )}
           </div>
 
-          <div className="relative">
-            <div className="pioneers-card-halo pointer-events-none absolute -inset-8 rounded-[2rem]" />
-            <div ref={statsRef} className="relative grid grid-cols-2 gap-4">
-              {yemenPioneersContent.indicators.map((indicator, i) => (
-                <PioneersStatCard
-                  key={indicator.label}
-                  icon={icons[i]}
-                  label={indicator.label}
-                  value={indicator.value}
-                  index={i}
-                  inView={statsInView}
-                  isRtl={isRtl}
-                  reduceMotion={Boolean(shouldReduceMotion)}
-                  unavailableLabel={t('common.unavailable')}
-                  formatNumber={formatNumber}
-                />
-              ))}
+          {indicators.length > 0 && (
+            <div className="relative">
+              <div className="pioneers-card-halo pointer-events-none absolute -inset-8 rounded-[2rem]" />
+              <div ref={statsRef} className="relative grid grid-cols-2 gap-4">
+                {indicators.map((indicator, i) => (
+                  <PioneersStatCard
+                    key={`${indicator.label}-${i}`}
+                    icon={resolveIcon(indicator.icon, defaultIcons, i)}
+                    label={indicator.label}
+                    value={indicator.value}
+                    suffix={indicator.suffix}
+                    index={i}
+                    inView={statsInView}
+                    isRtl={isRtl}
+                    reduceMotion={Boolean(shouldReduceMotion)}
+                    unavailableLabel={t('common.unavailable')}
+                    formatNumber={formatNumber}
+                  />
+                ))}
+              </div>
+
+              {source?.label && (
+                <motion.a
+                  href={source.url || undefined}
+                  target={source.url ? '_blank' : undefined}
+                  rel={source.url ? 'noopener noreferrer' : undefined}
+                  initial={{ opacity: 0 }}
+                  animate={statsInView ? { opacity: 1 } : {}}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                  className="relative mt-6 block text-center text-xs text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline md:text-sm"
+                >
+                  {source.label}
+                </motion.a>
+              )}
             </div>
-            <a
-              href={yemenPioneersContent.statisticsSource.url}
-              target="_blank"
-              rel="noreferrer"
-              className="mx-auto mt-4 flex w-fit items-center gap-1.5 text-xs text-white/65 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white"
-            >
-              {yemenPioneersContent.statisticsSource.label}
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            </a>
-          </div>
+          )}
         </div>
       </div>
     </section>

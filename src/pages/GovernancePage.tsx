@@ -14,7 +14,7 @@ const smoothEase = [0.22, 1, 0.36, 1] as const;
 function PolicyBody({ policy }: { policy: Policy }) {
   return (
     <div className="space-y-7 px-5 pb-6 pt-1 md:px-7">
-      {policy.blocks.map((block, index) => (
+      {(policy.blocks ?? []).map((block, index) => (
         <div key={`${policy.id}-${block.heading ?? index}`} className="space-y-3 text-start">
           {block.heading && <h3 className="text-lg font-bold text-dark-900">{block.heading}</h3>}
           {block.paragraphs?.map((paragraph) => (
@@ -22,7 +22,7 @@ function PolicyBody({ policy }: { policy: Policy }) {
               {paragraph}
             </p>
           ))}
-          {block.bullets && (
+          {block.bullets && block.bullets.length > 0 && (
             <ul className="space-y-2.5">
               {block.bullets.map((bullet) => (
                 <li key={bullet} className="flex gap-3 text-sm leading-relaxed text-dark-600 md:text-base">
@@ -45,8 +45,17 @@ export default function GovernancePage() {
   const shouldReduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
   const page = getAboutContent(locale).governance;
-  const policyIds = useMemo(() => page.policies.map((policy) => policy.id), [page.policies]);
-  const [openPolicy, setOpenPolicy] = useState(page.policies[0]?.id ?? '');
+  // The editor may empty the list or leave an id blank; fall back to a positional anchor so links still work.
+  const policies = useMemo(
+    () =>
+      (page.policies ?? []).map((policy, index) => ({
+        ...policy,
+        id: policy.id?.trim() || `policy-${index + 1}`,
+      })),
+    [page.policies]
+  );
+  const policyIds = useMemo(() => policies.map((policy) => policy.id), [policies]);
+  const [openPolicy, setOpenPolicy] = useState(policies[0]?.id ?? '');
   const policyRefs = useRef<Record<string, HTMLElement | null>>({});
   const scrollTimersRef = useRef<number[]>([]);
 
@@ -120,7 +129,8 @@ export default function GovernancePage() {
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
-          breadcrumbs={page.breadcrumbs}
+          imageAlt={page.hero.imageAlt}
+          breadcrumbs={page.breadcrumbs ?? []}
         />
 
         <section className="bg-white py-20 md:py-28">
@@ -145,7 +155,7 @@ export default function GovernancePage() {
               >
                 <h2 className="mb-4 px-2 text-start text-sm font-bold text-dark-900">{page.intro.navTitle}</h2>
                 <div className="grid gap-2">
-                  {page.policies.map((policy) => {
+                  {policies.map((policy) => {
                     const active = policy.id === openPolicy;
 
                     return (
@@ -172,7 +182,7 @@ export default function GovernancePage() {
               </motion.aside>
 
               <div className="space-y-4">
-                {page.policies.map((policy, index) => {
+                {policies.map((policy, index) => {
                   const open = policy.id === openPolicy;
                   const contentId = `${policy.id}-content`;
 

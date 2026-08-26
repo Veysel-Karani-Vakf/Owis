@@ -20,8 +20,10 @@ export default function CapacityPhaseStory({ eyebrow, section, phase, images }: 
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 26, mass: 0.4 });
   const lineScale = useTransform(progress, [0, 1], reduced ? [1, 1] : [0, 1]);
 
-  const paragraphs = section.paragraphs ?? [];
-  const collage = images.slice(0, 3);
+  const paragraphs = section?.paragraphs ?? [];
+  const collage = (images ?? []).filter(Boolean).slice(0, 3);
+
+  if (!section) return null;
 
   return (
     <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
@@ -45,7 +47,7 @@ export default function CapacityPhaseStory({ eyebrow, section, phase, images }: 
               ];
               return (
                 <motion.figure
-                  key={image}
+                  key={`${index}-${image}`}
                   initial={reduced ? { opacity: 1 } : { opacity: 0, y: 26, scale: 0.92 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, amount: 0.4 }}
@@ -74,7 +76,7 @@ export default function CapacityPhaseStory({ eyebrow, section, phase, images }: 
           const Icon = stepIcons[index % stepIcons.length];
           return (
             <motion.li
-              key={paragraph}
+              key={`${index}-${paragraph}`}
               initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.35 }}

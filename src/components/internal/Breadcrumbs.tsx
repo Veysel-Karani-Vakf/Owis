@@ -9,11 +9,11 @@ type BreadcrumbsProps = {
 };
 
 export default function Breadcrumbs({ items, light = false }: BreadcrumbsProps) {
-  const { isRtl } = useI18n();
+  const { isRtl, t } = useI18n();
   const Separator = isRtl ? ChevronLeft : ChevronRight;
 
   return (
-    <nav aria-label="Breadcrumb" className="overflow-x-auto no-scrollbar">
+    <nav aria-label={t('accessibility.breadcrumb')} className="overflow-x-auto no-scrollbar">
       <ol className="flex min-h-11 items-center gap-2 whitespace-nowrap text-sm">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;

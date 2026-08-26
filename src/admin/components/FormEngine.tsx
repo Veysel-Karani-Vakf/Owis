@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import type { FieldDef } from '../lib/fields';
+import type { PageFieldDef } from '../lib/pageSchema';
 import {
   ImageInput,
   JsonInput,
   LocalizedInput,
   LocalizedParagraphsInput,
+  SelectControl,
   StringListInput,
   scalarInputClass,
 } from './FieldControls';
@@ -14,17 +16,26 @@ import { LocalizedRepeaterInput } from './LocalizedRepeater';
 import { VideoInput } from './VideoInput';
 import { LocalizedGroupInput } from './LocalizedGroup';
 import { SlugInput } from './SlugInput';
+import { PageFieldControl, RepeaterInput, contentDir, isIntegerKey, normalizePlainRepeater } from './PageFields';
+import { IconPicker } from './IconPicker';
+import { useEditingLocale } from './EditingLocale';
+import { getAtPath, setAtPath } from '../lib/paths';
+import { isLocaleMap } from '../lib/localizedShapes';
 
 type Values = Record<string, unknown>;
+type Errors = Record<string, string>;
 
 export function FormEngine({
   fields,
   values,
   onChange,
+  errors,
 }: {
   fields: FieldDef[];
   values: Values;
   onChange: (key: string, value: unknown) => void;
+  /** Validation messages keyed by field key; the field is outlined in red. */
+  errors?: Errors;
 }) {
   const { locale } = useI18n();
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -32,12 +43,18 @@ export function FormEngine({
   const main = fields.filter((field) => !field.advanced);
   const advanced = fields.filter((field) => field.advanced);
 
+  // An error hidden inside the collapsed block would be invisible.
+  const advancedHasError = advanced.some((field) => errors?.[field.key]);
+  useEffect(() => {
+    if (advancedHasError) setAdvancedOpen(true);
+  }, [advancedHasError]);
+
   const label = (ar: string, tr: string, en: string) =>
     locale === 'ar' ? ar : locale === 'tr' ? tr : en;
 
   return (
     <div className="space-y-6">
-      <FieldGrid fields={main} values={values} onChange={onChange} />
+      <FieldGrid fields={main} values={values} onChange={onChange} errors={errors} />
 
       {/* Source links, ordering and image dimensions are real data but not
           something an editor needs in front of them to write a record. */}
@@ -59,7 +76,7 @@ export function FormEngine({
           </button>
           {advancedOpen && (
             <div className="border-t border-slate-100 p-4">
-              <FieldGrid fields={advanced} values={values} onChange={onChange} />
+              <FieldGrid fields={advanced} values={values} onChange={onChange} errors={errors} />
             </div>
           )}
         </div>
@@ -68,14 +85,16 @@ export function FormEngine({
   );
 }
 
-function FieldGrid({
+export function FieldGrid({
   fields,
   values,
   onChange,
+  errors,
 }: {
   fields: FieldDef[];
   values: Values;
   onChange: (key: string, value: unknown) => void;
+  errors?: Errors;
 }) {
   const { locale } = useI18n();
 
@@ -90,23 +109,36 @@ function FieldGrid({
             'localizedParagraphs',
             'localizedRepeater',
             'localizedGroup',
+            'repeater',
+            'group',
             'video',
             'slug',
             'json',
             'stringList',
             'image',
             'file',
-          ].includes(
-            field.type,
-          );
+          ].includes(field.type);
         const value = values[field.key];
+        const error = errors?.[field.key];
         return (
-          <div key={field.key} className={full ? 'md:col-span-2' : ''}>
+          <div key={field.key} data-field-key={field.key} className={full ? 'md:col-span-2' : ''}>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
               {field.label[locale]}
               {field.required && <span className="ms-1 text-red-500">*</span>}
             </label>
-            <FieldControl field={field} value={value} onChange={(v) => onChange(field.key, v)} />
+            <div className={error ? 'rounded-lg ring-2 ring-red-300 ring-offset-1' : ''}>
+              <FieldControl
+                field={field}
+                value={value}
+                onChange={(v) => onChange(field.key, v)}
+                onSibling={onChange}
+              />
+            </div>
+            {error && (
+              <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                {error}
+              </p>
+            )}
             {field.help && <p className="mt-1 text-xs text-slate-400">{field.help[locale]}</p>}
           </div>
         );
@@ -119,12 +151,20 @@ function FieldControl({
   field,
   value,
   onChange,
+  onSibling,
 }: {
   field: FieldDef;
   value: unknown;
   onChange: (v: unknown) => void;
+  /** Lets one control fill other columns (image → width/height). */
+  onSibling: (key: string, value: unknown) => void;
 }) {
-  const { locale } = useI18n();
+  const onDimensions = field.dimensionsFor
+    ? (width: number, height: number) => {
+        onSibling(field.dimensionsFor!.width, width);
+        onSibling(field.dimensionsFor!.height, height);
+      }
+    : undefined;
 
   switch (field.type) {
     case 'localized':
@@ -154,10 +194,16 @@ function FieldControl({
           itemTitleField={field.itemTitleField}
         />
       );
+    case 'repeater':
+      return <PlainRepeater field={field} value={value} onChange={onChange} />;
+    case 'group':
+      return <PlainGroup field={field} value={value} onChange={onChange} />;
+    case 'icon':
+      return <IconPicker value={value} onChange={onChange} />;
     case 'stringList':
       return <StringListInput value={(value as string[]) || []} onChange={onChange} />;
     case 'image':
-      return <ImageInput value={(value as string) || ''} onChange={onChange} />;
+      return <ImageInput value={(value as string) || ''} onChange={onChange} onDimensions={onDimensions} />;
     case 'file':
       return (
         <ImageInput value={(value as string) || ''} onChange={onChange} accept={field.accept || 'application/pdf'} />
@@ -176,30 +222,28 @@ function FieldControl({
           <span className="text-sm text-slate-600">{field.placeholder ?? ''}</span>
         </label>
       );
-    case 'number':
+    case 'number': {
+      const integer = isIntegerKey(field.key);
       return (
         <input
           type="number"
           className={scalarInputClass}
           dir="ltr"
+          inputMode={integer ? 'numeric' : 'decimal'}
+          step={integer ? 1 : undefined}
           value={value === null || value === undefined ? '' : String(value)}
           onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
         />
       );
+    }
     case 'select':
       return (
-        <select
-          className={scalarInputClass}
-          value={(value as string) ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">—</option>
-          {field.options?.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label[locale]}
-            </option>
-          ))}
-        </select>
+        <SelectControl
+          value={value}
+          onChange={onChange}
+          options={field.options ?? []}
+          required={field.required}
+        />
       );
     case 'textarea':
       return (
@@ -210,16 +254,18 @@ function FieldControl({
         />
       );
     case 'date':
-    case 'datetime':
+    case 'datetime': {
+      const kind = field.type;
       return (
         <input
-          type={field.type === 'date' ? 'date' : 'datetime-local'}
+          type={kind === 'date' ? 'date' : 'datetime-local'}
           className={scalarInputClass}
           dir="ltr"
-          value={toInputDate(value, field.type)}
-          onChange={(e) => onChange(e.target.value || null)}
+          value={toInputDate(value, kind)}
+          onChange={(e) => onChange(fromInputDate(e.target.value, kind))}
         />
       );
+    }
     default:
       return (
         <input
@@ -234,9 +280,126 @@ function FieldControl({
   }
 }
 
+/** One list shared by all languages (e.g. a news gallery). */
+function PlainRepeater({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const { locale } = useEditingLocale();
+  const itemFields = useMemo(() => field.itemFields ?? [], [field.itemFields]);
+  // Legacy locale-keyed rows are folded once; the first edit writes back a plain array.
+  const items = useMemo(() => normalizePlainRepeater(value, itemFields), [value, itemFields]);
+  return (
+    <RepeaterInput
+      field={{
+        path: '',
+        label: field.label,
+        type: 'repeater',
+        itemFields,
+        itemTitleField: field.itemTitleField,
+      }}
+      dir={contentDir[locale]}
+      value={items}
+      onChange={onChange}
+    />
+  );
+}
+
+/**
+ * One object shared by all languages (a project's video: one YouTube link,
+ * per-language title and button). Sub-fields typed 'localized' get their own
+ * language tabs; everything else is stored once.
+ */
+function PlainGroup({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const { locale: uiLocale } = useI18n();
+  const { locale } = useEditingLocale();
+  const fields = useMemo(() => field.itemFields ?? [], [field.itemFields]);
+  const object = useMemo(() => normalizePlainGroup(value, fields), [value, fields]);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3 md:grid-cols-2">
+      {fields.map((sub) => {
+        const wide =
+          sub.full ||
+          ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(sub.type);
+        return (
+          <div key={sub.path || sub.type} className={wide ? 'md:col-span-2' : ''}>
+            <label className="mb-1 block text-xs font-medium text-slate-600">{sub.label[uiLocale]}</label>
+            <PageFieldControl
+              field={sub}
+              dir={contentDir[locale]}
+              value={getAtPath(object, sub.path)}
+              onChange={(next) => onChange(setAtPath(object, sub.path, next))}
+            />
+            {sub.help && <p className="mt-1 text-xs text-slate-400">{sub.help[uiLocale]}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A group may have been stored locale-first ({ ar: { title, videoId } }) by an
+ * earlier version of the form. Fold it back into one object: the sub-fields
+ * declared as localized become translation maps, everything else is taken
+ * from the first language that has a value.
+ */
+function normalizePlainGroup(value: unknown, fields: PageFieldDef[]): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const source = value as Record<string, unknown>;
+  if (!isLocaleMap(source)) return source;
+
+  const localizedKeys = new Set(
+    fields.filter((f) => f.type === 'localized' || f.type === 'localizedTextarea').map((f) => f.path),
+  );
+  const out: Record<string, unknown> = {};
+  for (const [locale, entry] of Object.entries(source)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    for (const [key, leaf] of Object.entries(entry as Record<string, unknown>)) {
+      if (localizedKeys.has(key)) {
+        const map = (out[key] && typeof out[key] === 'object' ? out[key] : {}) as Record<string, unknown>;
+        map[locale] = leaf ?? '';
+        out[key] = map;
+      } else if (out[key] === undefined || out[key] === '' || out[key] === null) {
+        out[key] = leaf;
+      }
+    }
+  }
+  return out;
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Timestamps are stored in UTC; the picker shows and takes local wall-clock
+ * time so 23:30 in Istanbul does not become "yesterday".
+ */
 function toInputDate(value: unknown, type: 'date' | 'datetime'): string {
   if (!value || typeof value !== 'string') return '';
+  // Plain dates have no zone; slicing keeps the calendar day intact.
   if (type === 'date') return value.slice(0, 10);
-  // datetime-local expects yyyy-MM-ddThh:mm
-  return value.slice(0, 16);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function fromInputDate(raw: string, type: 'date' | 'datetime'): string | null {
+  if (!raw) return null;
+  if (type === 'date') return raw;
+  const date = new Date(raw); // no zone suffix → parsed as local time
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }

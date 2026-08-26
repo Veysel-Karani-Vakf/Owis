@@ -41,7 +41,7 @@ export default function PioneerVideoCarousel({
   const { isRtl } = useI18n();
   const shouldReduceMotion = !!useReducedMotion();
   const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: videos.length > 2,
+    loop: (videos?.length ?? 0) > 2,
     align: 'center',
     direction: isRtl ? 'rtl' : 'ltr',
     skipSnaps: false,
@@ -71,15 +71,15 @@ export default function PioneerVideoCarousel({
   }, [emblaApi, isRtl]);
 
   useEffect(() => {
-    if (!emblaApi || shouldReduceMotion || paused || autoplayMs <= 0 || videos.length < 2) return;
+    if (!emblaApi || shouldReduceMotion || paused || autoplayMs <= 0 || (videos?.length ?? 0) < 2) return;
     const timer = window.setInterval(() => emblaApi.scrollNext(), autoplayMs);
     return () => window.clearInterval(timer);
-  }, [emblaApi, shouldReduceMotion, paused, autoplayMs, videos.length, selected]);
+  }, [emblaApi, shouldReduceMotion, paused, autoplayMs, videos?.length, selected]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
-  if (!videos.length) return null;
+  if (!videos?.length) return null;
 
   const PrevIcon = isRtl ? ArrowRight : ArrowLeft;
   const NextIcon = isRtl ? ArrowLeft : ArrowRight;
@@ -133,7 +133,7 @@ export default function PioneerVideoCarousel({
 
             return (
               <div
-                key={video.id}
+                key={video.id || index}
                 className="min-w-0 shrink-0 grow-0 basis-[84%] pe-5 sm:basis-[62%] lg:basis-[46%] xl:basis-[38%]"
               >
                 <motion.article
@@ -192,16 +192,19 @@ export default function PioneerVideoCarousel({
                   <div className="p-5">
                     <h3 className="text-lg font-bold text-dark-950">{video.title}</h3>
                     <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-dark-600">{video.description}</p>
-                    <a
-                      href={video.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      tabIndex={isActive ? 0 : -1}
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
-                    >
-                      {labels.officialSource}
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
+                    {/* The admin video widget writes `sourceUrl`; an empty value simply hides the link. */}
+                    {video.sourceUrl && (
+                      <a
+                        href={video.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        tabIndex={isActive ? 0 : -1}
+                        className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
+                      >
+                        {labels.officialSource}
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      </a>
+                    )}
                   </div>
                 </motion.article>
               </div>
@@ -215,7 +218,7 @@ export default function PioneerVideoCarousel({
           const isActive = index === selected;
           return (
             <button
-              key={video.id}
+              key={video.id || index}
               type="button"
               role="tab"
               aria-selected={isActive}

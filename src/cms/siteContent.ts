@@ -12,6 +12,9 @@ export function resolveSiteContent(locale: Locale): SiteContent {
   const withHome = cmsPageContent<SiteContent>('home', locale, base);
   const merged = cmsPageContent<SiteContent>('settings', locale, withHome);
 
+  // Indicators live in the `stat_indicators` table only (the dashboard's
+  // "Statistics" list): it gives editors ordering and publish flags. The static
+  // copies here are the offline fallback.
   return {
     ...merged,
     partners: {

@@ -139,6 +139,13 @@ export function VideoInput({
       {/* What will play ---------------------------------------------------- */}
       {source && (
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+          {poster && (
+            <img
+              src={poster}
+              alt=""
+              className="h-10 w-16 shrink-0 rounded-md border border-slate-200 object-cover"
+            />
+          )}
           {source.kind === 'file' ? (
             <Film size={15} className="shrink-0 text-emerald-600" />
           ) : (

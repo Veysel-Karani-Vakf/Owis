@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Clock, ExternalLink, FileText, Images, Newspaper, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, ExternalLink, FileText, Images, Newspaper, Trophy, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
@@ -18,6 +18,7 @@ import {
   getLibraryCounts,
   getReadingMinutes,
   getSuccessStories,
+  getYemeniFigures,
   type LibrarySearchHit,
 } from '@/data/library';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
@@ -25,7 +26,8 @@ import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/i18n/content';
 
 function formatDate(locale: Locale, date: string) {
-  if (!date) return '';
+  // The date column is free text; an unparsable value shows nothing instead of "Invalid Date".
+  if (!date || Number.isNaN(Date.parse(date))) return '';
   const formatterLocale = locale === 'ar' ? 'ar' : locale === 'tr' ? 'tr-TR' : 'en-US';
   return new Intl.DateTimeFormat(formatterLocale, { month: 'short', year: 'numeric', day: 'numeric' }).format(
     new Date(date)
@@ -44,9 +46,10 @@ export default function LibraryIndexPage() {
 
   const articles = getForumArticles(locale);
   const stories = getSuccessStories(locale);
+  const figures = getYemeniFigures(locale);
   const gallery = getGalleryImages(locale);
   const counts = getLibraryCounts(locale);
-  const latest = getLatestLibraryItems(locale, 8);
+  const latest = getLatestLibraryItems(locale, page.layout.latestLimit);
 
   const documentStats = documentCollectionSlugs.map((slug) => {
     const info = page.collections[slug];
@@ -85,9 +88,11 @@ export default function LibraryIndexPage() {
 
   const forum = page.collections.forum;
   const storiesInfo = page.collections['success-stories'];
+  const figuresInfo = page.collections['yemeni-figures'];
   const galleryInfo = page.collections.gallery;
   const leadArticle = articles[0];
   const leadStory = stories[0];
+  const leadFigure = figures[0];
 
   return (
     <>
@@ -102,7 +107,7 @@ export default function LibraryIndexPage() {
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
-          imageAlt={page.hero.title}
+          imageAlt={page.hero.imageAlt || page.hero.title}
           breadcrumbs={page.breadcrumbs.index}
         />
 
@@ -237,7 +242,7 @@ export default function LibraryIndexPage() {
                       {documentStats.reduce((sum, stat) => sum + stat.total, 0)} {page.labels.items}
                     </span>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {documentStats.map((stat) => {
                       const Icon = librarySectionIcons[stat.slug];
                       return (
@@ -274,8 +279,60 @@ export default function LibraryIndexPage() {
                 </div>
               </motion.div>
 
-              {/* Gallery strip */}
+              {/* Yemeni figures — news-style feature card */}
               <motion.article {...reveal(3)} className="lg:col-span-3">
+                <Link to={figuresInfo.route} className={`${cardBase} md:flex-row`}>
+                  <div className="relative h-56 overflow-hidden bg-[#faf8f8] md:h-auto md:min-h-[300px] md:w-[38%] md:shrink-0">
+                    {leadFigure && (
+                      <img
+                        src={leadFigure.image}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-contain p-4 transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-5 md:p-6">
+                    <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-700">
+                      <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                      {figuresInfo.eyebrow}
+                    </span>
+                    <h3 className="mt-3 text-2xl font-bold leading-tight text-dark-950 md:text-3xl">{figuresInfo.title}</h3>
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-dark-600">{figuresInfo.description}</p>
+                    {figures.length > 0 && (
+                      <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                        {figures.slice(0, 4).map((figure) => (
+                          <li key={figure.slug} className="flex items-center gap-3 rounded-2xl bg-[#faf8f8] p-3">
+                            <img src={figure.image} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
+                            <span className="min-w-0">
+                              <span className="line-clamp-2 text-sm font-bold leading-snug text-dark-900">{figure.title}</span>
+                              <span className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-dark-500">
+                                <Clock className="h-3.5 w-3.5 text-primary-600" aria-hidden="true" />
+                                {getReadingMinutes(figure)} {page.labels.readingTime}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <span className="mt-auto flex items-center justify-between gap-2 pt-5 text-sm font-bold text-primary-700">
+                      <span className="inline-flex items-center gap-2">
+                        {page.labels.browse}
+                        <ArrowIcon
+                          className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}
+                          aria-hidden="true"
+                        />
+                      </span>
+                      <span className="rounded-full bg-warm px-3 py-1 text-xs text-dark-600">
+                        {counts['yemeni-figures']} {page.labels.items}
+                      </span>
+                    </span>
+                  </div>
+                </Link>
+              </motion.article>
+
+              {/* Gallery strip */}
+              <motion.article {...reveal(4)} className="lg:col-span-3">
                 <Link to={galleryInfo.route} className={`${cardBase} md:flex-row`}>
                   <div className="flex flex-col justify-center gap-3 p-5 md:w-72 md:shrink-0 md:p-6">
                     <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-700">
@@ -313,21 +370,23 @@ export default function LibraryIndexPage() {
           </div>
         </section>
 
-        {/* Latest across the library */}
-        <section className="bg-[#faf8f8] py-14 md:py-20">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <div className="mb-6 flex items-center justify-between gap-4 text-start">
-              <h2 className="text-2xl font-bold text-dark-950 md:text-3xl">{page.labels.latestAcross}</h2>
+        {/* Latest across the library — hidden when nothing is dated */}
+        {latest.length > 0 && (
+          <section className="bg-[#faf8f8] py-14 md:py-20">
+            <div className="mx-auto max-w-7xl px-4 md:px-8">
+              <div className="mb-6 flex items-center justify-between gap-4 text-start">
+                <h2 className="text-2xl font-bold text-dark-950 md:text-3xl">{page.labels.latestAcross}</h2>
+              </div>
+              <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
+                {latest.map((hit, index) => (
+                  <motion.div key={`${hit.collection}-${hit.id}`} {...reveal(index % 4)} className="w-[280px] shrink-0 snap-start">
+                    <LatestCard hit={hit} labels={page.labels} locale={locale} />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
-              {latest.map((hit, index) => (
-                <motion.div key={`${hit.collection}-${hit.id}`} {...reveal(index % 4)} className="w-[280px] shrink-0 snap-start">
-                  <LatestCard hit={hit} labels={page.labels} locale={locale} />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
     </>
   );
@@ -342,7 +401,14 @@ function LatestCard({
   labels: ReturnType<typeof getLibraryContent>['labels'];
   locale: Locale;
 }) {
-  const typeLabel = hit.kind === 'article' ? labels.typeArticle : hit.kind === 'story' ? labels.typeStory : labels.typeDocument;
+  const typeLabel =
+    hit.kind === 'article'
+      ? labels.typeArticle
+      : hit.kind === 'story'
+        ? labels.typeStory
+        : hit.kind === 'figure'
+          ? labels.typeFigure
+          : labels.typeDocument;
   const inner = (
     <>
       <div className="relative aspect-[16/10] overflow-hidden bg-warm">

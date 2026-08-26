@@ -5,65 +5,83 @@ import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
 export type Locale = 'ar' | 'tr' | 'en';
 export type Direction = 'rtl' | 'ltr';
 
+// Cards added from the dashboard repeater carry no `id`; components key on
+// `id ?? detailsUrl/url ?? index` so two new cards never collide.
 export type Project = {
-  id: string;
+  id?: string;
   name: string;
   description: string;
   contribution: string;
   image: string;
+  imageAlt?: string;
+  /** CSS object-position for the card image, e.g. "50% 30%". */
+  imagePosition?: string;
   detailsUrl: string;
   contributionUrl?: string;
 };
 
 export type Program = {
-  id: string;
+  id?: string;
   title: string;
   description: string;
   image: string;
+  imageAlt?: string;
   url: string;
-};
-
-export type NewsItem = {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  excerpt: string;
-  image: string;
-  url: string;
-  featured?: boolean;
 };
 
 export type Partner = {
   name: string;
   logo: string;
+  url?: string;
+};
+
+/** A figure card; `icon` is a name from src/lib/icons.ts ICON_REGISTRY. */
+export type Indicator = {
+  label: string;
+  value: number | null;
+  suffix?: string;
+  detail?: string;
+  icon?: string;
+};
+
+export type NavMenu = '' | 'about' | 'programs';
+
+export type SocialLinks = {
+  facebook: string;
+  twitter: string;
+  instagram: string;
+  youtube: string;
+  linkedin?: string;
+  tiktok?: string;
+  whatsapp?: string;
+  telegram?: string;
 };
 
 export type SiteContent = {
   meta: {
     title: string;
     description: string;
+    /** Share image (og:image); a site path or an absolute URL. */
+    ogImage: string;
   };
   siteConfig: {
     name: string;
     logo: string;
+    /** Destination of the "donate now" buttons in the header, mobile menu and footer. */
+    donateUrl: string;
     licenseNumber: string;
     courtDecision: string;
     taxNumber: string;
     taxExempt: boolean;
-    socialLinks: {
-      facebook: string;
-      twitter: string;
-      instagram: string;
-      youtube: string;
-    };
+    socialLinks: SocialLinks;
   };
-  navLinks: { label: string; href: string }[];
+  /** `menu` picks the dropdown shown under the link; undefined falls back to the href check. */
+  navLinks: { label: string; href: string; menu?: NavMenu }[];
   hero: {
     title: string;
-    description: string;
-    primaryButton: string;
     secondaryButton: string;
+    /** "#anchor" scrolls on the page, "/path" navigates. */
+    secondaryUrl: string;
     videoId: string;
     /** Public URL of a video uploaded in the dashboard; takes priority over videoId. */
     videoFile?: string;
@@ -87,11 +105,15 @@ export type SiteContent = {
     sectors: string[];
     goals: string[];
     image: string;
+    imageAlt: string;
+    learnMoreUrl: string;
   };
   projects: {
     eyebrow: string;
     title: string;
     description: string;
+    /** Used by a card's "donate with us" button when it has no contributionUrl. */
+    defaultContributionUrl: string;
     items: Project[];
   };
   programs: {
@@ -105,8 +127,9 @@ export type SiteContent = {
     title: string;
     description: string;
     button: string;
+    url: string;
     image: string;
-    indicators: { label: string; value: number | null }[];
+    indicators: Indicator[];
     statisticsSource: {
       label: string;
       url: string;
@@ -116,7 +139,7 @@ export type SiteContent = {
     eyebrow: string;
     title: string;
     description: string;
-    indicators: { label: string; value: number | null; suffix: string; detail: string }[];
+    indicators: Indicator[];
     source: {
       label: string;
       url: string;
@@ -125,7 +148,8 @@ export type SiteContent = {
   news: {
     eyebrow: string;
     title: string;
-    items: NewsItem[];
+    /** How many articles the home section shows (one large + the rest small). */
+    count: number;
   };
   partners: {
     eyebrow: string;
@@ -136,7 +160,9 @@ export type SiteContent = {
     title: string;
     description: string;
     primaryButton: string;
+    primaryUrl: string;
     secondaryButton: string;
+    secondaryUrl: string;
     image: string;
   };
   footer: {
@@ -148,6 +174,7 @@ export type SiteContent = {
       phone: string;
     };
     bankAccountsLink: string;
+    bankAccountsUrl: string;
     newsletterTitle: string;
     newsletterDescription: string;
   };
@@ -183,6 +210,7 @@ export type SiteContent = {
       nextProject: string;
       projectDots: string;
       showProject: string;
+      breadcrumb: string;
     };
     footer: {
       licensePrefix: string;
@@ -196,6 +224,10 @@ export type SiteContent = {
       twitter: string;
       instagram: string;
       youtube: string;
+      linkedin: string;
+      tiktok: string;
+      whatsapp: string;
+      telegram: string;
     };
   };
 };
@@ -215,7 +247,22 @@ const shared = {
     twitter: 'https://twitter.com/veysvakfi',
     instagram: 'https://www.instagram.com/veysvakfi',
     youtube: 'https://www.youtube.com/@veysvakfi',
+    linkedin: '',
+    tiktok: '',
+    whatsapp: '',
+    telegram: '',
   },
+  // Destinations shared by every language; the dashboard can override them per page.
+  routes: {
+    donate: '/donate',
+    volunteer: '/participate/volunteer',
+    aboutWaqf: '/about/waqf',
+    yemenPioneers: '/programs/yemen-pioneers',
+    heroButton: '#participate',
+  },
+  // Default icons per position; editors can override each figure's icon by name.
+  pioneerIcons: ['graduation-cap', 'book-open', 'users', 'globe'],
+  statisticIcons: ['trending-up', 'users', 'heart-handshake', 'briefcase'],
   projectImages: {
     waqfShare: waqfShareImage,
     blessedTree: blessedTreeImage,
@@ -245,12 +292,6 @@ const shared = {
     volunteers: 2693,
     sourceUrl: '/media/docs/2025-c909c767.pdf',
   },
-  newsImages: {
-    condolencesSheikhHamad: '/media/.jpg-scaled-ed6ad55b.jpeg',
-    democracyUnityDay:
-      '/media/file-9aa999b6.jpeg',
-    condolencesQatar: '/media/whatsapp-image-2026-07-13-at-15.55.06-7a2c58f4.jpeg',
-  },
   partnerLogos: [
     '/media/ytb-logo-yatay-yaldiz-150x150-9e4ed0b3.png',
     '/media/logo3-1-50865719.png',
@@ -271,6 +312,7 @@ const shared = {
 
 const siteBase = {
   logo: shared.logo,
+  donateUrl: shared.routes.donate,
   licenseNumber: '6222',
   courtDecision: '2016/223-2016/501',
   taxNumber: '9250524198',
@@ -284,6 +326,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       title: 'وقف أويس القرني',
       description:
         'مؤسسة وقفية تسعى إلى إيجاد أوعية استثمارية مبتكرة ومستدامة، والتكامل مع الشركاء في بناء القدرات وتنفيذ البرامج المساندة التي تخدم نهوض اليمن.',
+      ogImage: shared.logo,
     },
     siteConfig: {
       ...siteBase,
@@ -291,20 +334,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
     },
     navLinks: [
       { label: 'الرئيسية', href: '#hero' },
-      { label: 'من نحن', href: '#about' },
+      { label: 'من نحن', href: '#about', menu: 'about' },
       { label: 'المشاريع', href: '/projects' },
       { label: 'المتجر', href: '/donate' },
-      { label: 'البرامج', href: '#programs' },
+      { label: 'البرامج', href: '#programs', menu: 'programs' },
       { label: 'المكتبة', href: '/library' },
       { label: 'الأخبار', href: '/news' },
       { label: 'شاركنا', href: '/participate' },
     ],
     hero: {
       title: 'وقفٌ يبني الإنسان ويصنع المستقبل',
-      description:
-        'نصنع أوعية وقفية استثمارية مستدامة، ونوجّه عوائدها نحو التعليم وبناء القدرات والمشروعات التي تسهم في نهوض اليمن.',
-      primaryButton: 'تعرّف على الوقف',
       secondaryButton: 'ساهم الآن',
+      secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
       posterImage: shared.mainImage,
     },
@@ -340,12 +381,15 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'ترسيخ الهُوية الوطنية الجامعة وتحقيق التنمية المستدامة لليمن.',
       ],
       image: shared.mainImage,
+      imageAlt: 'وقف أويس القرني',
+      learnMoreUrl: shared.routes.aboutWaqf,
     },
     projects: {
       eyebrow: 'استثمر في الخير',
       title: 'المشاريع الوقفية',
       description:
         'مشاريع وقفية استثمارية مستدامة، توجّه عوائدها نحو التعليم وبناء القدرات وبرامج نهوض اليمن.',
+      defaultContributionUrl: shared.routes.donate,
       items: [
         {
           id: 'waqf-share',
@@ -425,12 +469,13 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'برنامج متكامل يهتم بالتعليم والتأهيل النوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن، وإعدادهم قادة للمستقبل عبر منح دراسية وبرامج قيادية ومهارية.',
       button: 'اكتشف البرنامج',
+      url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'منح تعليمية', value: shared.yemenPioneersStatistics.educationalScholarships },
-        { label: 'أبحاث علمية محكّمة', value: shared.yemenPioneersStatistics.peerReviewedResearch },
-        { label: 'ملتقيات تدريبية', value: shared.yemenPioneersStatistics.trainingForums },
-        { label: 'مشاركات دولية', value: shared.yemenPioneersStatistics.internationalParticipations },
+        { label: 'منح تعليمية', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'أبحاث علمية محكّمة', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
+        { label: 'ملتقيات تدريبية', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
+        { label: 'مشاركات دولية', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
       statisticsSource: {
         label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
@@ -443,10 +488,10 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'أرقام رسمية من تقرير «أويس في أرقام» — الإصدار السابع، حتى ديسمبر 2025م.',
       indicators: [
-        { label: 'سهماً وقفياً', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'إجمالي الأسهم الوقفية التي جُمعت لتنمية أصول الوقف واستدامة مساراته التنموية.' },
-        { label: 'مساهماً ومساهمة من 22 دولة', value: shared.waqfStatistics.contributors, suffix: '', detail: 'واقفون وواقفات من 22 دولة حول العالم شاركوا في بناء الوقف وتنميته.' },
-        { label: 'مستفيداً من المسارات الوقفية', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'مستفيدون مباشرون من برامج المسارات الوقفية التعليمية والتنموية والمجتمعية.' },
-        { label: 'برنامجاً تنموياً ضمن المسارات الوقفية', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'برامج تنموية نُفّذت ضمن المسارات الوقفية في التطوير المؤسسي وبناء القدرات والتوعية.' },
+        { label: 'سهماً وقفياً', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'إجمالي الأسهم الوقفية التي جُمعت لتنمية أصول الوقف واستدامة مساراته التنموية.', icon: shared.statisticIcons[0] },
+        { label: 'مساهماً ومساهمة من 22 دولة', value: shared.waqfStatistics.contributors, suffix: '', detail: 'واقفون وواقفات من 22 دولة حول العالم شاركوا في بناء الوقف وتنميته.', icon: shared.statisticIcons[1] },
+        { label: 'مستفيداً من المسارات الوقفية', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'مستفيدون مباشرون من برامج المسارات الوقفية التعليمية والتنموية والمجتمعية.', icon: shared.statisticIcons[2] },
+        { label: 'برنامجاً تنموياً ضمن المسارات الوقفية', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'برامج تنموية نُفّذت ضمن المسارات الوقفية في التطوير المؤسسي وبناء القدرات والتوعية.', icon: shared.statisticIcons[3] },
       ],
       source: {
         label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
@@ -456,40 +501,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     news: {
       eyebrow: 'آخر المستجدات',
       title: 'آخر الأخبار',
-      items: [
-        {
-          id: 'condolences-sheikh-hamad',
-          title:
-            'عضو مجلس الشورى ورئيس وقف أويس القرني يقدّم واجب العزاء في وفاة الأمير الوالد الشيخ حمد بن خليفة آل ثاني',
-          category: 'أخبار',
-          date: 'يوليو 2026',
-          excerpt:
-            'قدّم رئيس وقف أويس القرني عضو مجلس الشورى الأستاذ صلاح باتيس واجب العزاء في وفاة الأمير الوالد سمو الشيخ حمد بن خليفة آل ثاني، وذلك في القنصلية العامة لدولة قطر.',
-          image: shared.newsImages.condolencesSheikhHamad,
-          url: '/news/shura-member-condolences-sheikh-hamad',
-          featured: true,
-        },
-        {
-          id: 'democracy-unity-day',
-          title: 'وقف أويس القرني يحيي الذكرى العاشرة ليوم الديمقراطية والوحدة الوطنية في تركيا',
-          category: 'أخبار',
-          date: 'يوليو 2026',
-          excerpt:
-            'في الذكرى العاشرة ليوم الديمقراطية والوحدة الوطنية، يستذكر وقف أويس القرني بكل تقدير تضحيات الشعب التركي في حماية وطنه وإرادته ووحدته.',
-          image: shared.newsImages.democracyUnityDay,
-          url: '/news/democracy-national-unity-day',
-        },
-        {
-          id: 'condolences-qatar',
-          title: 'وقف أويس القرني يعزّي دولة قطر في وفاة الأمير الوالد الشيخ حمد بن خليفة آل ثاني',
-          category: 'أخبار',
-          date: 'يوليو 2026',
-          excerpt:
-            'بقلوب مؤمنة بقضاء الله وقدره تلقينا نبأ وفاة سمو الأمير الوالد الشيخ حمد بن خليفة آل ثاني رحمه الله، وتتقدم كافة هيئات الوقف بأحر التعازي.',
-          image: shared.newsImages.condolencesQatar,
-          url: '/news/qatar-condolences-sheikh-hamad',
-        },
-      ],
+      count: 3,
     },
     partners: {
       eyebrow: 'شركاء النجاح',
@@ -505,7 +517,9 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'بمساهمتك، تتحول الموارد الوقفية إلى فرص تعليم وتأهيل ومشروعات يستمر أثرها.',
       primaryButton: 'ساهم الآن',
+      primaryUrl: shared.routes.donate,
       secondaryButton: 'تطوع معنا',
+      secondaryUrl: shared.routes.volunteer,
       image: shared.mainImage,
     },
     footer: {
@@ -525,6 +539,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'الحسابات البنكية وطرق المساهمة',
+      bankAccountsUrl: shared.routes.donate,
       newsletterTitle: 'النشرة الإخبارية',
       newsletterDescription: 'اشترك معنا في النشرة الإخبارية ليصلك كل جديد',
     },
@@ -560,6 +575,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         nextProject: 'المشروع التالي',
         projectDots: 'نقاط تنقل المشاريع',
         showProject: 'عرض',
+        breadcrumb: 'مسار التنقل',
       },
       footer: {
         licensePrefix: 'رقم الترخيص',
@@ -573,6 +589,10 @@ export const localizedContent: Record<Locale, SiteContent> = {
         twitter: 'تويتر',
         instagram: 'إنستغرام',
         youtube: 'يوتيوب',
+        linkedin: 'لينكدإن',
+        tiktok: 'تيك توك',
+        whatsapp: 'واتساب',
+        telegram: 'تيليغرام',
       },
     },
   },
@@ -581,6 +601,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       title: 'Veysel Karani Vakfı',
       description:
         'Yemenin kalkınmasına hizmet eden eğitim, kapasite geliştirme ve destek programları için yenilikçi ve sürdürülebilir vakıf yatırım araçları geliştiren bir vakıf kurumu.',
+      ogImage: shared.logo,
     },
     siteConfig: {
       ...siteBase,
@@ -588,20 +609,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
     },
     navLinks: [
       { label: 'Ana Sayfa', href: '#hero' },
-      { label: 'Vakıf Hakkında', href: '#about' },
+      { label: 'Vakıf Hakkında', href: '#about', menu: 'about' },
       { label: 'Projeler', href: '/projects' },
       { label: 'Mağaza', href: '/donate' },
-      { label: 'Programlar', href: '#programs' },
+      { label: 'Programlar', href: '#programs', menu: 'programs' },
       { label: 'Kütüphane', href: '/library' },
       { label: 'Haberler', href: '/news' },
       { label: 'Katıl', href: '/participate' },
     ],
     hero: {
       title: 'İnsanı inşa eden, geleceği kuran vakıf',
-      description:
-        'Sürdürülebilir vakıf yatırım araçları geliştiriyor, getirilerini eğitim, kapasite geliştirme ve Yemenin kalkınmasına katkı sunan projelere yönlendiriyoruz.',
-      primaryButton: 'Vakfı Tanıyın',
       secondaryButton: 'Şimdi Katkı Sun',
+      secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
       posterImage: shared.mainImage,
     },
@@ -637,12 +656,15 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'Kapsayıcı ulusal kimliği pekiştirmek ve Yemen için sürdürülebilir kalkınmayı desteklemek.',
       ],
       image: shared.mainImage,
+      imageAlt: 'Veysel Karani Vakfı',
+      learnMoreUrl: shared.routes.aboutWaqf,
     },
     projects: {
       eyebrow: 'İyiliğe Yatırım',
       title: 'Vakıf Projeleri',
       description:
         'Getirileri eğitim, kapasite geliştirme ve Yemenin kalkınma programlarına yönlendirilen sürdürülebilir vakıf yatırım projeleri.',
+      defaultContributionUrl: shared.routes.donate,
       items: [
         {
           id: 'waqf-share',
@@ -722,12 +744,13 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'Yemenli yetenekli ve başarılı öğrenciler için nitelikli eğitim ve liderlik hazırlığına odaklanan; burslar, liderlik ve beceri programları içeren bütüncül bir program.',
       button: 'Programı Keşfet',
+      url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'Eğitim Bursu', value: shared.yemenPioneersStatistics.educationalScholarships },
-        { label: 'Hakemli Bilimsel Araştırma', value: shared.yemenPioneersStatistics.peerReviewedResearch },
-        { label: 'Eğitim Buluşması', value: shared.yemenPioneersStatistics.trainingForums },
-        { label: 'Uluslararası Katılım', value: shared.yemenPioneersStatistics.internationalParticipations },
+        { label: 'Eğitim Bursu', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'Hakemli Bilimsel Araştırma', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
+        { label: 'Eğitim Buluşması', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
+        { label: 'Uluslararası Katılım', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
       statisticsSource: {
         label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
@@ -740,10 +763,10 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         '“Rakamlarla Oveys” raporundan resmi rakamlar — 7. sayı, Aralık 2025’e kadar.',
       indicators: [
-        { label: 'Vakıf Hissesi', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Vakıf varlıklarını büyütmek ve programlarını sürdürülebilir kılmak için toplanan toplam vakıf hissesi.' },
-        { label: '22 Ülkeden Katkı Sunan', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Dünya genelinde 22 ülkeden vakfın kuruluşuna ve büyümesine katkı sunan bağışçılar.' },
-        { label: 'Vakıf Programlarından Yararlanan', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Vakıf programlarının eğitim, kalkınma ve toplumsal alanlardaki doğrudan yararlanıcıları.' },
-        { label: 'Kalkınma Programı', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Kurumsal gelişim, kapasite geliştirme ve farkındalık alanlarında yürütülen kalkınma programları.' },
+        { label: 'Vakıf Hissesi', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Vakıf varlıklarını büyütmek ve programlarını sürdürülebilir kılmak için toplanan toplam vakıf hissesi.', icon: shared.statisticIcons[0] },
+        { label: '22 Ülkeden Katkı Sunan', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Dünya genelinde 22 ülkeden vakfın kuruluşuna ve büyümesine katkı sunan bağışçılar.', icon: shared.statisticIcons[1] },
+        { label: 'Vakıf Programlarından Yararlanan', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Vakıf programlarının eğitim, kalkınma ve toplumsal alanlardaki doğrudan yararlanıcıları.', icon: shared.statisticIcons[2] },
+        { label: 'Kalkınma Programı', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Kurumsal gelişim, kapasite geliştirme ve farkındalık alanlarında yürütülen kalkınma programları.', icon: shared.statisticIcons[3] },
       ],
       source: {
         label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
@@ -753,40 +776,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     news: {
       eyebrow: 'Son Gelişmeler',
       title: 'Son Haberler',
-      items: [
-        {
-          id: 'condolences-sheikh-hamad',
-          title:
-            'Şura Meclisi üyesi ve Veysel Karani Vakfı Başkanı, Şeyh Hamad bin Halife Al Sani için taziyelerini sundu',
-          category: 'Haberler',
-          date: 'Temmuz 2026',
-          excerpt:
-            'Veysel Karani Vakfı Başkanı ve Şura Meclisi üyesi Salah Batiss, Katar Devletinin kurucu emiri Şeyh Hamad bin Halife Al Sani için taziyelerini Katar Başkonsolosluğunda sundu.',
-          image: shared.newsImages.condolencesSheikhHamad,
-          url: '/news/shura-member-condolences-sheikh-hamad',
-          featured: true,
-        },
-        {
-          id: 'democracy-unity-day',
-          title: 'Veysel Karani Vakfı, Türkiyede 15 Temmuz Demokrasi ve Milli Birlik Gününün onuncu yılını andı',
-          category: 'Haberler',
-          date: 'Temmuz 2026',
-          excerpt:
-            'Demokrasi ve Milli Birlik Gününün onuncu yılında vakıf, Türk halkının vatanını, iradesini ve birliğini koruma uğruna gösterdiği fedakarlıkları saygıyla anıyor.',
-          image: shared.newsImages.democracyUnityDay,
-          url: '/news/democracy-national-unity-day',
-        },
-        {
-          id: 'condolences-qatar',
-          title: 'Veysel Karani Vakfı, Şeyh Hamad bin Halife Al Sani için Katar Devletine taziyelerini iletti',
-          category: 'Haberler',
-          date: 'Temmuz 2026',
-          excerpt:
-            'Şeyh Hamad bin Halife Al Sani’nin vefat haberini iman ve teslimiyetle aldık; vakfın tüm heyetleri en içten taziyelerini sunar.',
-          image: shared.newsImages.condolencesQatar,
-          url: '/news/qatar-condolences-sheikh-hamad',
-        },
-      ],
+      count: 3,
     },
     partners: {
       eyebrow: 'Başarı Ortakları',
@@ -802,7 +792,9 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'Katkınızla vakıf kaynakları, etkisi devam eden eğitim, yetiştirme ve proje fırsatlarına dönüşür.',
       primaryButton: 'Şimdi Katkı Sun',
+      primaryUrl: shared.routes.donate,
       secondaryButton: 'Gönüllü Ol',
+      secondaryUrl: shared.routes.volunteer,
       image: shared.mainImage,
     },
     footer: {
@@ -822,6 +814,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'Banka Hesapları ve Katkı Yolları',
+      bankAccountsUrl: shared.routes.donate,
       newsletterTitle: 'E-Bülten',
       newsletterDescription: 'Yeni gelişmelerden haberdar olmak için e-bültenimize abone olun',
     },
@@ -857,6 +850,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         nextProject: 'Sonraki proje',
         projectDots: 'Proje gezinme noktaları',
         showProject: 'Göster',
+        breadcrumb: 'Gezinti yolu',
       },
       footer: {
         licensePrefix: 'Lisans No',
@@ -870,6 +864,10 @@ export const localizedContent: Record<Locale, SiteContent> = {
         twitter: 'Twitter',
         instagram: 'Instagram',
         youtube: 'YouTube',
+        linkedin: 'LinkedIn',
+        tiktok: 'TikTok',
+        whatsapp: 'WhatsApp',
+        telegram: 'Telegram',
       },
     },
   },
@@ -878,6 +876,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       title: 'Veysel Karani Waqf',
       description:
         'A waqf institution developing innovative and sustainable investment vehicles to support education, capacity building, and programs that serve Yemen’s advancement.',
+      ogImage: shared.logo,
     },
     siteConfig: {
       ...siteBase,
@@ -885,20 +884,18 @@ export const localizedContent: Record<Locale, SiteContent> = {
     },
     navLinks: [
       { label: 'Home', href: '#hero' },
-      { label: 'About', href: '#about' },
+      { label: 'About', href: '#about', menu: 'about' },
       { label: 'Projects', href: '/projects' },
       { label: 'Store', href: '/donate' },
-      { label: 'Programs', href: '#programs' },
+      { label: 'Programs', href: '#programs', menu: 'programs' },
       { label: 'Library', href: '/library' },
       { label: 'News', href: '/news' },
       { label: 'Participate', href: '/participate' },
     ],
     hero: {
       title: 'A waqf that builds people and shapes the future',
-      description:
-        'We create sustainable waqf investment vehicles and direct their returns toward education, capacity building, and projects that contribute to Yemen’s advancement.',
-      primaryButton: 'Discover the Waqf',
       secondaryButton: 'Contribute Now',
+      secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
       posterImage: shared.mainImage,
     },
@@ -934,12 +931,15 @@ export const localizedContent: Record<Locale, SiteContent> = {
         'Consolidate the inclusive national identity and support sustainable development for Yemen.',
       ],
       image: shared.mainImage,
+      imageAlt: 'Veysel Karani Waqf',
+      learnMoreUrl: shared.routes.aboutWaqf,
     },
     projects: {
       eyebrow: 'Invest in Good',
       title: 'Waqf Projects',
       description:
         'Sustainable waqf investment projects whose returns are directed toward education, capacity building, and Yemen advancement programs.',
+      defaultContributionUrl: shared.routes.donate,
       items: [
         {
           id: 'waqf-share',
@@ -1019,12 +1019,13 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'An integrated program focused on quality education and preparation for talented and high-achieving Yemeni students, developing them as future leaders through scholarships, leadership, and skills programs.',
       button: 'Discover the Program',
+      url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'Educational Scholarships', value: shared.yemenPioneersStatistics.educationalScholarships },
-        { label: 'Peer-Reviewed Studies', value: shared.yemenPioneersStatistics.peerReviewedResearch },
-        { label: 'Training Forums', value: shared.yemenPioneersStatistics.trainingForums },
-        { label: 'International Participations', value: shared.yemenPioneersStatistics.internationalParticipations },
+        { label: 'Educational Scholarships', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'Peer-Reviewed Studies', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
+        { label: 'Training Forums', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
+        { label: 'International Participations', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
       statisticsSource: {
         label: 'Source: “Owais in Numbers” report — through December 2025',
@@ -1037,10 +1038,10 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'Official figures from the “Owais in Numbers” report — 7th edition, through December 2025.',
       indicators: [
-        { label: 'Waqf Shares', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Total waqf shares contributed to grow the endowment’s assets and sustain its development tracks.' },
-        { label: 'Contributors from 22 Countries', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Donors from 22 countries around the world who have taken part in building and growing the waqf.' },
-        { label: 'Program Beneficiaries', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Direct beneficiaries of the waqf tracks’ educational, developmental, and community programs.' },
-        { label: 'Development Programs', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Development programs delivered across institutional development, capacity building, and awareness tracks.' },
+        { label: 'Waqf Shares', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Total waqf shares contributed to grow the endowment’s assets and sustain its development tracks.', icon: shared.statisticIcons[0] },
+        { label: 'Contributors from 22 Countries', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Donors from 22 countries around the world who have taken part in building and growing the waqf.', icon: shared.statisticIcons[1] },
+        { label: 'Program Beneficiaries', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Direct beneficiaries of the waqf tracks’ educational, developmental, and community programs.', icon: shared.statisticIcons[2] },
+        { label: 'Development Programs', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Development programs delivered across institutional development, capacity building, and awareness tracks.', icon: shared.statisticIcons[3] },
       ],
       source: {
         label: 'Source: “Owais in Numbers” report — through December 2025',
@@ -1050,40 +1051,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
     news: {
       eyebrow: 'Latest Updates',
       title: 'Latest News',
-      items: [
-        {
-          id: 'condolences-sheikh-hamad',
-          title:
-            'Shura Council member and Veysel Karani Waqf president offers condolences on the passing of Sheikh Hamad bin Khalifa Al Thani',
-          category: 'News',
-          date: 'July 2026',
-          excerpt:
-            'Veysel Karani Waqf president and Shura Council member Salah Batiss offered condolences on the passing of Sheikh Hamad bin Khalifa Al Thani at the Consulate General of Qatar.',
-          image: shared.newsImages.condolencesSheikhHamad,
-          url: '/news/shura-member-condolences-sheikh-hamad',
-          featured: true,
-        },
-        {
-          id: 'democracy-unity-day',
-          title: 'Veysel Karani Waqf marks the tenth anniversary of Türkiye’s Democracy and National Unity Day',
-          category: 'News',
-          date: 'July 2026',
-          excerpt:
-            'On the tenth anniversary of Democracy and National Unity Day, the waqf honors the sacrifices of the Turkish people in protecting their homeland, will, and unity.',
-          image: shared.newsImages.democracyUnityDay,
-          url: '/news/democracy-national-unity-day',
-        },
-        {
-          id: 'condolences-qatar',
-          title: 'Veysel Karani Waqf extends condolences to Qatar on the passing of Sheikh Hamad bin Khalifa Al Thani',
-          category: 'News',
-          date: 'July 2026',
-          excerpt:
-            'With faithful hearts, we received the news of the passing of Sheikh Hamad bin Khalifa Al Thani; all waqf bodies extend their deepest condolences.',
-          image: shared.newsImages.condolencesQatar,
-          url: '/news/qatar-condolences-sheikh-hamad',
-        },
-      ],
+      count: 3,
     },
     partners: {
       eyebrow: 'Success Partners',
@@ -1099,7 +1067,9 @@ export const localizedContent: Record<Locale, SiteContent> = {
       description:
         'Your contribution turns waqf resources into education, training, and project opportunities whose impact continues.',
       primaryButton: 'Contribute Now',
+      primaryUrl: shared.routes.donate,
       secondaryButton: 'Volunteer With Us',
+      secondaryUrl: shared.routes.volunteer,
       image: shared.mainImage,
     },
     footer: {
@@ -1119,6 +1089,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'Bank Accounts and Contribution Methods',
+      bankAccountsUrl: shared.routes.donate,
       newsletterTitle: 'Newsletter',
       newsletterDescription: 'Subscribe to receive the latest updates from us',
     },
@@ -1154,6 +1125,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         nextProject: 'Next project',
         projectDots: 'Project navigation dots',
         showProject: 'Show',
+        breadcrumb: 'Breadcrumb',
       },
       footer: {
         licensePrefix: 'License No.',
@@ -1167,10 +1139,27 @@ export const localizedContent: Record<Locale, SiteContent> = {
         twitter: 'Twitter',
         instagram: 'Instagram',
         youtube: 'YouTube',
+        linkedin: 'LinkedIn',
+        tiktok: 'TikTok',
+        whatsapp: 'WhatsApp',
+        telegram: 'Telegram',
       },
     },
   },
 };
+
+/**
+ * Which header submenu a top-level nav link opens. The editor's explicit
+ * `menu` wins; links saved before that field existed keep working through the
+ * old href check.
+ */
+export function navMenuFor(link: { href: string; menu?: string }): NavMenu {
+  if (link.menu === 'about' || link.menu === 'programs') return link.menu;
+  if (link.menu === '') return '';
+  if (link.href === '#about') return 'about';
+  if (link.href === '#programs') return 'programs';
+  return '';
+}
 
 export function getDirection(locale: Locale): Direction {
   return languages.find((language) => language.code === locale)?.dir ?? 'rtl';

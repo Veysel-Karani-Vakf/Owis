@@ -85,10 +85,17 @@ export function subscribeCms(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Rows for a table, or `null` when the CMS has nothing (use static defaults). */
+/**
+ * Rows for a table, or `null` when the table was never loaded (offline or a
+ * failed fetch), which the adapters read as "use the static defaults".
+ *
+ * A table that loaded with zero published rows returns `[]`: an editor who
+ * unpublishes everything in a list means it to be empty, not to fall back to
+ * the copy that ships in this repo.
+ */
 export function cmsRows<K extends keyof CmsTables>(table: K): CmsTables[K] | null {
   const rows = effective.tables[table];
-  return rows && rows.length ? (rows as CmsTables[K]) : null;
+  return rows ? (rows as CmsTables[K]) : null;
 }
 
 /** Stored data for a site page, or `null` when unset. */

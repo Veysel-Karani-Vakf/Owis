@@ -1,11 +1,10 @@
 import { motion } from 'framer-motion';
 import { useInView } from '@/hooks/useInView';
+import type { Partner } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 
 const FALLBACK_LOGO =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80"%3E%3Crect fill="%23e2e6e3" width="128" height="80" rx="8"/%3E%3C/svg%3E';
-
-type Partner = { name: string; logo: string };
 
 function LogoTrack({
   partners,
@@ -23,13 +22,10 @@ function LogoTrack({
       }`}
       aria-hidden={colored ? true : undefined}
     >
-      {partners.map((partner, i) => (
-        <div
-          key={`${partner.logo}-${i}`}
-          className="flex h-20 w-32 flex-shrink-0 items-center justify-center"
-        >
+      {partners.map((partner, i) => {
+        const logo = (
           <img
-            src={partner.logo}
+            src={partner.logo || FALLBACK_LOGO}
             alt={colored ? '' : partner.name}
             loading="lazy"
             className={`max-h-20 max-w-32 object-contain ${
@@ -39,8 +35,30 @@ function LogoTrack({
               (e.target as HTMLImageElement).src = FALLBACK_LOGO;
             }}
           />
-        </div>
-      ))}
+        );
+
+        return (
+          <div
+            key={`${partner.logo}-${i}`}
+            className="flex h-20 w-32 flex-shrink-0 items-center justify-center"
+          >
+            {/* Only the readable (base) layer gets the link; the colour overlay is decorative. */}
+            {partner.url && !colored ? (
+              <a
+                href={partner.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={partner.name}
+                className="flex h-full w-full items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+              >
+                {logo}
+              </a>
+            ) : (
+              logo
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -49,10 +67,14 @@ export default function Partners() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, isRtl } = useI18n();
   const partnersContent = content.partners;
+  const items = partnersContent.items ?? [];
   // Repeat the set enough times so the strip is always full edge-to-edge,
   // then duplicate once more so the -50% loop is seamless.
-  const baseSet = [...partnersContent.items, ...partnersContent.items];
+  const baseSet = [...items, ...items];
   const marqueePartners = [...baseSet, ...baseSet];
+
+  // The editor may unpublish every partner; hide the section instead of an empty strip.
+  if (items.length === 0) return null;
 
   return (
     <section id="partners" className="overflow-hidden bg-cream py-16 md:py-20">

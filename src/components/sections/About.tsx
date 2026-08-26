@@ -163,11 +163,11 @@ export default function About() {
   ];
 
   const tabContent: Record<TabKey, string | string[]> = {
-    vision: aboutContent.vision,
-    mission: aboutContent.mission,
-    methodology: aboutContent.methodology,
-    values: aboutContent.values,
-    sectors: aboutContent.sectors,
+    vision: aboutContent.vision ?? '',
+    mission: aboutContent.mission ?? [],
+    methodology: aboutContent.methodology ?? [],
+    values: aboutContent.values ?? [],
+    sectors: aboutContent.sectors ?? [],
   };
 
   const renderTabContent = (tabKey: TabKey) => {
@@ -179,9 +179,9 @@ export default function About() {
           variants={tabItemsContainerVariants}
           className="grid grid-cols-2 gap-2 sm:grid-cols-3"
         >
-          {(currentContent as string[]).map((value) => (
+          {(currentContent as string[]).map((value, index) => (
             <motion.span
-              key={value}
+              key={`${value}-${index}`}
               variants={tabItemVariants}
               className="flex items-center justify-center rounded-full bg-primary-50 px-2 py-2 text-center text-xs font-medium leading-snug text-primary-700 sm:px-3 sm:text-sm"
             >
@@ -195,9 +195,9 @@ export default function About() {
     if (tabKey === 'values' || tabKey === 'sectors') {
       return (
         <motion.div variants={tabItemsContainerVariants} className="flex flex-wrap gap-2">
-          {(currentContent as string[]).map((value) => (
+          {(currentContent as string[]).map((value, index) => (
             <motion.span
-              key={value}
+              key={`${value}-${index}`}
               variants={tabItemVariants}
               className="rounded-full bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700"
             >
@@ -211,9 +211,9 @@ export default function About() {
     if (Array.isArray(currentContent)) {
       return (
         <motion.ul variants={tabItemsContainerVariants} className="space-y-3">
-          {currentContent.map((item) => (
+          {currentContent.map((item, index) => (
             <motion.li
-              key={item}
+              key={`${item}-${index}`}
               variants={tabItemVariants}
               className="flex items-start gap-3 text-sm leading-relaxed text-dark-600 md:text-base"
             >
@@ -313,7 +313,7 @@ export default function About() {
             <div className="relative overflow-hidden rounded-2xl shadow-2xl">
               <img
                 src={aboutContent.image}
-                alt={aboutContent.title}
+                alt={aboutContent.imageAlt || aboutContent.title}
                 loading="lazy"
                 className="aspect-[4/3] w-full object-cover transition-transform duration-700 hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
                 onError={(e) => {
@@ -389,7 +389,7 @@ export default function About() {
               variants={goalsContainerVariants}
               className="mb-8 flex flex-col gap-3"
             >
-              {aboutContent.goals.map((goal, i) => (
+              {(aboutContent.goals ?? []).map((goal, i) => (
                 <motion.div key={i} variants={goalItemVariants} className="flex items-start gap-3">
                   <motion.div
                     variants={checkVariants}
@@ -529,7 +529,7 @@ export default function About() {
                 reduced: { opacity: 1, x: 0, transition: { duration: 0.01 } },
               }}
               type="button"
-              onClick={() => navigate('/projects')}
+              onClick={() => navigate(aboutContent.learnMoreUrl || '/about/waqf')}
               className="group mt-6 flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               {t('common.learnMore')}

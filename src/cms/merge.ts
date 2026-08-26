@@ -74,3 +74,35 @@ export function locList(
 export function isBlankLocalized(value: Localized | undefined | null): boolean {
   return loc(value, 'ar', '') === '';
 }
+
+/**
+ * Localized text for a record column, honouring an editor's decision to blank
+ * a field.
+ *
+ * - No stored map, or a map with no keys → the column was never touched: use
+ *   the static default.
+ * - A map with text in this locale → that text; else text from another locale.
+ * - A map whose languages were all emptied → '' (the editor cleared it), never
+ *   the static default, so what the dashboard shows is what the site shows.
+ */
+export function locText(value: unknown, locale: Locale, fallback = ''): string {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (!isPlainObject(value) || Object.keys(value).length === 0) return fallback;
+  const map = value as Localized;
+  const direct = map[locale];
+  if (typeof direct === 'string' && direct.trim()) return direct;
+  for (const alt of LOCALES) {
+    const candidate = map[alt];
+    if (typeof candidate === 'string' && candidate.trim()) return candidate;
+  }
+  return '';
+}
+
+/**
+ * Scalar column with the same rule: `null`/`undefined` = not set (default),
+ * anything else — including '' — is what the editor stored.
+ */
+export function scalar<T>(value: T | null | undefined, fallback: T): T {
+  return value === null || value === undefined ? fallback : value;
+}

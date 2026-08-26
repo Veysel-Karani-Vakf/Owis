@@ -46,7 +46,7 @@ export default function LibraryLightbox({
         <motion.div
           role="dialog"
           aria-modal="true"
-          aria-label={image.title}
+          aria-label={image.title || `${labels.imageCounter} ${activeIndex + 1}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -87,7 +87,8 @@ export default function LibraryLightbox({
               className="max-h-[78vh] w-auto max-w-full rounded-[18px] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
             />
             <figcaption className="mt-4 flex w-full max-w-3xl flex-col items-center gap-3 text-center text-white sm:flex-row sm:justify-between sm:text-start">
-              <span className="text-sm font-semibold">
+              {image.title && <span className="text-base font-bold leading-snug">{image.title}</span>}
+              <span className={`text-sm font-semibold ${image.title ? 'shrink-0 text-white/70' : ''}`}>
                 {labels.imageCounter} {activeIndex + 1} / {images.length}
               </span>
             </figcaption>

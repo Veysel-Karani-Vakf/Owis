@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Eye, History, Sparkles, Telescope, type LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ProgramTheme } from '@/data/programs';
-import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
 
 type AwarenessThemesProps = {
   eyebrow: string;
@@ -15,17 +15,15 @@ type AwarenessThemesProps = {
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 
-// Radar geometry (viewBox 0..400). Each theme sits on its own ring, fanned around the hub.
-const RING_RADII = [78, 128, 172];
-const NODE_ANGLES = [-70, 25, 150];
+// One icon per circle: history read, present studied, future anticipated.
+const themeIcons: Record<string, LucideIcon> = {
+  'read-history': History,
+  'study-present': Eye,
+  'anticipate-future': Telescope,
+};
+const fallbackIcons: LucideIcon[] = [History, Eye, Telescope];
 
-function polar(radius: number, angleDeg: number) {
-  const angle = (angleDeg * Math.PI) / 180;
-  return {
-    x: 200 + radius * Math.cos(angle),
-    y: 200 + radius * Math.sin(angle),
-  };
-}
+const TICKS = 36;
 
 export default function AwarenessThemes({
   eyebrow,
@@ -35,7 +33,6 @@ export default function AwarenessThemes({
   hubTitle,
   themes,
 }: AwarenessThemesProps) {
-  const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
   const [activeId, setActiveId] = useState(themes[0]?.id ?? '');
   const trackRef = useRef<HTMLDivElement>(null);
@@ -44,10 +41,17 @@ export default function AwarenessThemes({
     themes.findIndex((theme) => theme.id === activeId),
   );
   const activeTheme = themes[activeIndex];
-  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  // Editor-chosen icon first, then the seeded id map, then the positional defaults.
+  const ActiveIcon = activeTheme
+    ? resolveIcon(
+        activeTheme.icon,
+        [themeIcons[activeTheme.id] ?? fallbackIcons[activeIndex] ?? Sparkles],
+        activeIndex,
+      )
+    : Sparkles;
 
-  // The section is taller than the viewport on large screens; the content pins while the
-  // scroll position walks through the themes one by one (hover/click still work between scrolls).
+  // The section is taller than the viewport on large screens; the stage pins while the
+  // scroll position walks through the circles one by one (hover/click still work between scrolls).
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start 0.1', 'end end'] });
   useMotionValueEvent(scrollYProgress, 'change', (progress) => {
     if (!themes.length) return;
@@ -58,26 +62,29 @@ export default function AwarenessThemes({
 
   if (!themes.length || !activeTheme) return null;
 
+  const fillPercent = themes.length > 1 ? (activeIndex / (themes.length - 1)) * 100 : 100;
+
   return (
     <div ref={trackRef} className="mx-auto max-w-7xl px-4 md:px-8 lg:min-h-[190vh]">
-      <div className="grid gap-10 lg:sticky lg:top-24 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-12">
-        <div className="text-start">
+      <div className="lg:sticky lg:top-24 lg:flex lg:min-h-[calc(100vh-6rem)] lg:flex-col lg:justify-center lg:pb-4">
+        <div className="mx-auto mb-6 max-w-3xl text-center md:mb-8 [@media(min-height:900px)]:md:mb-12">
           <motion.div
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.55, ease: smoothEase }}
-            className="mb-3 flex items-center gap-2"
+            className="mb-4 flex items-center justify-center gap-2"
           >
             <span className="h-px w-8 bg-primary-200" />
             <span className="text-sm font-semibold text-primary-700">{eyebrow}</span>
+            <span className="h-px w-8 bg-primary-200" />
           </motion.div>
           <motion.h2
             initial={reduced ? { opacity: 1 } : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: smoothEase, delay: 0.05 }}
-            className="text-balance text-2xl font-bold leading-[1.3] text-dark-950 md:text-3xl"
+            className="text-balance text-3xl font-bold leading-[1.3] text-dark-950 md:text-4xl"
           >
             {title}
           </motion.h2>
@@ -86,191 +93,114 @@ export default function AwarenessThemes({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.6, ease: smoothEase, delay: 0.1 }}
-            className="mt-3 max-w-xl text-sm leading-relaxed text-dark-600 md:text-base"
+            className="mt-3 text-sm leading-relaxed text-dark-600 md:text-base"
           >
             {description}
           </motion.p>
-
-          <div role="list" className="mt-6 border-t border-dark-100">
-            {themes.map((theme, index) => {
-              const active = theme.id === activeTheme.id;
-
-              return (
-                <motion.div
-                  role="listitem"
-                  key={theme.id}
-                  initial={reduced ? { opacity: 1 } : { opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{
-                    duration: 0.55,
-                    ease: smoothEase,
-                    delay: index * 0.08,
-                  }}
-                  className="border-b border-dark-100"
-                >
-                  <button
-                    type="button"
-                    onMouseEnter={() => setActiveId(theme.id)}
-                    onFocus={() => setActiveId(theme.id)}
-                    onClick={() => setActiveId(theme.id)}
-                    aria-pressed={active}
-                    aria-label={`${themeLabel} ${index + 1}: ${theme.title}`}
-                    className="group relative grid w-full grid-cols-[auto_1fr_auto] items-start gap-4 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 md:gap-5 md:py-4"
-                  >
-                    <motion.span
-                      aria-hidden="true"
-                      initial={false}
-                      animate={{ scaleY: active ? 1 : 0 }}
-                      transition={{ duration: 0.45, ease: smoothEase }}
-                      className="absolute inset-y-4 start-0 w-[3px] origin-top rounded-full bg-primary-600"
-                    />
-                    <span
-                      dir="ltr"
-                      className={`ps-4 text-2xl font-black leading-none tabular-nums transition-colors duration-500 md:text-3xl ${
-                        active ? 'text-primary-600' : 'text-dark-200 group-hover:text-dark-300'
-                      }`}
-                    >
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span className="min-w-0">
-                      <span
-                        className={`block text-base font-bold leading-snug transition-colors duration-500 md:text-lg ${
-                          active ? 'text-dark-950' : 'text-dark-700 group-hover:text-dark-950'
-                        }`}
-                      >
-                        {theme.title}
-                      </span>
-                      <AnimatePresence initial={false}>
-                        {active && (
-                          <motion.span
-                            key="description"
-                            initial={reduced ? { opacity: 1, height: 'auto' } : { opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={reduced ? { opacity: 0, height: 'auto' } : { opacity: 0, height: 0 }}
-                            transition={{ duration: 0.45, ease: smoothEase }}
-                            className="block overflow-hidden"
-                          >
-                            <span className="block pt-2 text-sm leading-relaxed text-dark-600">
-                              {theme.description}
-                            </span>
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </span>
-                    <span
-                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-500 ${
-                        active
-                          ? 'border-primary-600 bg-primary-600 text-white'
-                          : 'border-dark-200 text-dark-400 group-hover:border-dark-400'
-                      }`}
-                    >
-                      <ArrowIcon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                  </button>
-                </motion.div>
-              );
-            })}
-          </div>
         </div>
 
-        <div>
-          <motion.div
-            initial={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.7, ease: smoothEase }}
-            className="relative mx-auto w-full max-w-[26rem]"
-          >
-            <div className="relative isolate aspect-square overflow-hidden rounded-[32px] bg-dark-950 text-white shadow-[0_30px_80px_rgba(40,12,18,0.22)]">
-              <div
+        {/* One stage carries everything: the platform chip, the active circle's story, and the
+            timeline the three circles stand on — so the whole journey reads as a single unit. */}
+        <motion.div
+          initial={reduced ? { opacity: 1 } : { opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.7, ease: smoothEase }}
+          className="relative isolate overflow-hidden rounded-[32px] bg-dark-950 p-6 text-white shadow-[0_30px_80px_rgba(40,12,18,0.22)] md:p-8 [@media(min-height:900px)]:lg:p-12"
+        >
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_10%,rgba(218,8,18,0.3),transparent_55%)]"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 opacity-[0.06] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:48px_48px]"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-sm font-bold text-white/85 backdrop-blur">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary-500" />
+              </span>
+              {hubTitle}
+            </span>
+            <span dir="ltr" className="text-sm font-black tabular-nums tracking-widest text-white/40">
+              {String(activeIndex + 1).padStart(2, '0')} / {String(themes.length).padStart(2, '0')}
+            </span>
+          </div>
+
+          <div className="relative mt-7 min-h-[180px] md:min-h-[165px] [@media(min-height:900px)]:lg:mt-10 [@media(min-height:900px)]:lg:min-h-[190px]">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={`ghost-${activeTheme.id}`}
                 aria-hidden="true"
-                className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(218,8,18,0.32),transparent_60%)]"
-              />
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 -z-10 opacity-[0.07] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:40px_40px]"
-              />
+                dir="ltr"
+                initial={reduced ? { opacity: 1 } : { opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, x: -24 }}
+                transition={{ duration: reduced ? 0.01 : 0.45, ease: smoothEase }}
+                className="pointer-events-none absolute -top-8 end-0 select-none text-[8rem] font-black leading-none tabular-nums text-white/[0.05] md:text-[10rem] [@media(min-height:900px)]:lg:text-[13rem]"
+              >
+                {String(activeIndex + 1).padStart(2, '0')}
+              </motion.span>
+            </AnimatePresence>
 
-              <svg aria-hidden="true" viewBox="0 0 400 400" className="absolute inset-0 h-full w-full">
-                {RING_RADII.map((radius, index) => (
-                  <circle
-                    key={radius}
-                    cx="200"
-                    cy="200"
-                    r={radius}
-                    fill="none"
-                    stroke={index === activeIndex ? 'rgba(255,155,165,0.7)' : 'rgba(255,255,255,0.14)'}
-                    strokeWidth={index === activeIndex ? 1.5 : 1}
-                    strokeDasharray={index === activeIndex ? undefined : '3 6'}
-                    className="transition-all duration-500"
-                  />
-                ))}
-
-                {[0, 1].map((ring) => (
-                  <motion.circle
-                    key={ring}
-                    cx="200"
-                    cy="200"
-                    r="40"
-                    fill="none"
-                    stroke="rgba(255,120,130,0.6)"
-                    strokeWidth="1.2"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={reduced ? { scale: 1, opacity: 0 } : { scale: [0.5, 5], opacity: [0.7, 0] }}
-                    transition={
-                      reduced
-                        ? { duration: 0.01 }
-                        : {
-                            duration: 5,
-                            ease: 'easeOut',
-                            repeat: Infinity,
-                            delay: ring * 2.5,
-                          }
-                    }
-                    style={{ transformOrigin: '200px 200px' }}
-                  />
-                ))}
-
-                {themes.map((theme, index) => {
-                  const point = polar(RING_RADII[index % RING_RADII.length], NODE_ANGLES[index % NODE_ANGLES.length]);
-                  const active = index === activeIndex;
-
-                  return (
-                    <motion.line
-                      key={`line-${theme.id}`}
-                      x1="200"
-                      y1="200"
-                      x2={point.x}
-                      y2={point.y}
-                      stroke="rgba(255,255,255,0.9)"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      initial={false}
-                      animate={{
-                        pathLength: active ? 1 : 0,
-                        opacity: active ? 1 : 0,
-                      }}
-                      transition={{
-                        duration: reduced ? 0.01 : 0.6,
-                        ease: smoothEase,
-                      }}
-                    />
-                  );
-                })}
-              </svg>
-
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white p-3 text-center shadow-[0_18px_40px_rgba(0,0,0,0.4)] ring-4 ring-primary-600/40">
-                  <span className="text-balance text-[11px] font-black leading-tight text-dark-950 md:text-xs">
-                    {hubTitle}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTheme.id}
+                initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? { opacity: 0, y: 0 } : { opacity: 0, y: -14 }}
+                transition={{ duration: reduced ? 0.01 : 0.4, ease: smoothEase }}
+                className="relative max-w-2xl text-start"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-primary-300">
+                    <ActiveIcon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <span className="rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-black text-white/70">
+                    {themeLabel} {String(activeIndex + 1).padStart(2, '0')}
                   </span>
                 </div>
-              </div>
+                <h3 className="mt-4 text-balance text-3xl font-bold leading-tight [@media(min-height:900px)]:lg:mt-5 [@media(min-height:900px)]:lg:text-4xl">
+                  {activeTheme.title}
+                </h3>
+                <p className="mt-2.5 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
+                  {activeTheme.description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
+          {/* The journey line: it starts at the platform, fills red up to the active circle,
+              and every station stands on it — nothing floats loose. */}
+          <div className="relative mt-8 [@media(min-height:900px)]:lg:mt-12">
+            <div aria-hidden="true" className="absolute -top-4 inset-x-6 flex justify-between md:inset-x-8">
+              {Array.from({ length: TICKS }).map((_, index) => (
+                <span key={index} className={`h-2.5 w-px ${index % 6 === 0 ? 'bg-white/25' : 'bg-white/10'}`} />
+              ))}
+            </div>
+
+            {/* Inset so the line's ends sit exactly under the first and last station circles. */}
+            <div aria-hidden="true" className="absolute top-[22px] inset-x-[52px] h-[3px] rounded-full bg-white/10 sm:inset-x-[68px] md:inset-x-[88px]">
+              <motion.div
+                initial={false}
+                animate={{ width: `${fillPercent}%` }}
+                transition={{ duration: reduced ? 0.01 : 0.7, ease: smoothEase }}
+                className="absolute inset-y-0 start-0 rounded-full bg-gradient-to-r from-primary-700 via-primary-600 to-primary-400 rtl:bg-gradient-to-l"
+              >
+                <span className="absolute end-0 top-1/2 flex h-3 w-3 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-primary-400" />
+                </span>
+              </motion.div>
+            </div>
+
+            <div className="relative flex items-start justify-between px-1 md:px-2">
               {themes.map((theme, index) => {
-                const point = polar(RING_RADII[index % RING_RADII.length], NODE_ANGLES[index % NODE_ANGLES.length]);
                 const active = index === activeIndex;
+                const passed = index < activeIndex;
 
                 return (
                   <button
@@ -279,42 +209,43 @@ export default function AwarenessThemes({
                     onMouseEnter={() => setActiveId(theme.id)}
                     onFocus={() => setActiveId(theme.id)}
                     onClick={() => setActiveId(theme.id)}
-                    aria-label={`${themeLabel} ${index + 1}: ${theme.title}`}
                     aria-pressed={active}
-                    style={{
-                      left: `${(point.x / 400) * 100}%`,
-                      top: `${(point.y / 400) * 100}%`,
-                    }}
-                    className="group absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                    aria-label={`${themeLabel} ${index + 1}: ${theme.title}`}
+                    className="group z-10 flex w-24 flex-col items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:w-32 md:w-40"
                   >
-                    <motion.span
-                      aria-hidden="true"
-                      initial={false}
-                      animate={{
-                        scale: active ? 1 : 0.7,
-                        opacity: active ? 1 : 0,
-                      }}
-                      transition={{ duration: 0.45, ease: smoothEase }}
-                      className="absolute h-10 w-10 rounded-full bg-primary-500/35 blur-[2px]"
-                    />
-                    <motion.span
-                      initial={false}
-                      animate={{ scale: active ? 1 : 0.8 }}
-                      transition={{ duration: 0.45, ease: smoothEase }}
-                      className={`relative flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-colors duration-500 ${
-                        active
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white/15 text-white/80 backdrop-blur group-hover:bg-white/30'
+                    <span className="relative flex h-11 w-11 items-center justify-center">
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-500/40 motion-reduce:animate-none"
+                        />
+                      )}
+                      <span
+                        dir="ltr"
+                        className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-black tabular-nums transition-all duration-500 ${
+                          active
+                            ? 'scale-110 border-primary-400 bg-primary-600 text-white shadow-[0_0_30px_rgba(218,8,18,0.55)]'
+                            : passed
+                              ? 'border-primary-500/60 bg-dark-950 text-primary-300'
+                              : 'border-white/20 bg-dark-950 text-white/55 group-hover:border-white/45 group-hover:text-white/80'
+                        }`}
+                      >
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-balance text-center text-[11px] font-bold leading-snug transition-colors duration-500 sm:text-xs md:text-sm ${
+                        active ? 'text-white' : passed ? 'text-primary-200/80' : 'text-white/45 group-hover:text-white/70'
                       }`}
                     >
-                      {String(index + 1).padStart(2, '0')}
-                    </motion.span>
+                      {theme.title}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

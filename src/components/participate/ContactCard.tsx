@@ -1,4 +1,4 @@
-import { ExternalLink, MessageCircle, Share2 } from 'lucide-react';
+import { ExternalLink, Globe, MessageCircle, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ParticipateContactLink, ParticipateLabels } from '@/data/participate';
 import { useRevealMotion } from '@/hooks/useResponsiveMotion';
@@ -18,7 +18,8 @@ export default function ContactCard({ link, labels, index }: ContactCardProps) {
     mobileY: 12,
     mobileDuration: 0.42,
   });
-  const Icon = link.kind === 'whatsapp' ? MessageCircle : Share2;
+  // `kind` comes from an admin select; an unknown or missing value still gets an icon.
+  const Icon = link.kind === 'whatsapp' ? MessageCircle : link.kind === 'social' ? Share2 : Globe;
 
   return (
     <motion.article

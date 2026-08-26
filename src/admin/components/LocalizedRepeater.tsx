@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { LOCALES, type Locale } from '@/lib/types';
-import { useI18n } from '@/i18n/useI18n';
 import type { PageFieldDef } from '../lib/pageSchema';
+import { hasLocalizedLeaves, splitItemsByLocale } from '../lib/localizedShapes';
 import { RepeaterInput, contentDir } from './PageFields';
-
-const localeName: Record<Locale, string> = { ar: 'العربية', tr: 'Türkçe', en: 'English' };
+import { CopyFromButtons, useFieldLocale } from './FieldControls';
+import { LocaleSwitch } from './EditingLocale';
 
 /**
  * A repeating group stored once per language:
@@ -24,11 +23,12 @@ export function LocalizedRepeaterInput({
   itemFields: PageFieldDef[];
   itemTitleField?: string;
 }) {
-  const { locale } = useI18n();
-  const [tab, setTab] = useState<Locale>(locale);
+  const [tab, setTab] = useFieldLocale();
 
   const container = normalize(value);
   const rows = container[tab] ?? [];
+  const has = (option: Locale) => (container[option] ?? []).length > 0;
+  const counts = Object.fromEntries(LOCALES.map((l) => [l, has(l)])) as Record<Locale, boolean>;
 
   const copyFrom = (source: Locale) => {
     const items = container[source] ?? [];
@@ -38,44 +38,15 @@ export function LocalizedRepeaterInput({
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-1">
-        {LOCALES.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => setTab(option)}
-            className={
-              'rounded-md px-2.5 py-1 text-xs font-medium transition ' +
-              (tab === option ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
-            }
-          >
-            {localeName[option]}
-            <span className="ms-1.5 opacity-60">{(container[option] ?? []).length}</span>
-          </button>
-        ))}
-
+        <LocaleSwitch value={tab} onChange={setTab} counts={counts} />
+        <span className="text-xs text-slate-400">{rows.length}</span>
         <span className="flex-1" />
-
         {/* Translating is easier starting from a filled language than from nothing. */}
-        {rows.length === 0 &&
-          LOCALES.filter((option) => option !== tab && (container[option] ?? []).length > 0).map(
-            (option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => copyFrom(option)}
-                className="rounded-md border border-dashed border-slate-300 px-2 py-1 text-xs text-slate-500 transition hover:border-primary-400 hover:text-primary-600"
-              >
-                {locale === 'ar'
-                  ? `نسخ من ${localeName[option]}`
-                  : locale === 'tr'
-                    ? `${localeName[option]} kopyala`
-                    : `Copy from ${localeName[option]}`}
-              </button>
-            ),
-          )}
+        <CopyFromButtons current={tab} hasContent={has} onCopy={copyFrom} />
       </div>
 
       <RepeaterInput
+        key={tab}
         field={{
           path: '',
           label: { ar: '', tr: '', en: '' },
@@ -94,8 +65,11 @@ export function LocalizedRepeaterInput({
 /** Accepts a locale-keyed container, a bare array, or nothing. */
 function normalize(value: unknown): Partial<Record<Locale, unknown[]>> {
   if (Array.isArray(value)) {
-    // Legacy rows stored one array whose leaf strings were localized; surface it
-    // under Arabic so it can be edited rather than silently replaced.
+    // Older rows stored one array whose leaf strings were localized
+    // ([{ label: { ar, tr, en } }]): split it into one list per language so
+    // every language can be edited; the first save writes the split shape.
+    if (value.some(hasLocalizedLeaves)) return splitItemsByLocale(value);
+    // A bare array of plain values belongs to the site's first language.
     return { ar: value };
   }
   if (value && typeof value === 'object') {

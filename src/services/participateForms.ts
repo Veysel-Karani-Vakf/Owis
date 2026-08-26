@@ -15,9 +15,9 @@ export type ParticipateSubmissionPayload = {
 };
 
 export class ParticipateFormError extends Error {
-  code: 'missing-endpoint' | 'network';
+  code: 'network';
 
-  constructor(code: 'missing-endpoint' | 'network') {
+  constructor(code: 'network') {
     super(code);
     this.name = 'ParticipateFormError';
     this.code = code;

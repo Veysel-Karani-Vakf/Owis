@@ -29,8 +29,10 @@ export default function CapacityForum({ eyebrow, objectivesLabel, section, image
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
   const imageY = useTransform(scrollYProgress, [0, 1], reduced ? ['0%', '0%'] : ['-10%', '10%']);
 
-  const paragraphs = section.paragraphs ?? [];
-  const objectives = section.bullets ?? [];
+  const paragraphs = section?.paragraphs ?? [];
+  const objectives = section?.bullets ?? [];
+
+  if (!section) return null;
 
   return (
     <div ref={sectionRef} className="relative isolate overflow-hidden bg-dark-950 text-white">
@@ -88,8 +90,8 @@ export default function CapacityForum({ eyebrow, objectivesLabel, section, image
             {eyebrow}
           </div>
           <h2 className="text-balance text-3xl font-bold leading-tight md:text-4xl lg:text-[2.6rem]">{section.title}</h2>
-          {paragraphs.map((paragraph) => (
-            <p key={paragraph} className="mt-5 max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
+          {paragraphs.map((paragraph, index) => (
+            <p key={`${index}-${paragraph}`} className="mt-5 max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
               {paragraph}
             </p>
           ))}
@@ -104,6 +106,7 @@ export default function CapacityForum({ eyebrow, objectivesLabel, section, image
           />
         </motion.div>
 
+        {objectives.length > 0 && (
         <div className="text-start">
           <div className="mb-5 flex items-center gap-2">
             <Target className="h-5 w-5 text-primary-300" aria-hidden="true" />
@@ -120,7 +123,7 @@ export default function CapacityForum({ eyebrow, objectivesLabel, section, image
               const Icon = objectiveIcons[index % objectiveIcons.length];
               return (
                 <motion.li
-                  key={objective}
+                  key={`${index}-${objective}`}
                   variants={itemVariants(reduced)}
                   whileHover={reduced ? undefined : { x: 0, y: -4 }}
                   className="group relative flex gap-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur transition-colors duration-300 hover:border-primary-300/40 hover:bg-white/10 md:p-6"
@@ -145,6 +148,7 @@ export default function CapacityForum({ eyebrow, objectivesLabel, section, image
             })}
           </motion.ol>
         </div>
+        )}
       </div>
     </div>
   );

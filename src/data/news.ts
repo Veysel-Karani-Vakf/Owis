@@ -1,8 +1,10 @@
 import { cmsNews, cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 import type { BreadcrumbItem } from '@/data/about';
+import { archivedNewsArticles } from './newsArchive.generated';
 
-type LocalizedString = Record<Locale, string>;
+type LocalizedString = Partial<Record<Locale, string>> & { ar: string };
+type LocalizedParagraphs = Partial<Record<Locale, string[]>> & { ar: string[] };
 
 export type NewsGalleryImage = {
   id: string;
@@ -26,7 +28,7 @@ export type NewsArticle = {
   category: LocalizedString;
   title: LocalizedString;
   excerpt: LocalizedString;
-  content: Record<Locale, string[]>;
+  content: LocalizedParagraphs;
   image: string;
   imageAlt: LocalizedString;
   gallery: NewsGalleryImage[];
@@ -41,7 +43,10 @@ export type LocalizedNewsArticle = {
   sourceUrl: string;
   publishedAt: string;
   year: number;
-  sourceLanguage: 'ar';
+  /** ISO-639 code of the language the article was originally written in. */
+  sourceLanguage: string;
+  /** Set from the admin "featured" toggle; the spotlight card honours it. */
+  featured?: boolean;
   category: string;
   title: string;
   excerpt: string;
@@ -77,9 +82,6 @@ export type NewsLabels = {
   allYears: string;
   results: string;
   noResults: string;
-  published: string;
-  category: string;
-  officialSource: string;
   sourceLanguage: string;
   originalLanguageNote: string;
   related: string;
@@ -92,7 +94,15 @@ export type NewsLabels = {
   x: string;
   gallery: string;
   loadPage: string;
+  // The `news-page` CMS row stores the labels at its root, so the hero, SEO
+  // and layout groups declared in pageSchema nest inside the labels object.
+  hero: { image?: string; imageAlt?: string };
+  seo: { title?: string; description?: string; canonical?: string };
+  layout: { sideCount: number; pageSize: number; relatedCount: number };
 };
+
+/** Defaults for the display counts; editable in the admin "Display counts" section. */
+export const defaultNewsLayout = { sideCount: 2, pageSize: 9, relatedCount: 3 } as const;
 
 export const newsRoutes = {
   index: '/news',
@@ -116,9 +126,6 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     allYears: 'كل السنوات',
     results: 'نتيجة',
     noResults: 'لا توجد أخبار مطابقة لبحثك.',
-    published: 'تاريخ النشر',
-    category: 'التصنيف',
-    officialSource: 'المصدر الرسمي',
     sourceLanguage: 'لغة المصدر',
     originalLanguageNote: 'النص الكامل محفوظ كما ورد في المصدر الرسمي العربي.',
     related: 'أخبار ذات صلة',
@@ -131,6 +138,9 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     x: 'منصة X',
     gallery: 'معرض صور الخبر',
     loadPage: 'الصفحة',
+    hero: {},
+    seo: {},
+    layout: { ...defaultNewsLayout },
   },
   en: {
     home: 'Home',
@@ -148,9 +158,6 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     allYears: 'All years',
     results: 'results',
     noResults: 'No news matches your search.',
-    published: 'Published',
-    category: 'Category',
-    officialSource: 'Official Source',
     sourceLanguage: 'Source Language',
     originalLanguageNote: 'The full article text is preserved as published in the official Arabic source.',
     related: 'Related News',
@@ -163,6 +170,9 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     x: 'X',
     gallery: 'Article Gallery',
     loadPage: 'Page',
+    hero: {},
+    seo: {},
+    layout: { ...defaultNewsLayout },
   },
   tr: {
     home: 'Ana Sayfa',
@@ -180,9 +190,6 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     allYears: 'Tüm yıllar',
     results: 'sonuç',
     noResults: 'Aramanızla eşleşen haber yok.',
-    published: 'Yayın tarihi',
-    category: 'Kategori',
-    officialSource: 'Resmi Kaynak',
     sourceLanguage: 'Kaynak dili',
     originalLanguageNote: 'Haber metninin tamamı resmi Arapça kaynakta yayımlandığı şekliyle korunmuştur.',
     related: 'İlgili Haberler',
@@ -195,10 +202,25 @@ export const newsLabels: Record<Locale, NewsLabels> = {
     x: 'X',
     gallery: 'Haber Galerisi',
     loadPage: 'Sayfa',
+    hero: {},
+    seo: {},
+    layout: { ...defaultNewsLayout },
   },
 };
 
-export const newsArticles = [
+/** Human-readable name of an article's source language, in the UI language. */
+const sourceLanguageNames: Record<Locale, Record<string, string>> = {
+  ar: { ar: 'العربية', en: 'الإنجليزية', tr: 'التركية' },
+  en: { ar: 'Arabic', en: 'English', tr: 'Turkish' },
+  tr: { ar: 'Arapça', en: 'İngilizce', tr: 'Türkçe' },
+};
+
+export function getSourceLanguageName(locale: Locale, code: string | undefined) {
+  if (!code) return '';
+  return sourceLanguageNames[locale][code] ?? code;
+}
+
+const curatedNewsArticles = [
   {
     "id": "24011",
     "slug": "shura-member-condolences-sheikh-hamad",
@@ -1356,6 +1378,16 @@ export const newsArticles = [
   }
 ] as const satisfies readonly NewsArticle[];
 
+/**
+ * The newest stories retain their reviewed English/Turkish summaries and
+ * hand-picked galleries. The generated archive contains every older public
+ * WordPress story and is refreshed by `npm run import:news`.
+ */
+export const newsArticles: NewsArticle[] = [
+  ...curatedNewsArticles,
+  ...archivedNewsArticles,
+].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+
 const dateLocales: Record<Locale, string> = {
   ar: 'ar',
   en: 'en-US',
@@ -1364,6 +1396,14 @@ const dateLocales: Record<Locale, string> = {
 
 function normalize(value: string) {
   return value.toLowerCase().normalize('NFKD');
+}
+
+function localizedText(value: LocalizedString, locale: Locale) {
+  return value[locale]?.trim() || value.ar;
+}
+
+function localizedParagraphs(value: LocalizedParagraphs, locale: Locale) {
+  return value[locale]?.length ? value[locale] : value.ar;
 }
 
 function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArticle {
@@ -1376,19 +1416,19 @@ function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArt
     publishedAt: article.publishedAt,
     year: article.year,
     sourceLanguage: article.sourceLanguage,
-    category: article.category[locale],
-    title: article.title[locale],
-    excerpt: article.excerpt[locale],
-    content: article.content[locale],
+    category: localizedText(article.category, locale),
+    title: localizedText(article.title, locale),
+    excerpt: localizedText(article.excerpt, locale),
+    content: localizedParagraphs(article.content, locale),
     image: article.image,
-    imageAlt: article.imageAlt[locale],
+    imageAlt: localizedText(article.imageAlt, locale),
     gallery: article.gallery.map((image) => ({
       id: image.id,
       image: image.image,
       thumbnail: image.thumbnail,
       sourceUrl: image.sourceUrl,
-      title: image.title[locale],
-      imageAlt: image.imageAlt[locale],
+      title: localizedText(image.title, locale),
+      imageAlt: localizedText(image.imageAlt, locale),
       width: image.width,
       height: image.height,
     })),
@@ -1398,7 +1438,23 @@ function localizeArticle(article: NewsArticle, locale: Locale): LocalizedNewsArt
 
 /** Labels merged with the `news-page` CMS entry. */
 export function getNewsLabels(locale: Locale): NewsLabels {
-  return cmsPageContent('news-page', locale, newsLabels[locale]);
+  const labels = cmsPageContent('news-page', locale, newsLabels[locale]);
+  // Number fields can arrive as an empty string or 0 when the editor clears
+  // them; fall back to the defaults instead of rendering nothing.
+  const count = (value: unknown, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+  };
+  return {
+    ...labels,
+    hero: labels.hero ?? {},
+    seo: labels.seo ?? {},
+    layout: {
+      sideCount: count(labels.layout?.sideCount, defaultNewsLayout.sideCount),
+      pageSize: count(labels.layout?.pageSize, defaultNewsLayout.pageSize),
+      relatedCount: count(labels.layout?.relatedCount, defaultNewsLayout.relatedCount),
+    },
+  };
 }
 
 export function getNewsArticles(locale: Locale): LocalizedNewsArticle[] {
@@ -1413,16 +1469,31 @@ export function getNewsArticle(locale: Locale, slug: string | undefined): Locali
   return getNewsArticles(locale).find((article) => article.slug === slug);
 }
 
-export function getLatestNews(locale: Locale, limit = 3): LocalizedNewsArticle[] {
-  return getNewsArticles(locale).slice(0, limit);
+/**
+ * Articles with the admin-chosen featured one first, then the rest by date.
+ * Falls back to the newest article when nothing is marked featured.
+ */
+export function getOrderedNews(locale: Locale): LocalizedNewsArticle[] {
+  const articles = getNewsArticles(locale);
+  const featured = articles.find((article) => article.featured) ?? articles[0];
+  if (!featured) return [];
+  return [featured, ...articles.filter((article) => article !== featured)];
 }
 
-export function getFeaturedNews(locale: Locale): LocalizedNewsArticle {
-  return getNewsArticles(locale)[0];
+export function getLatestNews(locale: Locale, limit = 3): LocalizedNewsArticle[] {
+  return getOrderedNews(locale).slice(0, Math.max(0, limit));
+}
+
+/** Undefined when the editor has unpublished every article. */
+export function getFeaturedNews(locale: Locale): LocalizedNewsArticle | undefined {
+  return getOrderedNews(locale)[0];
 }
 
 export function getNewsYears(locale: Locale = 'ar') {
-  const years = getNewsArticles(locale).map((article) => article.year);
+  // The adapter derives `year` from published_at; skip rows without a valid date.
+  const years = getNewsArticles(locale)
+    .map((article) => article.year)
+    .filter((year) => Number.isFinite(year) && year > 0);
   return [...new Set(years)].sort((a, b) => b - a);
 }
 
@@ -1438,6 +1509,13 @@ export function searchNewsArticles(
     const haystack = normalize(`${article.title} ${article.excerpt} ${article.content.join(' ')} ${article.year}`);
     return matchesYear && (!needle || haystack.includes(needle));
   });
+}
+
+/** Absolute URL for structured data; storage URLs are already absolute (news-16). */
+export function absoluteUrl(origin: string, src: string) {
+  if (!src) return src;
+  if (/^https?:\/\//i.test(src)) return src;
+  return `${origin}${src.startsWith('/') ? '' : '/'}${src}`;
 }
 
 export function getRelatedNewsArticles(locale: Locale, slug: string, limit = 3) {

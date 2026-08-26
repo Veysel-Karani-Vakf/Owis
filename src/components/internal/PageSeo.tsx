@@ -22,6 +22,11 @@ function upsertMeta(selector: string, create: () => HTMLMetaElement, value: stri
   element.setAttribute('content', value);
 }
 
+/** Site-relative paths become absolute; full URLs (e.g. an uploaded image) pass through. */
+function absoluteUrl(src: string) {
+  return /^https?:\/\//i.test(src) ? src : `${window.location.origin}${src.startsWith('/') ? '' : '/'}${src}`;
+}
+
 function upsertCanonical(href: string) {
   let element = document.head.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
 
@@ -46,11 +51,7 @@ export default function PageSeo({
   const { locale } = useI18n();
 
   useEffect(() => {
-    const pageUrl = canonical
-      ? canonical.startsWith('/')
-        ? `${window.location.origin}${canonical}`
-        : canonical
-      : `${window.location.origin}${location.pathname}`;
+    const pageUrl = absoluteUrl(canonical || location.pathname);
     const applySeo = () => {
       document.title = title;
 
@@ -87,7 +88,7 @@ export default function PageSeo({
       }, type);
 
       if (image) {
-        const imageUrl = image.startsWith('http') ? image : `${window.location.origin}${image}`;
+        const imageUrl = absoluteUrl(image);
         upsertMeta("meta[property='og:image']", () => {
           const meta = document.createElement('meta');
           meta.setAttribute('property', 'og:image');

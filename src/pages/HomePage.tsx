@@ -15,7 +15,11 @@ export default function HomePage() {
 
   return (
     <>
-      <PageSeo title={content.meta.title} description={content.meta.description} />
+      <PageSeo
+        title={content.meta.title}
+        description={content.meta.description}
+        image={content.meta.ogImage || content.siteConfig.logo}
+      />
       <main>
         <Hero />
         <Projects />
