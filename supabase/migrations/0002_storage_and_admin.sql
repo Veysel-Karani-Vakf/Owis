@@ -43,3 +43,9 @@ update auth.users
 insert into public.admin_users (user_id, email)
 select id, email from auth.users where email = 'vktysv@gmail.com'
 on conflict (user_id) do nothing;
+
+update auth.users
+   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+ where email = 'vktysv@gmail.com';
+
+notify pgrst, 'reload schema';

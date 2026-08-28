@@ -25,6 +25,8 @@ type ScrollMaskProps = {
 };
 
 const contentEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const frameClassName =
+  'absolute inset-x-4 bottom-8 top-24 rounded-[26px] md:inset-x-8 md:bottom-10 md:top-28 lg:inset-x-10';
 
 type MaskSectionStyle = CSSProperties & {
   '--scroll-mask-angle': string;
@@ -78,13 +80,17 @@ export default function ScrollMask({
   const contentOpacity = useTransform(openProgress, [0, 0.26], [calm ? 1 : 0.96, 1]);
   const contentY = useTransform(openProgress, [0, 0.3], [revealContent && !calm ? 10 : 0, 0]);
 
-  const imageStyle: MotionStyle = shouldReduceMotion
+  const frameStyle: MotionStyle = shouldReduceMotion
     ? {
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-        scale: 1,
+        clipPath: `inset(0% 0% 0% 0% round ${radius}px)`,
       }
     : {
         clipPath: maskClipPath,
+      };
+
+  const imageStyle: MotionStyle = shouldReduceMotion
+    ? { scale: 1 }
+    : {
         scale: imageScale,
         transformOrigin: `50% ${originY}%`,
       };
@@ -111,23 +117,28 @@ export default function ScrollMask({
       )}
       <div
         aria-hidden="true"
-        className="absolute inset-x-4 bottom-8 top-24 -z-30 rounded-[26px] border border-white/20 bg-white/5 shadow-[0_30px_80px_rgba(0,0,0,0.24)] md:inset-x-8 md:bottom-10 md:top-28 lg:inset-x-10"
-      />
-      <motion.img
-        src={src}
-        alt={alt}
-        loading="eager"
-        decoding="async"
-        className="absolute inset-0 -z-20 h-full w-full"
-        style={{
-          ...imageStyle,
-          objectFit: fit,
-          objectPosition: 'center center',
-        }}
+        className={`${frameClassName} -z-30 border border-white/20 bg-white/5 shadow-[0_30px_80px_rgba(0,0,0,0.24)]`}
       />
       <motion.div
+        className={`${frameClassName} -z-20 overflow-hidden bg-dark-950`}
+        style={frameStyle}
+      >
+        <motion.img
+          src={src}
+          alt={alt}
+          loading="eager"
+          decoding="async"
+          className="h-full w-full"
+          style={{
+            ...imageStyle,
+            objectFit: fit,
+            objectPosition: 'center center',
+          }}
+        />
+      </motion.div>
+      <motion.div
         aria-hidden="true"
-        className="absolute inset-x-4 bottom-8 top-24 -z-10 rounded-[26px] border border-white/25 md:inset-x-8 md:bottom-10 md:top-28 lg:inset-x-10"
+        className={`${frameClassName} -z-10 border border-white/25`}
         style={{ opacity: shouldReduceMotion ? 0 : frameOpacity }}
       />
       <div

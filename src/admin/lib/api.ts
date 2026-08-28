@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import type { Locale, Localized } from '@/lib/types';
 
+function handleSupabaseError(action: string, table: string, error: { message: string }) {
+  if (import.meta.env.DEV) {
+    console.error(`[admin] ${action} failed for ${table}:`, error.message);
+  }
+  throw new Error('admin-api-error');
+}
+
 /** Pick the best available localized string for display. */
 export function pickLocalized(value: unknown, locale: Locale): string {
   if (!value) return '';
@@ -24,35 +31,35 @@ export async function listRows(
     query = query.order(opts.sort.column, { ascending: opts.sort.ascending, nullsFirst: false });
   }
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) handleSupabaseError('listRows', table, error);
   return data ?? [];
 }
 
 export async function getRow(table: string, id: string) {
   const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
-  if (error) throw new Error(error.message);
+  if (error) handleSupabaseError('getRow', table, error);
   return data;
 }
 
 export async function insertRow(table: string, values: Record<string, unknown>) {
   const { data, error } = await supabase.from(table).insert(values).select().single();
-  if (error) throw new Error(error.message);
+  if (error) handleSupabaseError('insertRow', table, error);
   return data;
 }
 
 export async function updateRow(table: string, id: string, values: Record<string, unknown>) {
   const { data, error } = await supabase.from(table).update(values).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
+  if (error) handleSupabaseError('updateRow', table, error);
   return data;
 }
 
 export async function deleteRow(table: string, id: string) {
   const { error } = await supabase.from(table).delete().eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) handleSupabaseError('deleteRow', table, error);
 }
 
 export async function countRows(table: string): Promise<number> {
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-  if (error) return 0;
+  if (error) handleSupabaseError('countRows', table, error);
   return count ?? 0;
 }

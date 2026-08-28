@@ -25,7 +25,8 @@ import LibraryGalleryPage from '@/pages/library/LibraryGalleryPage';
 import LibraryDocumentsPage from '@/pages/library/LibraryDocumentsPage';
 
 function App() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
 
   // The admin dashboard renders its own chrome (no public Header/Footer/Preloader).
   if (pathname.startsWith('/admin')) {
@@ -46,31 +47,33 @@ function App() {
       <ScrollRestoration />
       <Header />
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about/waqf" element={<WaqfAboutPage />} />
-        <Route path="/about/governance" element={<GovernancePage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/projects/:slug" element={<ProjectDetailPage />} />
-        <Route path="/programs/:slug" element={<ProgramPage />} />
-        <Route path="/news" element={<NewsIndexPage />} />
-        <Route path="/news/:slug" element={<NewsArticlePage />} />
-        <Route path="/participate" element={<Navigate to="/participate/share-ideas" replace />} />
-        <Route path="/participate/:slug" element={<ParticipatePage />} />
-        <Route path="/library" element={<LibraryIndexPage />} />
-        <Route path="/library/forum" element={<LibraryCollectionPage collection="forum" />} />
-        <Route path="/library/forum/:slug" element={<LibraryTextPage type="forum" />} />
-        <Route path="/library/periodic-reports" element={<LibraryDocumentsPage collection="periodic-reports" />} />
-        <Route path="/library/waqf-books" element={<LibraryDocumentsPage collection="waqf-books" />} />
-        <Route path="/library/waqf-literature" element={<LibraryDocumentsPage collection="waqf-literature" />} />
-        <Route path="/library/yemeni-figures" element={<LibraryCollectionPage collection="yemeni-figures" />} />
-        <Route path="/library/yemeni-figures/:slug" element={<LibraryTextPage type="yemeni-figures" />} />
-        <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
-        <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
-        <Route path="/library/gallery" element={<LibraryGalleryPage />} />
-        <Route path="/donate" element={<DonatePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <div key={`${location.pathname}${location.search}`} className="page-transition">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about/waqf" element={<WaqfAboutPage />} />
+          <Route path="/about/governance" element={<GovernancePage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+          <Route path="/programs/:slug" element={<ProgramPage />} />
+          <Route path="/news" element={<NewsIndexPage />} />
+          <Route path="/news/:slug" element={<NewsArticlePage />} />
+          <Route path="/participate" element={<Navigate to="/participate/share-ideas" replace />} />
+          <Route path="/participate/:slug" element={<ParticipatePage />} />
+          <Route path="/library" element={<LibraryIndexPage />} />
+          <Route path="/library/forum" element={<LibraryCollectionPage collection="forum" />} />
+          <Route path="/library/forum/:slug" element={<LibraryTextPage type="forum" />} />
+          <Route path="/library/periodic-reports" element={<LibraryDocumentsPage collection="periodic-reports" />} />
+          <Route path="/library/waqf-books" element={<LibraryDocumentsPage collection="waqf-books" />} />
+          <Route path="/library/waqf-literature" element={<LibraryDocumentsPage collection="waqf-literature" />} />
+          <Route path="/library/yemeni-figures" element={<LibraryCollectionPage collection="yemeni-figures" />} />
+          <Route path="/library/yemeni-figures/:slug" element={<LibraryTextPage type="yemeni-figures" />} />
+          <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
+          <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
+          <Route path="/library/gallery" element={<LibraryGalleryPage />} />
+          <Route path="/donate" element={<DonatePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
 
       <Footer />
     </>

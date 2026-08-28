@@ -7,6 +7,7 @@ import SpotlightCard from '@/components/effects/SpotlightCard';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { getProjectsContent, type LocalizedWaqfProject } from '@/data/projects';
+import { useProjectsContent } from '@/hooks/useCmsContent';
 import { useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -100,8 +101,8 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
 }
 
 export default function ProjectsPage() {
-  const { locale, isRtl } = useI18n();
-  const page = getProjectsContent(locale);
+  const { locale, isRtl, content } = useI18n();
+  const page = useProjectsContent(locale, content.projects.items);
 
   const itemListSchema = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;

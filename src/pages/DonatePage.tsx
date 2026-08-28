@@ -6,6 +6,7 @@ import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { getDonateContent, type DonationOpportunity } from '@/data/donate';
+import { useDonateContent } from '@/hooks/useCmsContent';
 import { useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -98,7 +99,7 @@ function DonationCard({
 
 export default function DonatePage() {
   const { locale, isRtl } = useI18n();
-  const page = getDonateContent(locale);
+  const page = useDonateContent(locale);
 
   const structuredData = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;

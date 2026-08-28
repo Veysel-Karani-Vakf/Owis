@@ -1,4 +1,4 @@
-import { MEDIA_BUCKET, supabase } from '@/lib/supabase';
+import { MEDIA_BUCKET, isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export type ParticipateSubmissionField = {
   id: string;
@@ -15,9 +15,9 @@ export type ParticipateSubmissionPayload = {
 };
 
 export class ParticipateFormError extends Error {
-  code: 'network';
+  code: 'missing-endpoint' | 'network';
 
-  constructor(code: 'network') {
+  constructor(code: 'missing-endpoint' | 'network') {
     super(code);
     this.name = 'ParticipateFormError';
     this.code = code;
@@ -36,6 +36,10 @@ const slugify = (name: string) =>
  * files are uploaded to the public media bucket under `submissions/`.
  */
 export async function submitParticipateForm(payload: ParticipateSubmissionPayload) {
+  if (!isSupabaseConfigured) {
+    throw new ParticipateFormError('missing-endpoint');
+  }
+
   const uploaded: Array<{ fieldId: string; name: string; size: number; type: string; url: string }> = [];
 
   try {

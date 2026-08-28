@@ -26,7 +26,8 @@ create table if not exists public.admin_users (
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.admin_users a where a.user_id = auth.uid());
+  select coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin'
+    or exists (select 1 from public.admin_users a where a.user_id = auth.uid());
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -151,6 +152,7 @@ create table if not exists public.library_articles (
 -- LIBRARY: DOCUMENTS (pdf collections) --------------------------------------
 create table if not exists public.library_documents (
   id uuid primary key default gen_random_uuid(),
+  seed_key text unique,
   collection text not null check (collection in ('periodic-reports','waqf-books','waqf-literature','yemeni-figures')),
   title jsonb not null default '{}'::jsonb,
   source_url text,
@@ -169,6 +171,7 @@ create table if not exists public.library_documents (
 -- LIBRARY: GALLERY -----------------------------------------------------------
 create table if not exists public.gallery_images (
   id uuid primary key default gen_random_uuid(),
+  seed_key text unique,
   title jsonb not null default '{}'::jsonb,
   image text,
   thumbnail text,
@@ -202,6 +205,7 @@ create table if not exists public.donation_opportunities (
 -- PARTNERS -------------------------------------------------------------------
 create table if not exists public.partners (
   id uuid primary key default gen_random_uuid(),
+  seed_key text unique,
   name jsonb not null default '{}'::jsonb,
   logo text,
   url text,
@@ -214,10 +218,12 @@ create table if not exists public.partners (
 -- STATISTICS -----------------------------------------------------------------
 create table if not exists public.stat_indicators (
   id uuid primary key default gen_random_uuid(),
+  seed_key text unique,
   stat_group text not null check (stat_group in ('yemen-pioneers','statistics')),
   label jsonb not null default '{}'::jsonb,
   value numeric,
   suffix jsonb not null default '{}'::jsonb,
+  detail jsonb not null default '{}'::jsonb,
   sort_order int not null default 0,
   is_published boolean not null default true,
   created_at timestamptz not null default now(),
@@ -320,3 +326,5 @@ create index if not exists programs_sort_idx on public.programs (sort_order);
 create index if not exists lib_articles_coll_idx on public.library_articles (collection, sort_order);
 create index if not exists lib_docs_coll_idx on public.library_documents (collection, sort_order);
 create index if not exists submissions_status_idx on public.participate_submissions (status, created_at desc);
+
+notify pgrst, 'reload schema';

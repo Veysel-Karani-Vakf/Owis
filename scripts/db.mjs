@@ -10,6 +10,21 @@ import pg from 'pg';
 const { Client } = pg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
+const requiredTables = [
+  'admin_users',
+  'news',
+  'projects',
+  'programs',
+  'library_articles',
+  'library_documents',
+  'gallery_images',
+  'donation_opportunities',
+  'partners',
+  'stat_indicators',
+  'site_pages',
+  'participate_submissions',
+  'newsletter_subscribers',
+];
 
 const connectionString =
   process.env.SUPABASE_DB_URL || readEnvLocal('SUPABASE_DB_URL');
@@ -62,7 +77,16 @@ async function check() {
       select table_name from information_schema.tables
       where table_schema = 'public' order by table_name;
     `);
+    const existing = new Set(rows.map(({ table_name }) => table_name));
+    const missing = requiredTables.filter((table) => !existing.has(table));
+
+    if (missing.length) {
+      console.log(`Missing required tables: ${missing.join(', ')}`);
+      return;
+    }
+
     for (const { table_name } of rows) {
+      if (!requiredTables.includes(table_name)) continue;
       const c = await client.query(`select count(*)::int as n from public.${table_name}`);
       console.log(`${table_name.padEnd(28)} ${c.rows[0].n}`);
     }

@@ -1,14 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const HEADER_OFFSET = 96;
 
+function getScrollBehavior(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
 export default function ScrollRestoration() {
   const location = useLocation();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!location.hash) {
       window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [location.pathname, location.search, location.hash]);
+
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo({ top: 0, behavior: getScrollBehavior() });
       return;
     }
 
@@ -16,7 +26,7 @@ export default function ScrollRestoration() {
     const target = document.getElementById(targetId);
 
     if (!target) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: getScrollBehavior() });
       return;
     }
 
@@ -26,9 +36,9 @@ export default function ScrollRestoration() {
 
     window.requestAnimationFrame(() => {
       const top = target.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-      window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+      window.scrollTo({ top: Math.max(top, 0), behavior: getScrollBehavior() });
     });
-  }, [location.pathname, location.hash]);
+  }, [location.pathname, location.search, location.hash]);
 
   return null;
 }
