@@ -5,13 +5,8 @@ import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import VideoModal from '@/components/ui/VideoModal';
-import {
-  getOtherProjects,
-  getProject,
-  getProjectsContent,
-  projectRoutes,
-  type LocalizedWaqfProject,
-} from '@/data/projects';
+import { projectRoutes, type LocalizedWaqfProject } from '@/data/projects';
+import { useProjectsContent } from '@/hooks/useCmsContent';
 import { useI18n } from '@/i18n/useI18n';
 
 const reveal = {
@@ -70,8 +65,8 @@ function RelatedProjectCard({ project, detailsLabel, isRtl }: RelatedProjectCard
 export default function ProjectDetailPage() {
   const { slug } = useParams();
   const { locale, isRtl, content } = useI18n();
-  const page = getProjectsContent(locale);
-  const project = getProject(locale, slug);
+  const page = useProjectsContent(locale, content.projects.items);
+  const project = page.projects.find((item) => item.slug === slug);
   const [videoOpen, setVideoOpen] = useState(false);
 
   const detailBreadcrumbs = useMemo(() => {
@@ -107,7 +102,7 @@ export default function ProjectDetailPage() {
     return <Navigate to={projectRoutes.index} replace />;
   }
 
-  const relatedProjects = getOtherProjects(locale, project.slug);
+  const relatedProjects = page.projects.filter((item) => item.slug !== project.slug);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   // Editors may empty any of these lists; an empty list hides its block
   // rather than leaving a stray heading behind.
@@ -365,14 +360,24 @@ export default function ProjectDetailPage() {
               </div>
             </FadeContent>
 
-            <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
-              {relatedProjects.map((relatedProject) => (
-                <RelatedProjectCard
+            <div className="grid gap-6 md:grid-cols-2">
+              {relatedProjects.map((relatedProject, index) => (
+                <FadeContent
                   key={relatedProject.slug}
-                  project={relatedProject}
-                  detailsLabel={page.labels.details}
-                  isRtl={isRtl}
-                />
+                  blur={false}
+                  duration={540}
+                  initialOpacity={0}
+                  yOffset={14}
+                  delay={index * 60}
+                  threshold={0.14}
+                  once
+                >
+                  <RelatedProjectCard
+                    project={relatedProject}
+                    detailsLabel={page.labels.details}
+                    isRtl={isRtl}
+                  />
+                </FadeContent>
               ))}
             </div>
           </div>

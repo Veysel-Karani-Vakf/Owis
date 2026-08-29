@@ -6,18 +6,18 @@ import PageSeo from '@/components/internal/PageSeo';
 import LibraryLightbox from '@/components/library/LibraryLightbox';
 import { LibraryLayout } from '@/components/library/LibraryNav';
 import {
-  getGalleryImages,
   getLibraryCollectionBreadcrumbs,
   getLibraryCollectionInfo,
   getLibraryContent,
 } from '@/data/library';
+import { useGalleryImages } from '@/hooks/useCmsContent';
 import { useI18n } from '@/i18n/useI18n';
 
 export default function LibraryGalleryPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const library = getLibraryContent(locale);
   const info = getLibraryCollectionInfo(locale, 'gallery');
-  const images = getGalleryImages(locale);
+  const images = useGalleryImages(locale);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 

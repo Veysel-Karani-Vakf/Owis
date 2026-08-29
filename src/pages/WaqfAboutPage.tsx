@@ -6,9 +6,11 @@ import {
   FileText,
   Gem,
   HandHeart,
+  Instagram,
   Landmark,
   Target,
   TrendingUp,
+  Twitter,
   type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -42,9 +44,37 @@ const creditLayerStyle = (factor: number, depth: number): CSSProperties => ({
   transform: `translate3d(calc(var(--credit-parallax-x, 0px) * ${factor}), calc(var(--credit-parallax-y, 0px) * ${factor}), ${depth}px)`,
 });
 
+const socialHandle = (url: string) => {
+  try {
+    const parsedUrl = new URL(url);
+    const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
+    const handle = pathParts[pathParts.length - 1];
+    return handle ? `@${handle.replace(/^@/, '')}` : parsedUrl.hostname;
+  } catch {
+    return url;
+  }
+};
+
 export default function WaqfAboutPage() {
-  const { locale, isRtl, t } = useI18n();
+  const { content, locale, isRtl, t } = useI18n();
   const page = getAboutContent(locale).waqf;
+  const cleanPresidentName = page.president.name.replace(/^\u0623\/\s*/, '');
+  const [presidentFirstName = cleanPresidentName, ...presidentRestName] = cleanPresidentName.split(/\s+/);
+  const presidentLastName = presidentRestName.join(' ');
+  const presidentSocialLinks = [
+    {
+      key: 'instagram',
+      href: content.siteConfig.socialLinks?.instagram?.trim() ?? '',
+      label: t('social.instagram'),
+      icon: Instagram,
+    },
+    {
+      key: 'twitter',
+      href: content.siteConfig.socialLinks?.twitter?.trim() ?? '',
+      label: t('social.twitter'),
+      icon: Twitter,
+    },
+  ].filter((link) => link.href);
   const introVideoRef = useRef<HTMLDivElement>(null);
   const introVideoIframeRef = useRef<HTMLIFrameElement>(null);
   const introVideoInViewRef = useRef(false);
@@ -162,8 +192,8 @@ export default function WaqfAboutPage() {
           angle={108}
           originY={52}
           zoom={1}
-          fit="contain"
-          radius={0}
+          fit="cover"
+          radius={26}
           overlay={0.48}
           revealContent
           calm
@@ -317,31 +347,83 @@ export default function WaqfAboutPage() {
           </div>
         </section>
 
-        <section className="bg-dark-950 py-20 text-white md:py-28">
-          <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+        <section className="president-profile-section relative isolate overflow-hidden py-20 text-white md:py-24 lg:py-28">
+          <div className="president-profile-pattern" aria-hidden="true" />
+          <div className="president-profile-mark president-profile-mark--top" aria-hidden="true" />
+          <div className="president-profile-mark president-profile-mark--bottom" aria-hidden="true" />
+
+          <div className="relative mx-auto max-w-[1520px] px-4 md:px-8">
             <FadeContent {...sectionReveal}>
-              <div className="relative overflow-hidden rounded-[18px] shadow-2xl">
-                <img
-                  src={page.president.image}
-                  alt={page.president.name}
-                  loading="lazy"
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-950/60 to-transparent" />
-              </div>
-            </FadeContent>
-            <FadeContent {...sectionReveal} delay={70}>
-              <div className="text-start">
-                <p className="mb-3 text-sm font-semibold text-primary-200">{page.president.title}</p>
-                <h2 className="text-3xl font-bold md:text-4xl">{page.president.name}</h2>
-                <p className="mt-2 text-primary-200">{page.president.role}</p>
-                <div className="mt-8 space-y-4 text-base leading-relaxed text-white/75">
-                  {(page.president.paragraphs ?? []).map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
+              <div className="mb-14 flex flex-col items-center gap-5 text-center md:mb-16">
+                <div className="flex items-center gap-3 text-white/90">
+                  <Landmark className="h-7 w-7 text-white/70" />
+                  <span className="text-lg font-bold leading-tight md:text-2xl">{content.siteConfig.name}</span>
                 </div>
+                <h2 className="max-w-5xl text-balance text-3xl font-black leading-tight tracking-normal text-white md:text-5xl lg:text-6xl">
+                  {page.president.title}
+                </h2>
               </div>
             </FadeContent>
+
+            <div className="grid gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-16" dir="ltr">
+              <FadeContent {...sectionReveal} delay={80}>
+                <figure className="president-profile-photo group mx-auto w-full max-w-[430px] lg:mx-0">
+                  <img
+                    src={page.president.image}
+                    alt={page.president.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-primary-950/95 via-primary-900/78 to-transparent" />
+                  <figcaption className="absolute inset-x-0 bottom-0 p-5 text-start md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
+                    <span className="block text-4xl font-black leading-none text-primary-200 md:text-5xl">
+                      {presidentFirstName}
+                    </span>
+                    <span className="mt-1 block text-4xl font-black leading-none text-white md:text-6xl">
+                      {presidentLastName || cleanPresidentName}
+                    </span>
+                    <span className="mt-4 block text-sm font-bold text-white/78 md:text-base">
+                      {page.president.role}
+                    </span>
+                  </figcaption>
+                </figure>
+              </FadeContent>
+
+              <FadeContent {...sectionReveal} delay={150}>
+                <div className="max-w-3xl text-start" dir={isRtl ? 'rtl' : 'ltr'}>
+                  <p className="mb-5 text-3xl font-black leading-tight text-white md:text-4xl">
+                    {page.president.role}
+                  </p>
+                  <div className="space-y-5 text-base font-medium leading-8 text-white/88 md:text-lg md:leading-9">
+                    {(page.president.paragraphs ?? []).map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+
+                  {presidentSocialLinks.length > 0 && (
+                    <div className="mt-9 flex flex-wrap gap-3">
+                      {presidentSocialLinks.map((link) => {
+                        const Icon = link.icon;
+
+                        return (
+                          <a
+                            key={link.key}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={link.label}
+                            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(36,0,2,0.24)] ring-1 ring-white/10 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-500/30 hover:ring-primary-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span dir="ltr">{socialHandle(link.href)}</span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </FadeContent>
+            </div>
           </div>
         </section>
 

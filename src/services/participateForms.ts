@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export type ParticipateSubmissionField = {
   id: string;
@@ -31,9 +31,9 @@ export type SubmissionFile = {
 };
 
 export class ParticipateFormError extends Error {
-  code: 'network';
+  code: 'missing-endpoint' | 'network';
 
-  constructor(code: 'network') {
+  constructor(code: 'missing-endpoint' | 'network') {
     super(code);
     this.name = 'ParticipateFormError';
     this.code = code;
@@ -54,6 +54,10 @@ const slugify = (name: string) =>
  * URL.
  */
 export async function submitParticipateForm(payload: ParticipateSubmissionPayload) {
+  if (!isSupabaseConfigured) {
+    throw new ParticipateFormError('missing-endpoint');
+  }
+
   const uploaded: SubmissionFile[] = [];
 
   try {

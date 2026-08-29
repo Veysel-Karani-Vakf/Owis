@@ -19,7 +19,7 @@ export default function SectionHeading({
   light = false,
   children,
 }: SectionHeadingProps) {
-  const { ref, inView } = useInView<HTMLDivElement>();
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.12 });
 
   return (
     <div
@@ -28,9 +28,9 @@ export default function SectionHeading({
     >
       {eyebrow && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.45 }}
           className="flex items-center gap-2"
         >
           <span className="h-px w-8 bg-gold-400" />
@@ -42,9 +42,9 @@ export default function SectionHeading({
       )}
 
       <motion.h2
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, delay: 0.1 }}
+        transition={{ duration: 0.52, delay: 0.08 }}
         className={`text-3xl font-bold leading-tight md:text-4xl lg:text-5xl ${light ? 'text-white' : 'text-dark-900'}`}
       >
         {title}
@@ -52,9 +52,9 @@ export default function SectionHeading({
 
       {description && (
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.52, delay: 0.14 }}
           className={`max-w-2xl text-base leading-relaxed md:text-lg ${light ? 'text-white/70' : 'text-dark-500'}`}
         >
           {description}

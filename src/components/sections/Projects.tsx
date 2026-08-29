@@ -386,6 +386,8 @@ export default function Projects() {
     }, projectTransitionDuration * 1000);
   };
 
+  if (projectCount === 0) return null;
+
   return (
     <section
       id="projects"

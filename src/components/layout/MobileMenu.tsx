@@ -32,12 +32,23 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
     const handleDesktopViewport = (event: MediaQueryListEvent) => {
       if (event.matches) onClose();
     };
+    const handleLegacyDesktopViewport = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) onClose();
+    };
 
-    desktopMediaQuery.addEventListener('change', handleDesktopViewport);
+    if (typeof desktopMediaQuery.addEventListener === 'function') {
+      desktopMediaQuery.addEventListener('change', handleDesktopViewport);
+    } else {
+      desktopMediaQuery.addListener(handleLegacyDesktopViewport);
+    }
 
     return () => {
       document.body.style.overflow = '';
-      desktopMediaQuery.removeEventListener('change', handleDesktopViewport);
+      if (typeof desktopMediaQuery.removeEventListener === 'function') {
+        desktopMediaQuery.removeEventListener('change', handleDesktopViewport);
+      } else {
+        desktopMediaQuery.removeListener(handleLegacyDesktopViewport);
+      }
     };
   }, [onClose]);
 

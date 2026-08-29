@@ -2,8 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_PARTICIPATE_FORM_ENDPOINT?: string;
-  readonly VITE_SUPABASE_URL: string;
-  readonly VITE_SUPABASE_ANON_KEY: string;
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SUPABASE_MEDIA_BUCKET?: string;
 }
 

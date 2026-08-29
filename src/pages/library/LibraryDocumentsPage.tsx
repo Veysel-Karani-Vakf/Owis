@@ -11,12 +11,12 @@ import { LibraryLayout } from '@/components/library/LibraryNav';
 import {
   filterDocuments,
   getDocumentSeries,
-  getDocuments,
   getLibraryCollectionBreadcrumbs,
   getLibraryContent,
   type LibraryDocumentCollectionSlug,
   type LibraryDocumentItem,
 } from '@/data/library';
+import { useLibraryDocuments } from '@/hooks/useCmsContent';
 import { useI18n } from '@/i18n/useI18n';
 
 type LibraryDocumentsPageProps = {
@@ -45,10 +45,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
   const shouldReduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const items = useMemo(
-    () => (info.documentCollection ? getDocuments(info.documentCollection, locale) : []),
-    [info.documentCollection, locale, contentVersion]
-  );
+  const items = useLibraryDocuments(locale, collection);
   const series = useMemo(() => getDocumentSeries(items), [items]);
 
   const query = searchParams.get('q') ?? '';

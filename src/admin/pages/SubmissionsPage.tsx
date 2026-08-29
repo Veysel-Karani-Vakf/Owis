@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import {
   Archive,
   ArchiveRestore,
@@ -500,15 +500,41 @@ function DetailPanel({ row, title, entries, statusLabel, locale, label, onClose,
   const email = entries.find((e) => EMAIL_RE.test(e.value.trim()))?.value.trim();
   const StatusIcon = statusIcon[row.status];
   const sourceUrl = safeHttpUrl(row.source_url);
+  const replySubject = `Re: ${title}`;
+  const messageLines = [
+    `${title} — ${formatDate(row.created_at, locale)}`,
+    ...(sourceUrl ? [`${s.openOnSite}: ${sourceUrl}`] : []),
+    '',
+    ...entries.map((e) => `${e.label}: ${e.files ? e.files.map((f) => f.name || f.path || '').join(', ') : e.value}`),
+  ];
+  const replyBody = [
+    '',
+    '',
+    label('--- الرسالة الأصلية ---', '--- Orijinal mesaj ---', '--- Original message ---'),
+    ...messageLines,
+  ].join('\n');
+  const gmailReplyUrl = email
+    ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyBody)}`
+    : '';
+  const mailtoReplyUrl = email
+    ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyBody)}`
+    : '';
+  const handleReplyByEmail = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!email || !gmailReplyUrl || !mailtoReplyUrl) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    event.preventDefault();
+    const opened = window.open(gmailReplyUrl, '_blank');
+    if (opened) {
+      opened.opener = null;
+      return;
+    }
+    window.location.href = mailtoReplyUrl;
+  };
 
   const copyAll = async () => {
-    const lines = [
-      `${title} — ${formatDate(row.created_at, locale)}`,
-      '',
-      ...entries.map((e) => `${e.label}: ${e.files ? e.files.map((f) => f.name || f.path || '').join(', ') : e.value}`),
-    ];
     try {
-      await navigator.clipboard.writeText(lines.join('\n'));
+      await navigator.clipboard.writeText(messageLines.join('\n'));
       onCopied();
     } catch {
       onCopyFailed();
@@ -604,7 +630,11 @@ function DetailPanel({ row, title, entries, statusLabel, locale, label, onClose,
         <footer className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
           {email && (
             <a
-              href={`mailto:${email}?subject=${encodeURIComponent(`Re: ${title}`)}`}
+              href={gmailReplyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={label('فتح نافذة رد في Gmail', 'Gmail yanıt penceresini aç', 'Open Gmail reply window')}
+              onClick={handleReplyByEmail}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-700"
             >
               <Mail size={15} />

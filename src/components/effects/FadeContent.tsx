@@ -1,5 +1,6 @@
 import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 
 type FadeContentProps = Omit<HTMLMotionProps<'div'>, 'children'> & {
   children: ReactNode;
@@ -43,7 +44,15 @@ export default function FadeContent({
   ...props
 }: FadeContentProps) {
   const shouldReduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const resolvedEase = resolveEase(easing ?? ease);
+  const resolvedThreshold = isNarrow
+    ? Math.min(Math.max(threshold, 0.05), 0.16)
+    : Math.min(Math.max(threshold, 0.05), 0.35);
+  const resolvedYOffset =
+    isNarrow && yOffset !== 0 ? Math.sign(yOffset) * Math.min(Math.abs(yOffset), 18) : yOffset;
+  const resolvedBlur = blur ? (isNarrow ? 'blur(3px)' : 'blur(8px)') : 'blur(0px)';
+  const resolvedDuration = shouldReduceMotion ? 0.01 : isNarrow ? Math.min(toSeconds(duration), 0.5) : toSeconds(duration);
 
   return (
     <motion.div
@@ -52,14 +61,18 @@ export default function FadeContent({
           ? { opacity: 1, y: 0, filter: 'blur(0px)' }
           : {
               opacity: initialOpacity,
-              y: yOffset,
-              filter: blur ? 'blur(8px)' : 'blur(0px)',
+              y: resolvedYOffset,
+              filter: resolvedBlur,
             }
       }
       whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      viewport={{ once, amount: Math.min(Math.max(threshold, 0), 1) }}
+      viewport={{
+        once,
+        amount: resolvedThreshold,
+        margin: isNarrow ? '0px 0px -8% 0px' : '0px 0px -10% 0px',
+      }}
       transition={{
-        duration: shouldReduceMotion ? 0.01 : toSeconds(duration),
+        duration: resolvedDuration,
         delay: shouldReduceMotion ? 0 : toSeconds(delay),
         ease: resolvedEase,
       }}

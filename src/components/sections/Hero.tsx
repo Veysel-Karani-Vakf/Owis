@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -18,9 +18,12 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
   const [isLoaded, setIsLoaded] = useState(false);
   const source = resolveVideo({ videoFile, videoId });
 
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [videoFile, videoId]);
+
   if (!source) return null;
 
-  // A muted, looping file behaves like the YouTube background it replaces.
   if (source.kind === 'file') {
     return (
       <video
@@ -52,8 +55,8 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
         playsinline: 1,
       })}
       title={title}
-      className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-      allow="autoplay; encrypted-media"
+      className={`block border-0 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      allow="autoplay; encrypted-media; picture-in-picture"
       loading="eager"
       referrerPolicy="strict-origin-when-cross-origin"
       onLoad={() => setIsLoaded(true)}
@@ -81,6 +84,7 @@ export default function Hero() {
       ? window.matchMedia('(min-width: 768px)').matches
       : false,
   );
+  const shouldReduceMotion = useReducedMotion();
   const { content, t, isRtl, locale } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,7 +103,7 @@ export default function Hero() {
   });
 
   useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
 
     const desktopMediaQuery = window.matchMedia('(min-width: 768px)');
     const handleViewportChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
@@ -150,9 +154,9 @@ export default function Hero() {
       className="relative min-h-[100svh] overflow-hidden bg-dark-950"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.9, ease: heroEase }}
+        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
         className="absolute inset-0"
       >
         <img
@@ -164,12 +168,12 @@ export default function Hero() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 1.04 }}
+        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.9, ease: heroEase }}
+        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
         className="yt-bg-container hidden md:block"
       >
-        {isDesktop && !backgroundVideoPaused && (
+        {isDesktop && !shouldReduceMotion && !backgroundVideoPaused && (
           <HeroBackgroundVideo
             videoId={heroContent.videoId}
             videoFile={heroContent.videoFile}
@@ -202,7 +206,7 @@ export default function Hero() {
                 text={heroContent.title}
                 startDelay={TITLE_TYPING_START_DELAY}
                 charDelay={TITLE_TYPING_CHAR_DELAY}
-                respectReducedMotion={false}
+                respectReducedMotion
                 onComplete={handleTitleTyped}
               />
             </h1>
@@ -232,9 +236,9 @@ export default function Hero() {
       <motion.button
         onClick={openVideo}
         aria-label={t('accessibility.playVideo')}
-        initial={{ opacity: 0, y: 24 }}
+        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.75, duration: 0.5, ease: heroEase }}
+        transition={{ delay: shouldReduceMotion ? 0 : 0.75, duration: shouldReduceMotion ? 0.01 : 0.5, ease: heroEase }}
         className={`group absolute bottom-8 z-20 flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/60 hover:bg-primary-500 md:bottom-10 md:h-16 md:w-16 ${
           isRtl ? 'left-4 md:left-8' : 'right-4 md:right-8'
         }`}
@@ -246,9 +250,9 @@ export default function Hero() {
       <motion.button
         onClick={scrollToAbout}
         aria-label={t('accessibility.scrollDown')}
-        initial={{ opacity: 0 }}
+        initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.05, duration: 0.4 }}
+        transition={{ delay: shouldReduceMotion ? 0 : 1.05, duration: shouldReduceMotion ? 0.01 : 0.4 }}
         className="absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 transition-colors hover:text-white md:flex"
       >
         <span className="text-xs font-medium">{t('common.discoverMore')}</span>

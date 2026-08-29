@@ -6,9 +6,9 @@ import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { getDonateContent, type DonationOpportunity } from '@/data/donate';
+import { useDonateContent } from '@/hooks/useCmsContent';
+import { useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
-
-const revealEase = [0.22, 1, 0.36, 1] as const;
 
 function DonationCard({
   opportunity,
@@ -21,19 +21,19 @@ function DonationCard({
   isRtl: boolean;
   index: number;
 }) {
-  const shouldReduceMotion = useReducedMotion();
+  const revealMotion = useRevealMotion({
+    y: 18,
+    duration: 0.52,
+    delay: index * 0.04,
+    amount: 0.18,
+    mobileY: 12,
+    mobileDuration: 0.44,
+  });
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   return (
     <motion.article
-      initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.22 }}
-      transition={{
-        duration: shouldReduceMotion ? 0.01 : 0.52,
-        delay: shouldReduceMotion ? 0 : index * 0.04,
-        ease: revealEase,
-      }}
+      {...revealMotion}
       className="flex h-full flex-col overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] motion-reduce:hover:translate-y-0"
     >
       <div className="relative aspect-square overflow-hidden bg-primary-50">
@@ -99,7 +99,7 @@ function DonationCard({
 
 export default function DonatePage() {
   const { locale, isRtl } = useI18n();
-  const page = getDonateContent(locale);
+  const page = useDonateContent(locale);
 
   const structuredData = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;

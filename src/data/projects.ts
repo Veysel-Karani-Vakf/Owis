@@ -2,7 +2,7 @@ import type { BreadcrumbItem } from '@/data/about';
 import blessedTreeImage from '@/assets/projects/blessed-tree.jpg';
 import goldPortfolioImage from '@/assets/projects/gold-portfolio.jpeg';
 import waqfShareImage from '@/assets/projects/waqf-share.jpeg';
-import type { Locale } from '@/i18n/content';
+import type { Locale, Project } from '@/i18n/content';
 import { cmsPageContent, cmsProjects } from '@/cms/adapters';
 
 export const projectRoutes = {
@@ -740,6 +740,44 @@ export function getProjectsContent(locale: Locale): ProjectsPageContent {
     ...cmsPageContent('projects-page', locale, pageContent[locale]),
     projects: resolveProjects(locale),
   };
+}
+
+function lastPathSegment(value: string | undefined) {
+  const path = value?.trim().split(/[?#]/)[0].replace(/\/+$/, '') ?? '';
+  if (!path) return '';
+  const parts = path.split('/');
+  return parts[parts.length - 1] ?? '';
+}
+
+function isSameProject(project: LocalizedWaqfProject, homeProject: Project) {
+  const projectRouteSlug = lastPathSegment(project.route);
+  const homeRouteSlug = lastPathSegment(homeProject.detailsUrl);
+
+  return (
+    homeProject.id === project.id ||
+    homeProject.id === project.slug ||
+    homeProject.id === projectRouteSlug ||
+    homeRouteSlug === project.slug ||
+    homeRouteSlug === projectRouteSlug
+  );
+}
+
+export function applyHomeProjectImages(
+  projects: LocalizedWaqfProject[],
+  homeProjects: Project[],
+): LocalizedWaqfProject[] {
+  let changed = false;
+
+  const merged = projects.map((project) => {
+    const homeProject = homeProjects.find((item) => isSameProject(project, item));
+    const image = homeProject?.image?.trim();
+    if (!image || image === project.image) return project;
+
+    changed = true;
+    return { ...project, image };
+  });
+
+  return changed ? merged : projects;
 }
 
 export function getProject(locale: Locale, slug: string | undefined): LocalizedWaqfProject | undefined {

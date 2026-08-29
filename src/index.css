@@ -34,6 +34,24 @@
     font-family: 'Palatino Linotype', 'Cinzel', Georgia, serif;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    .page-transition {
+      animation: page-transition-in 260ms ease-out both;
+    }
+
+    @keyframes page-transition-in {
+      from {
+        opacity: 0.96;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
   html[lang='ar'] .font-brand {
     font-family: 'BigVesta Arabic Beta', 'Bahij TheSansArabic', 'Noto Kufi Arabic', 'Alexandria', system-ui, sans-serif;
   }
@@ -230,6 +248,12 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
+  .pioneers-stat-card:focus-within,
+  .pioneers-stat-card:active {
+    transform: translateY(-2px);
+    border-color: rgba(255, 132, 149, 0.3);
+  }
+
   .pioneers-stat-icon {
     background-color: rgba(255, 113, 132, 0.12);
     color: var(--pioneers-accent);
@@ -268,6 +292,153 @@
       0 0 22px rgba(255, 113, 132, 0.12);
   }
 
+  .president-profile-section {
+    --president-primary-dark: #7d070c;
+    --president-primary-deep: #240002;
+    --president-ink: #000000;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 200, 206, 0.18), transparent 24%),
+      radial-gradient(circle at 82% 78%, rgba(218, 8, 18, 0.22), transparent 30%),
+      linear-gradient(135deg, var(--president-ink) 0%, var(--president-primary-deep) 34%, var(--president-primary-dark) 68%, #111111 100%);
+  }
+
+  html[dir='rtl'] .president-profile-section {
+    background:
+      radial-gradient(circle at 82% 18%, rgba(255, 200, 206, 0.18), transparent 24%),
+      radial-gradient(circle at 18% 78%, rgba(218, 8, 18, 0.22), transparent 30%),
+      linear-gradient(225deg, var(--president-ink) 0%, var(--president-primary-deep) 34%, var(--president-primary-dark) 68%, #111111 100%);
+  }
+
+  .president-profile-section::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: -1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  }
+
+  .president-profile-section::after {
+    content: "";
+    position: absolute;
+    inset-inline: 16%;
+    top: 188px;
+    z-index: -1;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 200, 206, 0.62), rgba(218, 8, 18, 0.72), transparent);
+    opacity: 0.68;
+  }
+
+  .president-profile-pattern,
+  .president-profile-mark {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .president-profile-pattern {
+    inset: 0;
+    opacity: 0.12;
+    background-image:
+      linear-gradient(30deg, transparent 24%, rgba(255, 225, 228, 0.34) 25%, rgba(255, 225, 228, 0.34) 27%, transparent 28%, transparent 74%, rgba(255, 225, 228, 0.34) 75%, rgba(255, 225, 228, 0.34) 77%, transparent 78%),
+      linear-gradient(150deg, transparent 24%, rgba(255, 225, 228, 0.34) 25%, rgba(255, 225, 228, 0.34) 27%, transparent 28%, transparent 74%, rgba(255, 225, 228, 0.34) 75%, rgba(255, 225, 228, 0.34) 77%, transparent 78%);
+    background-position: 0 0, 0 0;
+    background-size: 108px 188px;
+    animation: president-profile-pattern-drift 22s linear infinite;
+  }
+
+  .president-profile-mark {
+    width: clamp(260px, 32vw, 560px);
+    aspect-ratio: 1;
+    opacity: 0.14;
+    border: 18px solid rgba(255, 200, 206, 0.34);
+    clip-path: polygon(50% 0%, 61% 18%, 82% 18%, 72% 36%, 84% 50%, 72% 64%, 82% 82%, 61% 82%, 50% 100%, 39% 82%, 18% 82%, 28% 64%, 16% 50%, 28% 36%, 18% 18%, 39% 18%);
+    filter: drop-shadow(0 20px 40px rgba(36, 0, 2, 0.28));
+  }
+
+  .president-profile-mark--top {
+    inset-inline-start: clamp(22px, 8vw, 150px);
+    top: 58px;
+    transform: rotate(12deg);
+  }
+
+  .president-profile-mark--bottom {
+    inset-inline-end: clamp(-160px, -6vw, -70px);
+    bottom: -150px;
+    width: clamp(420px, 44vw, 760px);
+    transform: rotate(-9deg);
+  }
+
+  .president-profile-photo {
+    position: relative;
+    height: clamp(460px, 53vw, 590px);
+    overflow: hidden;
+    border-radius: 999px 999px 8px 8px;
+    background: var(--president-primary-deep);
+    box-shadow:
+      0 36px 80px rgba(36, 0, 2, 0.36),
+      0 0 0 1px rgba(255, 200, 206, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    transform: translateY(0);
+    transition:
+      transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .president-profile-photo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .president-profile-photo::after {
+    content: "";
+    position: absolute;
+    inset-block: 12%;
+    inset-inline-end: -28%;
+    z-index: 3;
+    width: 34%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    opacity: 0;
+    transform: skewX(-16deg) translateX(0);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .president-profile-photo:hover {
+      transform: translateY(-8px);
+      box-shadow:
+        0 44px 94px rgba(36, 0, 2, 0.46),
+        0 0 0 1px rgba(255, 200, 206, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .president-profile-photo:hover::after {
+      animation: president-profile-shine 780ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .president-profile-section::after {
+      top: 164px;
+      inset-inline: 10%;
+    }
+
+    .president-profile-pattern {
+      background-size: 78px 136px;
+    }
+
+    .president-profile-photo {
+      height: clamp(390px, 118vw, 500px);
+    }
+  }
+
   @media (max-width: 767px) {
     .pioneers-section {
       background:
@@ -302,6 +473,10 @@
 
     .pioneers-stat-card {
       backdrop-filter: blur(6px);
+    }
+
+    .pioneers-stat-card:active {
+      transform: translateY(-2px);
     }
   }
 
@@ -348,6 +523,11 @@
     will-change: transform;
   }
 
+  .waqf-identity-card:focus-within,
+  .waqf-identity-card:active {
+    transform: translateY(-3px) scale(1.008);
+  }
+
   @media (hover: hover) and (pointer: fine) {
     .waqf-identity-card:hover {
       transform: translateY(-7px) scale(1.018);
@@ -388,6 +568,8 @@
     }
 
     .waqf-identity-card:hover,
+    .waqf-identity-card:focus-within,
+    .waqf-identity-card:active,
     .waqf-identity-card:hover .waqf-identity-icon {
       transform: none;
     }
@@ -632,6 +814,10 @@
       transform: none;
     }
   }
+
+  .scroll-stack-static-card {
+    will-change: transform, opacity;
+  }
 }
 
 .waqf-identity-progress {
@@ -696,6 +882,29 @@
   }
 }
 
+@keyframes president-profile-pattern-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 108px 188px, -108px 188px;
+  }
+}
+
+@keyframes president-profile-shine {
+  0% {
+    opacity: 0;
+    transform: skewX(-16deg) translateX(0);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: skewX(-16deg) translateX(-430%);
+  }
+}
+
 /* Focus visible */
 :focus-visible {
   outline: 2px solid #da0812;
@@ -729,12 +938,19 @@
   left: 50%;
   width: 100vw;
   height: 56.25vw;
-  min-height: 100vh;
-  min-width: 177.78vh;
+  min-height: 100svh;
+  min-width: 177.78svh;
   transform: translate(-50%, -50%);
   pointer-events: none;
   border: 0;
   filter: saturate(1.05) contrast(1.05);
+}
+
+@media (max-width: 767px) {
+  .yt-bg-container iframe {
+    min-height: 100svh;
+    min-width: 177.78svh;
+  }
 }
 
 /* Elements whose size is computed from measurements (e.g. the auto-fitted Hero title) must never

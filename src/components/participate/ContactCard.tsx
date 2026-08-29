@@ -1,6 +1,7 @@
 import { ExternalLink, Globe, MessageCircle, Share2 } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { ParticipateContactLink, ParticipateLabels } from '@/data/participate';
+import { useRevealMotion } from '@/hooks/useResponsiveMotion';
 
 type ContactCardProps = {
   link: ParticipateContactLink;
@@ -9,20 +10,20 @@ type ContactCardProps = {
 };
 
 export default function ContactCard({ link, labels, index }: ContactCardProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const revealMotion = useRevealMotion({
+    y: 18,
+    duration: 0.5,
+    delay: index * 0.05,
+    amount: 0.18,
+    mobileY: 12,
+    mobileDuration: 0.42,
+  });
   // `kind` comes from an admin select; an unknown or missing value still gets an icon.
   const Icon = link.kind === 'whatsapp' ? MessageCircle : link.kind === 'social' ? Share2 : Globe;
 
   return (
     <motion.article
-      initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.24 }}
-      transition={{
-        duration: shouldReduceMotion ? 0.01 : 0.5,
-        delay: shouldReduceMotion ? 0 : index * 0.05,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      {...revealMotion}
       className="group h-full"
     >
       <a

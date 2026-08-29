@@ -26,8 +26,12 @@ type VideoPlayerProps = {
 function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: VideoPlayerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const source = resolveVideo({ videoFile, videoId });
+  const youtubeId = source?.kind === 'youtube' ? source.id : videoId;
 
-  // An uploaded file plays natively — there is no embed to wait on.
+  useEffect(() => {
+    setIsLoaded(false);
+  }, [videoFile, videoId]);
+
   if (source?.kind === 'file') {
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl">
@@ -71,7 +75,7 @@ function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: V
       )}
 
       <iframe
-        src={youTubeEmbedUrl(source?.kind === 'youtube' ? source.id : videoId, {
+        src={youTubeEmbedUrl(youtubeId, {
           autoplay: 1,
           playsinline: 1,
           rel: 0,
@@ -110,6 +114,8 @@ export default function VideoModal({
     if (!isOpen) return;
 
     const previouslyFocusedElement = document.activeElement as HTMLElement | null;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
 
     const handleEsc = (e: KeyboardEvent) => {
@@ -150,13 +156,15 @@ export default function VideoModal({
     document.addEventListener('keydown', handleFocusTrap);
     document.addEventListener('focusin', handleFocusIn);
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     return () => {
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleEsc);
       document.removeEventListener('keydown', handleFocusTrap);
       document.removeEventListener('focusin', handleFocusIn);
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       previouslyFocusedElement?.focus();
     };
   }, [isOpen, onClose]);
@@ -169,7 +177,7 @@ export default function VideoModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-black/80 p-4 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
@@ -177,7 +185,7 @@ export default function VideoModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative w-full max-w-4xl"
+            className="relative w-full max-w-[min(56rem,calc((100dvh-8rem)*16/9))]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

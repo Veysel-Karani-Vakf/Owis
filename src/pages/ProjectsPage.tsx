@@ -7,9 +7,9 @@ import SpotlightCard from '@/components/effects/SpotlightCard';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { getProjectsContent, type LocalizedWaqfProject } from '@/data/projects';
+import { useProjectsContent } from '@/hooks/useCmsContent';
+import { useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
-
-const revealEase = [0.22, 1, 0.36, 1] as const;
 
 type ProjectCardProps = {
   project: LocalizedWaqfProject;
@@ -20,19 +20,21 @@ type ProjectCardProps = {
 
 function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
   const shouldReduceMotion = useReducedMotion();
+  const revealMotion = useRevealMotion({
+    y: 22,
+    scale: 0.985,
+    duration: 0.62,
+    delay: index * 0.09,
+    amount: 0.2,
+    mobileY: 14,
+    mobileDuration: 0.46,
+  });
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   return (
     <motion.article
       data-project-index-card={project.slug}
-      initial={shouldReduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 22, scale: 0.985 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.24 }}
-      transition={{
-        duration: shouldReduceMotion ? 0.01 : 0.62,
-        delay: shouldReduceMotion ? 0 : index * 0.09,
-        ease: revealEase,
-      }}
+      {...revealMotion}
       className="h-full"
     >
       <SpotlightCard
@@ -99,8 +101,8 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
 }
 
 export default function ProjectsPage() {
-  const { locale, isRtl } = useI18n();
-  const page = getProjectsContent(locale);
+  const { locale, isRtl, content } = useI18n();
+  const page = useProjectsContent(locale, content.projects.items);
 
   const itemListSchema = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
