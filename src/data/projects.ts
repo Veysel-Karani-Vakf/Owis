@@ -59,7 +59,6 @@ export type LocalizedWaqfProject = {
   unitAmount: number;
   facts: ProjectFact[];
   officialContributionUrl: string;
-  officialSourceUrl: string;
   returnsTitle: string;
   returnsIntro?: string;
   returnUses: string[];
@@ -99,7 +98,6 @@ export type ProjectsPageContent = {
     details: string;
     contribute: string;
     externalNotice: string;
-    source: string;
     facts: string;
     overview: string;
     allocation: string;
@@ -118,14 +116,11 @@ export type ProjectsPageContent = {
   projects: LocalizedWaqfProject[];
 };
 
-// This site is the official source now: project pages reference in-site routes,
-// and contributions temporarily go through the internal donate page.
+// This site is the official source now: contributions temporarily go through
+// the internal donate page.
 const officialSources = {
   projectsIndex: '/projects',
-  blessedTree: projectRoutes.blessedTree,
   blessedTreeContribution: '/donate',
-  waqfShare: projectRoutes.waqfShare,
-  goldWallet: projectRoutes.goldWallet,
   waqfGiftVideo: 'https://www.youtube.com/watch?v=2_r2fKz-hXs',
 } as const;
 
@@ -140,7 +135,6 @@ const sharedProjects: Record<
     | 'imageScale'
     | 'unitAmount'
     | 'officialContributionUrl'
-    | 'officialSourceUrl'
   >
 > = {
   'blessed-tree': {
@@ -153,7 +147,6 @@ const sharedProjects: Record<
     imageScale: 0.94,
     unitAmount: 100,
     officialContributionUrl: officialSources.blessedTreeContribution,
-    officialSourceUrl: officialSources.blessedTree,
   },
   'waqf-share': {
     id: 'waqf-share',
@@ -162,7 +155,6 @@ const sharedProjects: Record<
     image: waqfShareImage,
     unitAmount: 100,
     officialContributionUrl: '/donate',
-    officialSourceUrl: officialSources.waqfShare,
   },
   'gold-wallet': {
     id: 'gold-wallet',
@@ -171,7 +163,6 @@ const sharedProjects: Record<
     image: goldPortfolioImage,
     unitAmount: 100,
     officialContributionUrl: '/donate',
-    officialSourceUrl: officialSources.goldWallet,
   },
 };
 
@@ -592,7 +583,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       title: 'أوعية وقفية تصنع أثرًا مستمرًا',
       paragraphs: [
         'تجمع مشاريع الوقف بين بناء الأصول الاستثمارية والمحافظة عليها، وتوجيه عوائدها إلى مسارات التعليم وبناء القدرات والشراكات والتوعية المجتمعية.',
-        'تعرض هذه الصفحة المشاريع الوقفية الأساسية كما وردت في المصادر الرسمية، مع إبراز طبيعة كل مشروع ومصارف عوائده المعلنة.',
+        'تعرض هذه الصفحة المشاريع الوقفية الأساسية، مع إبراز طبيعة كل مشروع ومصارف عوائده المعلنة.',
       ],
     },
     grid: {
@@ -607,7 +598,6 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       details: 'عرض التفاصيل',
       contribute: 'ساهم الآن',
       externalNotice: 'ينقلك إلى صفحة المساهمة داخل الموقع.',
-      source: 'المصدر الرسمي',
       facts: 'معلومات المشروع',
       overview: 'تفاصيل المشروع',
       allocation: 'توزيع الريع',
@@ -647,7 +637,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       title: 'Sürekli etki üreten vakıf araçları',
       paragraphs: [
         'Vakıf projeleri, yatırım varlıklarını oluşturmayı ve korumayı; gelirlerini eğitim, kapasite geliştirme, ortaklıklar ve toplumsal farkındalık alanlarına yönlendirmeyi birleştirir.',
-        'Bu sayfa, resmi kaynaklarda yer alan temel vakıf projelerini; proje yapısı, katkı değeri ve gelir kullanım alanlarıyla gösterir.',
+        'Bu sayfa temel vakıf projelerini; proje yapısı, katkı değeri ve gelir kullanım alanlarıyla gösterir.',
       ],
     },
     grid: {
@@ -662,7 +652,6 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       details: 'Detayları Gör',
       contribute: 'Katkı Sun',
       externalNotice: 'Sizi site içindeki katkı sayfasına yönlendirir.',
-      source: 'Resmi kaynak',
       facts: 'Proje bilgileri',
       overview: 'Proje detayları',
       allocation: 'Gelir dağılımı',
@@ -702,7 +691,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       title: 'Waqf vehicles that create lasting impact',
       paragraphs: [
         'The waqf projects combine building and preserving investment assets with directing returns to education, capacity building, partnerships, and community awareness.',
-        'This page presents the core waqf projects from the official sources, highlighting each project, its contribution value, and its stated return uses.',
+        'This page presents the core waqf projects, highlighting each project, its contribution value, and its stated return uses.',
       ],
     },
     grid: {
@@ -717,7 +706,6 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       details: 'View Details',
       contribute: 'Contribute Now',
       externalNotice: 'Takes you to the in-site contribute page.',
-      source: 'Official source',
       facts: 'Project facts',
       overview: 'Project details',
       allocation: 'Return allocation',

@@ -337,7 +337,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
 
                 {item.originalTitle && item.title !== item.originalTitle && (
                   <div className="mb-8 rounded-[22px] border border-primary-100 bg-primary-50/45 p-5">
-                    <p className="text-sm font-bold text-primary-700">{labels.officialSource}</p>
+                    <p className="text-sm font-bold text-primary-700">{labels.originalTitle}</p>
                     <p className="mt-2 text-lg font-bold leading-tight text-dark-950">{item.originalTitle}</p>
                   </div>
                 )}

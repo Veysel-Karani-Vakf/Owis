@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check, Copy, ExternalLink, FileText, Film, Search, Trash2, Upload, X } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { uploadToMedia } from '../lib/storage';
@@ -496,13 +497,7 @@ function DetailPanel({ item, onClose, onCopy, onDelete, describeUsage, label, fo
     };
   }, [item]);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useTopmostEscape(onClose);
 
   const rows: [string, string][] = [
     [label('المجلد', 'Klasör', 'Folder'), MEDIA_FOLDER_LABELS[item.folder][locale]],

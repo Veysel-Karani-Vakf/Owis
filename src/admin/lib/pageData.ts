@@ -6,6 +6,7 @@
 // producing a row neither shape can read. Transposing on load keeps existing
 // translations intact.
 
+import { deepLocalize, looksLocaleKeyed } from '@/cms/localize';
 import { LOCALES, type Locale } from '@/lib/types';
 
 type PageData = Record<string, unknown>;
@@ -20,6 +21,14 @@ function isLocaleKeyed(value: unknown): value is PageData {
   return keys.length > 0 && keys.every((key) => (LOCALES as string[]).includes(key));
 }
 
+/** True when a translation map sits anywhere inside `value`. */
+function hasLocaleMap(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasLocaleMap);
+  if (!isPlainObject(value)) return false;
+  if (looksLocaleKeyed(value)) return true;
+  return Object.values(value).some(hasLocaleMap);
+}
+
 export function normalizePageData(data: unknown): PageData {
   if (!isPlainObject(data)) return {};
   if (isLocaleKeyed(data)) return data;
@@ -31,9 +40,13 @@ export function normalizePageData(data: unknown): PageData {
       if (isLocaleKeyed(value)) {
         // A section already split by language contributes only its own copy.
         if (value[locale as Locale] !== undefined) scoped[section] = value[locale as Locale];
+      } else if (hasLocaleMap(value)) {
+        // A shared section whose leaves are translation maps: every language
+        // gets its own collapsed copy, exactly what the site shows for it.
+        scoped[section] = deepLocalize(value, locale);
       } else if (locale === 'ar') {
-        // Text that was never split was written in the site's first language;
-        // the other languages keep their own static copy instead of inheriting it.
+        // Plain text that was never split was written in the site's first
+        // language; the other languages keep their own static copy.
         scoped[section] = value;
       }
     }

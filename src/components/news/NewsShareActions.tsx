@@ -1,5 +1,6 @@
-import { Check, Copy, Facebook, MessageCircle, Twitter } from 'lucide-react';
+import { Check, Copy, Facebook, MessageCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import XIcon from '@/components/icons/XIcon';
 import type { NewsLabels } from '@/data/news';
 
 type NewsShareActionsProps = {
@@ -27,8 +28,8 @@ export default function NewsShareActions({ labels, title }: NewsShareActionsProp
       },
       {
         label: labels.x,
-        href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-        icon: Twitter,
+        href: `https://x.com/intent/post?url=${encodedUrl}&text=${encodedTitle}`,
+        icon: XIcon,
       },
     ],
     [encodedTitle, encodedUrl, labels.facebook, labels.whatsapp, labels.x]

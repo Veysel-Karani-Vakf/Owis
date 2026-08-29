@@ -420,41 +420,19 @@ export const SITE_PAGES: SitePageDef[] = [
             help: L('مثال: /programs/yemen-pioneers', 'Örnek: /programs/yemen-pioneers', 'Example: /programs/yemen-pioneers'),
           },
           { path: 'yemenPioneers.image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
-          {
-            path: 'yemenPioneers.statisticsSource.label',
-            label: L('اسم مصدر الأرقام', 'Kaynak adı', 'Figures source label'),
-            type: 'text',
-          },
-          {
-            path: 'yemenPioneers.statisticsSource.url',
-            label: L('رابط مصدر الأرقام', 'Kaynak bağlantısı', 'Figures source URL'),
-            type: 'url',
-          },
         ],
       },
       {
         key: 'statistics',
         label: L('الإحصائيات', 'İstatistikler', 'Statistics'),
         description: L(
-          'عنوان قسم الأرقام ومصدرها. الأرقام نفسها تُدار من "الإحصائيات" في القائمة.',
-          'Rakamlar bölümünün başlığı ve kaynağı. Rakamlar menüdeki "İstatistikler"den yönetilir.',
-          'The title and source of the figures section. The figures themselves are managed under "Statistics" in the menu.',
+          'عنوان قسم الأرقام ووصفه. الأرقام نفسها تُدار من "الإحصائيات" في القائمة.',
+          'Rakamlar bölümünün başlığı ve açıklaması. Rakamlar menüdeki "İstatistikler"den yönetilir.',
+          'The title and description of the figures section. The figures themselves are managed under "Statistics" in the menu.',
         ),
         icon: BarChart3,
         anchor: '#statistics',
-        fields: [
-          ...eyebrowTitleDescription('statistics'),
-          {
-            path: 'statistics.source.label',
-            label: L('اسم المصدر', 'Kaynak adı', 'Source label'),
-            type: 'text',
-          },
-          {
-            path: 'statistics.source.url',
-            label: L('رابط المصدر', 'Kaynak bağlantısı', 'Source URL'),
-            type: 'url',
-          },
-        ],
+        fields: [...eyebrowTitleDescription('statistics')],
       },
       {
         key: 'news',
@@ -795,8 +773,6 @@ export const SITE_PAGES: SitePageDef[] = [
           ['videoGallery', 'عنوان معرض الفيديو', 'Video galerisi', 'Video gallery heading'],
           ['videoGalleryDescription', 'وصف معرض الفيديو', 'Video galerisi açıklaması', 'Video gallery description', 'textarea'],
           ['watchVideo', 'زر مشاهدة الفيديو', 'Videoyu izle', 'Watch video button'],
-          ['officialSource', 'كلمة "المصدر الرسمي"', 'Resmî kaynak', 'Official source'],
-          ['openExternal', 'تلميح فتح رابط خارجي', 'Dış bağlantı ipucu', 'External link hint'],
           ['previous', 'زر السابق', 'Önceki', 'Previous button'],
           ['next', 'زر التالي', 'Sonraki', 'Next button'],
           ['contact', 'كلمة "تواصل"', 'İletişim', 'Contact'],
@@ -826,18 +802,12 @@ export const SITE_PAGES: SitePageDef[] = [
       },
       {
         key: 'labelsCapacity',
-        label: L('نصوص بناء القدرات', 'Kapasite etiketleri', 'Capacity building labels'),
-        description: L('عناوين أقسام المدن والمرحلة والتوصيات والمنتدى (تظهر عندما تُستخدم هذه الأقسام)', 'Şehirler, aşama, öneriler ve forum bölümlerinin başlıkları', 'Headings for the cities, phase, recommendations and forum sections (when those sections are used)'),
+        label: L('نصوص المدن', 'Şehir etiketleri', 'City labels'),
+        description: L('تظهر عندما يحتوي برنامج على قائمة مدن', 'Bir programda şehir listesi olduğunda görünür', 'Shown when a program has a list of cities'),
         icon: Building2,
         fields: labelFields('labels', [
           ['cityMedia', 'عنوان وسائط المدن', 'Şehir medyası', 'City media heading'],
-          ['cityExplorerDescription', 'وصف مستكشف المدن', 'Şehir gezgini açıklaması', 'City explorer description', 'textarea'],
           ['partner', 'كلمة "الشريك"', 'Ortak', 'Partner'],
-          ['phaseEyebrow', 'السطر فوق المرحلة', 'Aşama üst satırı', 'Line above the phase'],
-          ['recommendationsEyebrow', 'السطر فوق التوصيات', 'Öneriler üst satırı', 'Line above recommendations'],
-          ['recommendationsDescription', 'وصف التوصيات', 'Öneriler açıklaması', 'Recommendations description', 'textarea'],
-          ['forumEyebrow', 'السطر فوق المنتدى', 'Forum üst satırı', 'Line above the forum'],
-          ['forumObjectives', 'عنوان أهداف المنتدى', 'Forum hedefleri', 'Forum objectives heading'],
         ]),
       },
       {
@@ -846,9 +816,6 @@ export const SITE_PAGES: SitePageDef[] = [
         icon: Landmark,
         fields: labelFields('labels', [
           ['manifestoEyebrow', 'السطر فوق عنوان الصفحة', 'Sayfa başlığı üst satırı', 'Line above the page title'],
-          ['focusAreas', 'عنوان مجالات التركيز', 'Odak alanları', 'Focus areas heading'],
-          ['focusAreasDescription', 'وصف مجالات التركيز', 'Odak alanları açıklaması', 'Focus areas description', 'textarea'],
-          ['areaLabel', 'كلمة "مجال"', 'Alan kelimesi', '"Area" word'],
           ['audiences', 'عنوان الفئات المستهدفة', 'Hedef kitleler', 'Audiences heading'],
           ['audiencesDescription', 'وصف الفئات المستهدفة', 'Hedef kitle açıklaması', 'Audiences description', 'textarea'],
         ]),
@@ -1427,8 +1394,6 @@ export const SITE_PAGES: SitePageDef[] = [
           ['pdfOnly', 'فلتر "ملفات PDF فقط"', 'Sadece PDF', '"PDF only" filter'],
           ['pdfShort', 'شارة PDF', 'PDF rozeti', 'PDF badge'],
           ['noPdfShort', 'شارة بدون PDF', 'PDF yok rozeti', 'No-PDF badge'],
-          ['directPdfAvailable', 'ملاحظة توفر PDF مباشر', 'Doğrudan PDF notu', 'Direct PDF note'],
-          ['noDirectPdf', 'ملاحظة عدم توفر PDF', 'PDF yok notu', 'No PDF note'],
           ['preview', 'زر المعاينة', 'Önizleme', 'Preview button'],
           ['openInNewTab', 'زر فتح في تبويب جديد', 'Yeni sekmede aç', 'Open in new tab'],
           ['closePreview', 'زر إغلاق المعاينة', 'Önizlemeyi kapat', 'Close preview'],
@@ -1452,7 +1417,7 @@ export const SITE_PAGES: SitePageDef[] = [
         icon: BookOpen,
         fields: [
           ...labelFields('labels', [
-            ['officialSource', 'عنوان المصدر الرسمي', 'Resmî kaynak', 'Official source heading'],
+            ['originalTitle', 'عنوان "العنوان الأصلي"', 'Orijinal başlık', 'Original title heading'],
             ['sourceLanguage', 'كلمة "لغة المصدر"', 'Kaynak dili', 'Source language'],
             ['originalLanguageNote', 'ملاحظة النص الأصلي بالعربية', 'Orijinal dil notu', 'Original-language note', 'textarea'],
             ['readingTime', 'كلمة "دقائق قراءة"', 'Okuma süresi', 'Reading time'],

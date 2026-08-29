@@ -193,7 +193,6 @@ export type Program = {
   themes?: ProgramTheme[];
   overviewImage?: string;
   overviewImageAlt?: string;
-  officialSourceUrl: string;
   /** Which page design renders this program; derived from the slug when unset (see resolveProgramLayout). */
   layout?: ProgramLayout;
   seo: {
@@ -228,8 +227,6 @@ export type ProgramsPageContent = {
     initiatives: string;
     products: string;
     watchVideo: string;
-    officialSource: string;
-    openExternal: string;
     contact: string;
     otherPrograms: string;
     details: string;
@@ -310,7 +307,6 @@ const programShared = {
     route: programRoutes.yemenPioneers,
     heroImage: yemenPioneersHero,
     images: [yemenPioneersHero],
-    officialSourceUrl: officialSources.yemenPioneers,
     contactEmail: 'yemenpioneers@veysvakfi.org',
     overviewImage: '/news/09-yemen-pioneers-second-scientific-conference-6.png',
   },
@@ -320,7 +316,6 @@ const programShared = {
     route: programRoutes.capacityBuilding,
     heroImage: volunteerHeroImage,
     images: [volunteerHeroImage, awarenessVolunteerUnitImage],
-    officialSourceUrl: officialSources.capacityBuilding,
     contactEmail: 'volunteering@veysvakfi.org',
     contactPhone: '+90 536 745 6199',
     overviewImage: awarenessVolunteerUnitImage,
@@ -336,7 +331,6 @@ const programShared = {
       capacityMaribImage,
       capacityTaizImage,
     ],
-    officialSourceUrl: officialSources.institutionalDevelopment,
   },
   'community-awareness': {
     id: 'community-awareness',
@@ -344,7 +338,6 @@ const programShared = {
     route: programRoutes.communityAwareness,
     heroImage: awarenessOwaisPlatformImage,
     images: [awarenessOwaisPlatformImage],
-    officialSourceUrl: officialSources.communityAwareness,
   },
 } satisfies Record<
   ProgramSlug,
@@ -354,7 +347,6 @@ const programShared = {
     route: string;
     heroImage: string;
     images: string[];
-    officialSourceUrl: string;
     contactEmail?: string;
     contactPhone?: string;
     overviewImage?: string;
@@ -407,13 +399,11 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       initiatives: 'المبادرات',
       products: 'منتجات المبادرة',
       watchVideo: 'مشاهدة الفيديو',
-      officialSource: 'المصدر الرسمي',
-      openExternal: 'يفتح رابطاً خارجياً للمصدر الرسمي',
       contact: 'للتواصل',
       otherPrograms: 'برامج أخرى',
       details: 'عرض التفاصيل',
       donate: 'ساهم الآن',
-      noVerifiedStats: 'لم تُعرض أرقام غير موثقة في المصدر الرسمي.',
+      noVerifiedStats: 'لا تُعرض أرقام غير موثقة.',
       journey: 'رحلة الرائد',
       journeyEyebrow: 'المسار',
       journeyDescription:
@@ -1025,13 +1015,11 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       initiatives: 'Girisimler',
       products: 'Girisim Urunleri',
       watchVideo: 'Videoyu Izle',
-      officialSource: 'Resmi Kaynak',
-      openExternal: 'Resmi kaynak yeni sekmede acilir',
       contact: 'Iletisim',
       otherPrograms: 'Diger Programlar',
       details: 'Detaylari Gor',
       donate: 'Katki Sun',
-      noVerifiedStats: 'Resmi kaynakta dogrulanmayan sayilar gosterilmedi.',
+      noVerifiedStats: 'Dogrulanmamis sayilar gosterilmez.',
       journey: 'Oncunun Yolculugu',
       journeyEyebrow: 'Yol Haritasi',
       journeyDescription:
@@ -1642,13 +1630,11 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       initiatives: 'Initiatives',
       products: 'Initiative Products',
       watchVideo: 'Watch Video',
-      officialSource: 'Official Source',
-      openExternal: 'Opens the official source in a new tab',
       contact: 'Contact',
       otherPrograms: 'Other Programs',
       details: 'View Details',
       donate: 'Contribute Now',
-      noVerifiedStats: 'Numbers that were not verified in the official source are not displayed.',
+      noVerifiedStats: 'Unverified figures are not displayed.',
       journey: 'The Pioneer Journey',
       journeyEyebrow: 'The Path',
       journeyDescription:

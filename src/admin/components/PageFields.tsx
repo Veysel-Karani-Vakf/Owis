@@ -511,7 +511,9 @@ function blankItem(fields: PageFieldDef[]): Record<string, unknown> {
           : field.type === 'number'
             ? null
             : field.type === 'localized' || field.type === 'localizedTextarea'
-              ? {}
+              ? // A real translation map from the start: the site's localizer
+                // would otherwise hand `{}` to a React child.
+                { ar: '', tr: '', en: '' }
               : field.type === 'select'
                 ? (field.options?.[0]?.value ?? '')
                 : '';

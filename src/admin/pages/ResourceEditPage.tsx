@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Save, Trash2, ExternalLink } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { supabase } from '@/lib/supabase';
@@ -67,8 +67,19 @@ function formatTime(value: unknown, locale: Locale): string {
 export default function ResourceEditPage() {
   const { key = '', id = '' } = useParams();
   const resource = getResource(key);
-  const s = useAdminStrings();
-  if (!resource) return <p className="text-slate-500">{s.noAccess}</p>;
+  const { locale } = useI18n();
+  if (!resource) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+        <p className="text-sm text-slate-600">
+          {locale === 'ar' ? 'هذه القائمة غير موجودة.' : locale === 'tr' ? 'Böyle bir liste yok.' : 'There is no such list.'}
+        </p>
+        <Link to="/admin" className="mt-3 inline-block text-sm font-medium text-primary-700 hover:underline">
+          {locale === 'ar' ? 'العودة إلى لوحة التحكم' : locale === 'tr' ? 'Panele dön' : 'Back to the dashboard'}
+        </Link>
+      </div>
+    );
+  }
   // Keyed so a jump from one record straight to another resets the form.
   return (
     <EditingLocaleProvider key={`${key}/${id}`}>
@@ -81,6 +92,10 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
   const isNew = id === 'new';
   const s = useAdminStrings();
   const { locale, isRtl } = useI18n();
+  // The load effect must not re-run when the dashboard language changes —
+  // that would refetch the row over the editor's unsaved typing.
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
@@ -124,12 +139,12 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
         setBaseline(JSON.stringify(row));
         setLastSavedAt(typeof row.updated_at === 'string' ? row.updated_at : null);
       })
-      .catch((e) => active && setError(translateDbError(e, locale)))
+      .catch((e) => active && setError(translateDbError(e, localeRef.current)))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [resource, id, isNew, locale]);
+  }, [resource, id, isNew]);
 
   const dirty = useMemo(() => baseline !== '' && JSON.stringify(values) !== baseline, [values, baseline]);
 
@@ -226,8 +241,8 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
           if (payload[k] === undefined || payload[k] === null || payload[k] === '') payload[k] = v;
         });
         if (payload.is_published === undefined) payload.is_published = true;
-        // New records go to the end of the list.
-        payload.sort_order = await countRows(resource.table);
+        // New records go to the end of the list unless the editor set an order.
+        if (!payload.sort_order) payload.sort_order = await countRows(resource.table);
         saved = await insertRow(resource.table, payload);
       } else {
         saved = await updateRow(resource.table, id, payload);
@@ -258,10 +273,9 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
   useUnsavedChanges(dirty, saveAndReport);
   useSaveShortcut(dirty && !saving ? saveAndReport : null);
 
-  const goBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate(`/admin/r/${resource.key}`);
-  };
+  // The button is labelled with the list's name, so it always goes there —
+  // not to wherever the editor came from (dashboard, search, another tab).
+  const goBack = () => navigate(`/admin/r/${resource.key}`);
 
   const remove = async () => {
     const name = pickLocalized(values[resource.titleField], locale) || s.newItem;

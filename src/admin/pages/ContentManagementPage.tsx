@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ChevronDown,
@@ -22,6 +21,7 @@ import type { CmsSnapshot } from '@/cms/store';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useSaveShortcut } from '../hooks/useSaveShortcut';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { LocaleSwitch, localeName } from '../components/EditingLocale';
@@ -336,19 +336,25 @@ export default function ContentManagementPage() {
     return true;
   }, [dirty, drafts, rawPages, uiLocale, toast, strings.savedToast, forgetStoredDraft]);
 
-  // Drafts survive switching page or language inside this editor, so those
-  // navigations must not trigger the leave-page dialog. The guard is lifted
-  // synchronously (flushSync re-registers the blocker) for the one navigate call.
-  const [guardSuspended, setGuardSuspended] = useState(false);
-  useUnsavedChanges(dirty.size > 0 && !guardSuspended, save);
+  // Drafts survive switching page or language inside this editor — however
+  // that switch happens (page list, search palette, dashboard link) — so
+  // only leaving the editor altogether asks about unsaved edits. Choosing to
+  // leave drops the drafts too, so the dialog is not shown twice for nothing.
+  const discardAll = useCallback(() => {
+    for (const key of dirty) clearStoredDraft(key);
+    setDirty(new Set());
+    setDrafts({});
+  }, [dirty]);
+  useUnsavedChanges(dirty.size > 0, save, {
+    allow: (next) => next.pathname.startsWith('/admin/content'),
+    onDiscard: discardAll,
+  });
   useSaveShortcut(dirty.size > 0 && !saving ? save : null);
 
   const goTo = useCallback(
     (pageKey: string, locale: Locale, section?: string | null) => {
-      flushSync(() => setGuardSuspended(true));
       const suffix = section ? `?section=${section}` : '';
       navigate(`/admin/content/${pageKey}/${locale}${suffix}`);
-      setGuardSuspended(false);
     },
     [navigate],
   );
@@ -362,14 +368,7 @@ export default function ContentManagementPage() {
   );
 
   const previewAsOverlay = showPreview && !roomForColumn;
-  useEffect(() => {
-    if (!previewAsOverlay) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') togglePreview();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [previewAsOverlay, togglePreview]);
+  useTopmostEscape(togglePreview, previewAsOverlay);
 
   const toggleSection = (key: string) =>
     setOpenSections((current) => {

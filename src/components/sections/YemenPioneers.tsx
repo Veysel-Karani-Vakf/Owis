@@ -90,7 +90,6 @@ export default function YemenPioneers() {
   const { content, t, isRtl, formatNumber } = useI18n();
   const yemenPioneersContent = content.yemenPioneers;
   const indicators = yemenPioneersContent.indicators ?? [];
-  const source = yemenPioneersContent.statisticsSource;
   const buttonUrl = yemenPioneersContent.url || '/programs/yemen-pioneers';
   const isExternalButton = buttonUrl.startsWith('http');
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
@@ -212,20 +211,6 @@ export default function YemenPioneers() {
                   />
                 ))}
               </div>
-
-              {source?.label && (
-                <motion.a
-                  href={source.url || undefined}
-                  target={source.url ? '_blank' : undefined}
-                  rel={source.url ? 'noopener noreferrer' : undefined}
-                  initial={{ opacity: 0 }}
-                  animate={statsInView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                  className="relative mt-6 block text-center text-xs text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline md:text-sm"
-                >
-                  {source.label}
-                </motion.a>
-              )}
             </div>
           )}
         </div>

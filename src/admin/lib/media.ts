@@ -94,19 +94,21 @@ const URL_COLUMNS: Record<string, string[]> = {
 export type MediaUsage = { table: string; id: string; title: string };
 
 /**
- * Finds records that reference a file, by searching each table's URL-bearing
- * columns for the storage path. Text and jsonb columns are cast to text so one
- * query covers both.
+ * Finds records that reference a file. The tables are small (a few hundred
+ * rows in all), so the URL-bearing columns are fetched and matched here:
+ * PostgREST's filter grammar cannot search inside jsonb text, and a failed
+ * query must never read as "not used anywhere".
  */
 export async function findMediaUsage(path: string): Promise<MediaUsage[]> {
-  const needle = `%${path}%`;
   const hits: MediaUsage[] = [];
   await Promise.all(
     Object.entries(URL_COLUMNS).map(async ([table, columns]) => {
-      const filter = columns.map((column) => `${column}::text.ilike.${needle}`).join(',');
-      const { data } = await supabase.from(table).select('*').or(filter).limit(20);
+      const { data, error } = await supabase.from(table).select('*');
+      if (error) throw new Error(`${table}: ${error.message}`);
       for (const row of data ?? []) {
         const record = row as Record<string, unknown>;
+        const used = columns.some((column) => JSON.stringify(record[column] ?? '').includes(path));
+        if (!used) continue;
         const raw = record.title ?? record.name ?? record.label ?? record.key ?? record.slug ?? '';
         const title =
           typeof raw === 'string'

@@ -21,8 +21,15 @@ function formatDate(iso: string, locale: Locale): string {
   return new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
-/** Quote a CSV cell so commas, quotes and newlines survive Excel. */
-const csvCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+/**
+ * Quote a CSV cell so commas, quotes and newlines survive Excel, and prefix
+ * anything a spreadsheet would evaluate as a formula: the list is filled by
+ * anonymous visitors, so a cell beginning with = + - @ cannot be trusted.
+ */
+const csvCell = (value: string) => {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
 
 export default function SubscribersPage() {
   const s = useAdminStrings();

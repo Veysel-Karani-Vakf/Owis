@@ -105,10 +105,15 @@ async function countRows(table: string): Promise<number> {
 }
 
 /**
- * Writes rows that have a natural key (slug). In 'fill' mode existing rows are
- * left exactly as they are; in 'reset' mode every column is overwritten.
+ * Writes rows that have a natural key (slug). 'fill' only populates a table
+ * that is still empty — an item the editor deleted on purpose must not come
+ * back — while 'reset' overwrites every column of every built-in row.
  */
 async function upsertKeyed(table: string, rows: any[], onConflict: string, mode: SeedMode, report: Report) {
+  if (mode === 'fill' && (await countRows(table)) > 0) {
+    report(`• ${table}: kept existing rows`);
+    return;
+  }
   const { error } = await supabase
     .from(table)
     .upsert(rows, { onConflict, ignoreDuplicates: mode === 'fill' });
@@ -192,7 +197,6 @@ async function seedProjects(report: Report, mode: SeedMode) {
     unit_amount: base.unitAmount ?? null,
     facts: sharedList(byLoc, i, 'facts', ['label', 'value']),
     official_contribution_url: base.officialContributionUrl ?? null,
-    official_source_url: base.officialSourceUrl ?? null,
     returns_title: loc3(byLoc, i, (p) => p.returnsTitle),
     returns_intro: loc3(byLoc, i, (p) => p.returnsIntro),
     return_uses: {
@@ -252,7 +256,6 @@ async function seedPrograms(report: Report, mode: SeedMode) {
     themes: locArrays(byLoc, i, 'themes'),
     overview_image: base.overviewImage ?? null,
     overview_image_alt: loc3(byLoc, i, (p) => p.overviewImageAlt),
-    official_source_url: base.officialSourceUrl ?? null,
     volunteer: locObjects(byLoc, i, 'volunteer'),
     media_products: locArrays(byLoc, i, 'mediaProducts'),
     spotlight: locObjects(byLoc, i, 'spotlight'),

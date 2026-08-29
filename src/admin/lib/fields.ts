@@ -103,8 +103,12 @@ export function emptyValue(type: FieldType): unknown {
 }
 
 /**
- * Coerces a form value into what the column accepts. Empty scalars become
- * null for typed columns so a blank date/number never reaches Postgres as ''.
+ * Coerces a form value into what the column accepts.
+ *
+ * Typed columns (dates, numbers, constrained selects) get null for "blank",
+ * because Postgres rejects '' there. Text columns keep '' — the adapters read
+ * '' as "the editor cleared this" and null as "never set, use the default",
+ * so a removed image must reach the database as '' and not as null.
  */
 export function toColumnValue(type: FieldType, value: unknown): unknown {
   if (value === undefined) return emptyValue(type);
@@ -112,12 +116,13 @@ export function toColumnValue(type: FieldType, value: unknown): unknown {
     case 'date':
     case 'datetime':
     case 'number':
+    case 'select':
       return value === '' ? null : value;
     case 'url':
     case 'file':
     case 'image':
     case 'icon':
-      return value === '' ? null : value;
+      return value ?? '';
     default:
       return value;
   }

@@ -7,9 +7,19 @@ const slugify = (name: string) =>
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
+/**
+ * Files that a browser would execute when opened from the public bucket. The
+ * dashboard has no use for them, so they are refused rather than served.
+ */
+const BLOCKED_EXTENSIONS = new Set(['html', 'htm', 'xhtml', 'svg', 'js', 'mjs']);
+
 /** Uploads a file to the media bucket and returns its public URL. */
 export async function uploadToMedia(file: File, folder = 'uploads'): Promise<string> {
-  const ext = file.name.includes('.') ? file.name.split('.').pop() : '';
+  const ext = (file.name.includes('.') ? file.name.split('.').pop() ?? '' : '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 8);
+  if (BLOCKED_EXTENSIONS.has(ext)) throw new Error(`File type .${ext} cannot be uploaded`);
   const base = slugify(file.name.replace(/\.[^.]+$/, '')) || 'file';
   // Deterministic-ish unique name without Date.now (kept simple; collisions retried by suffix).
   const rand = Math.abs(hashString(file.name + file.size + file.lastModified)).toString(36);

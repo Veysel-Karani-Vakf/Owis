@@ -4,7 +4,6 @@ import {
   MapPin,
   Phone,
   Facebook,
-  Twitter,
   Instagram,
   Youtube,
   Linkedin,
@@ -13,21 +12,26 @@ import {
   Send,
   ArrowLeft,
   ArrowRight,
-  type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ComponentType } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import XIcon from '@/components/icons/XIcon';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 import { donateRoute } from '@/data/donate';
+import { bankAccountsRoute } from '@/data/bankAccounts';
+import { participateRoutes } from '@/data/participate';
 import { supabase } from '@/lib/supabase';
 import type { SocialLinks } from '@/i18n/content';
 
+type SocialIcon = ComponentType<{ className?: string }>;
+
 // Every network the settings page can hold, in display order. Lucide has no
-// TikTok/WhatsApp/Telegram marks, so close generic glyphs stand in.
-const SOCIAL_NETWORKS: { key: keyof SocialLinks; icon: LucideIcon }[] = [
+// X/TikTok/WhatsApp/Telegram marks: X gets its own glyph, the rest use close
+// generic ones.
+const SOCIAL_NETWORKS: { key: keyof SocialLinks; icon: SocialIcon }[] = [
   { key: 'facebook', icon: Facebook },
-  { key: 'twitter', icon: Twitter },
+  { key: 'twitter', icon: XIcon },
   { key: 'instagram', icon: Instagram },
   { key: 'youtube', icon: Youtube },
   { key: 'linkedin', icon: Linkedin },
@@ -46,6 +50,12 @@ export default function Footer() {
   const siteConfig = content.siteConfig;
   const footerContent = content.footer;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  // Live settings rows saved before the bank accounts page existed still point
+  // this link at /donate; treat that legacy value as "use the bank page".
+  const bankAccountsHref =
+    footerContent.bankAccountsUrl && footerContent.bankAccountsUrl !== donateRoute
+      ? footerContent.bankAccountsUrl
+      : bankAccountsRoute;
 
   const donateUrl = siteConfig.donateUrl || donateRoute;
   const socialLinks = siteConfig.socialLinks ?? {};
@@ -73,6 +83,14 @@ export default function Footer() {
   };
 
   const handleNavClick = (href: string) => {
+    // The footer is the "#contact" anchor itself, so a quick link to it would
+    // scroll nowhere; send it to the contact page instead. This also covers a
+    // link saved in the dashboard before the default changed.
+    if (href === '#contact') {
+      navigate(participateRoutes.contact);
+      return;
+    }
+
     if (href.startsWith('/')) {
       navigate(href);
       return;
@@ -197,10 +215,10 @@ export default function Footer() {
               {footerContent.bankAccountsLink && (
                 <li>
                   <a
-                    href={footerContent.bankAccountsUrl || donateRoute}
+                    href={bankAccountsHref}
                     onClick={(e) => {
                       e.preventDefault();
-                      handleNavClick(footerContent.bankAccountsUrl || donateRoute);
+                      handleNavClick(bankAccountsHref);
                     }}
                     className="text-sm text-gold-400 transition-colors hover:text-gold-300"
                   >

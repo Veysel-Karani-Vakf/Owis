@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CornerDownLeft, FileText, Inbox, Images, LayoutTemplate, Mail, Search, X } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 import { adminStrings } from '../i18n';
 import { RESOURCES } from '../lib/resources';
 import { SITE_PAGES, pageSearchIndex } from '../lib/pageSchema';
@@ -50,12 +51,8 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     inputRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
+  useTopmostEscape(onClose);
 
   // Record titles load once, only after the editor starts typing.
   useEffect(() => {

@@ -42,7 +42,8 @@ export type LibraryLabels = {
   readStory: string;
   openDocument: string;
   downloadPdf: string;
-  officialSource: string;
+  /** Heading above the item's original (untranslated) title on the reading page. */
+  originalTitle: string;
   published: string;
   sourceLanguage: string;
   originalLanguageNote: string;
@@ -235,10 +236,10 @@ const labels: Record<Locale, LibraryLabels> = {
     readStory: 'قراءة القصة',
     openDocument: 'فتح الوثيقة',
     downloadPdf: 'تحميل PDF',
-    officialSource: 'المصدر الرسمي',
+    originalTitle: 'العنوان الأصلي',
     published: 'تاريخ النشر',
     sourceLanguage: 'لغة المصدر',
-    originalLanguageNote: 'النص الكامل معروض بلغته الرسمية كما ورد في المصدر.',
+    originalLanguageNote: 'النص الكامل معروض بلغته الأصلية.',
     directPdfAvailable: 'رابط PDF مباشر متاح',
     noDirectPdf: 'لا يوجد PDF مباشر موثق لهذه الصفحة',
     related: 'مواد ذات صلة',
@@ -310,10 +311,10 @@ const labels: Record<Locale, LibraryLabels> = {
     readStory: 'Read Story',
     openDocument: 'Open Document',
     downloadPdf: 'Download PDF',
-    officialSource: 'Official Source',
+    originalTitle: 'Original title',
     published: 'Published',
     sourceLanguage: 'Source Language',
-    originalLanguageNote: 'The full text is shown in its official source language.',
+    originalLanguageNote: 'The full text is shown in its original language.',
     directPdfAvailable: 'Direct PDF available',
     noDirectPdf: 'No verified direct PDF for this page',
     related: 'Related Items',
@@ -385,10 +386,10 @@ const labels: Record<Locale, LibraryLabels> = {
     readStory: 'Hikayeyi Oku',
     openDocument: 'Belgeyi Aç',
     downloadPdf: "PDF'yi İndir",
-    officialSource: 'Resmi Kaynak',
+    originalTitle: 'Orijinal başlık',
     published: 'Yayın tarihi',
     sourceLanguage: 'Kaynak dili',
-    originalLanguageNote: 'Tam metin resmi kaynak dilinde gösterilir.',
+    originalLanguageNote: 'Tam metin orijinal dilinde gösterilir.',
     directPdfAvailable: 'Doğrudan PDF mevcut',
     noDirectPdf: 'Bu sayfa için doğrulanmış doğrudan PDF yok',
     related: 'İlgili İçerikler',

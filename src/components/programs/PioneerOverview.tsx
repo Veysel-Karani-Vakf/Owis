@@ -1,7 +1,6 @@
 import { motion, useReducedMotion, useScroll, useTransform, type Variants } from 'framer-motion';
 import {
   Compass,
-  ExternalLink,
   GraduationCap,
   HeartHandshake,
   Mail,
@@ -20,18 +19,11 @@ type PioneerOverviewProps = {
   labels: {
     overview: string;
     contact: string;
-    officialSource: string;
   };
 };
 
 const pillarIcons: LucideIcon[] = [GraduationCap, Compass, HeartHandshake];
 const smoothEase = [0.22, 1, 0.36, 1] as const;
-
-// This repo IS the official site: a source URL that still points at the legacy
-// domain is stale and must never be linked from here.
-function isLinkableSource(url: string | undefined): url is string {
-  return !!url && !/veysvakfi\.org/i.test(url);
-}
 
 const containerVariants: Variants = {
   hidden: {},
@@ -63,7 +55,6 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
   const quote = paragraphs.slice(1).join(' ');
   const pillars = program.pillars ?? [];
   const phone = program.contactPhone?.trim();
-  const sourceUrl = isLinkableSource(program.officialSourceUrl) ? program.officialSourceUrl : undefined;
 
   return (
     <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 md:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
@@ -154,17 +145,6 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
               <span dir="ltr" className="font-semibold">
                 {phone}
               </span>
-            </a>
-          )}
-          {sourceUrl && (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 px-2 text-sm font-bold text-primary-700 transition-colors hover:text-primary-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-            >
-              {labels.officialSource}
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </a>
           )}
         </motion.div>

@@ -14,11 +14,13 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { MEDIA_BUCKET, supabase } from '@/lib/supabase';
 import { useI18n } from '@/i18n/useI18n';
 import { getParticipateContent, type ParticipateFormField } from '@/data/participate';
 import type { Locale, SubmissionRow } from '@/lib/types';
+import { SUBMISSIONS_BUCKET } from '@/services/participateForms';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 import { listRows, deleteRow } from '../lib/api';
 import { translateDbError } from '../lib/errors';
 import { useToast } from '../components/Toast';
@@ -29,8 +31,69 @@ type Status = SubmissionRow['status'];
 /** One line of the detail panel: a field label and its (already stringified) value. */
 type Entry = { key: string; label: string; value: string; files?: SubmissionFile[] };
 
-/** Shape written by src/services/participateForms.ts into the `files` column. */
-type SubmissionFile = { fieldId?: string; name?: string; size?: number; type?: string; url?: string };
+/**
+ * Shape written by src/services/participateForms.ts into the `files` column.
+ * New rows carry a `path` in the private submissions bucket; older rows a
+ * public `url` in the media bucket.
+ */
+type SubmissionFile = {
+  fieldId?: string;
+  name?: string;
+  size?: number;
+  type?: string;
+  url?: string;
+  path?: string;
+  bucket?: string;
+};
+
+/** Public prefix of the media bucket — the only host a stored attachment URL may point at. */
+const MEDIA_PUBLIC_PREFIX = supabase.storage.from(MEDIA_BUCKET).getPublicUrl('').data.publicUrl;
+
+/**
+ * Anyone can insert a submission with the anon key, so a stored string is only
+ * ever linked when it is a real http(s) URL — never `javascript:` or the like.
+ */
+function safeHttpUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Legacy attachment URLs are trusted only inside our own storage bucket. */
+function legacyAttachmentUrl(value: unknown): string | null {
+  const url = safeHttpUrl(value);
+  return url && url.startsWith(MEDIA_PUBLIC_PREFIX) ? url : null;
+}
+
+/** Link to one attachment: a short-lived signed URL for the private bucket. */
+function AttachmentLink({ file }: { file: SubmissionFile }) {
+  const [href, setHref] = useState<string | null>(() => legacyAttachmentUrl(file.url));
+  useEffect(() => {
+    if (!file.path) return undefined;
+    let active = true;
+    supabase.storage
+      .from(file.bucket || SUBMISSIONS_BUCKET)
+      .createSignedUrl(file.path, 60 * 60)
+      .then(({ data }) => {
+        if (active && data?.signedUrl) setHref(data.signedUrl);
+      });
+    return () => {
+      active = false;
+    };
+  }, [file.path, file.bucket]);
+
+  const name = file.name || file.path || '—';
+  if (!href) return <span dir="auto">{name}</span>;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="break-all text-primary-700 underline-offset-2 hover:underline" dir="auto">
+      {name}
+    </a>
+  );
+}
 
 type PayloadField = { id?: string; sourceName?: string; label?: string; value?: unknown };
 
@@ -432,22 +495,17 @@ type DetailPanelProps = {
 function DetailPanel({ row, title, entries, statusLabel, locale, label, onClose, onStatus, onDelete, onCopied, onCopyFailed }: DetailPanelProps) {
   const s = useAdminStrings();
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useTopmostEscape(onClose);
 
   const email = entries.find((e) => EMAIL_RE.test(e.value.trim()))?.value.trim();
   const StatusIcon = statusIcon[row.status];
+  const sourceUrl = safeHttpUrl(row.source_url);
 
   const copyAll = async () => {
     const lines = [
       `${title} — ${formatDate(row.created_at, locale)}`,
       '',
-      ...entries.map((e) => `${e.label}: ${e.files ? e.files.map((f) => f.url || f.name).join(', ') : e.value}`),
+      ...entries.map((e) => `${e.label}: ${e.files ? e.files.map((f) => f.name || f.path || '').join(', ') : e.value}`),
     ];
     try {
       await navigator.clipboard.writeText(lines.join('\n'));
@@ -462,15 +520,9 @@ function DetailPanel({ row, title, entries, statusLabel, locale, label, onClose,
       return (
         <ul className="space-y-1">
           {entry.files.map((file, index) => (
-            <li key={`${file.url ?? file.name ?? index}`} className="flex items-center gap-1.5">
+            <li key={`${file.path ?? file.url ?? file.name ?? index}`} className="flex items-center gap-1.5">
               <Paperclip size={13} className="shrink-0 text-slate-400" />
-              {file.url ? (
-                <a href={file.url} target="_blank" rel="noreferrer" className="break-all text-primary-700 underline-offset-2 hover:underline" dir="auto">
-                  {file.name || file.url}
-                </a>
-              ) : (
-                <span dir="auto">{file.name || '—'}</span>
-              )}
+              <AttachmentLink file={file} />
               {file.size ? <span className="text-xs text-slate-400" dir="ltr">({formatSize(file.size)})</span> : null}
             </li>
           ))}
@@ -520,8 +572,8 @@ function DetailPanel({ row, title, entries, statusLabel, locale, label, onClose,
                 {statusLabel[row.status]}
               </span>
               <span>{formatDate(row.created_at, locale)}</span>
-              {row.source_url && (
-                <a href={row.source_url} target="_blank" rel="noreferrer" className="text-primary-700 hover:underline">
+              {sourceUrl && (
+                <a href={sourceUrl} target="_blank" rel="noreferrer" className="text-primary-700 hover:underline">
                   {s.openOnSite}
                 </a>
               )}

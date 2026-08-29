@@ -123,7 +123,6 @@ export default function Statistics() {
   const { content, t, isRtl, formatNumber } = useI18n();
   const statisticsContent = content.statistics;
   const indicators = statisticsContent.indicators ?? [];
-  const source = statisticsContent.source;
   const reduced = !!useReducedMotion();
 
   // Which card is flipped: auto-cycles one at a time; hover/focus takes over.
@@ -184,20 +183,6 @@ export default function Statistics() {
             />
           ))}
         </div>
-
-        {source?.label && (
-          <motion.a
-            href={source.url || undefined}
-            target={source.url ? '_blank' : undefined}
-            rel={source.url ? 'noopener noreferrer' : undefined}
-            initial={{ opacity: 0 }}
-            animate={inView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-8 block text-center text-xs text-dark-400 underline-offset-4 transition-colors hover:text-primary-600 hover:underline md:text-sm"
-          >
-            {source.label}
-          </motion.a>
-        )}
       </div>
     </section>
   );

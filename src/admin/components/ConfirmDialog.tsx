@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 
 export type ConfirmOptions = {
   title: string;
@@ -65,18 +66,20 @@ function Dialog({ options, onSettle }: { options: ConfirmOptions; onSettle: (val
   const s = useAdminStrings();
   const [typed, setTyped] = useState('');
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const gate = options.typedWord;
   const ready = !gate || typed.trim() === gate;
 
   useEffect(() => {
-    (gate ? inputRef.current : confirmRef.current)?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onSettle(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [gate, onSettle]);
+    // A destructive dialog must never be confirmed by the Enter that opened it
+    // (or a key repeat), so focus lands on Cancel there.
+    (gate ? inputRef.current : options.destructive ? cancelRef.current : confirmRef.current)?.focus();
+  }, [gate, options.destructive]);
+
+  // Only the topmost layer reacts to Escape, so cancelling a delete does not
+  // also close the panel underneath it.
+  useTopmostEscape(() => onSettle(false));
 
   return (
     <div
@@ -128,6 +131,7 @@ function Dialog({ options, onSettle }: { options: ConfirmOptions; onSettle: (val
 
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
+            ref={cancelRef}
             type="button"
             onClick={() => onSettle(false)}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"

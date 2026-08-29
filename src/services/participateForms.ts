@@ -1,4 +1,4 @@
-import { MEDIA_BUCKET, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export type ParticipateSubmissionField = {
   id: string;
@@ -12,6 +12,22 @@ export type ParticipateSubmissionPayload = {
   sourceUrl: string;
   fields: ParticipateSubmissionField[];
   files: Record<string, File[]>;
+};
+
+/** Where visitor attachments live: a private bucket only admins can read. */
+export const SUBMISSIONS_BUCKET = 'submissions';
+
+/** One uploaded attachment as stored on the submission row. */
+export type SubmissionFile = {
+  fieldId: string;
+  name: string;
+  size: number;
+  type: string;
+  /** Object path inside SUBMISSIONS_BUCKET; the dashboard signs a URL for it. */
+  path?: string;
+  bucket?: string;
+  /** Older rows stored a public URL in the media bucket. */
+  url?: string;
 };
 
 export class ParticipateFormError extends Error {
@@ -32,23 +48,24 @@ const slugify = (name: string) =>
     .replace(/^-|-$/g, '');
 
 /**
- * Persists a participate/contact form submission to Supabase. Any attached
- * files are uploaded to the public media bucket under `submissions/`.
+ * Persists a participate/contact form submission to Supabase. Attachments
+ * (CVs, documents) are personal, so they go to the private submissions bucket
+ * and the row keeps only their path; the dashboard fetches them with a signed
+ * URL.
  */
 export async function submitParticipateForm(payload: ParticipateSubmissionPayload) {
-  const uploaded: Array<{ fieldId: string; name: string; size: number; type: string; url: string }> = [];
+  const uploaded: SubmissionFile[] = [];
 
   try {
     for (const [fieldId, files] of Object.entries(payload.files)) {
       for (const file of files) {
         const rand = Math.abs(hashString(file.name + file.size + file.lastModified)).toString(36);
-        const path = `submissions/${payload.formId}/${rand}-${slugify(file.name)}`;
+        const path = `${payload.formId}/${rand}-${slugify(file.name) || 'file'}`;
         const { error } = await supabase.storage
-          .from(MEDIA_BUCKET)
+          .from(SUBMISSIONS_BUCKET)
           .upload(path, file, { cacheControl: '3600', upsert: true });
         if (error) throw error;
-        const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-        uploaded.push({ fieldId, name: file.name, size: file.size, type: file.type, url: data.publicUrl });
+        uploaded.push({ fieldId, name: file.name, size: file.size, type: file.type, path, bucket: SUBMISSIONS_BUCKET });
       }
     }
 

@@ -130,20 +130,12 @@ export type SiteContent = {
     url: string;
     image: string;
     indicators: Indicator[];
-    statisticsSource: {
-      label: string;
-      url: string;
-    };
   };
   statistics: {
     eyebrow: string;
     title: string;
     description: string;
     indicators: Indicator[];
-    source: {
-      label: string;
-      url: string;
-    };
   };
   news: {
     eyebrow: string;
@@ -244,7 +236,7 @@ const shared = {
   mainImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   socialLinks: {
     facebook: 'https://www.facebook.com/veysvakfi',
-    twitter: 'https://twitter.com/veysvakfi',
+    twitter: 'https://x.com/veysvakfi',
     instagram: 'https://www.instagram.com/veysvakfi',
     youtube: 'https://www.youtube.com/@veysvakfi',
     linkedin: '',
@@ -255,6 +247,7 @@ const shared = {
   // Destinations shared by every language; the dashboard can override them per page.
   routes: {
     donate: '/donate',
+    bankAccounts: '/bank-accounts',
     volunteer: '/participate/volunteer',
     aboutWaqf: '/about/waqf',
     yemenPioneers: '/programs/yemen-pioneers',
@@ -279,7 +272,6 @@ const shared = {
     peerReviewedResearch: 33,
     trainingForums: 6,
     internationalParticipations: 7,
-    sourceUrl: '/media/docs/2025-c909c767.pdf',
   },
   // Official figures from the “Owais in Numbers” report (7th edition, through December 2025)
   waqfStatistics: {
@@ -290,7 +282,6 @@ const shared = {
     developmentPrograms: 40,
     capitalGrowthPercent: 51.67,
     volunteers: 2693,
-    sourceUrl: '/media/docs/2025-c909c767.pdf',
   },
   partnerLogos: [
     '/media/ytb-logo-yatay-yaldiz-150x150-9e4ed0b3.png',
@@ -477,10 +468,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'ملتقيات تدريبية', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'مشاركات دولية', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
-      statisticsSource: {
-        label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
-        url: shared.yemenPioneersStatistics.sourceUrl,
-      },
     },
     statistics: {
       eyebrow: 'أثر الوقف',
@@ -493,10 +480,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'مستفيداً من المسارات الوقفية', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'مستفيدون مباشرون من برامج المسارات الوقفية التعليمية والتنموية والمجتمعية.', icon: shared.statisticIcons[2] },
         { label: 'برنامجاً تنموياً ضمن المسارات الوقفية', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'برامج تنموية نُفّذت ضمن المسارات الوقفية في التطوير المؤسسي وبناء القدرات والتوعية.', icon: shared.statisticIcons[3] },
       ],
-      source: {
-        label: 'المصدر: تقرير «أويس في أرقام» — حتى ديسمبر 2025',
-        url: shared.waqfStatistics.sourceUrl,
-      },
     },
     news: {
       eyebrow: 'آخر المستجدات',
@@ -531,7 +514,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'البرامج', href: '#programs' },
         { label: 'المكتبة', href: '/library' },
         { label: 'الأخبار', href: '/news' },
-        { label: 'تواصل معنا', href: '#contact' },
+        { label: 'تواصل معنا', href: '/participate/contact' },
       ],
       contactInfo: {
         address: 'إسطنبول، تركيا',
@@ -539,7 +522,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'الحسابات البنكية وطرق المساهمة',
-      bankAccountsUrl: shared.routes.donate,
+      bankAccountsUrl: shared.routes.bankAccounts,
       newsletterTitle: 'النشرة الإخبارية',
       newsletterDescription: 'اشترك معنا في النشرة الإخبارية ليصلك كل جديد',
     },
@@ -586,7 +569,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       },
       social: {
         facebook: 'فيسبوك',
-        twitter: 'تويتر',
+        twitter: 'X',
         instagram: 'إنستغرام',
         youtube: 'يوتيوب',
         linkedin: 'لينكدإن',
@@ -752,10 +735,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Eğitim Buluşması', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'Uluslararası Katılım', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
-      statisticsSource: {
-        label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
-        url: shared.yemenPioneersStatistics.sourceUrl,
-      },
     },
     statistics: {
       eyebrow: 'Vakfın Etkisi',
@@ -768,10 +747,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Vakıf Programlarından Yararlanan', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Vakıf programlarının eğitim, kalkınma ve toplumsal alanlardaki doğrudan yararlanıcıları.', icon: shared.statisticIcons[2] },
         { label: 'Kalkınma Programı', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Kurumsal gelişim, kapasite geliştirme ve farkındalık alanlarında yürütülen kalkınma programları.', icon: shared.statisticIcons[3] },
       ],
-      source: {
-        label: 'Kaynak: “Rakamlarla Oveys” raporu — Aralık 2025’e kadar',
-        url: shared.waqfStatistics.sourceUrl,
-      },
     },
     news: {
       eyebrow: 'Son Gelişmeler',
@@ -806,7 +781,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Programlar', href: '#programs' },
         { label: 'Kütüphane', href: '/library' },
         { label: 'Haberler', href: '/news' },
-        { label: 'Bize Ulaşın', href: '#contact' },
+        { label: 'Bize Ulaşın', href: '/participate/contact' },
       ],
       contactInfo: {
         address: 'İstanbul, Türkiye',
@@ -814,7 +789,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'Banka Hesapları ve Katkı Yolları',
-      bankAccountsUrl: shared.routes.donate,
+      bankAccountsUrl: shared.routes.bankAccounts,
       newsletterTitle: 'E-Bülten',
       newsletterDescription: 'Yeni gelişmelerden haberdar olmak için e-bültenimize abone olun',
     },
@@ -861,7 +836,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       },
       social: {
         facebook: 'Facebook',
-        twitter: 'Twitter',
+        twitter: 'X',
         instagram: 'Instagram',
         youtube: 'YouTube',
         linkedin: 'LinkedIn',
@@ -1027,10 +1002,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Training Forums', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'International Participations', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
       ],
-      statisticsSource: {
-        label: 'Source: “Owais in Numbers” report — through December 2025',
-        url: shared.yemenPioneersStatistics.sourceUrl,
-      },
     },
     statistics: {
       eyebrow: 'Waqf Impact',
@@ -1043,10 +1014,6 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Program Beneficiaries', value: shared.waqfStatistics.programBeneficiaries, suffix: '', detail: 'Direct beneficiaries of the waqf tracks’ educational, developmental, and community programs.', icon: shared.statisticIcons[2] },
         { label: 'Development Programs', value: shared.waqfStatistics.developmentPrograms, suffix: '', detail: 'Development programs delivered across institutional development, capacity building, and awareness tracks.', icon: shared.statisticIcons[3] },
       ],
-      source: {
-        label: 'Source: “Owais in Numbers” report — through December 2025',
-        url: shared.waqfStatistics.sourceUrl,
-      },
     },
     news: {
       eyebrow: 'Latest Updates',
@@ -1081,7 +1048,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         { label: 'Programs', href: '#programs' },
         { label: 'Library', href: '/library' },
         { label: 'News', href: '/news' },
-        { label: 'Contact', href: '#contact' },
+        { label: 'Contact', href: '/participate/contact' },
       ],
       contactInfo: {
         address: 'Istanbul, Türkiye',
@@ -1089,7 +1056,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
         phone: '',
       },
       bankAccountsLink: 'Bank Accounts and Contribution Methods',
-      bankAccountsUrl: shared.routes.donate,
+      bankAccountsUrl: shared.routes.bankAccounts,
       newsletterTitle: 'Newsletter',
       newsletterDescription: 'Subscribe to receive the latest updates from us',
     },
@@ -1136,7 +1103,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       },
       social: {
         facebook: 'Facebook',
-        twitter: 'Twitter',
+        twitter: 'X',
         instagram: 'Instagram',
         youtube: 'YouTube',
         linkedin: 'LinkedIn',

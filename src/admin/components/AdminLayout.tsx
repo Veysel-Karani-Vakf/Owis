@@ -20,9 +20,11 @@ import { supabase } from '@/lib/supabase';
 import { LOCALES, type Locale } from '@/lib/types';
 import { useAuth } from '../AuthProvider';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useUnsavedState } from '../hooks/useUnsavedChanges';
 import { RESOURCES } from '../lib/resources';
 import { adminStrings } from '../i18n';
 import SearchPalette from './SearchPalette';
+import { useConfirm } from './ConfirmDialog';
 
 const localeShort: Record<Locale, string> = { ar: 'ع', tr: 'TR', en: 'EN' };
 
@@ -56,11 +58,35 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { locale, setLocale } = useI18n();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const unsaved = useUnsavedState();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const newCount = useNewSubmissionCount();
+
+  // Signing out unmounts the editor before any navigation the blocker could
+  // stop, so the question has to be asked here, first.
+  const handleSignOut = async () => {
+    if (unsaved.dirty) {
+      const result = await confirm({
+        title: strings.unsavedTitle,
+        body: strings.unsavedBody,
+        confirmLabel: strings.leaveWithoutSaving,
+        cancelLabel: strings.stay,
+        altLabel: unsaved.save ? strings.saveAndLeave : undefined,
+        destructive: true,
+      });
+      if (result === false) return;
+      if (result === 'alt' && unsaved.save) {
+        const saved = await unsaved.save();
+        if (saved === false) return;
+      }
+    }
+    await signOut();
+    navigate('/admin/login', { replace: true });
+  };
 
   const label = (ar: string, tr: string, en: string) =>
     locale === 'ar' ? ar : locale === 'tr' ? tr : en;
@@ -180,10 +206,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="mt-auto border-t border-slate-200 pt-3">
         <button
           type="button"
-          onClick={async () => {
-            await signOut();
-            navigate('/admin/login', { replace: true });
-          }}
+          onClick={() => void handleSignOut()}
           className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-600"
         >
           <LogOut size={17} /> {strings.signOut}
@@ -290,9 +313,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 </p>
                 <button
                   type="button"
-                  onClick={async () => {
-                    await signOut();
-                    navigate('/admin/login', { replace: true });
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void handleSignOut();
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-600"
                 >

@@ -18,7 +18,6 @@ type CapacityOverviewProps = {
   labels: {
     overview: string;
     statsEyebrow: string;
-    officialSource: string;
     phaseEyebrow: string;
   };
 };

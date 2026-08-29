@@ -77,7 +77,6 @@ export function cmsProjects(
       unitAmount: row.unit_amount ?? base?.unitAmount ?? 0,
       facts: localizedArray(row.facts, locale, base?.facts ?? []),
       officialContributionUrl: scalar(row.official_contribution_url, base?.officialContributionUrl ?? ''),
-      officialSourceUrl: scalar(row.official_source_url, base?.officialSourceUrl ?? ''),
       returnsTitle: locText(row.returns_title, locale, base?.returnsTitle ?? ''),
       returnsIntro: locText(row.returns_intro, locale, base?.returnsIntro ?? ''),
       returnUses: locList(row.return_uses, locale, base?.returnUses ?? []),
@@ -127,7 +126,6 @@ export function cmsPrograms(locale: Locale, fallback: Program[]): Program[] {
       themes: localizedArray(row.themes, locale, base?.themes ?? []),
       overviewImage: scalar(row.overview_image, base?.overviewImage),
       overviewImageAlt: locText(row.overview_image_alt, locale, base?.overviewImageAlt ?? ''),
-      officialSourceUrl: scalar(row.official_source_url, base?.officialSourceUrl ?? ''),
       volunteer,
       mediaProducts: localizedArray(row.media_products, locale, base?.mediaProducts ?? []),
       spotlight: localizedObject(row.spotlight, locale, base?.spotlight),
@@ -241,18 +239,20 @@ export function cmsStats<T extends Indicator>(
   if (!rows) return fallback;
   const scoped = rows.filter((row) => row.stat_group === group);
 
-  return scoped.map((row, index) => {
-    // Rows have no slug to pair on. The static sentence and icon at the same
-    // position stand in only until the editor fills the row's own.
-    const base = fallback[index];
-    return {
-      label: locText(row.label, locale, ''),
-      value: row.value,
-      suffix: locText(row.suffix, locale, ''),
-      detail: locText(row.detail, locale, base?.detail ?? ''),
-      icon: row.icon || base?.icon,
-    } as T;
-  });
+  // Rows have no slug to pair with a static indicator, and pairing by position
+  // would move sentences and icons onto the wrong card the moment an editor
+  // reorders the list. A row without an icon falls back to the component's own
+  // position-based default (resolveIcon).
+  return scoped.map(
+    (row) =>
+      ({
+        label: locText(row.label, locale, ''),
+        value: row.value,
+        suffix: locText(row.suffix, locale, ''),
+        detail: locText(row.detail, locale, ''),
+        icon: row.icon || undefined,
+      }) as T,
+  );
 }
 
 // LIBRARY --------------------------------------------------------------------

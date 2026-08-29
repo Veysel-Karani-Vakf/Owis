@@ -1,6 +1,6 @@
 import useEmblaCarousel from 'embla-carousel-react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ExternalLink, Play } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { ProgramVideo } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
@@ -19,7 +19,6 @@ type PioneerVideoCarouselProps = {
   videos: ProgramVideo[];
   labels: {
     watchVideo: string;
-    officialSource: string;
     previous: string;
     next: string;
   };
@@ -192,19 +191,6 @@ export default function PioneerVideoCarousel({
                   <div className="p-5">
                     <h3 className="text-lg font-bold text-dark-950">{video.title}</h3>
                     <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-dark-600">{video.description}</p>
-                    {/* The admin video widget writes `sourceUrl`; an empty value simply hides the link. */}
-                    {video.sourceUrl && (
-                      <a
-                        href={video.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        tabIndex={isActive ? 0 : -1}
-                        className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
-                      >
-                        {labels.officialSource}
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                      </a>
-                    )}
                   </div>
                 </motion.article>
               </div>

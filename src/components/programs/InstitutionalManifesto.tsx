@@ -8,7 +8,6 @@ type InstitutionalManifestoProps = {
   program: Program;
   labels: {
     manifestoEyebrow: string;
-    officialSource: string;
   };
 };
 

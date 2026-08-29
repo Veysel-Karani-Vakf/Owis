@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ExternalLink, Handshake, MapPin, Play } from 'lucide-react';
+import { Handshake, MapPin, Play } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ProgramCity } from '@/data/programs';
 import { useI18n } from '@/i18n/useI18n';
@@ -19,7 +19,6 @@ type CapacityCitiesProps = {
   labels: {
     partner: string;
     watchVideo: string;
-    officialSource: string;
   };
   onVideoSelect: (video: ActiveVideo) => void;
   autoRotateMs?: number;
@@ -27,13 +26,9 @@ type CapacityCitiesProps = {
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 
-// The dashboard's video widget stores `sourceUrl` / `posterImage`, while the static
-// city shape uses `videoSourceUrl` / `image`; both spellings are honoured here.
-type CityRecord = ProgramCity & { sourceUrl?: string; posterImage?: string };
-
-function citySourceUrl(city: CityRecord) {
-  return city.videoSourceUrl || city.sourceUrl || undefined;
-}
+// The dashboard's video widget stores `posterImage`, while the static city
+// shape uses `image`; both spellings are honoured here.
+type CityRecord = ProgramCity & { posterImage?: string };
 
 function cityImage(city: CityRecord) {
   return city.image || city.posterImage || '';
@@ -80,8 +75,6 @@ export default function CapacityCities({
   }, [rotating, activeIndex, autoRotateMs, list.length, cycle]);
 
   if (!active) return null;
-
-  const activeSourceUrl = citySourceUrl(active);
 
   const goTo = (index: number) => {
     if (index === activeIndex) return;
@@ -272,17 +265,6 @@ export default function CapacityCities({
                   </span>
                   {labels.watchVideo}
                 </button>
-                {activeSourceUrl && (
-                  <a
-                    href={activeSourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                  >
-                    {labels.officialSource}
-                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  </a>
-                )}
               </div>
             </div>
           </div>

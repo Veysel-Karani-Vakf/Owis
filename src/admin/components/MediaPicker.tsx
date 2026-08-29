@@ -11,6 +11,7 @@ import {
   type MediaItem,
 } from '../lib/media';
 import { uploadToMedia } from '../lib/storage';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 
 export type MediaAccept = 'image' | 'pdf' | 'any';
 
@@ -56,13 +57,7 @@ export function MediaPicker({
     };
   }, []);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useTopmostEscape(onClose);
 
   const accepted = (item: MediaItem) =>
     accept === 'image' ? item.isImage : accept === 'pdf' ? item.isPdf : true;

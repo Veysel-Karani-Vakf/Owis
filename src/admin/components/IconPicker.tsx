@@ -3,6 +3,7 @@ import { Ban, ChevronDown, Search } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { ICON_NAMES, iconByName } from '@/lib/icons';
 import { useAdminStrings } from '../hooks/useAdmin';
+import { useTopmostEscape } from '../hooks/useTopmostEscape';
 
 /**
  * Picks one of the site's named icons. Editors see the drawing, not the name,
@@ -29,23 +30,16 @@ export function IconPicker({
   const name = typeof value === 'string' ? value : '';
   const Current = iconByName(name);
 
-  // Close on Escape or a click anywhere outside the control.
+  // Close on Escape (only while topmost) or a click anywhere outside the control.
+  useTopmostEscape(() => setOpen(false), open);
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        setOpen(false);
-      }
-    };
     const onClick = (event: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onClick);
     searchRef.current?.focus();
     return () => {
-      window.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onClick);
     };
   }, [open]);

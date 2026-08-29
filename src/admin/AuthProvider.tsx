@@ -122,6 +122,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       async signOut() {
+        // Unsaved page drafts are personal; they must not greet the next
+        // person who signs in on this browser.
+        try {
+          Object.keys(window.localStorage)
+            .filter((key) => key.startsWith('vkv-admin-draft:'))
+            .forEach((key) => window.localStorage.removeItem(key));
+        } catch {
+          // Storage unavailable (private mode): nothing to clear.
+        }
         await supabase.auth.signOut();
       },
       async resetPassword(email) {

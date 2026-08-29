@@ -54,6 +54,10 @@ export function deepLocalize<T = unknown>(value: unknown, locale: Locale): T {
   }
 
   if (isPlainObject(value)) {
+    // An empty object can only be a translation map nobody has typed into
+    // (the editor seeds new localized leaves that way) or an empty group;
+    // returning it as-is would hand a React child an object.
+    if (Object.keys(value).length === 0) return null as T;
     if (looksLocaleKeyed(value)) {
       return deepLocalize(pickLocale(value, locale), locale);
     }
