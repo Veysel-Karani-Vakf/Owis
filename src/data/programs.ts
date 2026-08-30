@@ -258,6 +258,8 @@ export type ProgramsPageContent = {
     areaLabel: string;
     audiences: string;
     audiencesDescription: string;
+    /** Secondary hero button on the institutional layout: scrolls to the first section. */
+    exploreTrack: string;
     awarenessEyebrow: string;
     awarenessHeroNote: string;
     exploreInitiatives: string;
@@ -272,6 +274,10 @@ export type ProgramsPageContent = {
     pioneerStatsTitle: string;
     pioneerStatsDescription: string;
     pioneerStatsCenter: string;
+    /** Line above the title on the Yemen pioneers hero. */
+    pioneersEyebrow: string;
+    /** Secondary hero button on the pioneers/generic layouts: scrolls to the overview. */
+    exploreProgram: string;
   };
   programs: Program[];
 };
@@ -433,7 +439,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       focusAreasDescription: 'ثلاثة مجالات متكاملة يعمل عليها المسار داخل كل مؤسسة، مرّر فوق أي مجال لاستعراضه.',
       areaLabel: 'المجال',
       audiences: 'من يخدم المسار؟',
-      audiencesDescription: 'يتوجه المسار إلى نوعين من المؤسسات، ويعمل معهما على المجالات الثلاثة نفسها.',
+      audiencesDescription:
+        'يتوجه المسار إلى نوعين من المؤسسات، ويعمل معهما على تطوير الأداء وتحديث البرامج والآليات والخطط والاستراتيجيات.',
+      exploreTrack: 'استكشف المسار',
       awarenessEyebrow: 'منصة أويس',
       awarenessHeroNote: 'منصة معرفية وإعلامية تُعنى بقضايا الفكر والنهوض الحضاري وصناعة الوعي الجمعي.',
       exploreInitiatives: 'تعرّف على المنصة',
@@ -451,6 +459,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsDescription:
         'أرقام موثقة من التقرير الرسمي «أويس في أرقام» تلخّص ما قدّمه البرنامج للرواد حتى ديسمبر 2025.',
       pioneerStatsCenter: 'خلاصات',
+      pioneersEyebrow: 'برنامج المنح والتأهيل القيادي',
+      exploreProgram: 'استكشف البرنامج',
     },
     programs: [
       {
@@ -1049,7 +1059,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       focusAreasDescription: 'Program her kurumda birbirini tamamlayan uc alanda calisir; incelemek icin bir alanin uzerine gelin.',
       areaLabel: 'Alan',
       audiences: 'Program Kimlere Hizmet Eder?',
-      audiencesDescription: 'Program iki tur kuruma yonelir ve her ikisiyle ayni uc alanda calisir.',
+      audiencesDescription:
+        'Program iki tur kuruma yonelir; her ikisiyle performansi gelistirmek ve programlari, mekanizmalari, planlari ve stratejileri yenilemek icin calisir.',
+      exploreTrack: 'Programi Kesfedin',
       awarenessEyebrow: 'Owais Platformu',
       awarenessHeroNote: 'Dusunce ve medeniyet kalkinisi konularina odaklanan, kolektif bilinci guclendiren bir bilgi ve medya platformu.',
       exploreInitiatives: 'Platformu Kesfet',
@@ -1067,6 +1079,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsDescription:
         'Resmi "Rakamlarla Uveys" raporundan alinan ve programin Aralik 2025 itibariyla onculere sundugunu ozetleyen dogrulanmis rakamlar.',
       pioneerStatsCenter: 'Ozet',
+      pioneersEyebrow: 'Burs ve Liderlik Programi',
+      exploreProgram: 'Programi Kesfedin',
     },
     programs: [
       {
@@ -1664,7 +1678,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       focusAreasDescription: 'Three complementary areas the track works on inside every institution — hover an area to explore it.',
       areaLabel: 'Area',
       audiences: 'Who Does the Track Serve?',
-      audiencesDescription: 'The track addresses two types of institutions and works with both on the same three areas.',
+      audiencesDescription:
+        'The track addresses two types of institutions, working with both to develop performance and update programs, mechanisms, plans and strategies.',
+      exploreTrack: 'Explore the Track',
       awarenessEyebrow: 'Owais Platform',
       awarenessHeroNote: 'A knowledge and media platform devoted to thought and civilizational advancement, shaping collective awareness.',
       exploreInitiatives: 'Explore the Platform',
@@ -1682,6 +1698,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsDescription:
         'Verified figures from the official "Owais in Numbers" report, summarising what the program has delivered for its pioneers through December 2025.',
       pioneerStatsCenter: 'At a Glance',
+      pioneersEyebrow: 'Scholarship & Leadership Program',
+      exploreProgram: 'Explore the Program',
     },
     programs: [
       {

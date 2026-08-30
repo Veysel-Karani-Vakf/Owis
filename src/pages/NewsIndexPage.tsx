@@ -56,6 +56,27 @@ function NewsMiniCard({ article, labels, locale }: NewsMiniCardProps) {
   );
 }
 
+/**
+ * Keeps the pager readable now that the archive spans dozens of pages:
+ * first, last, and a window around the current page, with gaps in between.
+ */
+function paginationItems(current: number, total: number): (number | 'gap')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages = new Set<number>([1, total]);
+  for (let page = current - 1; page <= current + 1; page += 1) {
+    if (page >= 1 && page <= total) pages.add(page);
+  }
+  if (current <= 3) [2, 3, 4].forEach((page) => pages.add(page));
+  if (current >= total - 2) [total - 3, total - 2, total - 1].forEach((page) => pages.add(page));
+  const sorted = [...pages].sort((a, b) => a - b);
+  const items: (number | 'gap')[] = [];
+  sorted.forEach((page, index) => {
+    if (index > 0 && page - sorted[index - 1] > 1) items.push('gap');
+    items.push(page);
+  });
+  return items;
+}
+
 export default function NewsIndexPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const labels = getNewsLabels(locale);
@@ -257,7 +278,16 @@ export default function NewsIndexPage() {
 
             {pageCount > 1 && (
               <nav aria-label={labels.loadPage} className="mt-10 flex flex-wrap justify-center gap-2">
-                {Array.from({ length: pageCount }, (_, index) => index + 1).map((item) => (
+                {paginationItems(currentPage, pageCount).map((item, index) =>
+                  item === 'gap' ? (
+                    <span
+                      key={`gap-${index}`}
+                      aria-hidden="true"
+                      className="flex h-11 min-w-6 items-center justify-center text-sm font-bold text-primary-400"
+                    >
+                      …
+                    </span>
+                  ) : (
                   <button
                     key={item}
                     type="button"
@@ -271,7 +301,8 @@ export default function NewsIndexPage() {
                   >
                     {item}
                   </button>
-                ))}
+                  ),
+                )}
               </nav>
             )}
           </div>

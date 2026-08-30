@@ -465,9 +465,9 @@ export const RESOURCES: FullResourceDef[] = [
         label: L('صورة الغلاف', 'Kapak görseli', 'Hero image'),
         type: 'image',
         help: L(
-          'تظهر أعلى الصفحة وفي بطاقة البرنامج وعند مشاركة الرابط. في تخطيط التطوير المؤسسي تُستخدم للبطاقة والمشاركة فقط',
+          'تظهر أعلى الصفحة وفي بطاقة البرنامج وعند مشاركة الرابط',
           'Sayfanın üstünde, program kartında ve paylaşımda görünür',
-          'Shown at the top of the page, on the program card and when the link is shared. The institutional layout uses it for the card and sharing only',
+          'Shown at the top of the page, on the program card and when the link is shared',
         ),
       },
       { key: 'hero_image_alt', label: L('وصف صورة الغلاف', 'Kapak açıklaması', 'Hero image description'), type: 'localized' },

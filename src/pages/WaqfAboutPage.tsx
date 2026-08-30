@@ -8,6 +8,7 @@ import {
   HandHeart,
   Instagram,
   Landmark,
+  Quote,
   Target,
   TrendingUp,
   Twitter,
@@ -59,8 +60,6 @@ export default function WaqfAboutPage() {
   const { content, locale, isRtl, t } = useI18n();
   const page = getAboutContent(locale).waqf;
   const cleanPresidentName = page.president.name.replace(/^\u0623\/\s*/, '');
-  const [presidentFirstName = cleanPresidentName, ...presidentRestName] = cleanPresidentName.split(/\s+/);
-  const presidentLastName = presidentRestName.join(' ');
   const presidentSocialLinks = [
     {
       key: 'instagram',
@@ -352,76 +351,80 @@ export default function WaqfAboutPage() {
           <div className="president-profile-mark president-profile-mark--top" aria-hidden="true" />
           <div className="president-profile-mark president-profile-mark--bottom" aria-hidden="true" />
 
-          <div className="relative mx-auto max-w-[1520px] px-4 md:px-8">
+          <div className="relative mx-auto max-w-[1360px] px-4 md:px-8">
             <FadeContent {...sectionReveal}>
-              <div className="mb-14 flex flex-col items-center gap-5 text-center md:mb-16">
-                <div className="flex items-center gap-3 text-white/90">
-                  <Landmark className="h-7 w-7 text-white/70" />
-                  <span className="text-lg font-bold leading-tight md:text-2xl">{content.siteConfig.name}</span>
+              <div className="mb-12 flex flex-col items-center gap-4 text-center md:mb-16">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-bold text-white/85 ring-1 ring-white/15 backdrop-blur">
+                  <Landmark className="h-4 w-4 text-primary-200" />
+                  <span>{content.siteConfig.name}</span>
                 </div>
-                <h2 className="max-w-5xl text-balance text-3xl font-black leading-tight tracking-normal text-white md:text-5xl lg:text-6xl">
+                <h2 className="max-w-4xl text-balance text-3xl font-black leading-tight text-white md:text-5xl">
                   {page.president.title}
                 </h2>
+                <span className="president-profile-divider" aria-hidden="true" />
               </div>
             </FadeContent>
 
-            <div className="grid gap-10 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-16" dir="ltr">
+            <div className="grid gap-10 lg:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)] lg:items-start lg:gap-14">
               <FadeContent {...sectionReveal} delay={80}>
-                <figure className="president-profile-photo group mx-auto w-full max-w-[430px] lg:mx-0">
-                  <img
-                    src={page.president.image}
-                    alt={page.president.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-primary-950/95 via-primary-900/78 to-transparent" />
-                  <figcaption className="absolute inset-x-0 bottom-0 p-5 text-start md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
-                    <span className="block text-4xl font-black leading-none text-primary-200 md:text-5xl">
-                      {presidentFirstName}
-                    </span>
-                    <span className="mt-1 block text-4xl font-black leading-none text-white md:text-6xl">
-                      {presidentLastName || cleanPresidentName}
-                    </span>
-                    <span className="mt-4 block text-sm font-bold text-white/78 md:text-base">
+                <div className="mx-auto w-full max-w-[380px] lg:sticky lg:top-28 lg:mx-0">
+                  <figure className="president-profile-photo group">
+                    <img
+                      src={page.president.image}
+                      alt={page.president.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
+                    />
+                  </figure>
+                  <div className="mt-6 text-center">
+                    <span className="block text-2xl font-black leading-tight text-white md:text-3xl">{cleanPresidentName}</span>
+                    <span className="mt-2 inline-block rounded-full bg-primary-500/20 px-3.5 py-1 text-sm font-bold text-primary-100 ring-1 ring-primary-200/30">
                       {page.president.role}
                     </span>
-                  </figcaption>
-                </figure>
+                  </div>
+                </div>
               </FadeContent>
 
               <FadeContent {...sectionReveal} delay={150}>
-                <div className="max-w-3xl text-start" dir={isRtl ? 'rtl' : 'ltr'}>
-                  <p className="mb-5 text-3xl font-black leading-tight text-white md:text-4xl">
-                    {page.president.role}
-                  </p>
-                  <div className="space-y-5 text-base font-medium leading-8 text-white/88 md:text-lg md:leading-9">
-                    {(page.president.paragraphs ?? []).map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
+                <article className="president-profile-letter">
+                  <Quote className="president-profile-quote" aria-hidden="true" />
+                  <div className="space-y-5 text-base leading-8 text-white/90 md:text-[1.0625rem] md:leading-9">
+                    {(page.president.paragraphs ?? []).map((paragraph, index) => (
+                      <p key={paragraph} className={index === 0 ? 'text-lg font-semibold text-white md:text-xl md:leading-10' : undefined}>
+                        {paragraph}
+                      </p>
                     ))}
                   </div>
 
-                  {presidentSocialLinks.length > 0 && (
-                    <div className="mt-9 flex flex-wrap gap-3">
-                      {presidentSocialLinks.map((link) => {
-                        const Icon = link.icon;
-
-                        return (
-                          <a
-                            key={link.key}
-                            href={link.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={link.label}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(36,0,2,0.24)] ring-1 ring-white/10 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-500/30 hover:ring-primary-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-                          >
-                            <Icon className="h-5 w-5" />
-                            <span dir="ltr">{socialHandle(link.href)}</span>
-                          </a>
-                        );
-                      })}
+                  <footer className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t border-white/15 pt-6">
+                    <div>
+                      <span className="block text-xl font-black text-white md:text-2xl">{page.president.name}</span>
+                      <span className="mt-1 block text-sm font-semibold text-white/70">{page.president.role}</span>
                     </div>
-                  )}
-                </div>
+
+                    {presidentSocialLinks.length > 0 && (
+                      <div className="flex flex-wrap gap-2.5">
+                        {presidentSocialLinks.map((link) => {
+                          const Icon = link.icon;
+
+                          return (
+                            <a
+                              key={link.key}
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={link.label}
+                              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/12 transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-500/30 hover:ring-primary-200/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                            >
+                              <Icon className="h-4 w-4" />
+                              <span dir="ltr">{socialHandle(link.href)}</span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </footer>
+                </article>
               </FadeContent>
             </div>
           </div>

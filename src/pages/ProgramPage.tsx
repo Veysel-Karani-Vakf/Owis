@@ -4,23 +4,34 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
+  Clapperboard,
+  GraduationCap,
   HandHeart,
+  Hash,
+  HeartHandshake,
   Images,
+  Landmark,
   Layers3,
   Mail,
+  MessagesSquare,
+  Mic,
+  PenLine,
   Play,
+  Quote,
+  Radio,
+  Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
-import AwarenessHero from '@/components/programs/AwarenessHero';
 import AwarenessMedia from '@/components/programs/AwarenessMedia';
 import AwarenessSpotlight from '@/components/programs/AwarenessSpotlight';
 import AwarenessThemes from '@/components/programs/AwarenessThemes';
-import InstitutionalHeroNew from '@/components/programs/InstitutionalHeroNew';
-import InstitutionalSegmentsNew from '@/components/programs/InstitutionalSegmentsNew';
-import InstitutionalImpactSection from '@/components/programs/InstitutionalImpactSection';
-import PageHero from '@/components/internal/PageHero';
+import InstitutionalBeneficiaries from '@/components/programs/InstitutionalBeneficiaries';
+import InstitutionalFigures from '@/components/programs/InstitutionalFigures';
+import EqualizerBars from '@/components/programs/EqualizerBars';
+import ProgramHero, { type ProgramHeroAction, type ProgramHeroProps } from '@/components/programs/ProgramHero';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneerGoals from '@/components/programs/PioneerGoals';
 import PioneerHighlightsMarquee from '@/components/programs/PioneerHighlightsMarquee';
@@ -31,7 +42,6 @@ import PioneerStatsHex from '@/components/programs/PioneerStatsHex';
 import PioneerVideoCarousel from '@/components/programs/PioneerVideoCarousel';
 import VolunteerFields from '@/components/programs/VolunteerFields';
 import VolunteerGoals from '@/components/programs/VolunteerGoals';
-import VolunteerHero from '@/components/programs/VolunteerHero';
 import VolunteerStatement from '@/components/programs/VolunteerStatement';
 import VolunteerSteps from '@/components/programs/VolunteerSteps';
 import VideoModal from '@/components/ui/VideoModal';
@@ -47,10 +57,14 @@ import {
   type Program,
   type ProgramCity,
   type ProgramSection,
+  type ProgramsPageContent,
   type ProgramVideo,
+  type VolunteerCopy,
 } from '@/data/programs';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
+import { resolveIcon } from '@/lib/icons';
+import type { ProgramLayout } from '@/lib/types';
 
 const revealEase = [0.22, 1, 0.36, 1] as const;
 
@@ -722,6 +736,9 @@ function OtherPrograms({
   );
 }
 
+const institutionalShowcaseAnchor = 'institutional-showcase';
+
+/** The institutional track: its verified figures drawn as seals, then the institutions it serves. */
 function InstitutionalShowcase({
   program,
   labels,
@@ -733,38 +750,40 @@ function InstitutionalShowcase({
   const statistics = program.statistics ?? [];
 
   return (
-    <>
-      {/* Statistics Section */}
-      {statistics.length > 0 && (
-        <InstitutionalImpactSection
-          statistics={statistics}
-          eyebrow={labels.statsEyebrow}
-          title={labels.statistics}
-        />
+    <div id={institutionalShowcaseAnchor} className="scroll-mt-24">
+      {statistics.length > 0 ? (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <InstitutionalFigures
+            statistics={statistics}
+            eyebrow={labels.statsEyebrow}
+            title={labels.statistics}
+            note={program.mediaNote}
+            noteLabel={labels.noVerifiedStats}
+          />
+        </section>
+      ) : (
+        program.mediaNote && (
+          <section className="bg-[#faf8f8] py-10 md:py-12">
+            <div className="mx-auto max-w-4xl px-4 md:px-8">
+              <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
+                <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
+                <p className="mt-2">{program.mediaNote}</p>
+              </div>
+            </div>
+          </section>
+        )
       )}
 
-      {/* Target Audiences */}
       {audiences.length > 0 && (
-        <section className="overflow-hidden">
-          <InstitutionalSegmentsNew
+        <section className="overflow-hidden bg-white py-16 md:py-24">
+          <InstitutionalBeneficiaries
             audiences={audiences}
             title={labels.audiences}
             description={labels.audiencesDescription}
           />
         </section>
       )}
-
-      {program.mediaNote && (
-        <section className="bg-white py-10 md:py-12">
-          <div className="mx-auto max-w-4xl px-4 md:px-8">
-            <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
-              <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
-              <p className="mt-2">{program.mediaNote}</p>
-            </div>
-          </div>
-        </section>
-      )}
-    </>
+    </div>
   );
 }
 
@@ -877,9 +896,128 @@ function AwarenessShowcase({
   );
 }
 
+const programOverviewAnchor = 'program-overview';
+
+// Defaults keyed by the seeded Owais product ids; an editor-chosen icon name wins over them.
+const productIcons: Record<string, LucideIcon> = {
+  podcast: Mic,
+  visuals: Clapperboard,
+  diwaniya: MessagesSquare,
+  blog: PenLine,
+};
+
+type HeroSlotsInput = {
+  program: Program;
+  layout: ProgramLayout;
+  volunteerCopy?: VolunteerCopy;
+  labels: ProgramsPageContent['labels'];
+  /** The verified home-page indicators; the pioneers hero teases the first one that has a value. */
+  pioneerIndicators: { label: string; value: number | null }[];
+  formatNumber: (value: number) => string;
+};
+
+/**
+ * Every program shares one hero; this decides what each layout puts in its slots:
+ * the line above the title, where the two buttons go, the pills and note, the
+ * teaser chip on the plate, and whether the plate holds a photo or an emblem.
+ */
+function heroSlots({
+  program,
+  layout,
+  volunteerCopy,
+  labels,
+  pioneerIndicators,
+  formatNumber,
+}: HeroSlotsInput): Omit<ProgramHeroProps, 'program' | 'breadcrumbs'> {
+  const donateTo = program.cta?.url?.trim() || donateRoute;
+  const donateAction: ProgramHeroAction | undefined = labels.donate ? { label: labels.donate, to: donateTo } : undefined;
+  const firstStat = program.statistics?.find((stat) => stat.value || stat.label);
+  const statChip = firstStat ? { value: firstStat.value, label: firstStat.label } : undefined;
+  const photoPlate = { image: program.heroImage, alt: program.heroImageAlt, tone: 'photo' as const };
+
+  if (volunteerCopy) {
+    const hashtags = (volunteerCopy.hashtags ?? []).filter(Boolean);
+    return {
+      eyebrow: volunteerCopy.eyebrow,
+      eyebrowIcon: HeartHandshake,
+      primary: volunteerCopy.joinCta
+        ? { label: volunteerCopy.joinCta, to: volunteerCopy.joinUrl || participateRoutes.volunteer, icon: HandHeart }
+        : undefined,
+      secondary: volunteerCopy.exploreCta
+        ? { label: volunteerCopy.exploreCta, anchor: volunteerStatementAnchor }
+        : undefined,
+      tags: hashtags.slice(1).map((label) => ({ label, icon: Hash })),
+      note: volunteerCopy.slogan ? { text: volunteerCopy.slogan, icon: Quote } : undefined,
+      chip: hashtags[0] ? { label: hashtags[0] } : statChip,
+      // The unit's badge sits on the plate; the photo stays behind as the backdrop.
+      plate: {
+        image: program.overviewImage ?? program.heroImage,
+        alt: program.overviewImageAlt || program.heroImageAlt,
+        tone: 'emblem',
+      },
+      badgeIcon: HeartHandshake,
+      backdropImage: program.heroImage,
+    };
+  }
+
+  if (layout === 'awareness') {
+    const products = program.mediaProducts ?? [];
+    return {
+      eyebrow: labels.awarenessEyebrow,
+      eyebrowIcon: Radio,
+      primary: donateAction,
+      secondary: labels.exploreInitiatives
+        ? { label: labels.exploreInitiatives, anchor: awarenessMediaAnchor }
+        : undefined,
+      tags: products.map((product, index) => ({
+        label: product.title,
+        icon: resolveIcon(product.icon, [productIcons[product.id] ?? Sparkles], index),
+      })),
+      note: labels.awarenessHeroNote ? { text: labels.awarenessHeroNote, icon: Radio } : undefined,
+      chip: labels.onAirLabel ? { label: labels.onAirLabel } : statChip,
+      plate: { image: program.heroImage, alt: program.heroImageAlt, tone: 'emblem' },
+      badgeIcon: Mic,
+      plateMotif: <EqualizerBars />,
+      // The platform's own image is a logo; a real event photo makes the better faint backdrop.
+      backdropImage: program.spotlight?.images?.find((image) => image?.src)?.src,
+    };
+  }
+
+  if (layout === 'institutional') {
+    return {
+      eyebrow: labels.manifestoEyebrow,
+      eyebrowIcon: Landmark,
+      primary: donateAction,
+      secondary: labels.exploreTrack ? { label: labels.exploreTrack, anchor: institutionalShowcaseAnchor } : undefined,
+      chip: statChip,
+      plate: photoPlate,
+      badgeIcon: Landmark,
+      backdropImage: program.heroImage,
+    };
+  }
+
+  const isPioneers = layout === 'pioneers';
+  const indicator = isPioneers ? pioneerIndicators.find((item) => typeof item.value === 'number') : undefined;
+  const indicatorChip =
+    indicator && typeof indicator.value === 'number'
+      ? { value: formatNumber(indicator.value), label: indicator.label }
+      : undefined;
+
+  return {
+    eyebrow: isPioneers ? labels.pioneersEyebrow : labels.programs,
+    eyebrowIcon: isPioneers ? GraduationCap : Layers3,
+    primary: donateAction,
+    secondary: labels.exploreProgram ? { label: labels.exploreProgram, anchor: programOverviewAnchor } : undefined,
+    chip: statChip ?? indicatorChip,
+    plate: photoPlate,
+    badgeIcon: isPioneers ? GraduationCap : Layers3,
+    backdropImage: program.heroImage,
+  };
+}
+
 export default function ProgramPage() {
   const { slug } = useParams();
-  const { locale, isRtl, content } = useI18n();
+  const { locale, isRtl, content, formatNumber } = useI18n();
   const program = getProgram(locale, slug);
   const page = getProgramsContent(locale);
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
@@ -926,6 +1064,14 @@ export default function ProgramPage() {
   // static volunteer copy of this locale until the editor fills the volunteer fields.
   const volunteerCopy = isVolunteer ? (program.volunteer ?? getDefaultVolunteerCopy(locale)) : undefined;
   const hasCustomLayout = isAwareness || isInstitutional || isVolunteer;
+  const hero = heroSlots({
+    program,
+    layout,
+    volunteerCopy,
+    labels: page.labels,
+    pioneerIndicators: content.yemenPioneers.indicators,
+    formatNumber,
+  });
 
   return (
     <>
@@ -938,41 +1084,7 @@ export default function ProgramPage() {
         structuredData={structuredData}
       />
       <main className="bg-white">
-        {volunteerCopy ? (
-          <VolunteerHero
-            program={program}
-            breadcrumbs={breadcrumbs}
-            copy={volunteerCopy}
-            volunteerRoute={participateRoutes.volunteer}
-            exploreAnchor={volunteerStatementAnchor}
-          />
-        ) : isAwareness ? (
-          <AwarenessHero
-            program={program}
-            breadcrumbs={breadcrumbs}
-            labels={{
-              eyebrow: page.labels.awarenessEyebrow,
-              heroNote: page.labels.awarenessHeroNote,
-              exploreCta: page.labels.exploreInitiatives,
-              onAir: page.labels.onAirLabel,
-            }}
-            initiativesAnchor={awarenessMediaAnchor}
-          />
-        ) : isInstitutional ? (
-          <InstitutionalHeroNew
-            program={program}
-            breadcrumbs={breadcrumbs}
-            eyebrow={page.labels.manifestoEyebrow}
-          />
-        ) : (
-          <PageHero
-            title={program.title}
-            description={program.summary}
-            image={program.heroImage}
-            imageAlt={program.heroImageAlt}
-            breadcrumbs={breadcrumbs}
-          />
-        )}
+        <ProgramHero program={program} breadcrumbs={breadcrumbs} {...hero} />
 
         {highlights.length > 0 && (
           <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} />
@@ -985,11 +1097,11 @@ export default function ProgramPage() {
         ) : isInstitutional ? (
           <InstitutionalShowcase program={program} labels={page.labels} />
         ) : isShowcase ? (
-          <section className="overflow-hidden bg-white py-14 md:py-20">
+          <section id={programOverviewAnchor} className="scroll-mt-24 overflow-hidden bg-white py-14 md:py-20">
             <PioneerOverview program={program} labels={page.labels} />
           </section>
         ) : (
-          <section className="bg-white py-16 md:py-24">
+          <section id={programOverviewAnchor} className="scroll-mt-24 bg-white py-16 md:py-24">
             <div className="mx-auto grid max-w-7xl gap-8 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
               <div className="sticky top-28 rounded-[24px] border border-primary-100 bg-[#faf8f8] p-6 text-start md:p-8">

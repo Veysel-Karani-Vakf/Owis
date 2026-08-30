@@ -779,6 +779,7 @@ export const SITE_PAGES: SitePageDef[] = [
           ['otherPrograms', 'عنوان برامج أخرى', 'Diğer programlar', 'Other programs heading'],
           ['details', 'زر التفاصيل', 'Detaylar', 'Details button'],
           ['highlights', 'اسم شريط أبرز الملامح', 'Öne çıkanlar şeridi', 'Highlights strip name'],
+          ['exploreProgram', 'زر استكشاف البرنامج', 'Programı keşfet butonu', 'Explore button'],
         ]),
       },
       {
@@ -787,6 +788,7 @@ export const SITE_PAGES: SitePageDef[] = [
         description: L('العناوين الثابتة في أقسام المسار والركائز والأرقام', 'Yolculuk, sütunlar ve rakamlar bölümlerinin sabit başlıkları', 'Fixed headings in the journey, pillars and figures sections'),
         icon: Award,
         fields: labelFields('labels', [
+          ['pioneersEyebrow', 'السطر فوق عنوان الصفحة', 'Sayfa başlığı üst satırı', 'Line above the page title'],
           ['journey', 'عنوان المسار', 'Yolculuk', 'Journey heading'],
           ['journeyEyebrow', 'السطر فوق المسار', 'Yolculuk üst satırı', 'Line above the journey'],
           ['journeyDescription', 'وصف المسار', 'Yolculuk açıklaması', 'Journey description', 'textarea'],
@@ -818,6 +820,7 @@ export const SITE_PAGES: SitePageDef[] = [
           ['manifestoEyebrow', 'السطر فوق عنوان الصفحة', 'Sayfa başlığı üst satırı', 'Line above the page title'],
           ['audiences', 'عنوان الفئات المستهدفة', 'Hedef kitleler', 'Audiences heading'],
           ['audiencesDescription', 'وصف الفئات المستهدفة', 'Hedef kitle açıklaması', 'Audiences description', 'textarea'],
+          ['exploreTrack', 'زر استكشاف المسار', 'Programı keşfet butonu', 'Explore button'],
         ]),
       },
       {

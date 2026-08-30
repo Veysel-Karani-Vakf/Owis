@@ -1,5 +1,6 @@
 import Preloader from '@/components/ui/Preloader';
 import ScrollProgress from '@/components/ui/ScrollProgress';
+import SiteAssistant from '@/components/ui/SiteAssistant';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ScrollRestoration from '@/components/internal/ScrollRestoration';
@@ -78,6 +79,8 @@ function App() {
       </div>
 
       <Footer />
+      {/* The site assistant is a visitor feature; the dashboard preview frame hides it. */}
+      {!isPreviewFrame() && <SiteAssistant />}
     </>
   );
 }

@@ -254,7 +254,7 @@ function BankCard({
         delay: shouldReduceMotion ? 0 : index * 0.05,
         ease: revealEase,
       }}
-      className="list-none scroll-mt-28"
+      className="min-w-0 list-none scroll-mt-28"
     >
       <h2 className="sr-only">{bank.name}</h2>
       <div
@@ -311,7 +311,7 @@ function BankCard({
             const key = `${bank.id}:${account.currency}`;
             const copied = copiedKey === key;
             return (
-              <li key={key} className="flex items-center gap-3">
+              <li key={key} className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                 <span
                   className={`inline-flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg leading-none ${chipBg}`}
                   aria-hidden="true"
@@ -324,7 +324,7 @@ function BankCard({
                     {labels.currencies[account.currency]}
                     <span className={`ms-1.5 text-[9px] font-semibold tracking-wider ${muted}`}>({account.currency})</span>
                   </p>
-                  <p className="mt-0.5 whitespace-nowrap font-mono text-[13px] font-semibold tracking-[0.05em] drop-shadow-sm min-[420px]:text-[14px] sm:text-[15px]">
+                  <p className="mt-0.5 text-balance break-words font-mono text-[12px] font-semibold leading-snug tracking-[0.02em] drop-shadow-sm min-[400px]:text-[13px] min-[400px]:tracking-[0.05em] sm:whitespace-nowrap sm:text-[15px]">
                     {formatIban(account.iban)}
                   </p>
                   {account.accountNumber && (
@@ -356,7 +356,7 @@ function BankCard({
         {/* Cardholder line + branch / account number */}
         <div className="relative px-5 pb-4">
           <p className={`text-[8px] font-bold uppercase tracking-[0.18em] ${muted}`}>{labels.accountHolder}</p>
-          <p className="whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.06em]">{content.accountHolder}</p>
+          <p className="break-words text-[11px] font-bold uppercase tracking-[0.06em]">{content.accountHolder}</p>
           <div className={`mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[9px] font-semibold ${muted}`}>
             <span className="inline-flex items-center gap-1">
               <MapPin className="h-3 w-3" aria-hidden="true" />
@@ -471,7 +471,7 @@ export default function BankAccountsPage() {
               ))}
             </nav>
 
-            <ul className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
+            <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
               {(page.banks ?? []).map((bank, index) => (
                 <BankCard key={bank.id} bank={bank} content={page} index={index} copiedKey={copiedKey} copy={copy} />
               ))}
