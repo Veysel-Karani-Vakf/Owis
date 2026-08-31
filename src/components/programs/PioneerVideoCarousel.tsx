@@ -24,8 +24,6 @@ type PioneerVideoCarouselProps = {
   };
   onVideoSelect: (video: CarouselVideoSelection) => void;
   autoplayMs?: number;
-  /** One continuous canvas: rounded posters with the copy underneath, no boxed cards. */
-  seamless?: boolean;
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
@@ -38,7 +36,6 @@ export default function PioneerVideoCarousel({
   labels,
   onVideoSelect,
   autoplayMs = 5500,
-  seamless = false,
 }: PioneerVideoCarouselProps) {
   const { isRtl } = useI18n();
   const shouldReduceMotion = !!useReducedMotion();
@@ -145,13 +142,9 @@ export default function PioneerVideoCarousel({
                       : { scale: isActive ? 1 : 0.93, opacity: isActive ? 1 : 0.62, y: isActive ? 0 : 12 }
                   }
                   transition={{ duration: 0.5, ease: smoothEase }}
-                  className={
-                    seamless
-                      ? 'text-start'
-                      : `overflow-hidden rounded-[26px] border bg-white text-start shadow-[0_18px_48px_rgba(40,12,18,0.08)] transition-[border-color,box-shadow] duration-500 ${
-                          isActive ? 'border-primary-200 shadow-[0_30px_72px_rgba(40,12,18,0.16)]' : 'border-primary-100'
-                        }`
-                  }
+                  className={`overflow-hidden rounded-[26px] border bg-white text-start shadow-[0_18px_48px_rgba(40,12,18,0.08)] transition-[border-color,box-shadow] duration-500 ${
+                    isActive ? 'border-primary-200 shadow-[0_30px_72px_rgba(40,12,18,0.16)]' : 'border-primary-100'
+                  }`}
                 >
                   <button
                     type="button"
@@ -168,9 +161,7 @@ export default function PioneerVideoCarousel({
                         posterImage: video.posterImage,
                       });
                     }}
-                    className={`group relative block aspect-video w-full overflow-hidden bg-dark-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
-                      seamless ? 'rounded-[26px]' : ''
-                    }`}
+                    className="group relative block aspect-video w-full overflow-hidden bg-dark-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     aria-label={`${labels.watchVideo}: ${video.title}`}
                   >
                     <img
@@ -197,7 +188,7 @@ export default function PioneerVideoCarousel({
                       <span dir="ltr">{String(index + 1).padStart(2, '0')}</span>
                     </span>
                   </button>
-                  <div className={seamless ? 'px-1 pt-4 pb-1' : 'p-5'}>
+                  <div className="p-5">
                     <h3 className="text-lg font-bold text-dark-950">{video.title}</h3>
                     <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-dark-600">{video.description}</p>
                   </div>

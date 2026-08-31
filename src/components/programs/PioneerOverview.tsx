@@ -20,8 +20,6 @@ type PioneerOverviewProps = {
     overview: string;
     contact: string;
   };
-  /** One continuous canvas: the photo and quote sit on the page without borders or heavy shadows. */
-  seamless?: boolean;
 };
 
 const pillarIcons: LucideIcon[] = [GraduationCap, Compass, HeartHandshake];
@@ -42,7 +40,7 @@ const chipVariants = (reduced: boolean): Variants => ({
   show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } },
 });
 
-export default function PioneerOverview({ program, labels, seamless = false }: PioneerOverviewProps) {
+export default function PioneerOverview({ program, labels }: PioneerOverviewProps) {
   const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
   const visualRef = useRef<HTMLDivElement>(null);
@@ -88,9 +86,7 @@ export default function PioneerOverview({ program, labels, seamless = false }: P
         {quote && (
           <motion.blockquote
             variants={itemVariants(reduced)}
-            className={`relative mt-5 overflow-hidden rounded-[20px] p-5 ps-6 md:ps-7 ${
-              seamless ? 'bg-primary-50/45' : 'border border-primary-100 bg-[#faf8f8]'
-            }`}
+            className="relative mt-5 overflow-hidden rounded-[20px] border border-primary-100 bg-[#faf8f8] p-5 ps-6 md:ps-7"
           >
             <motion.span
               aria-hidden="true"
@@ -176,9 +172,7 @@ export default function PioneerOverview({ program, labels, seamless = false }: P
           whileInView={{ opacity: 1, y: 0, rotate: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.8, ease: smoothEase }}
-          className={`relative isolate aspect-[4/3] overflow-hidden rounded-[28px] bg-dark-950 ${
-            seamless ? '' : 'border border-primary-100 shadow-[0_30px_70px_rgba(40,12,18,0.2)]'
-          }`}
+          className="relative isolate aspect-[4/3] overflow-hidden rounded-[28px] border border-primary-100 bg-dark-950 shadow-[0_30px_70px_rgba(40,12,18,0.2)]"
         >
           <motion.img
             src={program.overviewImage ?? program.heroImage}

@@ -46,11 +46,6 @@ export type ProgramHeroProps = {
   plateMotif?: ReactNode;
   /** Faint blurred photo behind the whole hero; omit for programs whose only image is a logo. */
   backdropImage?: string;
-  /**
-   * One continuous piece: the photo melts into the dark backdrop with faded edges instead of
-   * sitting in a framed plate, and the teaser chip turns into a glass pill instead of a white card.
-   */
-  seamless?: boolean;
 };
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
@@ -134,7 +129,6 @@ export default function ProgramHero({
   badgeIcon: BadgeIcon,
   plateMotif,
   backdropImage,
-  seamless = false,
 }: ProgramHeroProps) {
   const { isRtl } = useI18n();
   const reduced = !!useReducedMotion();
@@ -232,134 +226,77 @@ export default function ProgramHero({
           )}
         </div>
 
-        {seamless ? (
-          /* One piece: the photo fades into the backdrop on every edge — no frame, no plate. */
-          <motion.div
-            initial={{ opacity: 0, y: reduced ? 0 : 34 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduced ? 0.01 : 0.85, delay: reduced ? 0 : 0.28, ease: heroEase }}
-            className="relative mx-auto w-full max-w-xl lg:max-w-none"
+        {/* Framed plate */}
+        <motion.div
+          initial={{ opacity: 0, y: reduced ? 0 : 34 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduced ? 0.01 : 0.85, delay: reduced ? 0 : 0.28, ease: heroEase }}
+          className="relative mx-auto w-full max-w-xl lg:max-w-none"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-3 translate-x-4 translate-y-4 rounded-[36px] border border-white/15 rtl:-translate-x-4"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -end-12 -top-12 -z-10 h-56 w-56 rounded-full bg-primary-600/30 blur-3xl"
+          />
+
+          <figure
+            className={`relative overflow-hidden rounded-[30px] shadow-[0_34px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 ${
+              isPhoto ? 'bg-dark-900' : 'bg-white'
+            }`}
           >
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -end-12 -top-12 -z-10 h-56 w-56 rounded-full bg-primary-600/30 blur-3xl"
+            <img
+              src={plate.image}
+              alt={plate.alt}
+              width={1080}
+              height={1080}
+              className={
+                isPhoto
+                  ? 'aspect-[16/10] w-full object-cover [object-position:50%_5%]'
+                  : 'aspect-[16/10] w-full scale-[1.45] object-contain'
+              }
             />
-
-            <figure className="relative">
-              <img
-                src={plate.image}
-                alt={plate.alt}
-                width={1080}
-                height={1080}
-                className={`w-full [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,black_16%,black_84%,transparent),linear-gradient(to_bottom,transparent,black_16%,black_84%,transparent)] ${
-                  isPhoto ? 'aspect-[16/11] object-cover [object-position:50%_5%]' : 'aspect-[16/11] object-contain'
-                }`}
+            {isPhoto && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-dark-950/70 to-transparent"
               />
-              {plateMotif && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">{plateMotif}</div>
-              )}
-            </figure>
-
-            {chip?.label && (
-              <motion.div
-                {...reveal(0.6, 16)}
-                className="absolute bottom-3 start-5 flex items-center gap-4 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-start backdrop-blur md:start-8"
-              >
-                {chip.value ? (
-                  <span dir="ltr" className="text-3xl font-black tabular-nums leading-none text-gold-300">
-                    {chip.value}
-                  </span>
-                ) : (
-                  <span className="relative flex h-3 w-3 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-primary-500" />
-                  </span>
-                )}
-                <span className="max-w-[11rem] text-sm font-bold leading-snug text-white/90">{chip.label}</span>
-              </motion.div>
             )}
-          </motion.div>
-        ) : (
-          /* Framed plate */
-          <motion.div
-            initial={{ opacity: 0, y: reduced ? 0 : 34 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduced ? 0.01 : 0.85, delay: reduced ? 0 : 0.28, ease: heroEase }}
-            className="relative mx-auto w-full max-w-xl lg:max-w-none"
-          >
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -inset-3 translate-x-4 translate-y-4 rounded-[36px] border border-white/15 rtl:-translate-x-4"
-            />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -end-12 -top-12 -z-10 h-56 w-56 rounded-full bg-primary-600/30 blur-3xl"
-            />
+            {BadgeIcon && (
+              <span
+                aria-hidden="true"
+                className="absolute bottom-5 end-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-[0_12px_26px_rgba(218,8,18,0.45)]"
+              >
+                <BadgeIcon className="h-5 w-5" />
+              </span>
+            )}
+            {plateMotif && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">{plateMotif}</div>
+            )}
+          </figure>
 
-            <figure
-              className={`relative overflow-hidden rounded-[30px] shadow-[0_34px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 ${
-                isPhoto ? 'bg-dark-900' : 'bg-white'
-              }`}
+          {chip?.label && (
+            <motion.div
+              {...reveal(0.6, 16)}
+              className="absolute -bottom-6 start-5 flex items-center gap-4 rounded-2xl bg-white px-5 py-3.5 text-start text-dark-950 shadow-[0_24px_50px_rgba(0,0,0,0.35)] md:start-8"
             >
-              <img
-                src={plate.image}
-                alt={plate.alt}
-                width={1080}
-                height={1080}
-                className={
-                  isPhoto
-                    ? 'aspect-[16/10] w-full object-cover [object-position:50%_5%]'
-                    : 'aspect-[16/10] w-full scale-[1.45] object-contain'
-                }
-              />
-              {isPhoto && (
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-dark-950/70 to-transparent"
-                />
-              )}
-              {BadgeIcon && (
-                <span
-                  aria-hidden="true"
-                  className="absolute bottom-5 end-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-[0_12px_26px_rgba(218,8,18,0.45)]"
-                >
-                  <BadgeIcon className="h-5 w-5" />
+              {chip.value ? (
+                <span dir="ltr" className="text-3xl font-black tabular-nums leading-none text-primary-700">
+                  {chip.value}
+                </span>
+              ) : (
+                <span className="relative flex h-3 w-3 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-primary-600" />
                 </span>
               )}
-              {plateMotif && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">{plateMotif}</div>
-              )}
-            </figure>
-
-            {chip?.label && (
-              <motion.div
-                {...reveal(0.6, 16)}
-                className="absolute -bottom-6 start-5 flex items-center gap-4 rounded-2xl bg-white px-5 py-3.5 text-start text-dark-950 shadow-[0_24px_50px_rgba(0,0,0,0.35)] md:start-8"
-              >
-                {chip.value ? (
-                  <span dir="ltr" className="text-3xl font-black tabular-nums leading-none text-primary-700">
-                    {chip.value}
-                  </span>
-                ) : (
-                  <span className="relative flex h-3 w-3 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75 motion-reduce:animate-none" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-primary-600" />
-                  </span>
-                )}
-                <span className="max-w-[11rem] text-sm font-bold leading-snug text-dark-700">{chip.label}</span>
-              </motion.div>
-            )}
-          </motion.div>
-        )}
+              <span className="max-w-[11rem] text-sm font-bold leading-snug text-dark-700">{chip.label}</span>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
-
-      {/* One piece: the dark backdrop dissolves into the white canvas below — no bottom edge. */}
-      {seamless && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-white md:h-36"
-        />
-      )}
     </section>
   );
 }

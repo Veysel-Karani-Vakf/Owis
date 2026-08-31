@@ -188,14 +188,11 @@ function StatisticsSection({
   program,
   labels,
   hexStats,
-  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   /** True for the pioneers layout: the verified home-page indicators drawn as a hexagon diagram. */
   hexStats: boolean;
-  /** One continuous canvas: no band background of its own. */
-  seamless?: boolean;
 }) {
   const { content, t, formatNumber, isRtl } = useI18n();
 
@@ -204,10 +201,7 @@ function StatisticsSection({
   if (hexStats) {
     const pioneers = content.yemenPioneers;
     return (
-      <section
-        id="cms-program-stats"
-        className={seamless ? 'overflow-hidden py-12 md:py-16' : 'overflow-hidden bg-[#faf8f8] py-16 md:py-24'}
-      >
+      <section id="cms-program-stats" className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <PioneerStatsHex
             eyebrow={labels.pioneerStatsEyebrow}
@@ -358,13 +352,10 @@ function MediaGallery({
   program,
   labels,
   onVideoSelect,
-  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   onVideoSelect: (video: ActiveVideo) => void;
-  /** One continuous canvas: transparent section, uncarded videos. */
-  seamless?: boolean;
 }) {
   if (program.cities?.length) {
     return (
@@ -387,7 +378,7 @@ function MediaGallery({
 
   if (useCarousel) {
     return (
-      <section className={seamless ? 'overflow-hidden py-12 md:py-16' : 'overflow-hidden bg-white py-16 md:py-24'}>
+      <section className="overflow-hidden bg-white py-16 md:py-24">
         <PioneerVideoCarousel
           eyebrow={labels.officialMedia}
           title={labels.videoGallery}
@@ -395,7 +386,6 @@ function MediaGallery({
           videos={videos}
           labels={labels}
           onVideoSelect={onVideoSelect}
-          seamless={seamless}
         />
         {showImages && (
           <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 md:grid-cols-2 md:px-8">
@@ -633,12 +623,9 @@ function InitiativesSection({
 function DonateCta({
   program,
   isRtl,
-  seamless = false,
 }: {
   program: Program;
   isRtl: boolean;
-  /** One continuous canvas: a centered call on the page itself instead of the dark band. */
-  seamless?: boolean;
 }) {
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const cta = program.cta;
@@ -658,44 +645,6 @@ function DonateCta({
       aria-hidden="true"
     />
   );
-
-  if (seamless) {
-    const button = cta.button && (
-      isExternal ? (
-        <a href={to} target="_blank" rel="noopener noreferrer" className={`${buttonClass} mt-8`}>
-          {cta.button}
-          {arrow}
-        </a>
-      ) : (
-        <Link to={to} className={`${buttonClass} mt-8`}>
-          {cta.button}
-          {arrow}
-        </Link>
-      )
-    );
-
-    return (
-      <section id="program-donate" className="relative overflow-hidden py-16 md:py-24">
-        {/* A glow that dies out before the edges keeps the canvas unbroken. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_75%_at_50%_45%,rgba(218,8,18,0.07),transparent_75%)]"
-        />
-        <div className="relative mx-auto max-w-3xl px-4 text-center md:px-8">
-          <FadeContent blur={false} duration={640} initialOpacity={0} yOffset={18} threshold={0.18} once>
-            <div className="flex flex-col items-center">
-              <HandHeart className="h-10 w-10 text-primary-600" aria-hidden="true" />
-              <h2 className="mt-5 text-3xl font-bold leading-tight text-dark-950 md:text-4xl">{cta.title}</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-dark-600 md:text-lg">
-                {cta.description}
-              </p>
-              {button}
-            </div>
-          </FadeContent>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="bg-dark-950 py-16 text-white md:py-20">
@@ -730,20 +679,17 @@ function OtherPrograms({
   program,
   labels,
   isRtl,
-  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   isRtl: boolean;
-  /** One continuous canvas: pictures and text on the page instead of boxed cards. */
-  seamless?: boolean;
 }) {
   const { locale } = useI18n();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const otherPrograms = getOtherPrograms(locale, program.slug);
 
   return (
-    <section className={seamless ? 'py-12 md:py-20' : 'bg-white py-16 md:py-24'}>
+    <section className="bg-white py-16 md:py-24">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading eyebrow={labels.programs} title={labels.otherPrograms} centered />
         <div className="grid gap-5 md:grid-cols-3">
@@ -760,30 +706,15 @@ function OtherPrograms({
             >
               <Link
                 to={item.route}
-                className={
-                  seamless
-                    ? 'group block text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600'
-                    : 'group block overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0'
-                }
+                className="group block overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
               >
-                {seamless ? (
-                  <span className="block overflow-hidden rounded-[22px]">
-                    <img
-                      src={item.heroImage}
-                      alt={item.heroImageAlt}
-                      loading="lazy"
-                      className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] motion-reduce:group-hover:scale-100"
-                    />
-                  </span>
-                ) : (
-                  <img
-                    src={item.heroImage}
-                    alt={item.heroImageAlt}
-                    loading="lazy"
-                    className="aspect-[16/10] w-full object-cover"
-                  />
-                )}
-                <div className={seamless ? 'pt-5' : 'p-5'}>
+                <img
+                  src={item.heroImage}
+                  alt={item.heroImageAlt}
+                  loading="lazy"
+                  className="aspect-[16/10] w-full object-cover"
+                />
+                <div className="p-5">
                   <h3 className="text-xl font-bold text-dark-950">{item.title}</h3>
                   <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-600">{item.summary}</p>
                   <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700">
@@ -1129,9 +1060,6 @@ export default function ProgramPage() {
   // Programs that ship journey/pillar content get the richer, animated showcase layout;
   // the pioneers layout always does, so its hex statistics and overview stay in place.
   const isShowcase = isPioneers || journey.length > 0 || pillars.length > 0;
-  // The pioneers page reads as one continuous piece: a single light canvas with no
-  // alternating band backgrounds and no boxed cards between the hero and the footer.
-  const seamless = isPioneers;
   // A program switched to the volunteer layout without its own copy still renders, using the
   // static volunteer copy of this locale until the editor fills the volunteer fields.
   const volunteerCopy = isVolunteer ? (program.volunteer ?? getDefaultVolunteerCopy(locale)) : undefined;
@@ -1156,10 +1084,10 @@ export default function ProgramPage() {
         structuredData={structuredData}
       />
       <main className="bg-white">
-        <ProgramHero program={program} breadcrumbs={breadcrumbs} {...hero} seamless={seamless} />
+        <ProgramHero program={program} breadcrumbs={breadcrumbs} {...hero} />
 
         {highlights.length > 0 && (
-          <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} seamless={seamless} />
+          <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} />
         )}
 
         {volunteerCopy ? (
@@ -1169,13 +1097,8 @@ export default function ProgramPage() {
         ) : isInstitutional ? (
           <InstitutionalShowcase program={program} labels={page.labels} />
         ) : isShowcase ? (
-          <section
-            id={programOverviewAnchor}
-            className={
-              seamless ? 'scroll-mt-24 overflow-hidden py-12 md:py-16' : 'scroll-mt-24 overflow-hidden bg-white py-14 md:py-20'
-            }
-          >
-            <PioneerOverview program={program} labels={page.labels} seamless={seamless} />
+          <section id={programOverviewAnchor} className="scroll-mt-24 overflow-hidden bg-white py-14 md:py-20">
+            <PioneerOverview program={program} labels={page.labels} />
           </section>
         ) : (
           <section id={programOverviewAnchor} className="scroll-mt-24 bg-white py-16 md:py-24">
@@ -1207,10 +1130,10 @@ export default function ProgramPage() {
         )}
 
         {!hasCustomLayout && goals.length > 0 && (
-          <section className={seamless ? 'py-12 md:py-16' : 'bg-[#faf8f8] py-16 md:py-24'}>
+          <section className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
               {isShowcase ? (
-                <PioneerGoals eyebrow={page.labels.goals} title={page.labels.goals} items={goals} seamless={seamless} />
+                <PioneerGoals eyebrow={page.labels.goals} title={page.labels.goals} items={goals} />
               ) : (
                 <NumberedList
                   title={page.labels.goals}
@@ -1223,17 +1146,13 @@ export default function ProgramPage() {
         )}
 
         {hasCustomLayout ? null : journey.length > 0 ? (
-          <section
-            id="cms-program-journey"
-            className={seamless ? 'relative py-8 md:py-10 lg:py-0' : 'relative bg-white py-10 md:py-14 lg:py-0'}
-          >
+          <section id="cms-program-journey" className="relative bg-white py-10 md:py-14 lg:py-0">
             <PioneerJourney
               eyebrow={page.labels.journeyEyebrow}
               title={page.labels.journey}
               description={page.labels.journeyDescription}
               stepLabel={page.labels.stepLabel}
               steps={journey}
-              seamless={seamless}
             />
           </section>
         ) : (
@@ -1251,14 +1170,13 @@ export default function ProgramPage() {
         )}
 
         {!hasCustomLayout && pillars.length > 0 && (
-          <section id="cms-program-pillars" className={seamless ? 'py-12 md:py-16' : 'bg-[#faf8f8] py-16 md:py-24'}>
+          <section id="cms-program-pillars" className="bg-[#faf8f8] py-16 md:py-24">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
               <PioneerPillars
                 eyebrow={page.labels.pillarsEyebrow}
                 title={page.labels.pillars}
                 description={page.labels.pillarsDescription}
                 pillars={pillars}
-                seamless={seamless}
               />
             </div>
           </section>
@@ -1266,8 +1184,8 @@ export default function ProgramPage() {
 
         {!hasCustomLayout && (
           <>
-            <StatisticsSection program={program} labels={page.labels} hexStats={isPioneers} seamless={seamless} />
-            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} seamless={seamless} />
+            <StatisticsSection program={program} labels={page.labels} hexStats={isPioneers} />
+            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
           </>
         )}
         <InitiativesSection program={program} labels={page.labels} />
@@ -1285,8 +1203,8 @@ export default function ProgramPage() {
           </section>
         )}
 
-        <DonateCta program={program} isRtl={isRtl} seamless={seamless} />
-        <OtherPrograms program={program} labels={page.labels} isRtl={isRtl} seamless={seamless} />
+        <DonateCta program={program} isRtl={isRtl} />
+        <OtherPrograms program={program} labels={page.labels} isRtl={isRtl} />
       </main>
 
       <VideoModal
