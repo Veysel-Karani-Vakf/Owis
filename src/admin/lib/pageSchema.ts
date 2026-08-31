@@ -179,22 +179,6 @@ const linkItemFields: PageFieldDef[] = [
   },
 ];
 
-const breadcrumbFields = (path = 'breadcrumbs'): PageFieldDef => ({
-  path,
-  label: L('مسار التنقل (فتات الخبز)', 'Gezinti yolu', 'Breadcrumb trail'),
-  type: 'repeater',
-  itemTitleField: 'label',
-  itemFields: [
-    { path: 'label', label: L('النص', 'Etiket', 'Label'), type: 'text' },
-    {
-      path: 'href',
-      label: L('الرابط', 'Bağlantı', 'Link'),
-      type: 'text',
-      help: L('اتركه فارغاً للعنصر الأخير', 'Son öğe için boş bırakın', 'Leave empty for the last item'),
-    },
-  ],
-});
-
 const eyebrowTitleDescription = (prefix: string): PageFieldDef[] => [
   { path: `${prefix}.eyebrow`, label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
   { path: `${prefix}.title`, label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
@@ -339,7 +323,6 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'about.values', label: L('القيم', 'Değerler', 'Values'), type: 'list' },
           { path: 'about.tabs.sectors', label: L('اسم تبويب القطاعات', 'Sektörler sekmesi adı', 'Sectors tab name'), type: 'text' },
           { path: 'about.sectors', label: L('القطاعات', 'Sektörler', 'Sectors'), type: 'list' },
-          { path: 'about.goals', label: L('الأهداف', 'Hedefler', 'Goals'), type: 'list' },
         ],
       },
       {
@@ -372,13 +355,6 @@ export const SITE_PAGES: SitePageDef[] = [
               { path: 'contribution', label: L('قيمة المساهمة', 'Katkı', 'Contribution'), type: 'text' },
               { path: 'image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
               { path: 'imageAlt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'text' },
-              {
-                path: 'imagePosition',
-                label: L('نقطة تركيز الصورة', 'Görsel odak noktası', 'Image focal point'),
-                type: 'text',
-                advanced: true,
-                help: L('مثال: 50% 30% — يحدد أي جزء من الصورة يبقى ظاهراً عند القص', 'Örnek: 50% 30%', 'Example: 50% 30% — which part of the image stays visible when cropped'),
-              },
               { path: 'detailsUrl', label: L('رابط التفاصيل', 'Detay bağlantısı', 'Details link'), type: 'text' },
               {
                 path: 'contributionUrl',
@@ -713,7 +689,7 @@ export const SITE_PAGES: SitePageDef[] = [
     route: '/projects',
     sections: [
       { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان أعلى الصفحة', 'Sayfanın üstündeki görsel ve başlık', 'The image and title at the top of the page'), icon: ImageIcon, anchor: '#cms-projects-hero', fields: [...heroFields(), breadcrumbFields()] },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان أعلى الصفحة', 'Sayfanın üstündeki görsel ve başlık', 'The image and title at the top of the page'), icon: ImageIcon, anchor: '#cms-projects-hero', fields: heroFields() },
       { key: 'intro', label: L('المقدمة', 'Giriş', 'Intro'), icon: Info, anchor: '#cms-projects-intro', fields: introFields() },
       {
         key: 'grid',
@@ -882,7 +858,7 @@ export const SITE_PAGES: SitePageDef[] = [
     route: '/about/waqf',
     sections: [
       { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان الكبير أعلى الصفحة ومسار التنقل', 'Sayfanın üstündeki görsel, başlık ve gezinti yolu', 'The image, headline and breadcrumb at the top of the page'), icon: ImageIcon, fields: [...heroFields(), breadcrumbFields()] },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), description: L('الصورة والعنوان الكبير أعلى الصفحة', 'Sayfanın üstündeki görsel ve başlık', 'The image and headline at the top of the page'), icon: ImageIcon, fields: heroFields() },
       {
         key: 'intro',
         label: L('المقدمة والحقائق', 'Giriş ve bilgiler', 'Intro & facts'),
@@ -1014,7 +990,7 @@ export const SITE_PAGES: SitePageDef[] = [
     route: '/about/governance',
     sections: [
       { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, anchor: '#cms-governance-hero', fields: [...heroFields(), breadcrumbFields()] },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, anchor: '#cms-governance-hero', fields: heroFields() },
       {
         key: 'intro',
         label: L('المقدمة', 'Giriş', 'Intro'),
@@ -1102,7 +1078,7 @@ export const SITE_PAGES: SitePageDef[] = [
     route: '/donate',
     sections: [
       { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
-      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, anchor: '#cms-donate-hero', fields: [...heroFields(), breadcrumbFields()] },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, anchor: '#cms-donate-hero', fields: heroFields() },
       { key: 'intro', label: L('المقدمة', 'Giriş', 'Intro'), icon: Info, anchor: '#cms-donate-intro', fields: introFields() },
       {
         key: 'grid',
@@ -1301,10 +1277,10 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'hero',
         label: L('الواجهة', 'Hero', 'Hero'),
-        description: L('الصورة والعنوان أعلى الصفحة ومسار التنقل', 'Sayfanın üstündeki görsel, başlık ve gezinme yolu', 'The image and title at the top of the page, and the breadcrumb trail'),
+        description: L('الصورة والعنوان أعلى الصفحة', 'Sayfanın üstündeki görsel ve başlık', 'The image and title at the top of the page'),
         icon: ImageIcon,
         anchor: '#cms-bank-hero',
-        fields: [...heroFields(), breadcrumbFields()],
+        fields: heroFields(),
       },
       {
         key: 'intro',

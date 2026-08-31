@@ -1,5 +1,4 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { Info } from 'lucide-react';
 import { useId } from 'react';
 import type { ProgramStatistic } from '@/data/programs';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -10,9 +9,6 @@ type InstitutionalFiguresProps = {
   /** Small line above the heading, from the programs-page labels. */
   eyebrow: string;
   title: string;
-  /** The program's media note, printed as small type under the figures. */
-  note?: string;
-  noteLabel?: string;
 };
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
@@ -93,8 +89,6 @@ export default function InstitutionalFigures({
   statistics,
   eyebrow,
   title,
-  note,
-  noteLabel,
 }: InstitutionalFiguresProps) {
   const reduced = !!useReducedMotion();
   const { ref, inView } = useInView<HTMLOListElement>({ threshold: 0.3 });
@@ -139,15 +133,6 @@ export default function InstitutionalFigures({
         ))}
       </ol>
 
-      {note && (
-        <p className="mt-5 flex max-w-3xl items-start gap-2.5 text-start text-xs leading-relaxed text-dark-500 md:text-sm">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary-600" aria-hidden="true" />
-          <span>
-            {noteLabel && <span className="font-bold text-dark-700">{noteLabel} </span>}
-            {note}
-          </span>
-        </p>
-      )}
     </div>
   );
 }
