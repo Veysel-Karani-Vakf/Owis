@@ -11,7 +11,13 @@ export type AdminMessage =
   | { source: typeof ADMIN_SOURCE; type: 'draft'; snapshot: CmsSnapshot | null }
   | { source: typeof ADMIN_SOURCE; type: 'locale'; locale: string }
   | { source: typeof ADMIN_SOURCE; type: 'navigate'; path: string }
-  | { source: typeof ADMIN_SOURCE; type: 'highlight'; selector: string | null };
+  | {
+      source: typeof ADMIN_SOURCE;
+      type: 'highlight';
+      selector: string | null;
+      /** Hide everything except the selected section (single-section editing). */
+      isolate?: boolean;
+    };
 
 /** Sent by the preview frame back to the dashboard. */
 export type PreviewMessage =

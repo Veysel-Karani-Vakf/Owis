@@ -8,6 +8,7 @@ import {
   HandHeart,
   Handshake,
   BarChart3,
+  Landmark,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -391,7 +392,7 @@ export const RESOURCES: FullResourceDef[] = [
       { key: 'image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
       { key: 'image_alt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'localized' },
       { key: 'contribution_value', label: L('قيمة المساهمة', 'Katkı değeri', 'Contribution value'), type: 'localized', help: L('مثال: 100 دولار', 'Örnek: 100 dolar', 'Example: 100 dollars') },
-      { key: 'official_contribution_url', label: L('وجهة زر المساهمة', 'Katkı butonu hedefi', 'Contribute button destination'), type: 'text', help: L('مثال: /donate', 'Örnek: /donate', 'Example: /donate') },
+      { key: 'official_contribution_url', label: L('وجهة زر المساهمة', 'Katkı butonu hedefi', 'Contribute button destination'), type: 'text', help: L('مثال: /donate/checkout/blessed-tree (صفحة الدفع) أو /donate', 'Örnek: /donate/checkout/blessed-tree (ödeme sayfası) veya /donate', 'Example: /donate/checkout/blessed-tree (checkout page) or /donate') },
       {
         key: 'facts',
         label: L('معلومات المشروع (بطاقات صغيرة)', 'Proje bilgileri', 'Project facts (small tiles)'),
@@ -620,6 +621,11 @@ export const RESOURCES: FullResourceDef[] = [
     titleField: 'title',
     defaultSort: { column: 'sort_order', ascending: true },
     newDefaults: { available: true },
+    visibility: {
+      column: 'available',
+      onLabel: L('ظاهر في المتجر', 'Sitede görünür', 'Shown in the store'),
+      offLabel: L('مخفي من المتجر', 'Sitede gizli', 'Hidden from the store'),
+    },
     fields: [
       { key: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'localized', required: true },
       {
@@ -632,8 +638,94 @@ export const RESOURCES: FullResourceDef[] = [
       { key: 'price', label: L('قيمة المساهمة', 'Katkı değeri', 'Contribution value'), type: 'localized', help: L('مثال: $100.00', 'Örnek: $100.00', 'Example: $100.00') },
       { key: 'image', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
       { key: 'image_alt', label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'), type: 'localized' },
-      { key: 'url', label: L('وجهة زر المساهمة', 'Katkı butonu hedefi', 'Contribute button destination'), type: 'text', help: L('مثال: /participate/contact', 'Örnek: /participate/contact', 'Example: /participate/contact') },
-      { key: 'available', label: L('متاح للمساهمة', 'Katkıya açık', 'Open for contributions'), type: 'boolean', help: L('غير المتاح يظهر بشارة "مغلق"', 'Kapalı olanlar "kapalı" rozetiyle görünür', 'Closed ones show a "closed" badge') },
+      { key: 'url', label: L('وجهة زر المساهمة', 'Katkı butonu hedefi', 'Contribute button destination'), type: 'text', help: L('اتركه فارغاً ليفتح صفحة الدفع الخاصة بالفرصة، أو ضع رابطاً مخصصاً مثل /participate/contact', 'Boş bırakılırsa fırsatın ödeme sayfası açılır; özel bağlantı da girebilirsiniz (örn. /participate/contact)', 'Leave empty to open the checkout page of this opportunity, or set a custom link such as /participate/contact') },
+      { key: 'available', label: L('متاح للمساهمة', 'Katkıya açık', 'Open for contributions'), type: 'boolean', help: L('عند الإيقاف تُخفى البطاقة من صفحة المتجر نهائياً، ويمكن إظهارها مجدداً في أي وقت', 'Kapatıldığında kart sitedeki sayfadan tamamen gizlenir; istediğiniz zaman yeniden açabilirsiniz', 'Turned off, the card is hidden from the donate page entirely; switch it back on to show it again') },
+      fPublished,
+      fSort,
+    ],
+  },
+  // BANK ACCOUNTS ------------------------------------------------------------
+  {
+    key: 'bank_accounts',
+    table: 'bank_accounts',
+    section: 'content',
+    labelKey: 'bank_accounts',
+    description: L(
+      'بطاقات البنوك وأرقام الآيبان في صفحة الحسابات البنكية — البيانات نفسها لكل اللغات',
+      'Banka hesapları sayfasındaki banka kartları ve IBAN numaraları — bilgiler her dilde aynıdır',
+      'The bank cards and IBANs on the bank accounts page — the same details in every language',
+    ),
+    icon: Landmark,
+    titleField: 'name',
+    publicRoute: '/bank-accounts',
+    defaultSort: { column: 'sort_order', ascending: true },
+    fields: [
+      { key: 'name', label: L('اسم البنك', 'Banka adı', 'Bank name'), type: 'text', required: true },
+      {
+        key: 'slug',
+        label: L('المعرّف', 'Kimlik', 'Identifier'),
+        type: 'slug',
+        required: true,
+      },
+      {
+        key: 'branch',
+        label: L('الفرع', 'Şube', 'Branch'),
+        type: 'text',
+        help: L('كما يكتبه البنك، مثال: Taksim / İstanbul Şubesi', 'Bankanın yazdığı gibi', 'As the bank writes it, e.g. Taksim / İstanbul Şubesi'),
+      },
+      { key: 'swift', label: L('رمز SWIFT', 'SWIFT kodu', 'SWIFT code'), type: 'text' },
+      {
+        key: 'account_number',
+        label: L('رقم الحساب الموحّد', 'Ortak hesap numarası', 'Shared account number'),
+        type: 'text',
+        help: L('اختياري — فقط إن كان للبنك رقم حساب واحد لكل العملات', 'İsteğe bağlı — tüm para birimleri için tek hesap numarası varsa', 'Optional — only when the bank uses one account number for every currency'),
+      },
+      {
+        key: 'accounts',
+        label: L('الحسابات حسب العملة', 'Para birimine göre hesaplar', 'Accounts by currency'),
+        type: 'repeater',
+        itemTitleField: 'currency',
+        itemFields: [
+          {
+            path: 'currency',
+            label: L('العملة', 'Para birimi', 'Currency'),
+            type: 'select',
+            options: [
+              { value: 'TRY', label: L('الليرة التركية (TRY)', 'Türk Lirası (TRY)', 'Turkish Lira (TRY)') },
+              { value: 'USD', label: L('الدولار الأمريكي (USD)', 'ABD Doları (USD)', 'US Dollar (USD)') },
+              { value: 'EUR', label: L('اليورو (EUR)', 'Euro (EUR)', 'Euro (EUR)') },
+              { value: 'SAR', label: L('الريال السعودي (SAR)', 'Suudi Riyali (SAR)', 'Saudi Riyal (SAR)') },
+            ],
+          },
+          {
+            path: 'iban',
+            label: L('رقم الآيبان (IBAN)', 'IBAN', 'IBAN'),
+            type: 'text',
+            help: L('بدون فراغات — الموقع ينسّقه تلقائياً', 'Boşluksuz — site otomatik biçimlendirir', 'Without spaces — the site formats it automatically'),
+          },
+          {
+            path: 'accountNumber',
+            label: L('رقم الحساب لهذه العملة', 'Bu para biriminin hesap numarası', 'Account number for this currency'),
+            type: 'text',
+            help: L('اختياري', 'İsteğe bağlı', 'Optional'),
+          },
+        ],
+      },
+      { key: 'logo', label: L('شعار البنك', 'Banka logosu', 'Bank logo'), type: 'image' },
+      {
+        key: 'monogram',
+        label: L('الحرفان البديلان', 'Kısaltma', 'Fallback initials'),
+        type: 'text',
+        help: L('يظهران في الشارة إذا تعذّر تحميل الشعار، مثال: VB', 'Logo yüklenemezse rozette görünür, örn. VB', 'Shown in the badge when the logo fails to load, e.g. VB'),
+      },
+      {
+        key: 'brand_color',
+        label: L('لون البنك', 'Banka rengi', 'Brand colour'),
+        type: 'text',
+        placeholder: '#0a7a5c',
+        help: L('صيغة hex مثل ‎#f7c600 — يلوّن شارة البنك', 'Hex biçimi, örn. #f7c600', 'Hex format such as #f7c600 — colours the bank badge'),
+        advanced: true,
+      },
       fPublished,
       fSort,
     ],

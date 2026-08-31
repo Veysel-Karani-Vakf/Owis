@@ -30,28 +30,25 @@ const P = (ar: string[], tr: string[], en: string[]): Record<Locale, string[]> =
 const SECTIONS: Section[] = [
   {
     icon: Compass,
-    title: L('كيف ينقسم المحتوى؟', 'İçerik nasıl bölünür?', 'How is the content organised?'),
+    title: L('كيف تنتظم لوحة التحكم؟', 'Panel nasıl düzenlenir?', 'How is the dashboard organised?'),
     body: P(
       [
-        'الموقع فيه نوعان من المحتوى:',
-        '١) صفحات الموقع: النصوص والصور والأزرار الثابتة في كل صفحة (الواجهة، من نحن، التذييل…). تُعدَّل من "نصوص الصفحات وصورها".',
-        '٢) المحتوى المتجدد: قوائم تُضاف إليها عناصر جديدة باستمرار — الأخبار، المشاريع، البرامج، فرص المساهمة، الشركاء، الأرقام، ومواد المكتبة. كل قائمة لها صفحتها في القائمة الجانبية.',
+        'القائمة الجانبية فيها بند لكل صفحة من صفحات الموقع، بنفس ترتيب الموقع: الصفحة الرئيسية، عن الوقف، المشاريع، البرامج، الأخبار، المكتبة، شارك معنا، المساهمة، الحسابات البنكية، وإعدادات الموقع.',
+        'افتح بند أي صفحة تجد كل ما يخصها في تبويبات: قوائمها (المشاريع مثلاً) في تبويب، ونصوصها وصورها في تبويب آخر — لا تحتاج البحث في مكان ثانٍ.',
         'تحت عنوان كل قسم سطر يقول أين يظهر على الموقع بالضبط.',
       ],
       [
-        'Sitede iki tür içerik vardır:',
-        '1) Site sayfaları: her sayfadaki sabit metin, görsel ve butonlar. "Sayfa metinleri ve görselleri" bölümünden düzenlenir.',
-        '2) Güncel içerik: sürekli yeni öğe eklenen listeler — haberler, projeler, programlar, bağış fırsatları, ortaklar, rakamlar ve kütüphane. Her listenin yan menüde kendi sayfası vardır.',
+        'Kenar çubuğunda, sitenin her sayfası için sitenin kendi sırasıyla bir madde vardır: ana sayfa, hakkında, projeler, programlar, haberler, kütüphane, katılım, bağış, banka hesapları ve site ayarları.',
+        'Bir sayfanın maddesini açın; ona ait her şey sekmeler hâlindedir: listeleri (örneğin projeler) bir sekmede, metin ve görselleri başka bir sekmede — başka yerde aramanız gerekmez.',
         'Her bölüm başlığının altındaki satır, sitede tam olarak nerede göründüğünü söyler.',
       ],
       [
-        'The site has two kinds of content:',
-        '1) Site pages: the fixed text, images and buttons on each page (hero, about, footer…). Edited under "Page texts & images".',
-        '2) Content lists: things you keep adding to — news, projects, programs, donation opportunities, partners, figures and library items. Each list has its own page in the sidebar.',
+        'The sidebar has one item for every page of the site, in the site’s own order: home, about, projects, programs, news, library, participate, donate, bank accounts and site settings.',
+        'Open a page’s item and everything about it sits in tabs: its lists (projects, say) in one tab, its texts and images in another — nothing to hunt down elsewhere.',
         'The line under every section title says exactly where it appears on the site.',
       ],
     ),
-    link: { to: '/admin/content', label: L('افتح نصوص الصفحات', 'Sayfa metinlerini aç', 'Open page texts') },
+    link: { to: '/admin/site/home', label: L('افتح الصفحة الرئيسية', 'Ana sayfayı aç', 'Open the home page') },
   },
   {
     icon: Search,
@@ -59,15 +56,15 @@ const SECTIONS: Section[] = [
     body: P(
       [
         'اضغط صندوق البحث في أعلى الشاشة (أو Ctrl + K) واكتب أي كلمة: اسم قسم، اسم حقل، أو عنوان خبر — ستصل مباشرة إلى مكان تعديله.',
-        'أو ابدأ من لوحة التحكم: خريطة الموقع فيها بطاقة لكل جزء من الموقع مع روابط أقسامه.',
+        'أو ابدأ من لوحة التحكم: فيها بطاقة لكل صفحة من صفحات الموقع، والبطاقة تفتح كل ما يخص تلك الصفحة.',
       ],
       [
         'Üstteki arama kutusuna (veya Ctrl + K) herhangi bir kelime yazın: bir bölüm adı, bir alan adı ya da bir haber başlığı — doğrudan düzenleme yerine gidersiniz.',
-        'Ya da panodan başlayın: site haritasında her bölüm için bir kart ve bağlantıları vardır.',
+        'Ya da panodan başlayın: sitenin her sayfası için bir kart vardır ve kart o sayfaya ait her şeyi açar.',
       ],
       [
         'Click the search box at the top (or press Ctrl + K) and type anything: a section name, a field name or an article title — it takes you straight to where it is edited.',
-        'Or start from the dashboard: the site map has a card for every part of the site with links to its sections.',
+        'Or start from the dashboard: it has a card for every page of the site, and the card opens everything about that page.',
       ],
     ),
   },

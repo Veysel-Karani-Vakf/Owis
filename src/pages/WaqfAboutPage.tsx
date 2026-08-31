@@ -213,7 +213,7 @@ export default function WaqfAboutPage() {
         <section className="bg-white py-20 md:py-28">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <FadeContent {...sectionReveal}>
-              <div className="text-start">
+              <div id="cms-about-waqf-intro" className="text-start">
                 <div className="mb-4 flex items-center gap-2">
                   <span className="h-px w-8 bg-primary-200" />
                   <span className="text-sm font-semibold text-primary-700">{page.intro.eyebrow}</span>
@@ -237,7 +237,7 @@ export default function WaqfAboutPage() {
               </div>
             </FadeContent>
 
-            <FadeContent {...sectionReveal} delay={70}>
+            <FadeContent id="cms-about-waqf-video" {...sectionReveal} delay={70}>
               <div
                 ref={introVideoRef}
                 data-video-trigger="waqf-intro"
@@ -333,7 +333,7 @@ export default function WaqfAboutPage() {
           ariaLabel={t('accessibility.aboutTabs')}
         />
 
-        <section className="bg-warm py-14 md:py-20">
+        <section id="cms-about-waqf-methodology" className="bg-warm py-14 md:py-20">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <WaqfMethodologyTimeline
               eyebrow={page.methodology.eyebrow}
@@ -346,59 +346,40 @@ export default function WaqfAboutPage() {
           </div>
         </section>
 
-        <section className="president-profile-section relative isolate overflow-hidden py-20 text-white md:py-24 lg:py-28">
+        <section id="president" className="president-profile-section relative isolate overflow-hidden py-14 text-white md:py-16">
           <div className="president-profile-pattern" aria-hidden="true" />
           <div className="president-profile-mark president-profile-mark--top" aria-hidden="true" />
           <div className="president-profile-mark president-profile-mark--bottom" aria-hidden="true" />
 
           <div className="relative mx-auto max-w-[1360px] px-4 md:px-8">
             <FadeContent {...sectionReveal}>
-              <div className="mb-12 flex flex-col items-center gap-4 text-center md:mb-16">
+              <div className="mb-8 flex flex-col items-center gap-3 text-center md:mb-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-bold text-white/85 ring-1 ring-white/15 backdrop-blur">
                   <Landmark className="h-4 w-4 text-primary-200" />
                   <span>{content.siteConfig.name}</span>
                 </div>
-                <h2 className="max-w-4xl text-balance text-3xl font-black leading-tight text-white md:text-5xl">
+                <h2 className="max-w-4xl text-balance text-2xl font-black leading-tight text-white md:text-4xl">
                   {page.president.title}
                 </h2>
                 <span className="president-profile-divider" aria-hidden="true" />
               </div>
             </FadeContent>
 
-            <div className="grid gap-10 lg:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)] lg:items-start lg:gap-14">
-              <FadeContent {...sectionReveal} delay={80}>
-                <div className="mx-auto w-full max-w-[380px] lg:sticky lg:top-28 lg:mx-0">
-                  <figure className="president-profile-photo group">
-                    <img
-                      src={page.president.image}
-                      alt={page.president.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
-                    />
-                  </figure>
-                  <div className="mt-6 text-center">
-                    <span className="block text-2xl font-black leading-tight text-white md:text-3xl">{cleanPresidentName}</span>
-                    <span className="mt-2 inline-block rounded-full bg-primary-500/20 px-3.5 py-1 text-sm font-bold text-primary-100 ring-1 ring-primary-200/30">
-                      {page.president.role}
-                    </span>
-                  </div>
-                </div>
-              </FadeContent>
-
-              <FadeContent {...sectionReveal} delay={150}>
-                <article className="president-profile-letter">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)] lg:items-stretch lg:gap-10">
+              <FadeContent {...sectionReveal} delay={80} className="lg:h-full">
+                <article className="president-profile-letter lg:flex lg:h-full lg:flex-col">
                   <Quote className="president-profile-quote" aria-hidden="true" />
-                  <div className="space-y-5 text-base leading-8 text-white/90 md:text-[1.0625rem] md:leading-9">
+                  <div className="space-y-3 text-justify text-sm leading-6 text-white/90 md:text-[0.9375rem] md:leading-7">
                     {(page.president.paragraphs ?? []).map((paragraph, index) => (
-                      <p key={paragraph} className={index === 0 ? 'text-lg font-semibold text-white md:text-xl md:leading-10' : undefined}>
+                      <p key={paragraph} className={index === 0 ? 'text-[0.9375rem] font-semibold text-white md:text-base md:leading-8' : undefined}>
                         {paragraph}
                       </p>
                     ))}
                   </div>
 
-                  <footer className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t border-white/15 pt-6">
+                  <footer className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-white/15 pt-4 lg:mt-auto">
                     <div>
-                      <span className="block text-xl font-black text-white md:text-2xl">{page.president.name}</span>
+                      <span className="block text-lg font-black text-white md:text-xl">{page.president.name}</span>
                       <span className="mt-1 block text-sm font-semibold text-white/70">{page.president.role}</span>
                     </div>
 
@@ -425,6 +406,25 @@ export default function WaqfAboutPage() {
                     )}
                   </footer>
                 </article>
+              </FadeContent>
+
+              <FadeContent {...sectionReveal} delay={150} className="order-first lg:order-none lg:h-full">
+                <div className="president-profile-frame mx-auto flex w-full max-w-[380px] flex-col lg:mx-0 lg:h-full lg:max-w-none">
+                  <figure className="president-profile-photo group">
+                    <img
+                      src={page.president.image}
+                      alt={page.president.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
+                    />
+                    <figcaption className="president-profile-caption">
+                      <span className="block text-xl font-black leading-tight text-white md:text-2xl">{cleanPresidentName}</span>
+                      <span className="mt-1.5 inline-block rounded-full bg-white/12 px-3.5 py-1 text-xs font-bold text-primary-100 ring-1 ring-white/20 backdrop-blur">
+                        {page.president.role}
+                      </span>
+                    </figcaption>
+                  </figure>
+                </div>
               </FadeContent>
             </div>
           </div>

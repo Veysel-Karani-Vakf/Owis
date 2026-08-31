@@ -7,6 +7,7 @@ import { useTopmostEscape } from '../hooks/useTopmostEscape';
 import { adminStrings } from '../i18n';
 import { RESOURCES } from '../lib/resources';
 import { SITE_PAGES, pageSearchIndex } from '../lib/pageSchema';
+import { areaForPage, areaForResource, hubPath } from '../lib/siteMap';
 import { listRows, pickLocalized } from '../lib/api';
 
 type Hit = {
@@ -83,13 +84,20 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
 
   const staticHits = useMemo<Hit[]>(() => {
     const hits: Hit[] = [];
+    // Addresses point into the site-page hubs, so a hit opens the page's own
+    // screen with the right tab, language and section already selected.
+    const pageAddress = (pageKey: string, section?: string): string => {
+      const owner = areaForPage(pageKey);
+      const base = owner ? hubPath(owner.area, owner.part, locale) : `/admin/content/${pageKey}/${locale}`;
+      return section ? `${base}?section=${section}` : base;
+    };
     for (const page of SITE_PAGES) {
       hits.push({
         id: `page:${page.key}`,
         kind: 'page',
         title: page.label[locale],
         subtitle: page.description?.[locale],
-        to: `/admin/content/${page.key}/${locale}`,
+        to: pageAddress(page.key),
         icon: page.icon,
       });
       for (const section of page.sections) {
@@ -98,7 +106,7 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
           kind: 'section',
           title: section.label[locale],
           subtitle: `${page.label[locale]}${section.description ? ' — ' + section.description[locale] : ''}`,
-          to: `/admin/content/${page.key}/${locale}?section=${section.key}`,
+          to: pageAddress(page.key, section.key),
           icon: section.icon,
         });
       }
@@ -113,17 +121,18 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
         kind: 'field',
         title: entry.field,
         subtitle: `${entry.page} › ${entry.section}`,
-        to: `/admin/content/${entry.pageKey}/${locale}?section=${entry.sectionKey}`,
+        to: pageAddress(entry.pageKey, entry.sectionKey),
         icon: LayoutTemplate,
       });
     }
     for (const resource of RESOURCES) {
+      const owner = areaForResource(resource.key);
       hits.push({
         id: `resource:${resource.key}`,
         kind: 'resource',
         title: adminStrings[locale].sections[resource.labelKey] ?? resource.key,
         subtitle: resource.description?.[locale],
-        to: `/admin/r/${resource.key}`,
+        to: owner ? hubPath(owner.area, owner.part) : `/admin/r/${resource.key}`,
         icon: resource.icon,
       });
     }

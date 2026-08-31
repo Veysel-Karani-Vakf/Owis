@@ -26,3 +26,4 @@ dist-ssr
 /.claude/settings.local.json
 /temp-script.js
 /institutional-dev-screenshot.png
+*.tsbuildinfo

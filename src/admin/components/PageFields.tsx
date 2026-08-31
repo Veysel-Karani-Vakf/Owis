@@ -8,6 +8,8 @@ import {
   ArrowUp,
   ArrowDown,
   Settings2,
+  Link2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { LOCALES, type Locale } from '@/lib/types';
@@ -31,6 +33,96 @@ const inputBase =
   'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100';
 
 export const contentDir: Record<Locale, 'rtl' | 'ltr'> = { ar: 'rtl', tr: 'ltr', en: 'ltr' };
+
+// --- Field nature ------------------------------------------------------------
+// By default every field renders the same white box, which makes a button's
+// technical destination look exactly like its human text. Classifying fields
+// by what they hold lets the form show writable content prominently and the
+// fixed/technical bits quiet and tagged — no schema changes needed.
+
+export type FieldNature = 'content' | 'link' | 'media' | 'setting';
+
+const LINK_PATH = /(href|url|link|destination|canonical)/i;
+
+export function fieldNature(field: PageFieldDef): FieldNature {
+  if (field.type === 'image' || field.type === 'video') return 'media';
+  if (field.type === 'url') return 'link';
+  if (
+    field.type === 'select' ||
+    field.type === 'number' ||
+    field.type === 'boolean' ||
+    field.type === 'icon'
+  ) {
+    return 'setting';
+  }
+  if (field.type === 'text' && LINK_PATH.test(field.path)) return 'link';
+  return 'content';
+}
+
+/** Small tag beside a label telling the editor what kind of value this is. */
+export function FieldNatureChip({ nature }: { nature: FieldNature }) {
+  const { locale } = useI18n();
+  if (nature === 'content' || nature === 'media') return null;
+  const text =
+    nature === 'link'
+      ? locale === 'ar' ? 'رابط' : locale === 'tr' ? 'bağlantı' : 'link'
+      : locale === 'ar' ? 'إعداد' : locale === 'tr' ? 'ayar' : 'setting';
+  const Icon = nature === 'link' ? Link2 : SlidersHorizontal;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-slate-500">
+      <Icon size={10} /> {text}
+    </span>
+  );
+}
+
+/**
+ * Label row shared by section forms and repeater rows: writable content reads
+ * dark and semibold; links and settings read quieter and carry a tag.
+ */
+export function FieldLabel({ field, compact }: { field: PageFieldDef; compact?: boolean }) {
+  const { locale } = useI18n();
+  const nature = fieldNature(field);
+  const quiet = nature === 'link' || nature === 'setting';
+  const tone = quiet
+    ? compact ? 'text-xs font-medium text-slate-500' : 'text-[13px] font-medium text-slate-500'
+    : compact ? 'text-xs font-semibold text-slate-700' : 'text-sm font-semibold text-slate-800';
+  return (
+    <span className={'flex items-center gap-1.5 ' + tone}>
+      <span className="min-w-0 truncate">{field.label[locale]}</span>
+      <FieldNatureChip nature={nature} />
+    </span>
+  );
+}
+
+/**
+ * Technical address input: Latin, monospaced and tinted, so it reads as
+ * "an exact address" rather than text to rewrite freely.
+ */
+function LinkValueInput({
+  value,
+  onChange,
+  type = 'text',
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  type?: 'text' | 'url';
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <Link2 size={14} className="pointer-events-none absolute inset-y-0 my-auto ms-2.5 text-slate-400" />
+      <input
+        type={type}
+        dir="ltr"
+        placeholder={placeholder ?? (type === 'url' ? 'https://…' : '/…  #…')}
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pe-3 ps-8 text-left font-mono text-[13px] text-slate-700 focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
 
 /** Item keys that hold whole numbers; the browser then refuses decimals. */
 const INTEGER_KEYS = new Set(['sort_order', 'width', 'height', 'value', 'rows']);
@@ -97,15 +189,7 @@ export function PageFieldControl({ field, value, onChange, dir, onDimensions }: 
       );
 
     case 'url':
-      return (
-        <input
-          type="url"
-          dir="ltr"
-          className={inputBase}
-          value={asString(value)}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      );
+      return <LinkValueInput value={asString(value)} onChange={onChange} type="url" placeholder={field.placeholder} />;
 
     case 'video':
       return <VideoInput value={value} onChange={onChange} />;
@@ -130,6 +214,11 @@ export function PageFieldControl({ field, value, onChange, dir, onDimensions }: 
       return <RepeaterInput field={field} value={value} onChange={onChange} dir={dir} />;
 
     default:
+      // A text field that holds an address (button destination, breadcrumb
+      // href…) renders as a link input, not as prose.
+      if (fieldNature(field) === 'link') {
+        return <LinkValueInput value={asString(value)} onChange={onChange} placeholder={field.placeholder} />;
+      }
       return (
         <input
           className={inputBase}
@@ -388,7 +477,9 @@ export function RepeaterInput({
       ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(itemField.type);
     return (
       <div key={itemField.path || itemField.type} className={wide ? 'md:col-span-2' : ''}>
-        <label className="mb-1 block text-xs font-medium text-slate-600">{itemField.label[locale]}</label>
+        <label className="mb-1 block">
+          <FieldLabel field={itemField} compact />
+        </label>
         <PageFieldControl
           field={itemField}
           dir={dir}

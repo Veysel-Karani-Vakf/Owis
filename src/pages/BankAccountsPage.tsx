@@ -403,6 +403,7 @@ export default function BankAccountsPage() {
       />
       <main className="bg-white">
         <PageHero
+          id="cms-bank-hero"
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
@@ -410,7 +411,7 @@ export default function BankAccountsPage() {
           breadcrumbs={page.breadcrumbs}
         />
 
-        <section className="bg-white py-16 md:py-24">
+        <section id="cms-bank-accounts-intro" className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-5xl px-4 text-center md:px-8">
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
               <div className="mb-4 flex items-center justify-center gap-2">

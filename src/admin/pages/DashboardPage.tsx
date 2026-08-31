@@ -1,8 +1,10 @@
+// The landing screen: one card per public page of the site (the same list as
+// the sidebar), a few honest numbers, and the latest activity. Every card is
+// a single link — the details live inside the page's own hub, not here.
+
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
-  ArrowRight,
   Inbox,
   Images,
   Database,
@@ -10,16 +12,6 @@ import {
   FileEdit,
   Users,
   Clock,
-  Home,
-  Landmark,
-  FolderKanban,
-  GraduationCap,
-  Newspaper,
-  BookOpen,
-  HandHeart,
-  MessageSquare,
-  Settings2,
-  Plus,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -28,8 +20,10 @@ import type { Locale, SubmissionRow } from '@/lib/types';
 import { getParticipateContent } from '@/data/participate';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { adminStrings } from '../i18n';
-import { RESOURCES, getResource } from '../lib/resources';
+import { RESOURCES } from '../lib/resources';
 import { getPageDef } from '../lib/pageSchema';
+import { SITE_AREAS, areaForPage, areaForResource, hubPath, partKey, type AreaPart } from '../lib/siteMap';
+import { getResource } from '../lib/resources';
 import { listRows, pickLocalized } from '../lib/api';
 
 // --- data helpers -----------------------------------------------------------
@@ -51,7 +45,7 @@ type RecentEdit = {
   id: string;
   title: string;
   updatedAt: string;
-  /** Sidebar name of the list/page the item belongs to. */
+  /** Sidebar name of the page the item belongs to. */
   area: string;
   to: string;
 };
@@ -67,11 +61,12 @@ async function loadRecentEdits(locale: Locale): Promise<RecentEdit[]> {
         .order('updated_at', { ascending: false })
         .limit(6);
       if (error || !data) return [] as RecentEdit[];
+      const owner = areaForResource(resource.key);
       return (data as unknown as Record<string, unknown>[]).map<RecentEdit>((row) => ({
         id: String(row.id),
         title: pickLocalized(row[resource.titleField], locale) || '—',
         updatedAt: String(row.updated_at ?? ''),
-        area: strings.sections[resource.labelKey] ?? resource.key,
+        area: owner?.area.label[locale] ?? strings.sections[resource.labelKey] ?? resource.key,
         to: `/admin/r/${resource.key}/${row.id}`,
       }));
     }),
@@ -82,13 +77,19 @@ async function loadRecentEdits(locale: Locale): Promise<RecentEdit[]> {
         .order('updated_at', { ascending: false })
         .limit(6);
       if (error || !data) return [] as RecentEdit[];
-      return (data as { key: string; updated_at: string }[]).map<RecentEdit>((row) => ({
-        id: row.key,
-        title: getPageDef(row.key)?.label[locale] ?? row.key,
-        updatedAt: row.updated_at ?? '',
-        area: strings.sitePages,
-        to: `/admin/content/${row.key}/${locale}`,
-      }));
+      return (data as { key: string; updated_at: string }[]).flatMap<RecentEdit>((row) => {
+        const owner = areaForPage(row.key);
+        if (!owner) return [];
+        return [
+          {
+            id: row.key,
+            title: getPageDef(row.key)?.label[locale] ?? row.key,
+            updatedAt: row.updated_at ?? '',
+            area: owner.area.label[locale],
+            to: hubPath(owner.area, owner.part, locale),
+          },
+        ];
+      });
     })(),
   ]);
   return perTable
@@ -110,24 +111,13 @@ function formatDate(iso: string, locale: Locale) {
   });
 }
 
-// --- site map ---------------------------------------------------------------
-
-type AreaLink = { to: string; label: string; title?: string; kind?: 'page' | 'records' | 'inbox' };
-type Area = {
-  key: string;
-  icon: LucideIcon;
-  title: string;
-  body: string;
-  links: AreaLink[];
-  /** Section-level links shown as small chips (home + settings). */
-  sections?: AreaLink[];
-};
-
 export default function DashboardPage() {
   const strings = useAdminStrings();
-  const { locale, isRtl } = useI18n();
+  const { locale } = useI18n();
   const [published, setPublished] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<number | null>(null);
+  /** Published rows per resource — shown as a count badge on each page card. */
+  const [countsByResource, setCountsByResource] = useState<Record<string, number> | null>(null);
   /** Resource key holding the most drafts — where the drafts tile sends the editor. */
   const [draftsKey, setDraftsKey] = useState<string | null>(null);
   const [newCount, setNewCount] = useState<number | null>(null);
@@ -136,6 +126,13 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState<RecentEdit[]>([]);
 
   const label = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
+
+  const partLabel = (part: AreaPart): string => {
+    if (part.label) return part.label[locale];
+    if (part.type === 'content') return strings.pageTexts;
+    const resource = getResource(part.resourceKey);
+    return (resource && strings.sections[resource.labelKey]) ?? part.resourceKey;
+  };
 
   useEffect(() => {
     let active = true;
@@ -150,6 +147,7 @@ export default function DashboardPage() {
       if (!active) return;
       setPublished(pairs.reduce((sum, p) => sum + p.published, 0));
       setDrafts(pairs.reduce((sum, p) => sum + p.drafts, 0));
+      setCountsByResource(Object.fromEntries(pairs.map((p) => [p.key, p.published])));
       const top = pairs.reduce<(typeof pairs)[number] | null>((best, p) => (p.drafts > (best?.drafts ?? 0) ? p : best), null);
       setDraftsKey(top?.key ?? null);
     });
@@ -168,8 +166,6 @@ export default function DashboardPage() {
     };
   }, [locale]);
 
-  const Arrow = isRtl ? ArrowLeft : ArrowRight;
-
   // Submissions carry the form id ("volunteer"); the editor knows the page by
   // its hero title, which may itself have been edited in the CMS.
   const participatePages = Object.values(getParticipateContent(locale).pages);
@@ -178,161 +174,6 @@ export default function DashboardPage() {
     const page = participatePages.find((p) => p.form?.id === formId || p.slug === formId || p.key === formId);
     return page?.hero.title ?? formId;
   };
-
-  const pageLink = (key: string, section?: string): AreaLink | null => {
-    const def = getPageDef(key);
-    if (!def) return null;
-    if (section) {
-      const sec = def.sections.find((s) => s.key === section);
-      if (!sec) return null;
-      return {
-        to: `/admin/content/${key}/${locale}?section=${section}`,
-        label: sec.label[locale],
-        title: sec.description?.[locale],
-        kind: 'page',
-      };
-    }
-    return {
-      to: `/admin/content/${key}/${locale}`,
-      label: label('نصوص الصفحة وصورها', 'Sayfa metinleri ve görselleri', 'Page texts & images'),
-      title: def.description?.[locale],
-      kind: 'page',
-    };
-  };
-  const recordsLink = (key: string): AreaLink | null => {
-    const def = getResource(key);
-    if (!def) return null;
-    return {
-      to: `/admin/r/${key}`,
-      label: strings.sections[def.labelKey] ?? key,
-      title: def.description?.[locale],
-      kind: 'records',
-    };
-  };
-  const compact = (links: (AreaLink | null | undefined | false)[]) => links.filter((l): l is AreaLink => Boolean(l));
-  /** Link to a whole site page, named after the page itself. */
-  const wholePage = (key: string, text?: string): AreaLink | null => {
-    const def = getPageDef(key);
-    if (!def) return null;
-    return { to: `/admin/content/${key}/${locale}`, label: text ?? def.label[locale], title: def.description?.[locale], kind: 'page' };
-  };
-
-  const homeDef = getPageDef('home');
-  const settingsDef = getPageDef('settings');
-
-  const areas: Area[] = [
-    {
-      key: 'home',
-      icon: Home,
-      title: label('الصفحة الرئيسية', 'Ana sayfa', 'Home page'),
-      body: homeDef?.description?.[locale] ?? label('كل أقسام الصفحة الأولى', 'Açılış sayfasının bölümleri', 'Every section of the landing page'),
-      links: compact([pageLink('home')]),
-      sections: (homeDef?.sections ?? []).map((sec) => ({
-        to: `/admin/content/home/${locale}?section=${sec.key}`,
-        label: sec.label[locale],
-        title: sec.description?.[locale],
-      })),
-    },
-    {
-      key: 'about',
-      icon: Landmark,
-      title: label('عن الوقف', 'Vakıf hakkında', 'About the waqf'),
-      body: label(
-        'صفحة التعريف بالوقف، صفحة الحوكمة والسياسات، وقائمة "عن الوقف" في رأس الموقع',
-        'Vakfı tanıtan sayfa, yönetişim ve politikalar sayfası ve üst menüdeki "Hakkında" listesi',
-        'The about page, the governance & policies page, and the "About" menu in the site header',
-      ),
-      links: compact([wholePage('about-waqf'), wholePage('governance'), wholePage('about-nav')]),
-    },
-    {
-      key: 'projects',
-      icon: FolderKanban,
-      title: label('المشاريع', 'Projeler', 'Projects'),
-      body: label(
-        'كل مشروع وقفي بطاقة في صفحة المشاريع وصفحة تفاصيل خاصة به',
-        'Her vakıf projesi, projeler sayfasında bir kart ve kendi detay sayfasıdır',
-        'Each waqf project is a card on the projects page with its own detail page',
-      ),
-      links: compact([recordsLink('projects'), pageLink('projects-page')]),
-    },
-    {
-      key: 'programs',
-      icon: GraduationCap,
-      title: label('البرامج', 'Programlar', 'Programs'),
-      body: label(
-        'رواد اليمن، بناء القدرات، التطوير المؤسسي، التوعية المجتمعية ووحدة التطوع',
-        'Yemen Öncüleri, kapasite geliştirme, kurumsal gelişim, toplumsal farkındalık ve gönüllülük birimi',
-        'Yemen Pioneers, capacity building, institutional development, community awareness and the volunteer unit',
-      ),
-      links: compact([recordsLink('programs'), pageLink('programs-page')]),
-    },
-    {
-      key: 'news',
-      icon: Newspaper,
-      title: label('الأخبار', 'Haberler', 'News'),
-      body: label(
-        'الأخبار والأنشطة في صفحة الأخبار وقسم آخر الأخبار في الصفحة الرئيسية',
-        'Haberler sayfasındaki ve ana sayfadaki son haberler bölümündeki haberler',
-        'Articles on the news page and in the latest-news section of the home page',
-      ),
-      links: compact([recordsLink('news'), pageLink('news-page')]),
-    },
-    {
-      key: 'library',
-      icon: BookOpen,
-      title: label('المكتبة', 'Kütüphane', 'Library'),
-      body: label(
-        'المقالات والقصص، المستندات (PDF)، ومعرض الصور',
-        'Makaleler ve hikayeler, belgeler (PDF) ve galeri',
-        'Articles & stories, documents (PDF) and the photo gallery',
-      ),
-      links: compact([
-        recordsLink('library_articles'),
-        recordsLink('library_documents'),
-        recordsLink('gallery_images'),
-        pageLink('library-page'),
-      ]),
-    },
-    {
-      key: 'donate',
-      icon: HandHeart,
-      title: label('المساهمة', 'Bağış', 'Donate'),
-      body: label(
-        'فرص المساهمة (الأسهم الوقفية وغيرها) ونصوص صفحة المساهمة',
-        'Bağış fırsatları (vakıf hisseleri vb.) ve bağış sayfasının metinleri',
-        'Donation opportunities (waqf shares and more) and the donate page copy',
-      ),
-      links: compact([recordsLink('donation_opportunities'), pageLink('donate-page')]),
-    },
-    {
-      key: 'participate',
-      icon: MessageSquare,
-      title: label('شارك معنا', 'Katılım', 'Participate'),
-      body: label(
-        'نماذج شارك بفكرة والشكاوى والتطوع وصفحة تواصل معنا، والرسائل التي تصل منها',
-        'Fikir, şikayet, gönüllü formları ve iletişim sayfası ile gelen mesajlar',
-        'The share-idea, complaints, volunteer forms and contact page, and the messages they send',
-      ),
-      links: compact([
-        { to: '/admin/submissions', label: strings.sections.submissions, kind: 'inbox' },
-        pageLink('participate'),
-        { to: '/admin/subscribers', label: strings.sections.subscribers, kind: 'inbox' },
-      ]),
-    },
-    {
-      key: 'settings',
-      icon: Settings2,
-      title: label('إعدادات الموقع', 'Site ayarları', 'Site settings'),
-      body: settingsDef?.description?.[locale] ?? label('ما يتكرر في كل الصفحات', 'Her sayfada tekrarlanan', 'What repeats on every page'),
-      links: compact([
-        wholePage('settings', label('كل الإعدادات', 'Tüm ayarlar', 'All settings')),
-        recordsLink('partners'),
-        recordsLink('stat_indicators'),
-      ]),
-      // sections: the four settings groups the client reaches for most often
-      sections: compact(['meta', 'siteConfig', 'navLinks', 'footer'].map((key) => pageLink('settings', key))),
-    },
-  ];
 
   const stat = (
     icon: LucideIcon,
@@ -382,80 +223,73 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          {label('ماذا تريد أن تعدّل؟', 'Neyi düzenlemek istiyorsunuz?', 'What would you like to edit?')}
+        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          {label('ماذا تريد أن تعدّل اليوم؟', 'Bugün neyi düzenlemek istiyorsunuz?', 'What would you like to edit today?')}
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500">
           {label(
-            'اختر الجزء من الموقع الذي تريد تعديله. كل ما يظهر على الموقع يُدار من هنا.',
-            'Sitenin düzenlemek istediğiniz bölümünü seçin. Sitede görünen her şey buradan yönetilir.',
-            'Pick the part of the site you want to change. Everything visitors see is managed from here.',
+            'كل صفحة من صفحات الموقع لها بطاقة هنا وبند في القائمة الجانبية — افتحها لتجد كل ما يخصها في مكان واحد.',
+            'Sitenin her sayfasının burada bir kartı ve kenar çubuğunda bir maddesi var — açın, o sayfaya ait her şeyi tek yerde bulun.',
+            'Every page of the site has a card here and an item in the sidebar — open it to find everything about that page in one place.',
           )}
         </p>
       </div>
 
-      {/* Site map: one card per public area */}
+      {/* One card per public page; the whole card is a single link. Each page
+          keeps one identity colour (bar + icon) that follows it everywhere —
+          sidebar, this grid, its hub — so colours become a map of the site. */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {areas.map((area) => {
+        {SITE_AREAS.map((area) => {
           const Icon = area.icon;
-          const primary = area.links[0];
+          const collectionKeys = area.parts.flatMap((part) =>
+            part.type === 'collection' ? [part.resourceKey] : [],
+          );
+          const itemCount =
+            countsByResource && collectionKeys.length > 0
+              ? collectionKeys.reduce((sum, key) => sum + (countsByResource[key] ?? 0), 0)
+              : null;
           return (
-            <div
+            <Link
               key={area.key}
-              className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 transition hover:border-slate-300 hover:shadow-sm"
+              to={hubPath(area)}
+              className={
+                'group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md ' +
+                area.tone.hover
+              }
             >
-              <div className="mb-2 flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
-                  <Icon size={18} />
-                </span>
-                {primary ? (
-                  <Link to={primary.to} className="font-semibold text-slate-900 hover:underline">
-                    {area.title}
-                  </Link>
-                ) : (
-                  <span className="font-semibold text-slate-900">{area.title}</span>
+              <span className={'block h-1 ' + area.tone.bar} />
+              <div className="flex flex-1 flex-col p-5">
+                <div className="mb-2 flex items-center gap-3">
+                  <span className={'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + area.tone.soft}>
+                    <Icon size={19} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+                    {area.label[locale]}
+                  </span>
+                  {itemCount !== null && (
+                    <span
+                      className={'shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ' + area.tone.soft}
+                      title={label('عنصر منشور', 'yayında öğe', 'published items')}
+                    >
+                      {itemCount.toLocaleString(locale)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm leading-relaxed text-slate-500">{area.description[locale]}</p>
+                {area.parts.length > 1 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3">
+                    {area.parts.map((part) => (
+                      <span
+                        key={partKey(part)}
+                        className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500"
+                      >
+                        {partLabel(part)}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
-              <p className="mb-3 text-sm leading-relaxed text-slate-500">{area.body}</p>
-              <ul className="mt-auto space-y-1">
-                {area.links.map((link) => (
-                  <li key={link.to} className="flex items-center gap-2">
-                    <Link
-                      to={link.to}
-                      title={link.title}
-                      className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:underline"
-                    >
-                      <Arrow size={14} className="text-slate-300 transition group-hover:text-primary-600" />
-                      {link.label}
-                    </Link>
-                    {link.kind === 'records' && (
-                      <Link
-                        to={`${link.to}/new`}
-                        title={strings.create}
-                        aria-label={strings.create}
-                        className="rounded-md p-0.5 text-slate-400 transition hover:bg-primary-50 hover:text-primary-700"
-                      >
-                        <Plus size={14} />
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {area.sections && area.sections.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3">
-                  {area.sections.map((sec) => (
-                    <Link
-                      key={sec.to}
-                      to={sec.to}
-                      title={sec.title}
-                      className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-600 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
-                    >
-                      {sec.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            </Link>
           );
         })}
       </div>

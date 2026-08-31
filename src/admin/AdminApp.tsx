@@ -6,10 +6,12 @@ import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import SitePageHub from './pages/SitePageHub';
 import ResourceListPage from './pages/ResourceListPage';
 import ResourceEditPage from './pages/ResourceEditPage';
 import SubmissionsPage from './pages/SubmissionsPage';
 import SubscribersPage from './pages/SubscribersPage';
+import PaymentsPage from './pages/PaymentsPage';
 import ContentManagementPage from './pages/ContentManagementPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
 import SeedPage from './pages/SeedPage';
@@ -75,6 +77,16 @@ function AdminRoutes() {
           </Protected>
         }
       />
+      {/* One hub per public page: its record lists and its texts as tabs. */}
+      <Route
+        path="site/:areaKey/:part?/:locale?"
+        element={
+          <Protected>
+            <SitePageHub />
+          </Protected>
+        }
+      />
+      {/* Old list address — redirects into the hub that owns the list. */}
       <Route
         path="r/:key"
         element={
@@ -104,6 +116,14 @@ function AdminRoutes() {
         element={
           <Protected>
             <SubscribersPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="payments"
+        element={
+          <Protected>
+            <PaymentsPage />
           </Protected>
         }
       />

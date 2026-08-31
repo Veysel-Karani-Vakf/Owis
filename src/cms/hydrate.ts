@@ -17,6 +17,7 @@ const CONTENT_TABLES: TableName[] = [
   'donation_opportunities',
   'partners',
   'stat_indicators',
+  'bank_accounts',
 ];
 
 const SORT: Partial<Record<TableName, { column: string; ascending: boolean }>> = {

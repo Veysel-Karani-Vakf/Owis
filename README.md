@@ -28,8 +28,15 @@ Two kinds of editable content:
 
 | Kind | Where it lives | Admin definition | Admin page |
 |---|---|---|---|
-| **Site pages** — fixed text/images/buttons of each page | `site_pages` (one jsonb row per key, locale-first: `{ ar: {…}, tr: {…}, en: {…} }`) | `src/admin/lib/pageSchema.ts` (`SITE_PAGES`) | `/admin/content/:pageKey/:locale` |
-| **Records** — news, projects, programs, donations, partners, figures, library items | one table each | `src/admin/lib/resources.ts` (`RESOURCES`) | `/admin/r/:key` |
+| **Site pages** — fixed text/images/buttons of each page | `site_pages` (one jsonb row per key, locale-first: `{ ar: {…}, tr: {…}, en: {…} }`) | `src/admin/lib/pageSchema.ts` (`SITE_PAGES`) | a tab of its hub, `/admin/site/:areaKey/:pageKey/:locale` |
+| **Records** — news, projects, programs, donations, partners, figures, banks, library items | one table each | `src/admin/lib/resources.ts` (`RESOURCES`) | a tab of its hub, `/admin/site/:areaKey/:resourceKey` |
+
+The admin is organised as **one hub per public page** (`src/admin/lib/siteMap.ts`,
+`SITE_AREAS`): the sidebar lists the site's pages in the site's own order, and a
+hub shows that page's record lists and its texts as tabs. The old addresses
+`/admin/content/:pageKey/:locale` and `/admin/r/:key` still work — they redirect
+into the owning hub (`?section=` and list filters survive), and the record form
+stays at `/admin/r/:key/:id`.
 
 ### Rules the layers agree on
 
@@ -59,12 +66,15 @@ Two kinds of editable content:
 ## Admin
 
 * Shell: `src/admin/AdminApp.tsx` (routes, providers), `components/AdminLayout.tsx`
-  (nav, Ctrl+K search palette), `Toast.tsx`, `ConfirmDialog.tsx`,
-  `EditingLocale.tsx` (one editing language per form), `hooks/useUnsavedChanges.ts`
-  (needs the data router set up in `src/main.tsx`).
+  (nav from `lib/siteMap.ts`, Ctrl+K search palette), `pages/SitePageHub.tsx`
+  (the per-page hub: header, tabs, inbox shortcuts), `Toast.tsx`,
+  `ConfirmDialog.tsx`, `EditingLocale.tsx` (one editing language per form),
+  `hooks/useUnsavedChanges.ts` (needs the data router set up in `src/main.tsx`).
 * Field engine: `components/FormEngine.tsx` (records), `PageFields.tsx` (site
   pages), shared controls in `FieldControls.tsx`; pickers `IconPicker.tsx`,
-  `MediaPicker.tsx`.
+  `MediaPicker.tsx`. The embeddable editors behind the hub tabs are
+  `components/PageContentEditor.tsx` (one page's texts: drafts, save, live
+  preview) and `components/ResourceCollection.tsx` (one record list).
 * Validation & errors: `lib/validate.ts`, `lib/errors.ts` (Postgres → human text).
 * Restore (`/admin/restore`, `lib/seed.ts`): **fill** adds only what is missing
   (never touches existing rows/pages); **reset** replaces everything with the
@@ -72,8 +82,10 @@ Two kinds of editable content:
 * Adding a new editable thing:
   1. column → `supabase/migrations/000N_*.sql` (additive, re-runnable) + `src/lib/types.ts`;
   2. adapter → `src/cms/adapters.ts`; static default → `src/data/*`;
-  3. admin field → `resources.ts` (records) or `pageSchema.ts` (site pages);
-  4. seed → `lib/seed.ts`; render it in the component.
+  3. admin field → `resources.ts` (records) or `pageSchema.ts` (site pages;
+     also register the key in `pageDefaults.ts` → `pageSource`);
+  4. put it in a hub → `lib/siteMap.ts` (`SITE_AREAS`);
+  5. seed → `lib/seed.ts`; render it in the component.
 
 ## Migrations
 
@@ -83,3 +95,53 @@ Two kinds of editable content:
 through signed URLs) are applied on the production project (Aug 2026).
 Attachments uploaded before 0005 still sit in the public `media/submissions/`
 folder — move or delete them from the media library if they are sensitive.
+`0006_donation_payments.sql` (payments table + catalogue URL/image data fix)
+is applied on the production project (Aug 2026).
+`0008_bank_accounts.sql` creates the `bank_accounts` table behind `/bank-accounts`
+and the admin's "Banks & accounts" list; until it is applied the site simply
+renders the built-in bank list (`cmsBankAccounts` also treats an *empty* table
+as "use the built-in list" — a page of IBANs must never render empty).
+
+## Payments (test mode)
+
+The donate flow charges cards through the site's own gateway, built to speak
+the İş Bankası NestPay (Payten/Asseco EST) protocol in the `3d_pay` model:
+
+1. `/donate/checkout/:slug` collects amount (TRY), donor and card details.
+2. `POST /api/payments/create` validates, inserts a `pending` row in
+   `donation_payments` and returns the ver3-SHA512-signed field set.
+3. The browser form-POSTs those fields to the 3D gate. In **mock** mode that is
+   our own `POST /api/payments/mock-gate`, a simulated bank page (approve /
+   decline buttons, TEST banner) that signs its response exactly like the bank.
+4. The gate posts the outcome to `POST /api/payments/callback` (okUrl=failUrl),
+   which verifies the hash, cross-checks clientid+amount, finalizes the row
+   (`paid` iff `mdStatus ∈ {1,2,3,4}` and `ProcReturnCode = 00`; replay-safe)
+   and 303-redirects to `/donate/result?oid=…`.
+5. The result page reads `GET /api/payments/status?oid=…` (the random 128-bit
+   oid is the bearer token; there is no public listing).
+
+Everything protocol-specific (field names, ver3 hash, expiry-year quirks) lives
+in `api/_lib/nestpay.ts` — correct it there against the bank's integration
+guide when real credentials arrive.
+
+Server env (Vercel project settings — never `VITE_`-prefixed):
+
+| Variable | mock (default) | bank test / production |
+| --- | --- | --- |
+| `PAYMENT_MODE` | `mock` | `test` / `production` |
+| `PAYMENT_CLIENT_ID` | optional | merchant id from İş Bank |
+| `PAYMENT_STORE_KEY` | optional | store key from İş Bank |
+| `PAYMENT_GATE_URL` | ignored (uses mock-gate) | the bank's est3Dgate URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | required | required |
+
+Going live is an env change only; `mock-gate` returns 404 outside mock mode,
+and `donation_payments.gateway_mode` keeps mock rows distinguishable forever.
+
+Mock test cards (any Luhn-valid number also works): `4508 0345 0803 4509`
+interactive approve/decline, `4000 0000 0000 0002` fails 3-D Secure,
+`4242 4242 4208 0069` is declined by the bank (code 51).
+
+Local dev: `npm run dev:full` (vercel dev, one-time `vercel login` + `vercel
+link`) serves the SPA and `api/` together; plain `npm run dev` proxies `/api`
+to port 3000. Payments show up read-only in the dashboard at `/admin/payments`
+(RLS: no anon access; server writes with the service-role key only).

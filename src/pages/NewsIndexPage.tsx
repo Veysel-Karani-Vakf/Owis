@@ -147,6 +147,7 @@ export default function NewsIndexPage() {
       />
       <main className="bg-white">
         <PageHero
+          id="cms-news-hero"
           title={labels.news}
           description={labels.heroDescription}
           image={heroImage}
@@ -154,7 +155,7 @@ export default function NewsIndexPage() {
           breadcrumbs={getNewsBreadcrumbs(locale)}
         />
 
-        <section className="bg-[#faf8f8] py-12 md:py-16">
+        <section id="cms-news-list" className="bg-[#faf8f8] py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
               <div className="mb-6 max-w-3xl text-start">

@@ -16,6 +16,8 @@ import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
 import ProgramPage from '@/pages/ProgramPage';
 import DonatePage from '@/pages/DonatePage';
+import DonateCheckoutPage from '@/pages/donate/DonateCheckoutPage';
+import DonateResultPage from '@/pages/donate/DonateResultPage';
 import BankAccountsPage from '@/pages/BankAccountsPage';
 import NewsIndexPage from '@/pages/NewsIndexPage';
 import NewsArticlePage from '@/pages/NewsArticlePage';
@@ -73,6 +75,8 @@ function App() {
           <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
           <Route path="/library/gallery" element={<LibraryGalleryPage />} />
           <Route path="/donate" element={<DonatePage />} />
+          <Route path="/donate/checkout/:slug" element={<DonateCheckoutPage />} />
+          <Route path="/donate/result" element={<DonateResultPage />} />
           <Route path="/bank-accounts" element={<BankAccountsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

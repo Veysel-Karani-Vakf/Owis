@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Link2, Settings2 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import type { FieldDef } from '../lib/fields';
 import type { PageFieldDef } from '../lib/pageSchema';
@@ -16,7 +16,15 @@ import { LocalizedRepeaterInput } from './LocalizedRepeater';
 import { VideoInput } from './VideoInput';
 import { LocalizedGroupInput } from './LocalizedGroup';
 import { SlugInput } from './SlugInput';
-import { PageFieldControl, RepeaterInput, contentDir, isIntegerKey, normalizePlainRepeater } from './PageFields';
+import {
+  FieldNatureChip,
+  PageFieldControl,
+  RepeaterInput,
+  contentDir,
+  isIntegerKey,
+  normalizePlainRepeater,
+  type FieldNature,
+} from './PageFields';
 import { IconPicker } from './IconPicker';
 import { useEditingLocale } from './EditingLocale';
 import { getAtPath, setAtPath } from '../lib/paths';
@@ -24,6 +32,23 @@ import { isLocaleMap } from '../lib/localizedShapes';
 
 type Values = Record<string, unknown>;
 type Errors = Record<string, string>;
+
+const RECORD_LINK_KEY = /(url|href|link)/i;
+
+/**
+ * What a record field holds, mirroring the page editor's classification:
+ * writable content reads prominent, links and settings read quiet and tagged.
+ * The slug stays "content" — it is required when creating and has its own UI.
+ */
+function recordFieldNature(field: FieldDef): FieldNature {
+  if (field.type === 'image' || field.type === 'file' || field.type === 'video') return 'media';
+  if (field.type === 'url') return 'link';
+  if (['select', 'number', 'boolean', 'icon', 'date', 'datetime', 'json'].includes(field.type)) {
+    return 'setting';
+  }
+  if (field.type === 'text' && RECORD_LINK_KEY.test(field.key)) return 'link';
+  return 'content';
+}
 
 export function FormEngine({
   fields,
@@ -120,11 +145,23 @@ export function FieldGrid({
           ].includes(field.type);
         const value = values[field.key];
         const error = errors?.[field.key];
+        const nature = recordFieldNature(field);
+        const quiet = nature === 'link' || nature === 'setting';
         return (
           <div key={field.key} data-field-key={field.key} className={full ? 'md:col-span-2' : ''}>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              {field.label[locale]}
-              {field.required && <span className="ms-1 text-red-500">*</span>}
+            <label className="mb-1.5 block">
+              <span
+                className={
+                  'flex items-center gap-1.5 ' +
+                  (quiet
+                    ? 'text-[13px] font-medium text-slate-500'
+                    : 'text-sm font-semibold text-slate-800')
+                }
+              >
+                <span className="min-w-0 truncate">{field.label[locale]}</span>
+                {field.required && <span className="text-red-500">*</span>}
+                <FieldNatureChip nature={nature} />
+              </span>
             </label>
             <div className={error ? 'rounded-lg ring-2 ring-red-300 ring-offset-1' : ''}>
               <FieldControl
@@ -266,17 +303,34 @@ function FieldControl({
         />
       );
     }
-    default:
+    default: {
+      // Addresses render Latin, monospaced and tinted — "an exact value",
+      // visibly different from prose the editor is meant to rewrite.
+      if (recordFieldNature(field) === 'link') {
+        return (
+          <div className="relative">
+            <Link2 size={14} className="pointer-events-none absolute inset-y-0 my-auto ms-2.5 text-slate-400" />
+            <input
+              type={field.type === 'url' ? 'url' : 'text'}
+              dir="ltr"
+              placeholder={field.placeholder ?? 'https://…'}
+              className={scalarInputClass + ' bg-slate-50 ps-8 text-left font-mono text-[13px] text-slate-700 focus:bg-white'}
+              value={(value as string) ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          </div>
+        );
+      }
       return (
         <input
-          type={field.type === 'url' ? 'url' : 'text'}
+          type="text"
           className={scalarInputClass}
-          dir={field.type === 'url' ? 'ltr' : undefined}
           placeholder={field.placeholder}
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
         />
       );
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from '@/i18n/useI18n';
 import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
 
@@ -169,7 +170,7 @@ export default function VideoModal({
     };
   }, [isOpen, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence onExitComplete={onExitComplete}>
       {isOpen && (
         <motion.div
@@ -214,6 +215,7 @@ export default function VideoModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

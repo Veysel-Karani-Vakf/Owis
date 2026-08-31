@@ -22,6 +22,7 @@ import {
   staticDocuments,
   staticGalleryImages,
 } from '@/data/library';
+import { banks as staticBanks } from '@/data/bankAccounts';
 import { LOCALES } from '@/lib/types';
 import { buildAllPageRows } from './pageDefaults';
 import { localizedContent } from '@/i18n/content';
@@ -391,6 +392,29 @@ async function seedPartners(report: Report, mode: SeedMode) {
   await insertKeyless('partners', rows, mode, report);
 }
 
+// --- BANK ACCOUNTS ----------------------------------------------------------
+// Bank details are identical in every language, so the row holds plain text.
+async function seedBankAccounts(report: Report, mode: SeedMode) {
+  const rows = staticBanks.map((bank, i) => ({
+    slug: bank.id,
+    name: bank.name,
+    monogram: bank.monogram,
+    logo: bank.logo ?? null,
+    brand_color: bank.brandColor ?? null,
+    branch: bank.branch ?? '',
+    swift: bank.swift ?? null,
+    account_number: bank.accountNumber ?? null,
+    accounts: bank.accounts.map((account) => ({
+      currency: account.currency,
+      iban: account.iban,
+      accountNumber: account.accountNumber ?? null,
+    })),
+    sort_order: i,
+    is_published: true,
+  }));
+  await upsertKeyed('bank_accounts', rows, 'slug', mode, report);
+}
+
 // --- STATISTICS -------------------------------------------------------------
 async function seedStats(report: Report, mode: SeedMode) {
   const groups: Array<['yemen-pioneers' | 'statistics', string]> = [
@@ -451,6 +475,7 @@ export async function seedTargets(): Promise<{ table: string; rows: number }[]> 
     'donation_opportunities',
     'partners',
     'stat_indicators',
+    'bank_accounts',
     'site_pages',
   ];
   return Promise.all(tables.map(async (table) => ({ table, rows: await countRows(table).catch(() => 0) })));
@@ -467,6 +492,7 @@ export async function runSeed(report: Report, mode: SeedMode = 'fill') {
     ['donations', seedDonations],
     ['partners', seedPartners],
     ['statistics', seedStats],
+    ['bank_accounts', seedBankAccounts],
     ['site_pages', seedSitePages],
   ];
   for (const [name, fn] of steps) {

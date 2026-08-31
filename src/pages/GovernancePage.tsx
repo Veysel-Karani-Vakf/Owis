@@ -126,6 +126,7 @@ export default function GovernancePage() {
       />
       <main className="bg-white">
         <PageHero
+          id="cms-governance-hero"
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
@@ -135,13 +136,15 @@ export default function GovernancePage() {
 
         <section className="bg-white py-20 md:py-28">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <SectionHeading
-              eyebrow={page.intro.eyebrow}
-              title={page.intro.title}
-              description={page.intro.description}
-            />
+            <div id="cms-governance-intro">
+              <SectionHeading
+                eyebrow={page.intro.eyebrow}
+                title={page.intro.title}
+                description={page.intro.description}
+              />
+            </div>
 
-            <div className="mt-12 grid gap-8 lg:grid-cols-[0.34fr_0.66fr] lg:items-start">
+            <div id="cms-governance-policies" className="mt-12 grid gap-8 lg:grid-cols-[0.34fr_0.66fr] lg:items-start">
               <motion.aside
                 initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: isNarrow ? 12 : 24 }}
                 whileInView={{ opacity: 1, y: 0 }}

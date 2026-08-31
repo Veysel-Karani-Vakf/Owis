@@ -65,6 +65,12 @@ export type ResourceDef = {
   defaultSort?: { column: string; ascending: boolean };
   /** optional column to filter the list by (e.g. library collection) */
   filter?: { column: string; options: SelectOption[] };
+  /**
+   * Boolean column that decides whether a published row actually shows on the
+   * site (e.g. donation "available"). Shown in the list as a quick-toggle pill
+   * next to the publish state, so hidden rows are visible at a glance.
+   */
+  visibility?: { column: string; onLabel: Record<Locale, string>; offLabel: Record<Locale, string> };
   /** default values for a freshly created record */
   newDefaults?: Record<string, unknown>;
   /** Public route of one record, for "open on site" links; `:slug` is replaced. */

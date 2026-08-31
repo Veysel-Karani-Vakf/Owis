@@ -19,6 +19,7 @@ const requiredTables = [
   'library_documents',
   'gallery_images',
   'donation_opportunities',
+  'donation_payments',
   'partners',
   'stat_indicators',
   'site_pages',

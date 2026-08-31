@@ -15,7 +15,7 @@ import type {
 } from '@/lib/types';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { newsRoutes, type LocalizedNewsArticle } from '@/data/news';
-import { contributeContactRoute, type DonationOpportunity } from '@/data/donate';
+import { donateCheckoutRoute, type DonationOpportunity } from '@/data/donate';
 import type { LocalizedWaqfProject } from '@/data/projects';
 import type { Program as ProgramDetail } from '@/data/programs';
 import {
@@ -335,14 +335,18 @@ export function mapDonationRow(row: DonationRow, locale: Locale): DonationOpport
     price: localizedText(row.price, locale),
     image: row.image ?? '',
     imageAlt: localizedText(row.image_alt, locale),
-    url: row.url ?? contributeContactRoute,
+    // Admin-entered URLs win; a blank url means "the opportunity's own checkout page".
+    url: row.url ?? donateCheckoutRoute(row.slug),
     available: row.available,
   };
 }
 
 export async function loadDonationOpportunities(locale: Locale) {
+  // "available" is the dashboard's show/hide switch: closed opportunities
+  // never reach the storefront (getDonateContent filters the fallback the
+  // same way).
   const rows = await fetchRows<DonationRow>('donation_opportunities', (query) =>
-    published(query).order('sort_order', { ascending: true })
+    published(query).eq('available', true).order('sort_order', { ascending: true })
   );
   return rows?.map((row) => mapDonationRow(row, locale)) ?? null;
 }

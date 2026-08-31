@@ -31,6 +31,8 @@ export type LivePreviewProps = {
   contentLocale: Locale;
   /** Section anchor to scroll to and outline. */
   highlight?: string | null;
+  /** Show ONLY the highlighted section, hiding the rest of the page. */
+  isolate?: boolean;
   /** Shows a close button in the toolbar when provided. */
   onClose?: () => void;
 };
@@ -39,7 +41,7 @@ export type LivePreviewProps = {
  * Renders the real site in an iframe and streams unsaved edits into it, so the
  * preview is the site itself rather than an approximation of it.
  */
-export default function LivePreview({ route, draft, contentLocale, highlight, onClose }: LivePreviewProps) {
+export default function LivePreview({ route, draft, contentLocale, highlight, isolate, onClose }: LivePreviewProps) {
   const { locale } = useI18n();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [device, setDevice] = useState<Device>('desktop');
@@ -76,8 +78,8 @@ export default function LivePreview({ route, draft, contentLocale, highlight, on
 
   useEffect(() => {
     if (!ready) return;
-    post({ type: 'highlight', selector: highlight ?? null });
-  }, [highlight, ready, post]);
+    post({ type: 'highlight', selector: highlight ?? null, isolate: Boolean(isolate && highlight) });
+  }, [highlight, isolate, ready, post]);
 
   const label = (ar: string, tr: string, en: string) =>
     locale === 'ar' ? ar : locale === 'tr' ? tr : en;

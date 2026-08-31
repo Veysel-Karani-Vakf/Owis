@@ -340,6 +340,9 @@ export function ImageInput({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [picker, setPicker] = useState(false);
+  // The raw address is noise once a file is chosen; it stays available behind
+  // a small toggle for the rare "paste an exact URL" case.
+  const [showUrl, setShowUrl] = useState(false);
   const isImage = accept.includes('image');
   const isPdf = accept.includes('pdf');
   const pickerAccept: MediaAccept = isImage ? 'image' : isPdf ? 'pdf' : 'any';
@@ -400,21 +403,51 @@ export function ImageInput({
           <FolderOpen size={15} />
           {s.chooseFromLibrary}
         </button>
+        {value && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setShowUrl(false);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            >
+              <Trash2 size={15} />
+              {label('إزالة', 'Kaldır', 'Remove')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUrl((current) => !current)}
+              title={s.orPasteUrl}
+              className={
+                'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm transition ' +
+                (showUrl
+                  ? 'border-slate-300 bg-slate-100 text-slate-700'
+                  : 'border-slate-200 bg-white text-slate-400 hover:text-slate-700')
+              }
+            >
+              <Link2 size={15} />
+            </button>
+          </>
+        )}
       </div>
 
-      <div>
-        <p className="mb-1 text-xs text-slate-500">{s.orPasteUrl}</p>
-        <div className="relative">
-          <Link2 size={15} className="pointer-events-none absolute inset-y-0 my-auto ms-2 text-slate-400" />
-          <input
-            className={inputBase + ' ps-8'}
-            dir="ltr"
-            placeholder="https://…"
-            value={value ?? ''}
-            onChange={(e) => onChange(e.target.value)}
-          />
+      {(!value || showUrl) && (
+        <div>
+          <p className="mb-1 text-xs text-slate-500">{s.orPasteUrl}</p>
+          <div className="relative">
+            <Link2 size={15} className="pointer-events-none absolute inset-y-0 my-auto ms-2 text-slate-400" />
+            <input
+              className={inputBase + ' ps-8'}
+              dir="ltr"
+              placeholder="https://…"
+              value={value ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {err && <p className="text-xs text-red-500">{err}</p>}
 

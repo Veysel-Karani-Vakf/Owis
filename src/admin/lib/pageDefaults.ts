@@ -9,7 +9,13 @@ import type { Locale } from '@/lib/types';
 import { resolveSiteContent } from '@/cms/siteContent';
 import { localizedContent } from '@/i18n/content';
 import { aboutPages, getAboutContent } from '@/data/about';
+import { getBankAccountsContent, localizedBankAccountsContent } from '@/data/bankAccounts';
 import { getDonateContent, localizedDonateContent } from '@/data/donate';
+import {
+  getDonateCheckoutContent,
+  getDonateResultContent,
+  staticDonateCheckoutPage,
+} from '@/data/donateCheckout';
 import { getLibraryContent, staticLibraryContent } from '@/data/library';
 import { getNewsLabels, newsLabels } from '@/data/news';
 import { getParticipateContent, staticParticipateContent } from '@/data/participate';
@@ -45,6 +51,14 @@ function pageSource(pageKey: string, locale: Locale, mode: PageSource): unknown 
       return live ? getAboutContent(locale).nav : aboutPages[locale].nav;
     case 'donate-page':
       return live ? getDonateContent(locale) : localizedDonateContent[locale];
+    case 'donate-checkout':
+      return live
+        ? { checkout: getDonateCheckoutContent(locale), result: getDonateResultContent(locale) }
+        : staticDonateCheckoutPage(locale);
+    case 'bank-accounts-page':
+      // The schema holds no `banks` paths, so the table-backed list never
+      // leaks into `site_pages` where it would shadow the bank_accounts table.
+      return live ? getBankAccountsContent(locale) : localizedBankAccountsContent[locale];
     case 'participate':
       return live ? getParticipateContent(locale) : staticParticipateContent(locale);
     case 'library-page':

@@ -1,4 +1,4 @@
-import { cmsPageContent } from '@/cms/adapters';
+import { cmsBankAccounts, cmsPageContent } from '@/cms/adapters';
 import type { BreadcrumbItem } from '@/data/about';
 import type { Locale } from '@/i18n/content';
 import bankAccountsHeroImage from '@/assets/donate/waqf-share-hero.jpg';
@@ -289,5 +289,8 @@ export function formatIban(iban: string): string {
 }
 
 export function getBankAccountsContent(locale: Locale): BankAccountsPageContent {
-  return cmsPageContent('bank-accounts-page', locale, localizedBankAccountsContent[locale]);
+  // Texts come from the `bank-accounts-page` site page; the banks themselves
+  // from the `bank_accounts` table (one shared list — IBANs have no language).
+  const content = cmsPageContent('bank-accounts-page', locale, localizedBankAccountsContent[locale]);
+  return { ...content, banks: cmsBankAccounts(banks) };
 }

@@ -221,6 +221,50 @@ export function cmsPartners(locale: Locale, fallback: PartnerItem[]): PartnerIte
   }));
 }
 
+// BANK ACCOUNTS --------------------------------------------------------------
+type BankLike = {
+  id: string;
+  name: string;
+  monogram: string;
+  logo: string;
+  brandColor: string;
+  branch: string;
+  swift?: string;
+  accountNumber?: string;
+  accounts: { currency: string; iban: string; accountNumber?: string }[];
+};
+
+export function cmsBankAccounts<T extends BankLike>(fallback: T[]): T[] {
+  const rows = cmsRows('bank_accounts');
+  // Unlike other lists, an empty result also falls back: rendering the page
+  // with zero bank accounts (table missing, not yet seeded) would read as "the
+  // waqf has no accounts", which is worse than showing the built-in list. A
+  // single bank can still be hidden with its publish toggle.
+  if (!rows || rows.length === 0) return fallback;
+
+  return rows.map((row) => {
+    const accounts = Array.isArray(row.accounts) ? row.accounts : [];
+    return {
+      id: row.slug,
+      name: row.name ?? '',
+      monogram: row.monogram ?? '',
+      logo: row.logo ?? '',
+      brandColor: row.brand_color ?? '',
+      branch: row.branch ?? '',
+      swift: row.swift || undefined,
+      accountNumber: row.account_number || undefined,
+      accounts: accounts
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .map((item) => ({
+          currency: typeof item.currency === 'string' ? item.currency : 'TRY',
+          iban: typeof item.iban === 'string' ? item.iban.replace(/\s+/g, '') : '',
+          accountNumber: typeof item.accountNumber === 'string' && item.accountNumber ? item.accountNumber : undefined,
+        }))
+        .filter((item) => item.iban),
+    } as T;
+  });
+}
+
 // STATISTICS -----------------------------------------------------------------
 type Indicator = {
   label: string;

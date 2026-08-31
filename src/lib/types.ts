@@ -168,6 +168,20 @@ export type PartnerRow = BaseRow & {
   url: string | null;
 };
 
+export type BankAccountRow = BaseRow & {
+  slug: string;
+  /** Bank details read the same in every language, so nothing here is localized. */
+  name: string | null;
+  monogram: string | null;
+  logo: string | null;
+  brand_color: string | null;
+  branch: string | null;
+  swift: string | null;
+  account_number: string | null;
+  /** [{ currency, iban, accountNumber }] */
+  accounts: unknown;
+};
+
 export type StatRow = BaseRow & {
   stat_group: 'yemen-pioneers' | 'statistics';
   label: Localized;

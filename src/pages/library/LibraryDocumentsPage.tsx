@@ -38,7 +38,7 @@ function readStoredView(): ViewMode {
  * chips / view mode, and PDFs preview in-site.
  */
 export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPageProps) {
-  const { locale, content: siteContent, contentVersion } = useI18n();
+  const { locale, content: siteContent } = useI18n();
   const page = getLibraryContent(locale);
   const info = page.collections[collection];
   const labels = page.labels;

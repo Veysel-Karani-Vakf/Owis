@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Save, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Save, Trash2, ExternalLink, Eye } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { supabase } from '@/lib/supabase';
+import { getCms, type CmsSnapshot } from '@/cms/store';
 import type { Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
@@ -18,6 +19,12 @@ import { FormEngine } from '../components/FormEngine';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { EditingLocaleProvider, LocaleSwitch, useEditingLocale } from '../components/EditingLocale';
+import {
+  readPreviewPreference,
+  writePreviewPreference,
+  useMediaQuery,
+} from '../components/PageContentEditor';
+import LivePreview from '../components/LivePreview';
 
 type Values = Record<string, unknown>;
 
@@ -116,6 +123,27 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
   const slugTouched = useRef(false);
   // The "link will change" confirmation is asked once per record, not per save.
   const slugChangeConfirmed = useRef(false);
+
+  // Live preview: the record's own public page, updating as the editor types.
+  const [showPreview, setShowPreview] = useState(readPreviewPreference);
+  const roomForColumn = useMediaQuery('(min-width: 1200px)');
+  const togglePreview = () =>
+    setShowPreview((current) => {
+      writePreviewPreference(!current);
+      return !current;
+    });
+  const previewRoute = publicUrlFor(resource, values);
+  // The published table with the row under edit swapped in (or appended, for a
+  // new record) — streamed into the preview frame like page drafts are.
+  const draftSnapshot = useMemo<CmsSnapshot>(() => {
+    const published = ((getCms().tables as Record<string, Values[]>)[resource.table] ?? []).slice();
+    const rowId = String(values.id ?? '');
+    const index = published.findIndex((row) => String(row.id) === rowId);
+    const merged = { ...(index >= 0 ? published[index] : {}), ...values };
+    if (index >= 0) published[index] = merged;
+    else published.push(merged);
+    return { tables: { [resource.table]: published } as CmsSnapshot['tables'], pages: {} };
+  }, [resource.table, values]);
 
   useEffect(() => {
     slugTouched.current = false;
@@ -305,8 +333,18 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
   const counts = { ar: titleFilled.includes('ar'), tr: titleFilled.includes('tr'), en: titleFilled.includes('en') };
   const savedTime = formatTime(lastSavedAt, locale);
 
+  const previewOpen = Boolean(showPreview && previewRoute && !loading);
+  const preview = previewOpen ? (
+    <LivePreview
+      route={previewRoute as string}
+      draft={draftSnapshot}
+      contentLocale={editing.locale}
+      onClose={togglePreview}
+    />
+  ) : null;
+
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className={previewOpen ? '' : 'mx-auto max-w-4xl'}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={goBack}
@@ -329,6 +367,26 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
             >
               <ExternalLink size={15} /> {s.openOnSite}
             </a>
+          )}
+          {resource.publicRoute && (
+            <button
+              type="button"
+              onClick={togglePreview}
+              disabled={!previewRoute}
+              title={
+                previewRoute
+                  ? label('معاينة حية لصفحة هذا العنصر', 'Bu öğenin sayfasının canlı önizlemesi', "Live preview of this item's page")
+                  : label('املأ المعرّف أولاً', 'Önce kimliği doldurun', 'Fill the identifier first')
+              }
+              className={
+                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition disabled:opacity-40 ' +
+                (showPreview && previewRoute
+                  ? 'border-primary-200 bg-primary-50 text-primary-700'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50')
+              }
+            >
+              <Eye size={15} /> {s.preview}
+            </button>
           )}
           {!isNew && (
             <button
@@ -369,8 +427,21 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
       {loading ? (
         <p className="text-sm text-slate-400">{s.loading}</p>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <FormEngine fields={resource.fields} values={values} onChange={setField} errors={fieldErrors} />
+        <div className={'grid items-start gap-5 ' + (previewOpen && roomForColumn ? 'lg:grid-cols-2' : '')}>
+          <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-6">
+            <FormEngine fields={resource.fields} values={values} onChange={setField} errors={fieldErrors} />
+          </div>
+
+          {preview &&
+            (roomForColumn ? (
+              <div className="min-w-0 lg:sticky lg:top-[4.5rem] lg:h-[calc(100vh-6rem)]">{preview}</div>
+            ) : (
+              <div className="fixed inset-0 z-40 bg-slate-900/40 p-3" onClick={togglePreview}>
+                <div className="h-full" onClick={(event) => event.stopPropagation()}>
+                  {preview}
+                </div>
+              </div>
+            ))}
         </div>
       )}
     </div>

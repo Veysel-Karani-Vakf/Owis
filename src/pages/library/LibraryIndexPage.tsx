@@ -104,6 +104,7 @@ export default function LibraryIndexPage() {
       />
       <main className="bg-white">
         <PageHero
+          id="cms-library-hero"
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
@@ -135,7 +136,7 @@ export default function LibraryIndexPage() {
 
             <div className="grid gap-5 lg:grid-cols-3">
               {/* Forum — large card */}
-              <motion.article {...reveal(0)} className="lg:col-span-2">
+              <motion.article id="cms-library-collection-forum" {...reveal(0)} className="lg:col-span-2">
                 <Link to={forum.route} className={`${cardBase} min-h-[420px]`}>
                   <div className="relative h-56 overflow-hidden bg-warm md:h-64">
                     {leadArticle && (
@@ -185,7 +186,7 @@ export default function LibraryIndexPage() {
               </motion.article>
 
               {/* Success stories — tall card */}
-              <motion.article {...reveal(1)}>
+              <motion.article id="cms-library-collection-success-stories" {...reveal(1)}>
                 <Link to={storiesInfo.route} className={`${cardBase} min-h-[420px]`}>
                   <div className="relative h-56 overflow-hidden bg-warm md:h-64">
                     {leadStory && (
@@ -248,6 +249,7 @@ export default function LibraryIndexPage() {
                       return (
                         <Link
                           key={stat.slug}
+                          id={`cms-library-collection-${stat.slug}`}
                           to={stat.info.route}
                           className="group/tile flex items-start gap-3 rounded-[20px] border border-white bg-white p-4 text-start shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_14px_34px_rgba(40,12,18,0.1)]"
                         >
@@ -280,7 +282,7 @@ export default function LibraryIndexPage() {
               </motion.div>
 
               {/* Yemeni figures — news-style feature card */}
-              <motion.article {...reveal(3)} className="lg:col-span-3">
+              <motion.article id="cms-library-collection-yemeni-figures" {...reveal(3)} className="lg:col-span-3">
                 <Link to={figuresInfo.route} className={`${cardBase} md:flex-row`}>
                   <div className="relative h-56 overflow-hidden bg-[#faf8f8] md:h-auto md:min-h-[300px] md:w-[38%] md:shrink-0">
                     {leadFigure && (
@@ -332,7 +334,7 @@ export default function LibraryIndexPage() {
               </motion.article>
 
               {/* Gallery strip */}
-              <motion.article {...reveal(4)} className="lg:col-span-3">
+              <motion.article id="cms-library-collection-gallery" {...reveal(4)} className="lg:col-span-3">
                 <Link to={galleryInfo.route} className={`${cardBase} md:flex-row`}>
                   <div className="flex flex-col justify-center gap-3 p-5 md:w-72 md:shrink-0 md:p-6">
                     <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-700">

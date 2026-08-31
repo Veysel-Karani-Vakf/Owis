@@ -64,10 +64,13 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
       if (message.type === 'draft') {
         setDraft(message.snapshot);
+        // A re-render may recreate DOM nodes and drop the isolation attributes;
+        // re-apply after React has committed the new content.
+        window.setTimeout(reapplyHighlight, 50);
       } else if (message.type === 'navigate') {
         navigate(message.path);
       } else if (message.type === 'highlight') {
-        applyHighlight(message.selector);
+        applyHighlight(message.selector, message.isolate === true);
       }
     };
 
@@ -90,17 +93,73 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 }
 
 let highlighted: Element | null = null;
+let lastSelector: string | null = null;
+let lastIsolate = false;
 
-/** Outlines the section a dashboard editor is focused on. */
-function applyHighlight(selector: string | null) {
+/** Removes the `data-cms-hidden` markers left by a previous isolation. */
+function clearIsolation() {
+  document.querySelectorAll('[data-cms-hidden]').forEach((element) => {
+    element.removeAttribute('data-cms-hidden');
+  });
+}
+
+/**
+ * Hides everything on the page except `targets` (and their ancestors/children),
+ * so a dashboard editor working on one section sees only that section.
+ * A comma selector may match several regions — a labels section whose words
+ * appear in more than one place keeps all of them visible.
+ * Walks from each target to <body>, hiding the unkept siblings at every
+ * level — which also removes the fixed header, footer and assistant.
+ */
+function isolateElements(targets: Element[]) {
+  const keep = new Set<Element>();
+  for (const target of targets) {
+    let node: Element | null = target;
+    while (node && node !== document.body) {
+      keep.add(node);
+      node = node.parentElement;
+    }
+  }
+  for (const element of keep) {
+    const parent = element.parentElement;
+    if (!parent) continue;
+    for (const sibling of Array.from(parent.children)) {
+      if (!keep.has(sibling)) sibling.setAttribute('data-cms-hidden', '1');
+    }
+  }
+}
+
+/** Outlines — or, with `isolate`, spotlights — the section being edited. */
+function applyHighlight(selector: string | null, isolate = false) {
+  lastSelector = selector;
+  lastIsolate = isolate;
+
   if (highlighted) {
     highlighted.classList.remove('cms-preview-highlight');
     highlighted = null;
   }
+  clearIsolation();
   if (!selector) return;
-  const target = document.querySelector(selector);
+  let targets: Element[] = [];
+  try {
+    targets = Array.from(document.querySelectorAll(selector));
+  } catch {
+    return; // Malformed selector in a schema anchor: leave the page untouched.
+  }
+  const [target] = targets;
   if (!target) return;
-  target.classList.add('cms-preview-highlight');
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  highlighted = target;
+
+  if (isolate) {
+    isolateElements(targets);
+    window.scrollTo({ top: 0 });
+  } else {
+    target.classList.add('cms-preview-highlight');
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    highlighted = target;
+  }
+}
+
+/** Re-applies the last highlight/isolation after content re-renders. */
+function reapplyHighlight() {
+  if (lastSelector && lastIsolate) applyHighlight(lastSelector, true);
 }

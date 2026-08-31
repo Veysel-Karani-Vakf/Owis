@@ -116,11 +116,11 @@ export type ProjectsPageContent = {
   projects: LocalizedWaqfProject[];
 };
 
-// This site is the official source now: contributions temporarily go through
-// the internal donate page.
+// This site is the official source now: project contribute buttons go straight
+// to the matching opportunity's checkout page (in-site payment gateway).
 const officialSources = {
   projectsIndex: '/projects',
-  blessedTreeContribution: '/donate',
+  blessedTreeContribution: '/donate/checkout/blessed-tree',
   waqfGiftVideo: 'https://www.youtube.com/watch?v=2_r2fKz-hXs',
 } as const;
 
@@ -154,7 +154,7 @@ const sharedProjects: Record<
     route: projectRoutes.waqfShare,
     image: waqfShareImage,
     unitAmount: 100,
-    officialContributionUrl: '/donate',
+    officialContributionUrl: '/donate/checkout/waqf-share',
   },
   'gold-wallet': {
     id: 'gold-wallet',
@@ -162,7 +162,7 @@ const sharedProjects: Record<
     route: projectRoutes.goldWallet,
     image: goldPortfolioImage,
     unitAmount: 100,
-    officialContributionUrl: '/donate',
+    officialContributionUrl: '/donate/checkout/gold-wallet',
   },
 };
 
@@ -195,7 +195,7 @@ const arProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'ساهم في مشروع الشجرة المباركة',
     ctaDescription:
-      'تتم المساهمة في هذا المشروع حالياً عبر صفحة المساهمة داخل الموقع.',
+      'تتم المساهمة في هذا المشروع عبر بوابة الدفع الآمنة داخل الموقع.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -247,7 +247,7 @@ const arProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'ساهم في السهم الوقفي',
     ctaDescription:
-      'تتم المساهمة في السهم الوقفي حالياً عبر صفحة المساهمة داخل الموقع.',
+      'تتم المساهمة في السهم الوقفي عبر بوابة الدفع الآمنة داخل الموقع.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -293,7 +293,7 @@ const arProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'ساهم في محفظة الذهب الوقفية',
     ctaDescription:
-      'تتم المساهمة في محفظة الذهب حالياً عبر صفحة المساهمة داخل الموقع.',
+      'تتم المساهمة في محفظة الذهب عبر بوابة الدفع الآمنة داخل الموقع.',
   },
 ];
 
@@ -326,7 +326,7 @@ const enProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Contribute to the Blessed Tree Project',
     ctaDescription:
-      'Contribution to this project is currently arranged through the in-site contribute page.',
+      'Contribution to this project goes through the secure in-site payment page.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -378,7 +378,7 @@ const enProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'Contribute to the Waqf Share',
     ctaDescription:
-      'Contribution to the Waqf Share is currently arranged through the in-site contribute page.',
+      'Contribution to the Waqf Share goes through the secure in-site payment page.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -424,7 +424,7 @@ const enProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Contribute to the Waqf Gold Portfolio',
     ctaDescription:
-      'Contribution to the Gold Portfolio is currently arranged through the in-site contribute page.',
+      'Contribution to the Gold Portfolio goes through the secure in-site payment page.',
   },
 ];
 
@@ -457,7 +457,7 @@ const trProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Bereketli Ağaç Projesine Katkı Sun',
     ctaDescription:
-      'Bu projeye katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
+      'Bu projeye katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
   },
   {
     ...sharedProjects['waqf-share'],
@@ -509,7 +509,7 @@ const trProjects: LocalizedWaqfProject[] = [
     },
     ctaTitle: 'Vakıf Hissesine Katkı Sun',
     ctaDescription:
-      'Vakıf Hissesine katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
+      'Vakıf Hissesine katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
   },
   {
     ...sharedProjects['gold-wallet'],
@@ -555,7 +555,7 @@ const trProjects: LocalizedWaqfProject[] = [
     ],
     ctaTitle: 'Vakıf Altın Portföyüne Katkı Sun',
     ctaDescription:
-      'Vakıf Altın Portföyüne katkı şu an site içindeki katkı sayfası üzerinden yapılır.',
+      'Vakıf Altın Portföyüne katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
   },
 ];
 
@@ -597,7 +597,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'قيمة المساهمة',
       details: 'عرض التفاصيل',
       contribute: 'ساهم الآن',
-      externalNotice: 'ينقلك إلى صفحة المساهمة داخل الموقع.',
+      externalNotice: 'ينقلك إلى صفحة الدفع الآمنة داخل الموقع.',
       facts: 'معلومات المشروع',
       overview: 'تفاصيل المشروع',
       allocation: 'توزيع الريع',
@@ -651,7 +651,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'Katkı değeri',
       details: 'Detayları Gör',
       contribute: 'Katkı Sun',
-      externalNotice: 'Sizi site içindeki katkı sayfasına yönlendirir.',
+      externalNotice: 'Sizi site içindeki güvenli ödeme sayfasına yönlendirir.',
       facts: 'Proje bilgileri',
       overview: 'Proje detayları',
       allocation: 'Gelir dağılımı',
@@ -705,7 +705,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       contribution: 'Contribution value',
       details: 'View Details',
       contribute: 'Contribute Now',
-      externalNotice: 'Takes you to the in-site contribute page.',
+      externalNotice: 'Takes you to the secure in-site payment page.',
       facts: 'Project facts',
       overview: 'Project details',
       allocation: 'Return allocation',

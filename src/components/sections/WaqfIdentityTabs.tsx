@@ -180,7 +180,7 @@ export default function WaqfIdentityTabs({
   if (tabs.length === 0) return null;
 
   return (
-    <section ref={sectionRef} className="relative bg-white" style={{ height: pinnedHeight }}>
+    <section id="cms-about-waqf-identity" ref={sectionRef} className="relative bg-white" style={{ height: pinnedHeight }}>
       <div
         className={`mx-auto max-w-7xl px-4 py-20 md:px-8 md:py-28 ${
           pinned ? 'sticky top-0 flex h-screen flex-col justify-center lg:py-0' : ''

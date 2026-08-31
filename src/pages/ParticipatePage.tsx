@@ -124,7 +124,10 @@ export default function ParticipatePage() {
             </FadeContent>
 
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
-              <aside className="rounded-[22px] border border-primary-100 bg-[#faf8f8] p-5 text-start shadow-[0_18px_48px_rgba(40,12,18,0.06)] md:p-6">
+              <aside
+                id="cms-participate-nav"
+                className="rounded-[22px] border border-primary-100 bg-[#faf8f8] p-5 text-start shadow-[0_18px_48px_rgba(40,12,18,0.06)] md:p-6"
+              >
                 <h2 className="text-xl font-bold text-dark-950">{participate.labels.sectionTitle}</h2>
                 <div className="mt-5 grid gap-3">
                   {participate.nav.map((item, index) => {

@@ -5,6 +5,7 @@
 // is read synchronously. `CmsProvider` owns hydration and notifies React.
 
 import type {
+  BankAccountRow,
   DonationRow,
   GalleryImageRow,
   LibraryArticleRow,
@@ -26,6 +27,7 @@ export type CmsTables = {
   donation_opportunities: DonationRow[];
   partners: PartnerRow[];
   stat_indicators: StatRow[];
+  bank_accounts: BankAccountRow[];
 };
 
 export type CmsPages = Record<string, Record<string, unknown>>;

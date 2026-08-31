@@ -7,7 +7,7 @@ import {
   X,
   Inbox,
   Mail,
-  LayoutTemplate,
+  CreditCard,
   RotateCcw,
   ExternalLink,
   Images,
@@ -21,14 +21,21 @@ import { LOCALES, type Locale } from '@/lib/types';
 import { useAuth } from '../AuthProvider';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { useUnsavedState } from '../hooks/useUnsavedChanges';
-import { RESOURCES } from '../lib/resources';
-import { adminStrings } from '../i18n';
+import { SITE_AREAS, type AreaTone } from '../lib/siteMap';
 import SearchPalette from './SearchPalette';
 import { useConfirm } from './ConfirmDialog';
 
 const localeShort: Record<Locale, string> = { ar: 'ع', tr: 'TR', en: 'EN' };
 
-type NavEntry = { to: string; label: string; icon: typeof Inbox; end?: boolean; badge?: number };
+type NavEntry = {
+  to: string;
+  label: string;
+  icon: typeof Inbox;
+  end?: boolean;
+  badge?: number;
+  /** Page identity colour; inbox/tools entries stay neutral. */
+  tone?: AreaTone;
+};
 
 /** Number of form messages nobody has opened yet — shown on the inbox link. */
 function useNewSubmissionCount() {
@@ -120,34 +127,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const resourceEntries = (keys: string[]): NavEntry[] =>
-    keys
-      .map((key) => RESOURCES.find((resource) => resource.key === key))
-      .filter((resource): resource is (typeof RESOURCES)[number] => Boolean(resource))
-      .map((resource) => ({
-        to: `/admin/r/${resource.key}`,
-        label: adminStrings[locale].sections[resource.labelKey] ?? resource.key,
-        icon: resource.icon,
-      }));
-
+  // One sidebar item per public page of the site, in the site's own order —
+  // every list and every text of a page lives behind its page's item.
   const groups: { title: string; entries: NavEntry[] }[] = [
     {
       title: strings.navSitePages,
-      entries: [{ to: '/admin/content', label: strings.sitePages, icon: LayoutTemplate }],
-    },
-    {
-      title: strings.navRecords,
-      entries: resourceEntries(['news', 'projects', 'programs', 'donation_opportunities', 'partners', 'stat_indicators']),
-    },
-    {
-      title: strings.navLibrary,
-      entries: resourceEntries(['library_articles', 'library_documents', 'gallery_images']),
+      entries: SITE_AREAS.map((area) => ({
+        to: `/admin/site/${area.key}`,
+        label: area.label[locale],
+        icon: area.icon,
+        tone: area.tone,
+      })),
     },
     {
       title: strings.navInbox,
       entries: [
         { to: '/admin/submissions', label: strings.sections.submissions, icon: Inbox, badge: newCount },
         { to: '/admin/subscribers', label: strings.sections.subscribers, icon: Mail },
+        { to: '/admin/payments', label: strings.sections.payments, icon: CreditCard },
       ],
     },
     {
@@ -185,16 +182,38 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   <NavLink
                     key={entry.to}
                     to={entry.to}
-                    className={linkClass}
+                    className={({ isActive }) =>
+                      'flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition ' +
+                      (isActive
+                        ? entry.tone
+                          ? `${entry.tone.solid} font-medium`
+                          : 'bg-slate-900 font-medium text-white'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900')
+                    }
                     onClick={() => setOpen(false)}
                   >
-                    <Icon size={17} className="shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                    {entry.badge ? (
-                      <span className="rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                        {entry.badge}
-                      </span>
-                    ) : null}
+                    {({ isActive }) => (
+                      <>
+                        {/* The page's colour rides on its icon chip, so the list
+                            reads like the site's own colour-coded map. */}
+                        <span
+                          className={
+                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ' +
+                            (isActive
+                              ? 'bg-white/25 text-white'
+                              : (entry.tone?.soft ?? 'text-slate-500'))
+                          }
+                        >
+                          <Icon size={15} />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                        {entry.badge ? (
+                          <span className="rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            {entry.badge}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
                   </NavLink>
                 );
               })}
@@ -216,7 +235,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-warm text-slate-900">
       <aside className="fixed inset-y-0 z-30 hidden w-60 border-slate-200 bg-white md:block ltr:left-0 ltr:border-r rtl:right-0 rtl:border-l">
         <div className="flex h-14 items-center gap-2.5 border-b border-slate-200 px-4">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
@@ -266,7 +285,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-600 transition hover:text-slate-900 sm:px-3"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-2.5 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 sm:px-3.5"
           >
             <ExternalLink size={15} />
             <span className="hidden sm:inline">

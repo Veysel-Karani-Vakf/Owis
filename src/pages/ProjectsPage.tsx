@@ -131,6 +131,7 @@ export default function ProjectsPage() {
       />
       <main className="bg-white">
         <PageHero
+          id="cms-projects-hero"
           title={page.hero.title}
           description={page.hero.description}
           image={page.hero.image}
@@ -138,7 +139,7 @@ export default function ProjectsPage() {
           breadcrumbs={page.breadcrumbs}
         />
 
-        <section className="bg-white py-16 md:py-24">
+        <section id="cms-projects-intro" className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-5xl px-4 text-center md:px-8">
             <FadeContent
               blur={false}
@@ -165,7 +166,7 @@ export default function ProjectsPage() {
           </div>
         </section>
 
-        <section className="bg-[#faf8f8] py-10 md:py-12">
+        <section id="cms-projects-grid" className="bg-[#faf8f8] py-10 md:py-12">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent
               blur={false}

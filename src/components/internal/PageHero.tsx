@@ -8,16 +8,18 @@ type PageHeroProps = {
   image: string;
   imageAlt?: string;
   breadcrumbs: BreadcrumbItem[];
+  /** Page-specific anchor so the dashboard preview can spotlight the hero. */
+  id?: string;
 };
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
 
-export default function PageHero({ title, description, image, imageAlt, breadcrumbs }: PageHeroProps) {
+export default function PageHero({ title, description, image, imageAlt, breadcrumbs, id }: PageHeroProps) {
   const shouldReduceMotion = useReducedMotion();
   const duration = shouldReduceMotion ? 0.01 : 0.7;
 
   return (
-    <section className="relative isolate flex min-h-[420px] items-end overflow-hidden bg-dark-950 pt-28 md:min-h-[460px] md:pt-32">
+    <section id={id} className="relative isolate flex min-h-[420px] items-end overflow-hidden bg-dark-950 pt-28 md:min-h-[460px] md:pt-32">
       <motion.img
         src={image}
         alt={imageAlt ?? ''}

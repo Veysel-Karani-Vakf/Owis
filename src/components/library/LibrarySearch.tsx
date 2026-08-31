@@ -72,7 +72,7 @@ export default function LibrarySearch({ locale, labels, isRtl }: LibrarySearchPr
   }, [query]);
 
   return (
-    <div className="relative z-20 mx-auto -mt-10 max-w-4xl px-4 md:-mt-14 md:px-8">
+    <div id="cms-library-search" className="relative z-20 mx-auto -mt-10 max-w-4xl px-4 md:-mt-14 md:px-8">
       <div className="rounded-[26px] border border-white/70 bg-white p-3 shadow-[0_28px_70px_rgba(40,12,18,0.16)] md:p-4">
         <label className="relative block">
           <span className="sr-only">{labels.searchAll}</span>

@@ -7,6 +7,8 @@ type PioneerGoalsProps = {
   eyebrow: string;
   title: string;
   items: string[];
+  /** One continuous canvas: the goals sit on the page itself instead of boxed cards. */
+  seamless?: boolean;
 };
 
 const goalIcons: LucideIcon[] = [GraduationCap, Telescope, Compass, Rocket];
@@ -31,7 +33,17 @@ function canTilt() {
   return typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 }
 
-function GoalCard({ text, index, reduced }: { text: string; index: number; reduced: boolean }) {
+function GoalCard({
+  text,
+  index,
+  reduced,
+  seamless,
+}: {
+  text: string;
+  index: number;
+  reduced: boolean;
+  seamless: boolean;
+}) {
   const Icon = goalIcons[index % goalIcons.length];
   const pointerX = useMotionValue(0.5);
   const pointerY = useMotionValue(0.5);
@@ -63,7 +75,11 @@ function GoalCard({ text, index, reduced }: { text: string; index: number; reduc
         <SpotlightCard
           spotlightColor="rgba(218, 8, 18, 0.14)"
           contentClassName="flex h-full flex-col"
-          className="h-full rounded-[26px] border border-primary-100 bg-white p-6 text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)] transition-[border-color,box-shadow] duration-300 hover:border-primary-200 hover:shadow-[0_28px_64px_rgba(156,16,6,0.16)] md:p-7"
+          className={
+            seamless
+              ? 'h-full rounded-[26px] p-6 text-start md:p-7'
+              : 'h-full rounded-[26px] border border-primary-100 bg-white p-6 text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)] transition-[border-color,box-shadow] duration-300 hover:border-primary-200 hover:shadow-[0_28px_64px_rgba(156,16,6,0.16)] md:p-7'
+          }
         >
           <span
             aria-hidden="true"
@@ -114,7 +130,7 @@ function GoalCard({ text, index, reduced }: { text: string; index: number; reduc
   );
 }
 
-export default function PioneerGoals({ eyebrow, title, items }: PioneerGoalsProps) {
+export default function PioneerGoals({ eyebrow, title, items, seamless = false }: PioneerGoalsProps) {
   const shouldReduceMotion = !!useReducedMotion();
 
   if (!items?.length) return null;
@@ -138,7 +154,7 @@ export default function PioneerGoals({ eyebrow, title, items }: PioneerGoalsProp
         className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
       >
         {items.map((item, index) => (
-          <GoalCard key={`${index}-${item}`} text={item} index={index} reduced={shouldReduceMotion} />
+          <GoalCard key={`${index}-${item}`} text={item} index={index} reduced={shouldReduceMotion} seamless={seamless} />
         ))}
       </motion.ol>
     </div>

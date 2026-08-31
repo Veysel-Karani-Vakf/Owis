@@ -98,6 +98,8 @@ export type AdminStrings = {
   whereItAppears: string;
   help: string;
   noAccessHint: string;
+  /** Tab name for a page's own texts inside a site-page hub. */
+  pageTexts: string;
   sections: Record<string, string>;
 };
 
@@ -195,6 +197,7 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     whereItAppears: 'أين يظهر',
     help: 'دليل الاستخدام',
     noAccessHint: 'حسابك مسجّل لكنه ليس ضمن قائمة المشرفين. اطلب من المسؤول التقني إضافة هذا البريد إلى قائمة المشرفين.',
+    pageTexts: 'نصوص وصور الصفحة',
     sections: {
       overview: 'نظرة عامة',
       content: 'المحتوى',
@@ -212,7 +215,9 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       gallery: 'معرض الصور',
       submissions: 'رسائل النماذج',
       subscribers: 'المشتركون في النشرة',
+      payments: 'عمليات الدفع',
       pages: 'صفحات الموقع',
+      bank_accounts: 'البنوك والحسابات',
     },
   },
   tr: {
@@ -308,6 +313,7 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     whereItAppears: 'Nerede görünür',
     help: 'Kullanım kılavuzu',
     noAccessHint: 'Hesabınız kayıtlı ancak yönetici listesinde değil. Bu e-postanın yönetici listesine eklenmesi için teknik sorumluya başvurun.',
+    pageTexts: 'Sayfa metinleri ve görselleri',
     sections: {
       overview: 'Genel bakış',
       content: 'İçerik',
@@ -325,7 +331,9 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       gallery: 'Galeri',
       submissions: 'Form mesajları',
       subscribers: 'Bülten aboneleri',
+      payments: 'Ödeme işlemleri',
       pages: 'Site sayfaları',
+      bank_accounts: 'Bankalar ve hesaplar',
     },
   },
   en: {
@@ -421,6 +429,7 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     whereItAppears: 'Where it appears',
     help: 'User guide',
     noAccessHint: 'Your account exists but is not on the administrators list. Ask the technical administrator to add this email to it.',
+    pageTexts: 'Page texts & images',
     sections: {
       overview: 'Overview',
       content: 'Content',
@@ -438,7 +447,9 @@ export const adminStrings: Record<Locale, AdminStrings> = {
       gallery: 'Gallery',
       submissions: 'Form submissions',
       subscribers: 'Newsletter subscribers',
+      payments: 'Payments',
       pages: 'Site pages',
+      bank_accounts: 'Banks & accounts',
     },
   },
 };

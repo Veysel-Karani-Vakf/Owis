@@ -36,7 +36,7 @@
 
   @media (prefers-reduced-motion: no-preference) {
     .page-transition {
-      animation: page-transition-in 260ms ease-out both;
+      animation: page-transition-in 260ms ease-out backwards;
     }
 
     @keyframes page-transition-in {
@@ -369,7 +369,7 @@
 
   .president-profile-letter {
     position: relative;
-    padding: clamp(1.5rem, 3vw, 2.75rem);
+    padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: 1.5rem;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -379,9 +379,9 @@
 
   .president-profile-quote {
     display: block;
-    width: clamp(32px, 4vw, 44px);
-    height: clamp(32px, 4vw, 44px);
-    margin-bottom: 1rem;
+    width: clamp(28px, 3vw, 38px);
+    height: clamp(28px, 3vw, 38px);
+    margin-bottom: 0.75rem;
     color: rgba(255, 200, 206, 0.55);
     transform: scaleX(-1);
   }
@@ -389,15 +389,35 @@
   html[dir='rtl'] .president-profile-quote {
     transform: none;
   }
+  .president-profile-frame {
+    position: relative;
+  }
+
+  .president-profile-frame::before {
+    content: "";
+    position: absolute;
+    top: -0.85rem;
+    bottom: 1.4rem;
+    inset-inline-end: -0.85rem;
+    inset-inline-start: 1.4rem;
+    z-index: 0;
+    border: 1.5px solid rgba(255, 200, 206, 0.38);
+    border-radius: 1.6rem;
+    pointer-events: none;
+  }
+
   .president-profile-photo {
     position: relative;
+    z-index: 1;
     aspect-ratio: 4 / 5;
     overflow: hidden;
-    border-radius: 999px 999px 8px 8px;
-    background: var(--president-primary-deep);
+    border-radius: 1.25rem;
+    border: 3px solid transparent;
+    background:
+      linear-gradient(var(--president-primary-deep), var(--president-primary-deep)) padding-box,
+      linear-gradient(150deg, rgba(255, 200, 206, 0.9), rgba(218, 8, 18, 0.9) 45%, rgba(125, 7, 12, 0.55)) border-box;
     box-shadow:
       0 36px 80px rgba(36, 0, 2, 0.36),
-      0 0 0 1px rgba(255, 200, 206, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.16);
     transform: translateY(0);
     transition:
@@ -413,6 +433,16 @@
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: inherit;
     pointer-events: none;
+  }
+
+  .president-profile-caption {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 4;
+    padding: 2.6rem 1.25rem 1.15rem;
+    text-align: center;
+    background: linear-gradient(to top, rgba(12, 0, 1, 0.85), rgba(12, 0, 1, 0.38) 62%, transparent);
   }
 
   .president-profile-photo::after {
@@ -450,6 +480,15 @@
     .president-profile-photo {
       max-width: 320px;
       margin-inline: auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .president-profile-photo {
+      aspect-ratio: auto;
+      height: auto;
+      flex: 1 1 auto;
+      min-height: 340px;
     }
   }
 
@@ -1036,6 +1075,11 @@
   outline-offset: -2px;
   border-radius: 4px;
   transition: outline-color 200ms ease;
+}
+
+/* Single-section editing: everything except the edited section is hidden. */
+[data-cms-preview] [data-cms-hidden] {
+  display: none !important;
 }
 
 /* Program hero eyebrow icon: "live broadcast" pulse */
