@@ -80,6 +80,12 @@ export type ProgramCity = {
   /** Public URL of a video uploaded in the dashboard; wins over videoId. */
   videoFile?: string;
   partner?: string;
+  /** Training days of this stop, e.g. "15 – 17 يوليو 2024". */
+  period?: string;
+  /** Documented participation, e.g. "22 منظمة مجتمع مدني". */
+  organizations?: string;
+  /** Official sponsorship or supervision line for this stop. */
+  patron?: string;
 };
 
 export type ProgramPhase = {
@@ -728,29 +734,29 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             src: capacityHadramoutCoastImage,
-            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في حضرموت الساحل',
-            caption: 'حضرموت الساحل',
+            alt: 'المنظمات المشاركة في برنامج رفع كفاءة منظمات المجتمع المدني في حضرموت الساحل، يوليو 2024',
+            caption: 'المنظمات المشاركة – حضرموت الساحل',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في حضرموت الوادي',
-            caption: 'حضرموت الوادي',
+            alt: 'المنظمات المشاركة في برنامج رفع كفاءة منظمات المجتمع المدني في حضرموت الوادي، يوليو 2024',
+            caption: 'المنظمات المشاركة – حضرموت الوادي',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في مأرب',
-            caption: 'مأرب',
+            alt: 'المنظمات المشاركة في برنامج رفع كفاءة منظمات المجتمع المدني في مأرب، يوليو 2024',
+            caption: 'المنظمات المشاركة – مأرب',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'برنامج رفع قدرات منظمات المجتمع المدني في تعز',
-            caption: 'تعز',
+            alt: 'المنظمات المشاركة في برنامج رفع كفاءة منظمات المجتمع المدني في تعز، يوليو 2024',
+            caption: 'المنظمات المشاركة – تعز',
             width: 1080,
             height: 1350,
           },
@@ -771,6 +777,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'فيديو برنامج رفع القدرات في حضرموت الساحل',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة صلة للتنمية',
+            period: '15 – 17 يوليو 2024',
+            organizations: '22 منظمة مجتمع مدني',
+            patron: 'بإشراف مكتب الشؤون الاجتماعية والعمل بساحل حضرموت',
           },
           {
             id: 'hadramout-valley',
@@ -781,6 +790,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'فيديو برنامج رفع القدرات في حضرموت الوادي',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة البادية للتنمية والأعمال الإنسانية',
+            period: '20 – 22 يوليو 2024',
+            organizations: '28 منظمة مجتمع مدني',
+            patron: 'برعاية وكيل محافظة حضرموت لشؤون الوادي والصحراء الأستاذ عامر العامري',
           },
           {
             id: 'marib',
@@ -791,6 +803,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'فيديو برنامج رفع القدرات في مأرب',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مكتب أوتشا مأرب والهيئة العالمية للإغاثة والتنمية - أنصر',
+            period: '23 – 25 يوليو 2024',
+            organizations: '40 منظمة من 13 محافظة يمنية',
+            patron: 'برعاية اللواء سلطان العرادة محافظ مأرب',
           },
           {
             id: 'taiz',
@@ -801,6 +816,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'فيديو برنامج رفع القدرات في تعز',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'مؤسسة رسالتي لتنمية المرأة',
+            period: '8 – 10 يوليو 2024',
+            organizations: '40 منظمة مجتمع مدني',
+            patron: 'برعاية محافظ تعز الأستاذ نبيل شمسان',
           },
         ],
         phase: {
@@ -845,6 +863,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'برنامج رفع قدرات منظمات المجتمع المدني',
             paragraphs: [
               'يترجم المسار أهدافه ميدانياً عبر برنامج رفع القدرات الذي يعمل على تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم، وقد نُفذت مرحلته الأولى مع منظمات المجتمع المدني في أربع مدن يمنية.',
+              'ويأتي البرنامج في إطار المسار الثالث لوقف أويس القرني المعني بتطوير المؤسسات الحكومية والأهلية، لتعزيز قدرات هذه المنظمات ورفع مستوى كفاءتها بما يحقق التنمية المستدامة ويعزز العمل الإنساني والتنموي في كافة أنحاء اليمن، وصولاً إلى تحقيق النهوض الحضاري باليمن.',
+            ],
+          },
+          {
+            id: 'training-axes',
+            title: 'محاور التدريب',
+            paragraphs: [
+              'قدّم البرنامج المهندس فؤاد سعيد، عضو فريق الخبراء بوقف أويس القرني، على مدى شهر يوليو 2024 في المدن الأربع، بواقع ثلاثة أيام تدريبية مكثفة في كل محطة.',
+            ],
+            bullets: [
+              'التخطيط والتنفيذ لبرامج المنظمات ومشاريعها.',
+              'الإدارة المالية لمنظمات المجتمع المدني.',
+              'الحوكمة وفق قرارات ومعايير المنظمات الدولية.',
+              'تطوير مهارات العاملين في المنظمات وتبادل الخبرات فيما بينها.',
             ],
           },
           {
@@ -854,6 +886,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
               'أقيمت المرحلة الأولى من برنامج رفع قدرات منظمات المجتمع المدني من الاثنين 8 يوليو حتى الخميس 25 يوليو 2024 في حضرموت الساحل وحضرموت الوادي ومأرب وتعز.',
               'نُفذت المرحلة في تعز بالشراكة مع مؤسسة رسالتي لتنمية المرأة، وفي حضرموت المكلا بالشراكة مع مؤسسة صلة للتنمية، وفي حضرموت الوادي بالشراكة مع مؤسسة البادية للتنمية والأعمال الإنسانية، وفي مأرب برعاية مكتب أوتشا مأرب وبالشراكة مع الهيئة العالمية للإغاثة والتنمية - أنصر، مكتب اليمن.',
               'شارك في المرحلة 160 مشاركاً يمثلون 140 منظمة مجتمع مدني من 13 محافظة يمنية، وحضر جلسات الافتتاح مسؤولون أكدوا أهمية البرنامج في تطوير أداء منظمات المجتمع المدني وخدمة التنمية في اليمن.',
+              'وفي الختام توجّه وقف أويس القرني بالشكر للجهات الرسمية في المحافظات ولجميع الشركاء المحليين والمشاركين وفرق العمل المنظمة للبرنامج على جهودهم في إنجاح هذه المرحلة، متطلعاً إلى مزيد من النجاحات في المراحل القادمة.',
             ],
           },
           {
@@ -872,12 +905,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'الملتقى الوطني لتوطين العمل الإنساني والتنموي',
             paragraphs: [
               'أُطلق في مأرب الملتقى الوطني لتوطين العمل الإنساني والتنموي في اليمن بالشراكة بين وقف أويس القرني والهيئة العالمية للإغاثة والتنمية - أنصر والمركز اليمني للدراسات الإنسانية والاستراتيجية.',
+              'يقود الملتقى هيئة تأسيسية تضم المؤسسات الثلاث المطلقة له، ويضم في عضويته العشرات من جمعيات ومؤسسات المجتمع المدني المحلية، والدعوة مفتوحة لبقية المنظمات اليمنية بمختلف مجالاتها للانضمام إليه.',
+              'وواصلت الهيئة التأسيسية عملها بعد الإطلاق؛ ففي نوفمبر 2024 عقدت اجتماعاً في مقر الوقف لمناقشة مسارات التوطين وحزمة التدخلات والفعاليات المقررة بالشراكة مع الجهات الحكومية والأممية.',
             ],
             ordered: true,
             bullets: [
               'حشد جهود منظمات المجتمع المدني باتجاه التوطين.',
               'خلق بيئة ملائمة لمنظمات المجتمع المدني لبناء قدراتها بما يسهم في تحسين مستوى التوطين.',
               'التشبيك مع أصحاب المصلحة لإيجاد نقاط مشتركة تسرع عملية التوطين.',
+              'المشاركة في تحريك عجلة التنمية من خلال تنويع التدخلات وتجويدها بناءً على الخطط القائمة على الاحتياج.',
+              'مد الجسور بين المنظمات المحلية والجهات الأممية والدولية المانحة.',
             ],
           },
         ],
@@ -1347,29 +1384,29 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             src: capacityHadramoutCoastImage,
-            alt: 'Hadramut Sahilinde sivil toplum kapasite artirma programi',
-            caption: 'Hadramut Sahili',
+            alt: 'Sivil toplum kapasite artirma programina katilan kuruluslar – Hadramut Sahili, Temmuz 2024',
+            caption: 'Katilimci kuruluslar – Hadramut Sahili',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'Hadramut Vadisinde sivil toplum kapasite artirma programi',
-            caption: 'Hadramut Vadisi',
+            alt: 'Sivil toplum kapasite artirma programina katilan kuruluslar – Hadramut Vadisi, Temmuz 2024',
+            caption: 'Katilimci kuruluslar – Hadramut Vadisi',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'Maribde sivil toplum kapasite artirma programi',
-            caption: 'Marib',
+            alt: 'Sivil toplum kapasite artirma programina katilan kuruluslar – Marib, Temmuz 2024',
+            caption: 'Katilimci kuruluslar – Marib',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'Taizde sivil toplum kapasite artirma programi',
-            caption: 'Taiz',
+            alt: 'Sivil toplum kapasite artirma programina katilan kuruluslar – Taiz, Temmuz 2024',
+            caption: 'Katilimci kuruluslar – Taiz',
             width: 1080,
             height: 1350,
           },
@@ -1390,6 +1427,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Hadramut Sahili kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Selah Kalkinma Vakfi',
+            period: '15 – 17 Temmuz 2024',
+            organizations: '22 sivil toplum kurulusu',
+            patron: 'Hadramut Sahili Sosyal Isler ve Calisma Ofisi gozetiminde',
           },
           {
             id: 'hadramout-valley',
@@ -1400,6 +1440,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Hadramut Vadisi kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Al-Badia Insani Kalkinma Vakfi',
+            period: '20 – 22 Temmuz 2024',
+            organizations: '28 sivil toplum kurulusu',
+            patron: 'Hadramut Vadi ve Col Isleri Vali Yardimcisi Amir el-Amiri himayesinde',
           },
           {
             id: 'marib',
@@ -1410,6 +1453,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Marib kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'OCHA Marib ofisi ve International Relief and Development Authority - Ansar',
+            period: '23 – 25 Temmuz 2024',
+            organizations: '13 ilden 40 kurulus',
+            patron: 'Marib Valisi Korgeneral Sultan el-Arada himayesinde',
           },
           {
             id: 'taiz',
@@ -1420,6 +1466,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Taiz kapasite artirma programi videosu',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Resalaty Kadin Kalkinma Vakfi',
+            period: '8 – 10 Temmuz 2024',
+            organizations: '40 sivil toplum kurulusu',
+            patron: 'Taiz Valisi Nebil Semsan himayesinde',
           },
         ],
         phase: {
@@ -1464,6 +1513,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'Sivil Toplum Kuruluslari Kapasite Artirma Programi',
             paragraphs: [
               'Program hedeflerini sahada kapasite artirma calismasiyla hayata gecirir: kamu ve sivil kurum liderlerini yetistirir ve performanslarini gelistirir. Birinci asamasi dort Yemen sehrinde sivil toplum kuruluslariyla uygulandi.',
+              'Program, Veysel Karani Vakfinin kamu ve sivil kurumlarin gelisimine odaklanan ucuncu ekseni kapsaminda yurutulur; bu kuruluslarin kapasitelerini ve yetkinliklerini gelistirerek surdurulebilir kalkinmaya, Yemen genelinde insani ve kalkinma calismalarinin guclenmesine ve Yemenin medeniyet yukselisine katki saglamayi amaclar.',
+            ],
+          },
+          {
+            id: 'training-axes',
+            title: 'Egitim Basliklari',
+            paragraphs: [
+              'Program, Veysel Karani Vakfi uzman ekibi uyesi Muhendis Fuad Said tarafindan Temmuz 2024 boyunca dort sehirde, her durakta uc gunluk yogun egitimler halinde sunuldu.',
+            ],
+            bullets: [
+              'Kurulus program ve projelerinde planlama ve uygulama.',
+              'Sivil toplum kuruluslarinda mali yonetim.',
+              'Uluslararasi kurum karar ve standartlarina uygun yonetisim.',
+              'Kurulus calisanlarinin becerilerini gelistirme ve kurumlar arasi deneyim paylasimi.',
             ],
           },
           {
@@ -1473,6 +1536,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
               'Sivil Toplum Kuruluslari Kapasite Artirma Programinin birinci asamasi 8 Temmuz Pazartesi ile 25 Temmuz 2024 Persembe arasinda Hadramut Sahili, Hadramut Vadisi, Marib ve Taiz sehirlerinde duzenlendi.',
               'Taizde Resalaty Kadin Kalkinma Vakfi, Hadramut Mukallada Selah Kalkinma Vakfi, Hadramut Vadisinde Al-Badia Insani Kalkinma Vakfi ile ortaklik yapildi. Marib uygulamasi OCHA Marib ofisi himayesinde ve International Relief and Development Authority - Ansar Yemen ofisi ortakliginda gerceklesti.',
               'Asamaya 13 Yemen ilinden 140 sivil toplum kurulusunu temsil eden 160 katilimci katildi. Acilis oturumlarina katilan yetkililer, programin sivil toplum performansini ve Yemen kalkinmasini gelistirmedeki onemini vurguladi.',
+              'Veysel Karani Vakfi, bu asamanin basarisindaki katkilari icin ilgili illerdeki resmi makamlara, tum yerel ortaklara, katilimcilara ve programi duzenleyen ekiplere tesekkur eder; gelecek asamalarda daha fazla basariyi hedefler.',
             ],
           },
           {
@@ -1491,12 +1555,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'Yemende Insani ve Kalkinma Calismalarinin Yerellestirilmesi Ulusal Forumu',
             paragraphs: [
               'Maribde, Veysel Karani Vakfi, International Relief and Development Authority - Ansar ve Yemen Insani ve Stratejik Calismalar Merkezi ortakliginda ulusal forum baslatildi.',
+              'Forum, kurucu uc kurumdan olusan bir kurucu heyet tarafindan yurutulur; uyeleri arasinda onlarca yerel dernek ve sivil toplum kurulusu bulunur ve tum Yemenli kuruluslara katilim cagrisi aciktir.',
+              'Kurucu heyet lansman sonrasinda calismalarini surdurdu; Kasim 2024te vakif merkezinde toplanarak yerellestirme yollarini ve kamu ve BM kuruluslariyla ortak planlanan mudahale ve etkinlik paketini gorustu.',
             ],
             ordered: true,
             bullets: [
               'Sivil toplum kuruluslarinin cabalarini yerellestirme yonunde harekete gecirmek.',
               'Yerellestirme duzeyini iyilestirmek icin sivil toplum kuruluslarinin kapasitelerini gelistirebilecegi uygun bir ortam olusturmak.',
               'Paydaslarla ag kurarak yerellestirmeyi hizlandiracak ortak noktalar gelistirmek.',
+              'Ihtiyaca dayali planlar uzerine kurulu, cesitlendirilmis ve nitelikli mudahalelerle kalkinmanin hizlanmasina katki sunmak.',
+              'Yerel kuruluslar ile BM kuruluslari ve uluslararasi donorler arasinda kopruler kurmak.',
             ],
           },
         ],
@@ -1967,29 +2035,29 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             src: capacityHadramoutCoastImage,
-            alt: 'Civil society capacity raising program in Hadramout Coast',
-            caption: 'Hadramout Coast',
+            alt: 'Organizations participating in the civil society capacity raising program – Hadramout Coast, July 2024',
+            caption: 'Participating organizations – Hadramout Coast',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityHadramoutValleyImage,
-            alt: 'Civil society capacity raising program in Hadramout Valley',
-            caption: 'Hadramout Valley',
+            alt: 'Organizations participating in the civil society capacity raising program – Hadramout Valley, July 2024',
+            caption: 'Participating organizations – Hadramout Valley',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityMaribImage,
-            alt: 'Civil society capacity raising program in Marib',
-            caption: 'Marib',
+            alt: 'Organizations participating in the civil society capacity raising program – Marib, July 2024',
+            caption: 'Participating organizations – Marib',
             width: 1080,
             height: 1350,
           },
           {
             src: capacityTaizImage,
-            alt: 'Civil society capacity raising program in Taiz',
-            caption: 'Taiz',
+            alt: 'Organizations participating in the civil society capacity raising program – Taiz, July 2024',
+            caption: 'Participating organizations – Taiz',
             width: 1080,
             height: 1350,
           },
@@ -2010,6 +2078,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Capacity raising program video in Hadramout Coast',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Selah Foundation for Development',
+            period: '15 – 17 July 2024',
+            organizations: '22 civil society organizations',
+            patron: 'Supervised by the Social Affairs and Labor Office of Hadramout Coast',
           },
           {
             id: 'hadramout-valley',
@@ -2020,6 +2091,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Capacity raising program video in Hadramout Valley',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Al-Badia Foundation for Humanitarian Development',
+            period: '20 – 22 July 2024',
+            organizations: '28 civil society organizations',
+            patron: 'Sponsored by Amer Al-Ameri, Deputy Governor of Hadramout for Valley and Desert Affairs',
           },
           {
             id: 'marib',
@@ -2030,6 +2104,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Capacity raising program video in Marib',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'OCHA Marib office and the International Relief and Development Authority - Ansar',
+            period: '23 – 25 July 2024',
+            organizations: '40 organizations from 13 governorates',
+            patron: 'Sponsored by Maj. Gen. Sultan Al-Arada, Governor of Marib',
           },
           {
             id: 'taiz',
@@ -2040,6 +2117,9 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             videoTitle: 'Capacity raising program video in Taiz',
             videoSourceUrl: capacityVideo.sourceUrl,
             partner: 'Resalaty Foundation for Women Development',
+            period: '8 – 10 July 2024',
+            organizations: '40 civil society organizations',
+            patron: 'Sponsored by Nabil Shamsan, Governor of Taiz',
           },
         ],
         phase: {
@@ -2084,6 +2164,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'Civil Society Organizations Capacity Raising Program',
             paragraphs: [
               'The track turns its goals into field work through the capacity raising program, which qualifies leaders of governmental and civil institutions and improves their performance. Its first phase was implemented with civil society organizations across four Yemeni cities.',
+              'The program falls under the third track of Veysel Karani Waqf, dedicated to developing governmental and civil institutions: strengthening the capacities of these organizations and raising their efficiency to achieve sustainable development, reinforce humanitarian and development work across Yemen, and contribute to the civilizational rise of Yemen.',
+            ],
+          },
+          {
+            id: 'training-axes',
+            title: 'Training Areas',
+            paragraphs: [
+              'The program was delivered by Engineer Fouad Saeed, a member of the Veysel Karani Waqf expert team, throughout July 2024 across the four cities, with three intensive training days at each stop.',
+            ],
+            bullets: [
+              'Planning and implementation of organization programs and projects.',
+              'Financial management for civil society organizations.',
+              'Governance in line with international organization decisions and standards.',
+              'Developing staff skills and exchanging expertise between organizations.',
             ],
           },
           {
@@ -2093,6 +2187,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
               'The first phase of the Civil Society Organizations Capacity Raising Program was held from Monday, July 8 to Thursday, July 25, 2024 in Hadramout Coast, Hadramout Valley, Marib and Taiz.',
               'The phase was implemented in Taiz with Resalaty Foundation for Women Development, in Hadramout Mukalla with Selah Foundation for Development, in Hadramout Valley with Al-Badia Foundation for Humanitarian Development, and in Marib under the sponsorship of OCHA Marib with the International Relief and Development Authority - Ansar, Yemen office.',
               'The phase included 160 participants representing 140 civil society organizations from 13 Yemeni governorates. Officials attended the opening sessions and emphasized the importance of the program for improving civil society performance and supporting development in Yemen.',
+              'Veysel Karani Waqf concludes by thanking the official authorities in these governorates, all local partners, the participants and the organizing teams for making this phase a success, and looks forward to further achievements in the coming phases.',
             ],
           },
           {
@@ -2111,12 +2206,16 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             title: 'National Forum for Localization of Humanitarian and Development Work in Yemen',
             paragraphs: [
               'The forum was launched in Marib by Veysel Karani Waqf, the International Relief and Development Authority - Ansar and the Yemeni Center for Humanitarian and Strategic Studies.',
+              'The forum is led by a founding body made up of the three launching institutions; its membership already includes dozens of local associations and civil society organizations, and Yemeni organizations of all fields are invited to join.',
+              'The founding body continued its work after the launch: in November 2024 it met at the waqf headquarters to discuss localization tracks and the package of interventions and events planned with governmental and UN partners.',
             ],
             ordered: true,
             bullets: [
               'Mobilize civil society organization efforts toward localization.',
               'Create an enabling environment for civil society organizations to build capacities that improve localization.',
               'Network with stakeholders to create common points that accelerate localization.',
+              'Contribute to accelerating development through diverse, high-quality interventions built on needs-based plans.',
+              'Build bridges between local organizations and UN agencies and international donors.',
             ],
           },
         ],

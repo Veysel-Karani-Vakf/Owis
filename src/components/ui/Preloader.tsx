@@ -31,7 +31,7 @@ export default function Preloader() {
               <img
                 src={siteConfig.logo}
                 alt={siteConfig.name}
-                className="h-16 w-auto brightness-0 invert md:h-20"
+                className="h-24 w-auto brightness-0 invert md:h-32"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';

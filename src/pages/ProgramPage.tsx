@@ -1,15 +1,21 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
+  Award,
   BarChart3,
+  Building2,
+  CalendarDays,
   CheckCircle2,
+  Scale,
+  Target,
+  Users,
+  Wallet,
   Clapperboard,
   GraduationCap,
   HandHeart,
   Hash,
   HeartHandshake,
-  Images,
   Landmark,
   Layers3,
   Mail,
@@ -30,6 +36,7 @@ import AwarenessSpotlight from '@/components/programs/AwarenessSpotlight';
 import AwarenessThemes from '@/components/programs/AwarenessThemes';
 import InstitutionalBeneficiaries from '@/components/programs/InstitutionalBeneficiaries';
 import InstitutionalFigures from '@/components/programs/InstitutionalFigures';
+import InstitutionalMap from '@/components/programs/InstitutionalMap';
 import EqualizerBars from '@/components/programs/EqualizerBars';
 import ProgramHero, { type ProgramHeroAction, type ProgramHeroProps } from '@/components/programs/ProgramHero';
 import PageSeo from '@/components/internal/PageSeo';
@@ -188,11 +195,14 @@ function StatisticsSection({
   program,
   labels,
   hexStats,
+  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   /** True for the pioneers layout: the verified home-page indicators drawn as a hexagon diagram. */
   hexStats: boolean;
+  /** One continuous canvas: no band background of its own. */
+  seamless?: boolean;
 }) {
   const { content, t, formatNumber, isRtl } = useI18n();
 
@@ -201,7 +211,10 @@ function StatisticsSection({
   if (hexStats) {
     const pioneers = content.yemenPioneers;
     return (
-      <section id="cms-program-stats" className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+      <section
+        id="cms-program-stats"
+        className={seamless ? 'overflow-hidden py-12 md:py-16' : 'overflow-hidden bg-[#faf8f8] py-16 md:py-24'}
+      >
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <PioneerStatsHex
             eyebrow={labels.pioneerStatsEyebrow}
@@ -269,22 +282,49 @@ function CityMedia({
   labels: ReturnType<typeof getProgramsContent>['labels'];
   onVideoSelect: (video: ActiveVideo) => void;
 }) {
+  const { isRtl } = useI18n();
+  const reduced = !!useReducedMotion();
   const [selectedCityId, setSelectedCityId] = useState(cities[0]?.id ?? '');
-  const selectedCity = cities.find((city) => city.id === selectedCityId) ?? cities[0];
+  const selectedIndex = Math.max(0, cities.findIndex((city) => city.id === selectedCityId));
+  const selectedCity = cities[selectedIndex];
 
   if (!selectedCity) return null;
+
+  const stepCity = (offset: number) =>
+    setSelectedCityId(cities[(selectedIndex + offset + cities.length) % cities.length].id);
+  const NextIcon = isRtl ? ArrowLeft : ArrowRight;
+  const PrevIcon = isRtl ? ArrowRight : ArrowLeft;
+
+  const cityFacts = [
+    { icon: CalendarDays, text: selectedCity.period },
+    { icon: Building2, text: selectedCity.organizations },
+    { icon: HeartHandshake, text: selectedCity.partner ? `${labels.partner} ${selectedCity.partner}` : undefined },
+    { icon: Award, text: selectedCity.patron },
+  ].filter((fact): fact is { icon: LucideIcon; text: string } => Boolean(fact.text));
+
+  const swap = {
+    initial: reduced ? { opacity: 1 } : { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    exit: reduced ? { opacity: 1 } : { opacity: 0, y: -10 },
+    transition: { duration: 0.3, ease: revealEase },
+  } as const;
 
   return (
     <section id="cms-program-cities" className="bg-white py-16 md:py-24">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <SectionHeading eyebrow={labels.officialMedia} title={labels.cityMedia} centered />
+        <SectionHeading
+          eyebrow={labels.officialMedia}
+          title={labels.cityMedia}
+          description={labels.cityExplorerDescription}
+          centered
+        />
 
         <div
           role="tablist"
           aria-label={labels.cityMedia}
-          className="mb-6 flex gap-2 overflow-x-auto pb-2"
+          className="mb-6 flex gap-2.5 overflow-x-auto pb-2 lg:justify-center"
         >
-          {cities.map((city) => {
+          {cities.map((city, index) => {
             const active = city.id === selectedCity.id;
 
             return (
@@ -294,12 +334,18 @@ function CityMedia({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setSelectedCityId(city.id)}
-                className={`min-h-11 shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                   active
-                    ? 'bg-primary-600 text-white'
-                    : 'border border-primary-100 bg-white text-primary-700 hover:bg-primary-50'
+                    ? 'bg-primary-600 text-white shadow-[0_12px_28px_rgba(195,7,16,0.28)]'
+                    : 'border border-primary-100 bg-white text-primary-700 hover:border-primary-200 hover:bg-primary-50'
                 }`}
               >
+                <span
+                  dir="ltr"
+                  className={`text-[11px] font-black tabular-nums ${active ? 'text-white/70' : 'text-primary-300'}`}
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
                 {city.name}
               </button>
             );
@@ -307,39 +353,105 @@ function CityMedia({
         </div>
 
         <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
-          <article className="grid overflow-hidden rounded-[24px] border border-primary-100 bg-[#faf8f8] shadow-[0_20px_56px_rgba(40,12,18,0.08)] lg:grid-cols-[1fr_0.72fr]">
-            <div className="relative min-h-[22rem] overflow-hidden bg-dark-950 lg:min-h-[30rem]">
-              <img
-                src={selectedCity.image}
-                alt={selectedCity.imageAlt}
-                width={1080}
-                height={1350}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-dark-950/80 to-transparent p-5 text-white">
-                <p className="text-xl font-bold">{selectedCity.name}</p>
-              </div>
-            </div>
+          <article className="overflow-hidden rounded-[28px] border border-primary-100 bg-white shadow-[0_24px_64px_rgba(40,12,18,0.09)]">
+            <div className="grid lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="relative flex flex-col justify-center p-6 text-start md:p-8">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -start-16 -top-16 h-48 w-48 rounded-full bg-primary-50 blur-2xl"
+                />
 
-            <div className="flex flex-col justify-center p-6 text-start md:p-8">
-              <Images className="h-9 w-9 text-primary-600" aria-hidden="true" />
-              <h3 className="mt-4 text-2xl font-bold text-dark-950">{selectedCity.name}</h3>
-              <p className="mt-3 text-base leading-relaxed text-dark-600">{selectedCity.videoTitle}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  onVideoSelect({
-                    videoId: selectedCity.videoId,
-                    videoFile: selectedCity.videoFile,
-                    title: selectedCity.videoTitle,
-                    posterImage: selectedCity.image,
-                  })
-                }
-                className="mt-6 inline-flex min-h-12 w-fit items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-              >
-                <Play className="h-4 w-4" aria-hidden="true" />
-                {labels.watchVideo}
-              </button>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div key={selectedCity.id} {...swap} className="relative">
+                    <p className="text-sm font-bold text-primary-600">
+                      {labels.stepLabel}{' '}
+                      {/* The LTR block keeps its written order on screen, so RTL needs it reversed
+                          for the current stop to sit next to the label. */}
+                      <span dir="ltr" className="tabular-nums">
+                        {isRtl
+                          ? `${String(cities.length).padStart(2, '0')} / ${String(selectedIndex + 1).padStart(2, '0')}`
+                          : `${String(selectedIndex + 1).padStart(2, '0')} / ${String(cities.length).padStart(2, '0')}`}
+                      </span>
+                    </p>
+                    <h3 className="mt-1.5 text-2xl font-bold leading-tight text-dark-950">{selectedCity.name}</h3>
+
+                    {cityFacts.length > 0 && (
+                      <div role="list" className="mt-4 divide-y divide-primary-100 border-y border-primary-100">
+                        {cityFacts.map(({ icon: Icon, text }) => (
+                          <div role="listitem" key={text} className="flex items-center gap-3 py-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 ring-1 ring-primary-100">
+                              <Icon className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <p className="text-sm leading-relaxed text-dark-700">{text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+
+                <div className="relative mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onVideoSelect({
+                        videoId: selectedCity.videoId,
+                        videoFile: selectedCity.videoFile,
+                        title: selectedCity.videoTitle,
+                        posterImage: selectedCity.image,
+                      })
+                    }
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                  >
+                    <Play className="h-4 w-4" aria-hidden="true" />
+                    {labels.watchVideo}
+                  </button>
+
+                  <div className="ms-auto flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={labels.previous}
+                      onClick={() => stepCity(-1)}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    >
+                      <PrevIcon className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={labels.next}
+                      onClick={() => stepCity(1)}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    >
+                      <NextIcon className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative flex items-center justify-center bg-[#faf8f8] p-4 md:p-6">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-20 -end-20 h-64 w-64 rounded-full bg-primary-100/50 blur-3xl"
+                />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.figure
+                    key={selectedCity.id}
+                    initial={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.985 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.99 }}
+                    transition={{ duration: 0.3, ease: revealEase }}
+                    className="relative m-0"
+                  >
+                    <img
+                      src={selectedCity.image}
+                      alt={selectedCity.imageAlt}
+                      width={1080}
+                      height={1350}
+                      className="max-h-[24rem] w-full rounded-2xl border border-primary-100 bg-white object-contain shadow-[0_18px_48px_rgba(40,12,18,0.12)]"
+                    />
+                  </motion.figure>
+                </AnimatePresence>
+              </div>
             </div>
           </article>
         </FadeContent>
@@ -352,10 +464,13 @@ function MediaGallery({
   program,
   labels,
   onVideoSelect,
+  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   onVideoSelect: (video: ActiveVideo) => void;
+  /** One continuous canvas: transparent section, uncarded videos. */
+  seamless?: boolean;
 }) {
   if (program.cities?.length) {
     return (
@@ -378,7 +493,7 @@ function MediaGallery({
 
   if (useCarousel) {
     return (
-      <section className="overflow-hidden bg-white py-16 md:py-24">
+      <section className={seamless ? 'overflow-hidden py-12 md:py-16' : 'overflow-hidden bg-white py-16 md:py-24'}>
         <PioneerVideoCarousel
           eyebrow={labels.officialMedia}
           title={labels.videoGallery}
@@ -386,6 +501,7 @@ function MediaGallery({
           videos={videos}
           labels={labels}
           onVideoSelect={onVideoSelect}
+          seamless={seamless}
         />
         {showImages && (
           <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 md:grid-cols-2 md:px-8">
@@ -623,9 +739,12 @@ function InitiativesSection({
 function DonateCta({
   program,
   isRtl,
+  seamless = false,
 }: {
   program: Program;
   isRtl: boolean;
+  /** One continuous canvas: a centered call on the page itself instead of the dark band. */
+  seamless?: boolean;
 }) {
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const cta = program.cta;
@@ -645,6 +764,44 @@ function DonateCta({
       aria-hidden="true"
     />
   );
+
+  if (seamless) {
+    const button = cta.button && (
+      isExternal ? (
+        <a href={to} target="_blank" rel="noopener noreferrer" className={`${buttonClass} mt-8`}>
+          {cta.button}
+          {arrow}
+        </a>
+      ) : (
+        <Link to={to} className={`${buttonClass} mt-8`}>
+          {cta.button}
+          {arrow}
+        </Link>
+      )
+    );
+
+    return (
+      <section id="program-donate" className="relative overflow-hidden py-16 md:py-24">
+        {/* A glow that dies out before the edges keeps the canvas unbroken. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_75%_at_50%_45%,rgba(218,8,18,0.07),transparent_75%)]"
+        />
+        <div className="relative mx-auto max-w-3xl px-4 text-center md:px-8">
+          <FadeContent blur={false} duration={640} initialOpacity={0} yOffset={18} threshold={0.18} once>
+            <div className="flex flex-col items-center">
+              <HandHeart className="h-10 w-10 text-primary-600" aria-hidden="true" />
+              <h2 className="mt-5 text-3xl font-bold leading-tight text-dark-950 md:text-4xl">{cta.title}</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-dark-600 md:text-lg">
+                {cta.description}
+              </p>
+              {button}
+            </div>
+          </FadeContent>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-dark-950 py-16 text-white md:py-20">
@@ -679,17 +836,20 @@ function OtherPrograms({
   program,
   labels,
   isRtl,
+  seamless = false,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
   isRtl: boolean;
+  /** One continuous canvas: pictures and text on the page instead of boxed cards. */
+  seamless?: boolean;
 }) {
   const { locale } = useI18n();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const otherPrograms = getOtherPrograms(locale, program.slug);
 
   return (
-    <section className="bg-white py-16 md:py-24">
+    <section className={seamless ? 'py-12 md:py-20' : 'bg-white py-16 md:py-24'}>
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading eyebrow={labels.programs} title={labels.otherPrograms} centered />
         <div className="grid gap-5 md:grid-cols-3">
@@ -706,15 +866,30 @@ function OtherPrograms({
             >
               <Link
                 to={item.route}
-                className="group block overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
+                className={
+                  seamless
+                    ? 'group block text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600'
+                    : 'group block overflow-hidden rounded-[22px] border border-primary-100 bg-white text-start shadow-[0_16px_42px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0'
+                }
               >
-                <img
-                  src={item.heroImage}
-                  alt={item.heroImageAlt}
-                  loading="lazy"
-                  className="aspect-[16/10] w-full object-cover"
-                />
-                <div className="p-5">
+                {seamless ? (
+                  <span className="block overflow-hidden rounded-[22px]">
+                    <img
+                      src={item.heroImage}
+                      alt={item.heroImageAlt}
+                      loading="lazy"
+                      className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] motion-reduce:group-hover:scale-100"
+                    />
+                  </span>
+                ) : (
+                  <img
+                    src={item.heroImage}
+                    alt={item.heroImageAlt}
+                    loading="lazy"
+                    className="aspect-[16/10] w-full object-cover"
+                  />
+                )}
+                <div className={seamless ? 'pt-5' : 'p-5'}>
                   <h3 className="text-xl font-bold text-dark-950">{item.title}</h3>
                   <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-600">{item.summary}</p>
                   <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700">
@@ -738,7 +913,10 @@ function OtherPrograms({
 
 const institutionalShowcaseAnchor = 'institutional-showcase';
 
-/** The institutional track: its verified figures drawn as seals, then the institutions it serves. */
+/**
+ * The institutional track: its verified figures drawn as seals, the institutions it
+ * serves, then its development areas mapped as a hub with animated branches.
+ */
 function InstitutionalShowcase({
   program,
   labels,
@@ -748,6 +926,8 @@ function InstitutionalShowcase({
 }) {
   const audiences = program.audiences ?? [];
   const statistics = program.statistics ?? [];
+  // The intro section's bullets are the track's development areas; the map draws them.
+  const intro = (program.sections ?? []).find((section) => section.id === 'intro');
 
   return (
     <div id={institutionalShowcaseAnchor} className="scroll-mt-24">
@@ -783,7 +963,254 @@ function InstitutionalShowcase({
           />
         </section>
       )}
+
+      {(intro?.bullets?.length ?? 0) > 0 && (
+        <section className="overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          <InstitutionalMap
+            eyebrow={labels.manifestoEyebrow}
+            title={labels.focusAreas}
+            description={labels.focusAreasDescription}
+            areaLabel={labels.areaLabel}
+            hubTitle={program.title}
+            hubSubtitle={program.summary}
+            items={intro?.bullets ?? []}
+          />
+        </section>
+      )}
     </div>
+  );
+}
+
+const trainingAxisIcons: LucideIcon[] = [Target, Wallet, Scale, Users];
+
+/**
+ * The institutional track's field record, drawn as four distinct movements instead of a
+ * stack of look-alike cards: the phase panel beside the official statement, the training
+ * areas as an icon grid, the recommendations as a numbered roadmap, and the national
+ * forum as a gradient showpiece. Sections with ids this design does not know still render
+ * as plain blocks, so dashboard-authored sections never disappear.
+ */
+function InstitutionalDossier({
+  program,
+  labels,
+}: {
+  program: Program;
+  labels: ReturnType<typeof getProgramsContent>['labels'];
+}) {
+  const sections = program.sections ?? [];
+  const byId = new Map(sections.map((section) => [section.id, section]));
+  const capacityIntro = byId.get('capacity-intro');
+  const axes = byId.get('training-axes');
+  const statement = byId.get('closing-statement');
+  const recommendations = byId.get('recommendations');
+  const forum = byId.get('forum');
+  // The intro section feeds the development-areas map above.
+  const bespokeIds = new Set(['intro', 'capacity-intro', 'training-axes', 'closing-statement', 'recommendations', 'forum']);
+  const genericSections = sections.filter((section) => !bespokeIds.has(section.id));
+  const phase = program.phase;
+  const hasRecord = Boolean(phase || statement || capacityIntro);
+
+  if (!hasRecord && !axes && !recommendations && !forum && !genericSections.length) return null;
+
+  return (
+    <>
+      {hasRecord && (
+        <section className="bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <SectionHeading
+              eyebrow={labels.phaseEyebrow}
+              title={capacityIntro?.title ?? labels.information}
+              description={capacityIntro?.paragraphs?.[0]}
+              centered
+            />
+            <div
+              className={
+                phase && statement
+                  ? 'grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start'
+                  : 'mx-auto grid max-w-3xl gap-6'
+              }
+            >
+              {phase && (
+                <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
+                  <aside className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-[#faf8f8] p-7 text-start md:p-8 lg:sticky lg:top-28">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-100/60 blur-2xl"
+                    />
+                    <CalendarDays className="relative h-9 w-9 text-primary-600" aria-hidden="true" />
+                    <p className="relative mt-4 text-sm font-bold text-primary-700">{phase.label}</p>
+                    <p className="relative mt-1 text-3xl font-bold leading-tight text-dark-950">{phase.period}</p>
+                    <p className="relative mt-4 text-base leading-relaxed text-dark-600">{phase.description}</p>
+                    {capacityIntro?.paragraphs?.[1] && (
+                      <p className="relative mt-4 border-t border-primary-100 pt-4 text-sm leading-relaxed text-dark-600">
+                        {capacityIntro.paragraphs[1]}
+                      </p>
+                    )}
+                  </aside>
+                </FadeContent>
+              )}
+              {statement && (
+                <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} delay={90} threshold={0.18} once>
+                  <article className="rounded-[24px] border border-primary-100 bg-white p-7 text-start shadow-[0_20px_56px_rgba(40,12,18,0.08)] md:p-9">
+                    <Quote className="h-8 w-8 text-primary-300" aria-hidden="true" />
+                    <h3 className="mt-3 text-2xl font-bold text-dark-950">{statement.title}</h3>
+                    <div className="mt-5 space-y-4 border-s-2 border-primary-100 ps-5 text-base leading-relaxed text-dark-600">
+                      {(statement.paragraphs ?? []).map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                    </div>
+                  </article>
+                </FadeContent>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {axes && (axes.bullets?.length ?? 0) > 0 && (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <SectionHeading
+              eyebrow={labels.phaseEyebrow}
+              title={axes.title}
+              description={axes.paragraphs?.[0]}
+              centered
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {(axes.bullets ?? []).map((bullet, index) => {
+                const Icon = trainingAxisIcons[index % trainingAxisIcons.length];
+                return (
+                  <FadeContent
+                    key={bullet}
+                    blur={false}
+                    duration={560}
+                    initialOpacity={0}
+                    yOffset={16}
+                    delay={index * 70}
+                    threshold={0.16}
+                    once
+                  >
+                    <article className="group h-full rounded-[22px] border border-primary-100 bg-white p-6 text-start shadow-[0_14px_36px_rgba(40,12,18,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_22px_52px_rgba(40,12,18,0.1)] motion-reduce:hover:translate-y-0">
+                      <div className="flex items-center justify-between">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 ring-1 ring-primary-100 transition-colors duration-300 group-hover:bg-primary-600 group-hover:text-white">
+                          <Icon className="h-6 w-6" aria-hidden="true" />
+                        </span>
+                        <span
+                          dir="ltr"
+                          className="text-2xl font-black text-primary-100 transition-colors duration-300 group-hover:text-primary-200"
+                        >
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      </div>
+                      <p className="mt-5 text-base font-semibold leading-relaxed text-dark-700">{bullet}</p>
+                    </article>
+                  </FadeContent>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {recommendations && (recommendations.bullets?.length ?? 0) > 0 && (
+        <section className="bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <SectionHeading
+              eyebrow={labels.recommendationsEyebrow}
+              title={recommendations.title}
+              description={labels.recommendationsDescription}
+              centered
+            />
+            <div role="list" className="relative mx-auto grid max-w-3xl gap-5">
+              <span aria-hidden="true" className="absolute bottom-8 start-6 top-8 w-px bg-primary-100" />
+              {(recommendations.bullets ?? []).map((bullet, index) => (
+                <FadeContent
+                  key={bullet}
+                  blur={false}
+                  duration={560}
+                  initialOpacity={0}
+                  yOffset={14}
+                  delay={index * 80}
+                  threshold={0.16}
+                  once
+                >
+                  <div role="listitem" className="relative flex items-start gap-4 md:gap-5">
+                    <span className="z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary-200 bg-white text-base font-bold text-primary-700 shadow-[0_10px_24px_rgba(195,7,16,0.14)]">
+                      {index + 1}
+                    </span>
+                    <p className="flex-1 rounded-[18px] border border-primary-100 bg-[#faf8f8] p-5 text-start text-base leading-relaxed text-dark-700">
+                      {bullet}
+                    </p>
+                  </div>
+                </FadeContent>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {forum && (
+        <section className="bg-[#faf8f8] py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={18} threshold={0.16} once>
+              <article className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-primary-800 via-primary-700 to-primary-950 p-7 text-start text-white shadow-[0_28px_70px_rgba(125,7,12,0.35)] md:p-12">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-24 -start-16 h-72 w-72 rounded-full bg-primary-500/25 blur-3xl"
+                />
+                <div className="relative max-w-3xl">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold ring-1 ring-white/25">
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    {labels.forumEyebrow}
+                  </span>
+                  <h3 className="mt-5 text-3xl font-bold leading-tight md:text-4xl">{forum.title}</h3>
+                  <div className="mt-5 space-y-3 text-base leading-relaxed text-white/85">
+                    {(forum.paragraphs ?? []).map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+                {(forum.bullets?.length ?? 0) > 0 && (
+                  <div className="relative mt-9">
+                    <p className="text-sm font-bold text-white/75">{labels.forumObjectives}</p>
+                    <div role="list" className="mt-4 grid gap-3 md:grid-cols-2">
+                      {(forum.bullets ?? []).map((bullet, index) => (
+                        <div
+                          role="listitem"
+                          key={bullet}
+                          className="flex items-start gap-3 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-primary-700">
+                            {index + 1}
+                          </span>
+                          <p className="text-sm leading-relaxed text-white/90">{bullet}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+            </FadeContent>
+          </div>
+        </section>
+      )}
+
+      {genericSections.length > 0 && (
+        <section className="bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-5xl px-4 md:px-8">
+            <div className="grid gap-5">
+              {genericSections.map((section, index) => (
+                <ProgramSectionBlock key={section.id || index} section={section} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </>
   );
 }
 
@@ -1060,6 +1487,9 @@ export default function ProgramPage() {
   // Programs that ship journey/pillar content get the richer, animated showcase layout;
   // the pioneers layout always does, so its hex statistics and overview stay in place.
   const isShowcase = isPioneers || journey.length > 0 || pillars.length > 0;
+  // The pioneers page reads as one continuous piece: a single light canvas with no
+  // alternating band backgrounds and no boxed cards between the hero and the footer.
+  const seamless = isPioneers;
   // A program switched to the volunteer layout without its own copy still renders, using the
   // static volunteer copy of this locale until the editor fills the volunteer fields.
   const volunteerCopy = isVolunteer ? (program.volunteer ?? getDefaultVolunteerCopy(locale)) : undefined;
@@ -1084,10 +1514,10 @@ export default function ProgramPage() {
         structuredData={structuredData}
       />
       <main className="bg-white">
-        <ProgramHero program={program} breadcrumbs={breadcrumbs} {...hero} />
+        <ProgramHero program={program} breadcrumbs={breadcrumbs} {...hero} seamless={seamless} />
 
         {highlights.length > 0 && (
-          <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} />
+          <PioneerHighlightsMarquee label={page.labels.highlights} items={highlights} seamless={seamless} />
         )}
 
         {volunteerCopy ? (
@@ -1097,8 +1527,13 @@ export default function ProgramPage() {
         ) : isInstitutional ? (
           <InstitutionalShowcase program={program} labels={page.labels} />
         ) : isShowcase ? (
-          <section id={programOverviewAnchor} className="scroll-mt-24 overflow-hidden bg-white py-14 md:py-20">
-            <PioneerOverview program={program} labels={page.labels} />
+          <section
+            id={programOverviewAnchor}
+            className={
+              seamless ? 'scroll-mt-24 overflow-hidden py-12 md:py-16' : 'scroll-mt-24 overflow-hidden bg-white py-14 md:py-20'
+            }
+          >
+            <PioneerOverview program={program} labels={page.labels} seamless={seamless} />
           </section>
         ) : (
           <section id={programOverviewAnchor} className="scroll-mt-24 bg-white py-16 md:py-24">
@@ -1130,10 +1565,10 @@ export default function ProgramPage() {
         )}
 
         {!hasCustomLayout && goals.length > 0 && (
-          <section className="bg-[#faf8f8] py-16 md:py-24">
+          <section className={seamless ? 'py-12 md:py-16' : 'bg-[#faf8f8] py-16 md:py-24'}>
             <div className="mx-auto max-w-7xl px-4 md:px-8">
               {isShowcase ? (
-                <PioneerGoals eyebrow={page.labels.goals} title={page.labels.goals} items={goals} />
+                <PioneerGoals eyebrow={page.labels.goals} title={page.labels.goals} items={goals} seamless={seamless} />
               ) : (
                 <NumberedList
                   title={page.labels.goals}
@@ -1146,13 +1581,17 @@ export default function ProgramPage() {
         )}
 
         {hasCustomLayout ? null : journey.length > 0 ? (
-          <section id="cms-program-journey" className="relative bg-white py-10 md:py-14 lg:py-0">
+          <section
+            id="cms-program-journey"
+            className={seamless ? 'relative py-8 md:py-10 lg:py-0' : 'relative bg-white py-10 md:py-14 lg:py-0'}
+          >
             <PioneerJourney
               eyebrow={page.labels.journeyEyebrow}
               title={page.labels.journey}
               description={page.labels.journeyDescription}
               stepLabel={page.labels.stepLabel}
               steps={journey}
+              seamless={seamless}
             />
           </section>
         ) : (
@@ -1170,22 +1609,30 @@ export default function ProgramPage() {
         )}
 
         {!hasCustomLayout && pillars.length > 0 && (
-          <section id="cms-program-pillars" className="bg-[#faf8f8] py-16 md:py-24">
+          <section id="cms-program-pillars" className={seamless ? 'py-12 md:py-16' : 'bg-[#faf8f8] py-16 md:py-24'}>
             <div className="mx-auto max-w-7xl px-4 md:px-8">
               <PioneerPillars
                 eyebrow={page.labels.pillarsEyebrow}
                 title={page.labels.pillars}
                 description={page.labels.pillarsDescription}
                 pillars={pillars}
+                seamless={seamless}
               />
             </div>
           </section>
         )}
 
+        {isInstitutional && (
+          <>
+            <InstitutionalDossier program={program} labels={page.labels} />
+            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+          </>
+        )}
+
         {!hasCustomLayout && (
           <>
-            <StatisticsSection program={program} labels={page.labels} hexStats={isPioneers} />
-            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
+            <StatisticsSection program={program} labels={page.labels} hexStats={isPioneers} seamless={seamless} />
+            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} seamless={seamless} />
           </>
         )}
         <InitiativesSection program={program} labels={page.labels} />
@@ -1203,8 +1650,8 @@ export default function ProgramPage() {
           </section>
         )}
 
-        <DonateCta program={program} isRtl={isRtl} />
-        <OtherPrograms program={program} labels={page.labels} isRtl={isRtl} />
+        <DonateCta program={program} isRtl={isRtl} seamless={seamless} />
+        <OtherPrograms program={program} labels={page.labels} isRtl={isRtl} seamless={seamless} />
       </main>
 
       <VideoModal

@@ -68,6 +68,9 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
 const TITLE_TYPING_START_DELAY = 1000;
 // A deliberate, readable pace that feels like someone typing the headline live.
 const TITLE_TYPING_CHAR_DELAY = 140;
+// When the title is an image (calligraphy), it is revealed writing-direction-first
+// over roughly the time the equivalent text would take to type.
+const TITLE_IMAGE_REVEAL_SECONDS = 2.8;
 // The title stays on one line: it starts at TITLE_MAX_FONT_PX and shrinks to fit the viewport width.
 // Only if it can't fit even at TITLE_MIN_FONT_PX (long Latin titles on narrow phones) it wraps at TITLE_WRAP_FONT_PX.
 const TITLE_MAX_FONT_PX = 34;
@@ -90,7 +93,11 @@ export default function Hero() {
   const location = useLocation();
   const heroContent = content.hero;
   const isLatinScript = locale !== 'ar';
-  const titleTyped = typedTitle === heroContent.title;
+  const titleImage = heroContent.titleImage;
+  // The completion marker: the image URL when the title is a calligraphy image, the text otherwise.
+  // Keyed on the image (not the text) so a CMS title override arriving late doesn't restart the reveal.
+  const titleToken = titleImage ?? heroContent.title;
+  const titleTyped = typedTitle === titleToken;
   const heroEase = [0.22, 1, 0.36, 1] as const;
   const {
     ref: titleRef,
@@ -112,13 +119,22 @@ export default function Hero() {
     return () => desktopMediaQuery.removeEventListener('change', handleViewportChange);
   }, []);
 
+  // The reveal follows the writing direction: from the right for RTL scripts, from the left otherwise.
+  // Every inset keeps the % unit so the browser can interpolate between the two values.
+  const titleImageClipStart = isRtl ? 'inset(0% 0% 0% 100%)' : 'inset(0% 100% 0% 0%)';
+
+  // Mirrors TypewriterText's reduced-motion path: the finished title shows at once and unlocks the button.
+  useEffect(() => {
+    if (titleImage && shouldReduceMotion) setTypedTitle(titleImage);
+  }, [titleImage, shouldReduceMotion]);
+
   const openVideo = useCallback(() => {
     setBackgroundVideoPaused(true);
     setVideoOpen(true);
   }, []);
   const closeVideo = useCallback(() => setVideoOpen(false), []);
   const resumeBackgroundVideo = useCallback(() => setBackgroundVideoPaused(false), []);
-  const handleTitleTyped = useCallback(() => setTypedTitle(heroContent.title), [heroContent.title]);
+  const handleTitleTyped = useCallback(() => setTypedTitle(titleToken), [titleToken]);
 
   const scrollToAbout = () => {
     const el = document.querySelector('#about');
@@ -194,22 +210,44 @@ export default function Hero() {
       <div className="absolute inset-x-0 bottom-[clamp(40px,7svh,64px)] z-10 px-5 pt-28 sm:px-8 md:bottom-[clamp(64px,9vh,96px)] lg:px-12">
         <div className="mx-auto flex max-w-7xl items-end justify-start">
           <div className="w-full text-start">
-            <h1
-              ref={titleRef}
-              style={{ fontSize: titleFontSize }}
-              className={`no-transitions font-brand font-black leading-[1.2] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] ${
-                titleSingleLine ? 'whitespace-nowrap' : 'text-balance'
-              } ${isLatinScript ? 'uppercase tracking-[0.02em]' : ''}`}
-            >
-              <TypewriterText
-                key={heroContent.title}
-                text={heroContent.title}
-                startDelay={TITLE_TYPING_START_DELAY}
-                charDelay={TITLE_TYPING_CHAR_DELAY}
-                respectReducedMotion
-                onComplete={handleTitleTyped}
-              />
-            </h1>
+            {titleImage ? (
+              <h1 className="leading-none">
+                <motion.img
+                  key={titleImage}
+                  src={titleImage}
+                  alt={heroContent.title}
+                  draggable={false}
+                  loading="eager"
+                  className="block h-auto select-none drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]"
+                  style={{ width: 'min(100%, 20rem)' }}
+                  initial={shouldReduceMotion ? false : { clipPath: titleImageClipStart }}
+                  animate={{ clipPath: 'inset(0% 0% 0% 0%)' }}
+                  transition={{
+                    delay: shouldReduceMotion ? 0 : TITLE_TYPING_START_DELAY / 1000,
+                    duration: shouldReduceMotion ? 0.01 : TITLE_IMAGE_REVEAL_SECONDS,
+                    ease: 'linear',
+                  }}
+                  onAnimationComplete={handleTitleTyped}
+                />
+              </h1>
+            ) : (
+              <h1
+                ref={titleRef}
+                style={{ fontSize: titleFontSize }}
+                className={`no-transitions font-brand font-black leading-[1.2] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] ${
+                  titleSingleLine ? 'whitespace-nowrap' : 'text-balance'
+                } ${isLatinScript ? 'uppercase tracking-[0.02em]' : ''}`}
+              >
+                <TypewriterText
+                  key={heroContent.title}
+                  text={heroContent.title}
+                  startDelay={TITLE_TYPING_START_DELAY}
+                  charDelay={TITLE_TYPING_CHAR_DELAY}
+                  respectReducedMotion
+                  onComplete={handleTitleTyped}
+                />
+              </h1>
+            )}
 
             <motion.div
               initial={false}

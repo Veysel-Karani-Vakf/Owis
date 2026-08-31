@@ -187,7 +187,7 @@ export default function Header() {
             <img
               src={siteConfig.logo}
               alt={siteConfig.name}
-              className={`h-9 w-auto transition-all duration-300 hover:scale-[1.02] sm:h-10 md:h-12 ${
+              className={`h-12 w-auto transition-all duration-300 hover:scale-[1.02] md:h-16 ${
                 scrolled ? '' : 'brightness-0 invert drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]'
               }`}
               onError={(event) => {

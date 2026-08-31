@@ -65,7 +65,7 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
         <img
           src={siteConfig.logo}
           alt={siteConfig.name}
-          className="h-10 w-auto brightness-0 invert"
+          className="h-12 w-auto brightness-0 invert"
           onError={(event) => {
             const target = event.target as HTMLImageElement;
             target.style.display = 'none';

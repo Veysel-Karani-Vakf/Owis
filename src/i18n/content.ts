@@ -79,6 +79,8 @@ export type SiteContent = {
   navLinks: { label: string; href: string; menu?: NavMenu }[];
   hero: {
     title: string;
+    /** Calligraphy/wordmark shown instead of the typed title; `title` stays as its alt text. */
+    titleImage?: string;
     secondaryButton: string;
     /** "#anchor" scrolls on the page, "/path" navigates. */
     secondaryUrl: string;
@@ -231,7 +233,7 @@ export const languages: { code: Locale; label: string; nativeName: string; short
 ];
 
 const shared = {
-  logo: '/media/cropped-cropped-170x57-1-18a12f60.png',
+  logo: '/media/waqf-owais-logo.png',
   videoId: 'LMK-Sv__71w',
   mainImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   socialLinks: {
@@ -334,7 +336,8 @@ export const localizedContent: Record<Locale, SiteContent> = {
       { label: 'شاركنا', href: '/participate' },
     ],
     hero: {
-      title: 'وقفٌ يبني الإنسان ويصنع المستقبل',
+      title: 'وقفنا معاً لنهضة اليمن',
+      titleImage: '/media/hero-slogan-ar-white.png',
       secondaryButton: 'ساهم الآن',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
@@ -601,7 +604,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       { label: 'Katıl', href: '/participate' },
     ],
     hero: {
-      title: 'İnsanı inşa eden, geleceği kuran vakıf',
+      title: "Yemen'in dirilişi için birlikte vakfettik",
       secondaryButton: 'Şimdi Katkı Sun',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
@@ -868,7 +871,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       { label: 'Participate', href: '/participate' },
     ],
     hero: {
-      title: 'A waqf that builds people and shapes the future',
+      title: 'Together we stand for the renaissance of Yemen',
       secondaryButton: 'Contribute Now',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,

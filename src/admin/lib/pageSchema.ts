@@ -293,6 +293,16 @@ export const SITE_PAGES: SitePageDef[] = [
         anchor: '#hero',
         fields: [
           { path: 'hero.title', label: L('العنوان الكبير', 'Büyük başlık', 'Headline'), type: 'textarea' },
+          {
+            path: 'hero.titleImage',
+            label: L('صورة العنوان (مخطوطة)', 'Başlık görseli (hat yazısı)', 'Headline image (calligraphy)'),
+            type: 'image',
+            help: L(
+              'عند تعيينها تظهر بدل العنوان النصي، ويبقى العنوان وصفاً لها لقارئات الشاشة',
+              'Ayarlandığında metin başlığın yerine görünür; başlık ekran okuyucular için açıklama olur',
+              'Shown instead of the text headline; the headline stays as its alt text for screen readers',
+            ),
+          },
           { path: 'hero.secondaryButton', label: L('نص الزر', 'Buton metni', 'Button label'), type: 'text' },
           {
             path: 'hero.secondaryUrl',
@@ -819,13 +829,11 @@ export const SITE_PAGES: SitePageDef[] = [
         label: L('نصوص المدن', 'Şehir etiketleri', 'City labels'),
         description: L('تظهر عندما يحتوي برنامج على قائمة مدن', 'Bir programda şehir listesi olduğunda görünür', 'Shown when a program has a list of cities'),
         icon: Building2,
-        // The cities data currently lives on the institutional-development
-        // program; its custom layout hides the city media block, so isolate
-        // the page body rather than an element that may not exist.
         route: '/programs/institutional-development',
-        anchor: 'main',
+        anchor: '#cms-program-cities',
         fields: labelFields('labels', [
           ['cityMedia', 'عنوان وسائط المدن', 'Şehir medyası', 'City media heading'],
+          ['cityExplorerDescription', 'وصف وسائط المدن', 'Şehir medyası açıklaması', 'City media description', 'textarea'],
           ['partner', 'كلمة "الشريك"', 'Ortak', 'Partner'],
         ]),
       },

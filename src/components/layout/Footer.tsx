@@ -130,7 +130,7 @@ export default function Footer() {
             <img
               src={siteConfig.logo}
               alt={siteConfig.name}
-              className="mb-6 h-14 w-auto brightness-0 invert"
+              className="mb-6 h-20 w-auto brightness-0 invert"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
