@@ -954,6 +954,7 @@ function InstitutionalDossier({
   onVideoSelect: (video: ActiveVideo) => void;
 }) {
   const { isRtl } = useI18n();
+  const reduced = !!useReducedMotion();
   const sections = program.sections ?? [];
   const byId = new Map(sections.map((section) => [section.id, section]));
   const capacityIntro = byId.get('capacity-intro');
@@ -974,6 +975,36 @@ function InstitutionalDossier({
   const statementClosing =
     statementParagraphs.length > 1 ? statementParagraphs[statementParagraphs.length - 1] : undefined;
   const statementBody = statementClosing ? statementParagraphs.slice(0, -1) : statementParagraphs;
+
+  // Choreography of the first-phase record: each card staggers its children in,
+  // the plate's headline slides from the reading direction, badges spring, and
+  // the communiqué's rule draws itself. Everything collapses under reduced motion.
+  const instant = { duration: 0.01 };
+  const recordGroup = (delay: number) => ({
+    hidden: {},
+    show: { transition: reduced ? undefined : { staggerChildren: 0.11, delayChildren: delay } },
+  });
+  const recordItem = {
+    hidden: reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
+    show: { opacity: 1, y: 0, transition: reduced ? instant : { duration: 0.55, ease: revealEase } },
+  };
+  const recordSlide = {
+    hidden: reduced ? { opacity: 1, x: 0 } : { opacity: 0, x: isRtl ? -26 : 26 },
+    show: { opacity: 1, x: 0, transition: reduced ? instant : { duration: 0.6, ease: revealEase } },
+  };
+  const recordPop = {
+    hidden: reduced ? { opacity: 1, scale: 1, rotate: 0 } : { opacity: 0, scale: 0.5, rotate: -10 },
+    show: {
+      opacity: 1,
+      scale: 1,
+      rotate: 0,
+      transition: reduced ? instant : { type: 'spring' as const, stiffness: 320, damping: 18 },
+    },
+  };
+  const recordRule = {
+    hidden: reduced ? { scaleX: 1 } : { scaleX: 0 },
+    show: { scaleX: 1, transition: reduced ? instant : { duration: 0.7, ease: revealEase } },
+  };
 
   // The two programs of the track, presented up front so neither gets lost in the record.
   const programCards = [
@@ -1100,64 +1131,133 @@ function InstitutionalDossier({
               }
             >
               {phase && (
-                <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
+                <motion.aside
+                  variants={recordGroup(0.05)}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.3 }}
+                  className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-primary-800 via-primary-700 to-primary-950 p-7 text-start text-white shadow-[0_24px_60px_rgba(125,7,12,0.3)] md:p-8 lg:sticky lg:top-28"
+                >
                   {/* The phase plate: the record's official cover, dark like the forum showpiece. */}
-                  <aside className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-primary-800 via-primary-700 to-primary-950 p-7 text-start text-white shadow-[0_24px_60px_rgba(125,7,12,0.3)] md:p-8 lg:sticky lg:top-28">
-                    <CornerTicks className="border-white/25" />
-                    <span
+                  <CornerTicks className="border-white/25" />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -end-14 -top-14 h-48 w-48 rounded-full bg-white/10 blur-2xl"
+                  />
+                  {!reduced && (
+                    <motion.svg
                       aria-hidden="true"
-                      className="pointer-events-none absolute -end-14 -top-14 h-48 w-48 rounded-full bg-white/10 blur-2xl"
+                      viewBox="0 0 200 200"
+                      initial={false}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 70, repeat: Infinity, ease: 'linear' }}
+                      className="pointer-events-none absolute -bottom-16 -start-16 h-56 w-56 text-white/15"
+                    >
+                      <circle cx="100" cy="100" r="92" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 10" />
+                    </motion.svg>
+                  )}
+                  {!reduced && (
+                    <motion.span
+                      aria-hidden="true"
+                      initial={{ x: '-130%' }}
+                      whileInView={{ x: '130%' }}
+                      viewport={{ once: true, amount: 0.4 }}
+                      transition={{ duration: 1.2, ease: 'easeInOut', delay: 0.55 }}
+                      className="pointer-events-none absolute inset-y-0 start-0 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/[0.09] to-transparent"
                     />
-                    <span className="relative flex h-12 w-12 items-center justify-center border border-white/25 bg-white/10">
-                      <CalendarDays className="h-6 w-6" aria-hidden="true" />
-                    </span>
-                    <p className="relative mt-5 flex items-center gap-2.5 text-sm font-black text-white/80">
-                      <span aria-hidden="true" className="h-2 w-2 shrink-0 bg-white" />
-                      {phase.label}
-                    </p>
-                    <p className="relative mt-1.5 text-3xl font-bold leading-tight md:text-4xl">{phase.period}</p>
-                    <p className="relative mt-4 text-base leading-relaxed text-white/85">{phase.description}</p>
-                    {capacityIntro?.paragraphs?.[1] && (
-                      <p className="relative mt-5 rounded-2xl bg-white/10 p-4 text-sm leading-relaxed text-white/90 ring-1 ring-white/15">
-                        {capacityIntro.paragraphs[1]}
-                      </p>
+                  )}
+                  <motion.span
+                    variants={recordPop}
+                    className="relative flex h-12 w-12 items-center justify-center border border-white/25 bg-white/10"
+                  >
+                    {!reduced && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 animate-ping bg-white/20"
+                        style={{ animationDuration: '3s' }}
+                      />
                     )}
-                  </aside>
-                </FadeContent>
+                    <CalendarDays className="relative h-6 w-6" aria-hidden="true" />
+                  </motion.span>
+                  <motion.p
+                    variants={recordItem}
+                    className="relative mt-5 flex items-center gap-2.5 text-sm font-black text-white/80"
+                  >
+                    <span aria-hidden="true" className="h-2 w-2 shrink-0 bg-white" />
+                    {phase.label}
+                  </motion.p>
+                  <motion.p variants={recordSlide} className="relative mt-1.5 text-3xl font-bold leading-tight md:text-4xl">
+                    {phase.period}
+                  </motion.p>
+                  <motion.p variants={recordItem} className="relative mt-4 text-base leading-relaxed text-white/85">
+                    {phase.description}
+                  </motion.p>
+                  {capacityIntro?.paragraphs?.[1] && (
+                    <motion.p
+                      variants={recordItem}
+                      className="relative mt-5 rounded-2xl bg-white/10 p-4 text-sm leading-relaxed text-white/90 ring-1 ring-white/15"
+                    >
+                      {capacityIntro.paragraphs[1]}
+                    </motion.p>
+                  )}
+                </motion.aside>
               )}
               {statement && (
-                <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} delay={90} threshold={0.18} once>
+                <motion.article
+                  variants={recordGroup(0.18)}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.2 }}
+                  className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-white p-7 text-start shadow-[0_20px_56px_rgba(40,12,18,0.08)] md:p-10"
+                >
                   {/* The communiqué: a lead line, the body, and the closing formula set apart. */}
-                  <article className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-white p-7 text-start shadow-[0_20px_56px_rgba(40,12,18,0.08)] md:p-10">
-                    <CornerTicks />
-                    <Quote
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -end-6 -top-6 h-36 w-36 rotate-6 text-primary-600/[0.05]"
+                  <CornerTicks />
+                  <motion.span
+                    aria-hidden="true"
+                    initial={false}
+                    animate={reduced ? undefined : { y: [0, 10, 0], rotate: [6, 9, 6] }}
+                    transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                    className="pointer-events-none absolute -end-6 -top-6 rotate-6"
+                  >
+                    <Quote className="h-36 w-36 text-primary-600/[0.05]" aria-hidden="true" />
+                  </motion.span>
+                  <motion.div variants={recordItem} className="relative flex items-start justify-between gap-4">
+                    <h3 className="text-2xl font-bold leading-tight text-dark-950 md:text-3xl">{statement.title}</h3>
+                    <motion.span
+                      variants={recordPop}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center border border-primary-100 bg-primary-50 text-primary-600"
+                    >
+                      <Quote className="h-5 w-5" aria-hidden="true" />
+                    </motion.span>
+                  </motion.div>
+                  <motion.div variants={recordItem} className="relative mt-4 flex items-center gap-2.5" aria-hidden="true">
+                    <span className="h-2 w-2 bg-primary-600" />
+                    <motion.span
+                      variants={recordRule}
+                      style={{ transformOrigin: isRtl ? 'right center' : 'left center' }}
+                      className="h-px flex-1 bg-primary-100"
                     />
-                    <div className="relative flex items-start justify-between gap-4">
-                      <h3 className="text-2xl font-bold leading-tight text-dark-950 md:text-3xl">{statement.title}</h3>
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-primary-100 bg-primary-50 text-primary-600">
-                        <Quote className="h-5 w-5" aria-hidden="true" />
-                      </span>
-                    </div>
-                    <div className="relative mt-4 flex items-center gap-2.5" aria-hidden="true">
-                      <span className="h-2 w-2 bg-primary-600" />
-                      <span className="h-px flex-1 bg-primary-100" />
-                    </div>
-                    <div className="relative mt-6 space-y-5 text-base leading-relaxed text-dark-600">
-                      {statementBody.map((paragraph, index) => (
-                        <p key={paragraph} className={index === 0 ? 'font-semibold text-dark-800' : undefined}>
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                    {statementClosing && (
-                      <p className="relative mt-6 border-t border-dashed border-primary-200 pt-5 text-base leading-relaxed text-dark-500">
-                        {statementClosing}
-                      </p>
-                    )}
-                  </article>
-                </FadeContent>
+                  </motion.div>
+                  <div className="relative mt-6 space-y-5 text-base leading-relaxed text-dark-600">
+                    {statementBody.map((paragraph, index) => (
+                      <motion.p
+                        variants={recordItem}
+                        key={paragraph}
+                        className={index === 0 ? 'font-semibold text-dark-800' : undefined}
+                      >
+                        {paragraph}
+                      </motion.p>
+                    ))}
+                  </div>
+                  {statementClosing && (
+                    <motion.p
+                      variants={recordItem}
+                      className="relative mt-6 border-t border-dashed border-primary-200 pt-5 text-base leading-relaxed text-dark-500"
+                    >
+                      {statementClosing}
+                    </motion.p>
+                  )}
+                </motion.article>
               )}
             </div>
           </div>
