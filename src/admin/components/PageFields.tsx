@@ -45,7 +45,7 @@ export type FieldNature = 'content' | 'link' | 'media' | 'setting';
 const LINK_PATH = /(href|url|link|destination|canonical)/i;
 
 export function fieldNature(field: PageFieldDef): FieldNature {
-  if (field.type === 'image' || field.type === 'video') return 'media';
+  if (field.type === 'image' || field.type === 'video' || field.type === 'file') return 'media';
   if (field.type === 'url') return 'link';
   if (
     field.type === 'select' ||
@@ -162,6 +162,11 @@ export function PageFieldControl({ field, value, onChange, dir, onDimensions }: 
 
     case 'image':
       return <ImageInput value={asString(value)} onChange={onChange} onDimensions={onDimensions} />;
+
+    case 'file':
+      // Document link (e.g. the waqf profile PDF): upload to the media
+      // bucket's docs folder, pick from the library, or paste an exact URL.
+      return <ImageInput value={asString(value)} onChange={onChange} accept="application/pdf" />;
 
     case 'number':
       return (
@@ -474,7 +479,7 @@ export function RepeaterInput({
   const renderField = (itemField: PageFieldDef, item: Record<string, unknown>, index: number) => {
     const wide =
       itemField.full ||
-      ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(itemField.type);
+      ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'file', 'localizedTextarea'].includes(itemField.type);
     return (
       <div key={itemField.path || itemField.type} className={wide ? 'md:col-span-2' : ''}>
         <label className="mb-1 block">

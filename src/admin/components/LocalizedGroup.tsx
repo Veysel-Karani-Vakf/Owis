@@ -50,7 +50,7 @@ export function LocalizedGroupInput({
         {fields.map((field) => {
           const wide =
             field.full ||
-            ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(field.type);
+            ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'file', 'localizedTextarea'].includes(field.type);
           return (
             <div key={field.path || field.type} className={wide ? 'md:col-span-2' : ''}>
               <label className="mb-1 block text-xs font-medium text-slate-600">{field.label[locale]}</label>

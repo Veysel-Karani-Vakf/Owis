@@ -59,6 +59,7 @@ export type PageFieldType =
   | 'paragraphs'
   | 'list'
   | 'image'
+  | 'file'
   | 'url'
   | 'number'
   | 'boolean'
@@ -312,6 +313,11 @@ export const SITE_PAGES: SitePageDef[] = [
             label: L('وجهة زر "اعرف المزيد"', '"Daha fazla" hedefi', '"Learn more" destination'),
             type: 'text',
             help: L('مثال: /about/waqf', 'Örnek: /about/waqf', 'Example: /about/waqf'),
+          },
+          {
+            path: 'about.goals',
+            label: L('قائمة الأهداف (نقاط ✓)', 'Hedef listesi (✓ maddeler)', 'Goals checklist (✓ items)'),
+            type: 'list',
           },
           { path: 'about.tabs.vision', label: L('اسم تبويب الرؤية', 'Vizyon sekmesi adı', 'Vision tab name'), type: 'text' },
           { path: 'about.vision', label: L('نص الرؤية', 'Vizyon metni', 'Vision text'), type: 'textarea' },
@@ -714,9 +720,12 @@ export const SITE_PAGES: SitePageDef[] = [
           ['facts', 'عنوان معلومات المشروع', 'Proje bilgileri başlığı', 'Project facts heading'],
           ['overview', 'عنوان نظرة عامة', 'Genel bakış', 'Overview heading'],
           ['returns', 'عنوان مصارف العوائد', 'Getiri kullanımları başlığı', 'Return uses heading'],
-          ['video', 'عنوان الفيديو الرسمي', 'Resmi video başlığı', 'Official video heading'],
+          ['video', 'عنوان فيديو المشروع', 'Proje videosu başlığı', 'Project video heading'],
           ['otherProjects', 'عنوان مشاريع أخرى', 'Diğer projeler başlığı', 'Other projects heading'],
           ['backToProjects', 'زر العودة إلى المشاريع', 'Projelere dön', 'Back to projects button'],
+          // The calculator/share labels (quantity, total, share…) belong to
+          // ProjectShowcase, which is not wired into any route yet — no schema
+          // fields until the component ships, so editors never edit dead text.
         ]),
       },
     ],
@@ -766,7 +775,7 @@ export const SITE_PAGES: SitePageDef[] = [
           ['noVerifiedStats', 'ملاحظة عدم وجود أرقام موثقة', 'Doğrulanmış rakam yok notu', 'No verified figures note', 'textarea'],
           ['initiatives', 'عنوان المبادرات', 'Girişimler', 'Initiatives heading'],
           ['products', 'كلمة "المنتجات"', 'Ürünler', 'Products'],
-          ['officialMedia', 'عنوان الوسائط الرسمية', 'Resmi medya', 'Official media heading'],
+          ['officialMedia', 'عنوان الصور والفيديوهات', 'Medya başlığı', 'Media heading'],
           ['videoGallery', 'عنوان معرض الفيديو', 'Video galerisi', 'Video gallery heading'],
           ['videoGalleryDescription', 'وصف معرض الفيديو', 'Video galerisi açıklaması', 'Video gallery description', 'textarea'],
           ['watchVideo', 'زر مشاهدة الفيديو', 'Videoyu izle', 'Watch video button'],
@@ -777,6 +786,7 @@ export const SITE_PAGES: SitePageDef[] = [
           ['details', 'زر التفاصيل', 'Detaylar', 'Details button'],
           ['highlights', 'اسم شريط أبرز الملامح', 'Öne çıkanlar şeridi', 'Highlights strip name'],
           ['exploreProgram', 'زر استكشاف البرنامج', 'Programı keşfet butonu', 'Explore button'],
+          ['donate', 'زر المساهمة في الواجهة', 'Katkı butonu', 'Hero donate button'],
         ]),
       },
       {
@@ -824,6 +834,19 @@ export const SITE_PAGES: SitePageDef[] = [
           ['audiences', 'عنوان الفئات المستهدفة', 'Hedef kitleler', 'Audiences heading'],
           ['audiencesDescription', 'وصف الفئات المستهدفة', 'Hedef kitle açıklaması', 'Audiences description', 'textarea'],
           ['exploreTrack', 'زر استكشاف المسار', 'Programı keşfet butonu', 'Explore button'],
+          ['trackProgramsEyebrow', 'السطر فوق برنامجي المسار', 'Eksen programları üst satırı', 'Line above the track programs'],
+          ['trackPrograms', 'عنوان برنامجي المسار', 'Eksen programları başlığı', 'Track programs heading'],
+          ['trackProgramsDescription', 'وصف برنامجي المسار', 'Eksen programları açıklaması', 'Track programs description', 'textarea'],
+          ['programOneLabel', 'تبويب البرنامج الأول', 'Birinci program sekmesi', 'Program one tab'],
+          ['programTwoLabel', 'تبويب البرنامج الثاني', 'İkinci program sekmesi', 'Program two tab'],
+          ['phaseEyebrow', 'شارة "المرحلة الأولى"', 'Birinci aşama rozeti', '"First phase" badge'],
+          ['recommendationsEyebrow', 'السطر فوق مخرجات المرحلة', 'Aşama çıktıları üst satırı', 'Line above the phase outcomes'],
+          ['recommendationsDescription', 'وصف مخرجات المرحلة', 'Aşama çıktıları açıklaması', 'Phase outcomes description', 'textarea'],
+          ['forumEyebrow', 'شارة الملتقى المصاحب', 'Forum rozeti', 'Companion forum badge'],
+          ['forumObjectives', 'عنوان أهداف الملتقى', 'Forum hedefleri başlığı', 'Forum objectives heading'],
+          ['focusAreas', 'عنوان مجالات العمل', 'Çalışma alanları başlığı', 'Areas of work heading'],
+          ['focusAreasDescription', 'وصف مجالات العمل', 'Çalışma alanları açıklaması', 'Areas of work description', 'textarea'],
+          ['areaLabel', 'كلمة "المجال"', '"Alan" kelimesi', '"Area" word'],
         ]),
       },
       {
@@ -872,7 +895,16 @@ export const SITE_PAGES: SitePageDef[] = [
             label: L('نص زر التحميل', 'İndirme butonu', 'Download label'),
             type: 'text',
           },
-          { path: 'intro.downloadUrl', label: L('رابط التحميل', 'İndirme bağlantısı', 'Download URL'), type: 'text' },
+          {
+            path: 'intro.downloadUrl',
+            label: L('الملف التعريفي (PDF)', 'Tanıtım dosyası (PDF)', 'Profile file (PDF)'),
+            type: 'file',
+            help: L(
+              'ارفع ملف PDF أو اختر من مكتبة الوسائط؛ لكل لغة ملفها الخاص',
+              'PDF yükleyin veya medya kütüphanesinden seçin; her dilin kendi dosyası vardır',
+              'Upload a PDF or pick one from the media library; each language has its own file',
+            ),
+          },
           {
             path: 'intro.facts',
             label: L('بطاقات الحقائق', 'Bilgi kartları', 'Fact tiles'),
@@ -1147,7 +1179,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'checkout-form',
         label: L('أقسام نموذج الدفع', 'Ödeme formu bölümleri', 'Payment form sections'),
-        description: L('عناوين وحقول: ملخص المساهمة، المبلغ، بيانات المتبرع، بيانات البطاقة', 'Özet, tutar, bağışçı ve kart bölümlerinin başlıkları ve alanları', 'Headings and fields of the summary, amount, donor and card sections'),
+        description: L('عناوين وحقول: ملخص المساهمة، المبلغ، بيانات المساهم، بيانات البطاقة', 'Özet, tutar, katkı sahibi ve kart bölümlerinin başlıkları ve alanları', 'Headings and fields of the summary, amount, contributor and card sections'),
         icon: LayoutGrid,
         anchor: '#cms-checkout-form',
         fields: [
@@ -1157,7 +1189,7 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'checkout.amount.customLabel', label: L('عبارة "أدخل مبلغاً آخر"', 'Başka tutar etiketi', 'Custom amount label'), type: 'text' },
           { path: 'checkout.amount.customPlaceholder', label: L('مثال داخل حقل المبلغ', 'Tutar alanı örneği', 'Amount placeholder'), type: 'text' },
           { path: 'checkout.amount.currencyNote', label: L('ملاحظة العملة', 'Para birimi notu', 'Currency note'), type: 'text' },
-          { path: 'checkout.donor.heading', label: L('عنوان "بيانات المتبرع"', 'Bağışçı başlığı', 'Donor heading'), type: 'text' },
+          { path: 'checkout.donor.heading', label: L('عنوان "بيانات المساهم"', 'Katkı sahibi başlığı', 'Contributor heading'), type: 'text' },
           { path: 'checkout.donor.nameLabel', label: L('حقل الاسم', 'Ad alanı', 'Name field'), type: 'text' },
           { path: 'checkout.donor.emailLabel', label: L('حقل البريد', 'E-posta alanı', 'Email field'), type: 'text' },
           { path: 'checkout.donor.phoneLabel', label: L('حقل الهاتف', 'Telefon alanı', 'Phone field'), type: 'text' },
@@ -1216,7 +1248,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'result-success',
         label: L('صفحة النتيجة — النجاح', 'Sonuç sayfası — başarı', 'Result page — success'),
-        description: L('ما يراه المتبرع بعد اكتمال الدفع بنجاح', 'Ödeme başarıyla tamamlandığında görünen', 'What the donor sees after a successful payment'),
+        description: L('ما يراه المساهم بعد اكتمال الدفع بنجاح', 'Ödeme başarıyla tamamlandığında görünen', 'What the contributor sees after a successful payment'),
         icon: CheckCircle2,
         fields: [
           { path: 'result.loading', label: L('نص "جارٍ التحقق"', 'Doğrulama metni', '"Verifying" text'), type: 'text' },
@@ -1226,7 +1258,7 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'result.success.amountLabel', label: L('عنوان "المبلغ"', 'Tutar etiketi', 'Amount label'), type: 'text' },
           { path: 'result.success.referenceLabel', label: L('عنوان "رقم التفويض"', 'Onay kodu etiketi', 'Auth code label'), type: 'text' },
           { path: 'result.success.opportunityLabel', label: L('عنوان "فرصة المساهمة"', 'Fırsat etiketi', 'Opportunity label'), type: 'text' },
-          { path: 'result.success.donorLabel', label: L('عنوان "اسم المتبرع"', 'Bağışçı etiketi', 'Donor label'), type: 'text' },
+          { path: 'result.success.donorLabel', label: L('عنوان "اسم المساهم"', 'Katkı sahibi etiketi', 'Contributor label'), type: 'text' },
         ],
       },
       {

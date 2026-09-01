@@ -224,16 +224,18 @@ export default function WaqfAboutPage() {
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
-                <a
-                  href={page.intro.downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-800 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-700"
-                >
-                  <Download className="h-4 w-4" />
-                  {page.intro.downloadLabel}
-                  <ArrowUpRight className={`h-4 w-4 ${isRtl ? '-scale-x-100' : ''}`} />
-                </a>
+                {page.intro.downloadUrl && (
+                  <a
+                    href={page.intro.downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-800 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-700"
+                  >
+                    <Download className="h-4 w-4" />
+                    {page.intro.downloadLabel}
+                    <ArrowUpRight className={`h-4 w-4 ${isRtl ? '-scale-x-100' : ''}`} />
+                  </a>
+                )}
               </div>
             </FadeContent>
 
@@ -246,7 +248,7 @@ export default function WaqfAboutPage() {
                 {introVideoStarted && introVideo?.kind === 'file' ? (
                   <video
                     src={introVideo.src}
-                    poster={page.hero.image}
+                    poster={page.video.posterImage || page.hero.image}
                     title={page.video.title}
                     controls
                     autoPlay
@@ -271,7 +273,7 @@ export default function WaqfAboutPage() {
                 ) : (
                   <>
                     <img
-                      src={page.hero.image}
+                      src={page.video.posterImage || page.hero.image}
                       alt={page.hero.imageAlt ?? ''}
                       loading="lazy"
                       className="h-full w-full object-cover opacity-80"

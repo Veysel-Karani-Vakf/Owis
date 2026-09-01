@@ -388,7 +388,7 @@ function PlainGroup({
       {fields.map((sub) => {
         const wide =
           sub.full ||
-          ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'localizedTextarea'].includes(sub.type);
+          ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'video', 'file', 'localizedTextarea'].includes(sub.type);
         return (
           <div key={sub.path || sub.type} className={wide ? 'md:col-span-2' : ''}>
             <label className="mb-1 block text-xs font-medium text-slate-600">{sub.label[uiLocale]}</label>

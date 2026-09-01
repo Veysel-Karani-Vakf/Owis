@@ -4,6 +4,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   Inbox,
   Images,
@@ -12,6 +13,8 @@ import {
   FileEdit,
   Users,
   Clock,
+  ArrowUpLeft,
+  ArrowUpRight,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -74,6 +77,9 @@ async function loadRecentEdits(locale: Locale): Promise<RecentEdit[]> {
       const { data, error } = await supabase
         .from('site_pages')
         .select('key, updated_at')
+        // The assistant-ai config row has no owning area; keep it from
+        // consuming one of the six recent-edit slots.
+        .neq('key', 'assistant-ai')
         .order('updated_at', { ascending: false })
         .limit(6);
       if (error || !data) return [] as RecentEdit[];
@@ -111,9 +117,26 @@ function formatDate(iso: string, locale: Locale) {
   });
 }
 
+// --- page-card animations ---------------------------------------------------
+
+const cardEase = [0.22, 1, 0.36, 1] as const;
+
+const cardGridVariants: Variants = {
+  hidden: {},
+  show: { transition: { delayChildren: 0.08, staggerChildren: 0.06 } },
+  reduced: { transition: { delayChildren: 0, staggerChildren: 0 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 26, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: cardEase } },
+  reduced: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.01 } },
+};
+
 export default function DashboardPage() {
   const strings = useAdminStrings();
   const { locale } = useI18n();
+  const shouldReduceMotion = useReducedMotion();
   const [published, setPublished] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<number | null>(null);
   /** Published rows per resource — shown as a count badge on each page card. */
@@ -126,6 +149,11 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState<RecentEdit[]>([]);
 
   const label = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
+
+  const isRtl = locale === 'ar';
+  // The hover arrow points "into" the page it opens, following the reading direction.
+  const HoverArrow = isRtl ? ArrowUpLeft : ArrowUpRight;
+  const cardsState = shouldReduceMotion ? 'reduced' : 'show';
 
   const partLabel = (part: AreaPart): string => {
     if (part.label) return part.label[locale];
@@ -196,13 +224,21 @@ export default function DashboardPage() {
         <p className="mt-2 text-xs text-slate-500">{hint}</p>
       </>
     );
-    const cls = 'block rounded-xl border border-slate-200 bg-white p-5 transition';
-    return to ? (
-      <Link to={to} className={cls + ' hover:border-slate-300 hover:shadow-sm'}>
-        {inner}
-      </Link>
-    ) : (
-      <div className={cls}>{inner}</div>
+    const cls = 'block h-full rounded-xl border border-slate-200 bg-white p-5 transition';
+    return (
+      <motion.div
+        variants={cardVariants}
+        whileHover={to && !shouldReduceMotion ? { y: -3 } : undefined}
+        transition={{ type: 'spring', stiffness: 340, damping: 26 }}
+      >
+        {to ? (
+          <Link to={to} className={cls + ' hover:border-slate-300 hover:shadow-md'}>
+            {inner}
+          </Link>
+        ) : (
+          <div className={cls}>{inner}</div>
+        )}
+      </motion.div>
     );
   };
 
@@ -238,7 +274,12 @@ export default function DashboardPage() {
       {/* One card per public page; the whole card is a single link. Each page
           keeps one identity colour (bar + icon) that follows it everywhere —
           sidebar, this grid, its hub — so colours become a map of the site. */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <motion.div
+        variants={cardGridVariants}
+        initial={shouldReduceMotion ? 'reduced' : 'hidden'}
+        animate={cardsState}
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+      >
         {SITE_AREAS.map((area) => {
           const Icon = area.icon;
           const collectionKeys = area.parts.flatMap((part) =>
@@ -249,53 +290,80 @@ export default function DashboardPage() {
               ? collectionKeys.reduce((sum, key) => sum + (countsByResource[key] ?? 0), 0)
               : null;
           return (
-            <Link
+            <motion.div
               key={area.key}
-              to={hubPath(area)}
-              className={
-                'group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md ' +
-                area.tone.hover
-              }
+              variants={cardVariants}
+              whileHover={shouldReduceMotion ? undefined : { y: -5 }}
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 26 }}
             >
-              <span className={'block h-1 ' + area.tone.bar} />
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-2 flex items-center gap-3">
-                  <span className={'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + area.tone.soft}>
-                    <Icon size={19} />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
-                    {area.label[locale]}
-                  </span>
-                  {itemCount !== null && (
+              <Link
+                to={hubPath(area)}
+                className={
+                  'group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:shadow-lg motion-reduce:transition-none ' +
+                  area.tone.hover
+                }
+              >
+                <span className={'block h-1 transition-all duration-300 group-hover:h-1.5 motion-reduce:transition-none ' + area.tone.bar} />
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="mb-2 flex items-center gap-3">
                     <span
-                      className={'shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ' + area.tone.soft}
-                      title={label('عنصر منشور', 'yayında öğe', 'published items')}
+                      className={
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100 ' +
+                        area.tone.soft
+                      }
                     >
-                      {itemCount.toLocaleString(locale)}
+                      <Icon size={19} />
                     </span>
+                    <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+                      {area.label[locale]}
+                    </span>
+                    {itemCount !== null && (
+                      <span
+                        className={'shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ' + area.tone.soft}
+                        title={label('عنصر منشور', 'yayında öğe', 'published items')}
+                      >
+                        {itemCount.toLocaleString(locale)}
+                      </span>
+                    )}
+                    <HoverArrow
+                      size={16}
+                      aria-hidden="true"
+                      className={
+                        'shrink-0 text-slate-400 opacity-0 transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0 ' +
+                        (isRtl
+                          ? 'translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0'
+                          : '-translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0')
+                      }
+                    />
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-500">{area.description[locale]}</p>
+                  {area.parts.length > 1 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3">
+                      {area.parts.map((part) => (
+                        <span
+                          key={partKey(part)}
+                          className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500 transition-colors duration-300 group-hover:border-slate-300 group-hover:text-slate-600 motion-reduce:transition-none"
+                        >
+                          {partLabel(part)}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <p className="text-sm leading-relaxed text-slate-500">{area.description[locale]}</p>
-                {area.parts.length > 1 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3">
-                    {area.parts.map((part) => (
-                      <span
-                        key={partKey(part)}
-                        className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500"
-                      >
-                        {partLabel(part)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Link>
+              </Link>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Honest numbers only: each tile is a real query. */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div
+        variants={cardGridVariants}
+        initial={shouldReduceMotion ? 'reduced' : 'hidden'}
+        animate={cardsState}
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {stat(
           CheckCircle,
           'bg-green-100 text-green-600',
@@ -327,7 +395,7 @@ export default function DashboardPage() {
           label('بريد مشترك في النشرة', 'Bülten aboneliği', 'newsletter sign-ups'),
           '/admin/subscribers',
         )}
-      </div>
+      </motion.div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {panel(

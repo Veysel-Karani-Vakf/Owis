@@ -59,6 +59,8 @@ export type WaqfPageContent = {
     sourceUrl: string;
     /** Public URL of a video uploaded in the dashboard; wins over videoId. */
     videoFile?: string;
+    /** Cover shown before play, set in the dashboard; hero image when unset. */
+    posterImage?: string;
   };
   goals: {
     eyebrow: string;
@@ -139,10 +141,14 @@ const assets = {
   governanceHero: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   president:
     '/media/1024x576-3bbcc5a7.jpeg',
-  profileFile: 'https://drive.google.com/file/d/1Qt_OTnbexW6S6P-MxNZgY5RDXGYOgKBb/view?usp=sharing',
+  profileFileAr: 'https://drive.google.com/file/d/191M9qTsUhtp9Shstf4xJbEYC-iSzXpmD/view?usp=sharing',
+  profileFileEn: 'https://drive.google.com/file/d/19VislWASMpd284pQYi4yffnn4AZeMepS/view?usp=sharing',
+  profileFileTr: 'https://drive.google.com/file/d/1nRlkSmZHcVKgCucV9UHoCEPYdgJYd-Z6/view?usp=sharing',
   waqfSource: '/about/waqf',
   governanceSource: '/about/governance',
   videoSource: 'https://www.youtube.com/watch?v=dvDQGL8IWX8',
+  videoSourceEn: 'https://www.youtube.com/watch?v=STmMVySqqtg',
+  videoSourceTr: 'https://www.youtube.com/watch?v=DPY--Zs7Ero',
 };
 
 const arPolicies: Policy[] = [
@@ -698,7 +704,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
     waqf: {
       seo: {
         title: 'وقف أويس | وقف أويس القرني',
-        description: 'تعريف رسمي بوقف أويس القرني، ترخيصه، غاياته، قيمه، منهجيته، كلمة رئيس الوقف، والدورة الوقفية.',
+        description: 'تعريف بوقف أويس القرني، ترخيصه، غاياته، قيمه، منهجيته، كلمة رئيس الوقف، والدورة الوقفية.',
         canonical: assets.waqfSource,
       },
       hero: {
@@ -727,11 +733,11 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
           { label: 'الحالة الضريبية', value: 'معفي من الضرائب' },
         ],
         downloadLabel: 'حمل الملف التعريفي',
-        downloadUrl: assets.profileFile,
+        downloadUrl: assets.profileFileAr,
       },
       video: {
         title: 'الفيديو التعريفي',
-        description: 'الفيديو الرسمي الموجود في صفحة وقف أويس للتعريف برسالة الوقف ومجالات عمله.',
+        description: 'الفيديو الموجود في صفحة وقف أويس للتعريف برسالة الوقف ومجالات عمله.',
         videoId: 'dvDQGL8IWX8',
         sourceUrl: assets.videoSource,
       },
@@ -844,7 +850,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       intro: {
         eyebrow: 'حوكمة الوقف',
         title: 'السياسات الحاكمة',
-        description: 'تجمع هذه الصفحة السياسات المنشورة رسمياً في نظام الحوكمة، مع روابط داخلية مباشرة لكل سياسة وقوائم قابلة للفتح والقراءة.',
+        description: 'تجمع هذه الصفحة السياسات المنشورة في نظام الحوكمة، مع روابط داخلية مباشرة لكل سياسة وقوائم قابلة للفتح والقراءة.',
         navTitle: 'روابط السياسات',
       },
       policies: arPolicies,
@@ -858,7 +864,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
     waqf: {
       seo: {
         title: 'Veysel Karani Waqf | Veysel Karani Waqf',
-        description: 'Official profile of Veysel Karani Waqf, including license information, purposes, values, methodology, president message, and the waqf cycle.',
+        description: 'Profile of Veysel Karani Waqf, including license information, purposes, values, methodology, president message, and the waqf cycle.',
         canonical: assets.waqfSource,
       },
       hero: {
@@ -887,13 +893,13 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
           { label: 'Tax Status', value: 'Tax exempt' },
         ],
         downloadLabel: 'Download Profile',
-        downloadUrl: assets.profileFile,
+        downloadUrl: assets.profileFileEn,
       },
       video: {
         title: 'Introductory Video',
-        description: 'The official video used on the Veysel Karani Waqf page to introduce the waqf mission and areas of work.',
-        videoId: 'dvDQGL8IWX8',
-        sourceUrl: assets.videoSource,
+        description: 'The video used on the Veysel Karani Waqf page to introduce the waqf mission and areas of work.',
+        videoId: 'STmMVySqqtg',
+        sourceUrl: assets.videoSourceEn,
       },
       goals: {
         eyebrow: 'Our Identity',
@@ -984,7 +990,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       intro: {
         eyebrow: 'Waqf Governance',
         title: 'Governing Policies',
-        description: 'This page presents the officially published governance policies with direct internal links and readable accordion sections.',
+        description: 'This page presents the published governance policies with direct internal links and readable accordion sections.',
         navTitle: 'Policy Links',
       },
       policies: enPolicies,
@@ -998,7 +1004,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
     waqf: {
       seo: {
         title: 'Veysel Karani Vakfı | Veysel Karani Vakfı',
-        description: 'Veysel Karani Vakfının resmi tanıtımı, lisans bilgileri, gayeleri, değerleri, metodolojisi, başkan mesajı ve vakıf döngüsü.',
+        description: 'Veysel Karani Vakfının tanıtımı, lisans bilgileri, gayeleri, değerleri, metodolojisi, başkan mesajı ve vakıf döngüsü.',
         canonical: assets.waqfSource,
       },
       hero: {
@@ -1027,13 +1033,13 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
           { label: 'Vergi Durumu', value: 'Vergiden muaftır' },
         ],
         downloadLabel: 'Tanıtım Dosyasını İndir',
-        downloadUrl: assets.profileFile,
+        downloadUrl: assets.profileFileTr,
       },
       video: {
         title: 'Tanıtım Videosu',
-        description: 'Veysel Karani Vakfı sayfasında yer alan, vakfın misyonunu ve çalışma alanlarını tanıtan resmi video.',
-        videoId: 'dvDQGL8IWX8',
-        sourceUrl: assets.videoSource,
+        description: 'Veysel Karani Vakfı sayfasında yer alan, vakfın misyonunu ve çalışma alanlarını tanıtan video.',
+        videoId: 'DPY--Zs7Ero',
+        sourceUrl: assets.videoSourceTr,
       },
       goals: {
         eyebrow: 'Kimliğimiz',
@@ -1124,7 +1130,7 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       intro: {
         eyebrow: 'Vakıf Yönetişimi',
         title: 'Yönetici Politikalar',
-        description: 'Bu sayfa resmi olarak yayımlanan yönetişim politikalarını, her politika için doğrudan iç bağlantılar ve okunabilir açılır bölümlerle sunar.',
+        description: 'Bu sayfa yayımlanan yönetişim politikalarını, her politika için doğrudan iç bağlantılar ve okunabilir açılır bölümlerle sunar.',
         navTitle: 'Politika Bağlantıları',
       },
       policies: trPolicies,

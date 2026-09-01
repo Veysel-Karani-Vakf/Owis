@@ -643,7 +643,7 @@ function SectionEditorOverlay({
 
   const renderField = (field: PageFieldDef) => {
     const wide =
-      field.full || ['textarea', 'paragraphs', 'list', 'repeater', 'image'].includes(field.type);
+      field.full || ['textarea', 'paragraphs', 'list', 'repeater', 'image', 'file'].includes(field.type);
     return (
       <div key={field.path || section.key} className={wide ? 'md:col-span-2' : ''}>
         <label className="mb-1.5 block">
