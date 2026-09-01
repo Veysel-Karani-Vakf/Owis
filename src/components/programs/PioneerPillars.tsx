@@ -10,8 +10,6 @@ type PioneerPillarsProps = {
   description: string;
   pillars: ProgramPillar[];
   autoRotateMs?: number;
-  /** One continuous canvas: the panel and tabs sit on the page instead of boxed cards. */
-  seamless?: boolean;
 };
 
 const pillarIcons: LucideIcon[] = [GraduationCap, Compass, HeartHandshake];
@@ -44,7 +42,6 @@ export default function PioneerPillars({
   description,
   pillars,
   autoRotateMs = 6500,
-  seamless = false,
 }: PioneerPillarsProps) {
   const shouldReduceMotion = !!useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -117,13 +114,7 @@ export default function PioneerPillars({
                 aria-controls={`pillar-panel-${pillar.id}`}
                 onClick={() => goTo(index)}
                 className={`group relative isolate flex min-h-[4.25rem] w-full items-center gap-4 overflow-hidden rounded-2xl border px-4 py-3 text-start transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
-                  seamless
-                    ? isActive
-                      ? 'border-transparent text-dark-950'
-                      : 'border-transparent bg-primary-50/40 text-dark-700 hover:bg-primary-50'
-                    : isActive
-                      ? 'border-primary-200 text-dark-950'
-                      : 'border-primary-100 bg-white text-dark-700 hover:border-primary-200'
+                  isActive ? 'border-primary-200 text-dark-950' : 'border-primary-100 bg-white text-dark-700 hover:border-primary-200'
                 }`}
               >
                 {isActive && (
@@ -177,11 +168,7 @@ export default function PioneerPillars({
             initial="hidden"
             animate="show"
             exit="exit"
-            className={
-              seamless
-                ? 'relative isolate flex h-full flex-col overflow-hidden rounded-[28px] p-2 text-start md:p-4'
-                : 'relative isolate flex h-full flex-col overflow-hidden rounded-[28px] border border-primary-100 bg-white p-7 text-start shadow-[0_24px_64px_rgba(40,12,18,0.1)] md:p-9'
-            }
+            className="relative isolate flex h-full flex-col overflow-hidden rounded-[28px] border border-primary-100 bg-white p-7 text-start shadow-[0_24px_64px_rgba(40,12,18,0.1)] md:p-9"
           >
             <div
               aria-hidden="true"
@@ -234,9 +221,7 @@ export default function PioneerPillars({
                 <motion.li
                   key={point}
                   variants={shouldReduceMotion ? undefined : pointVariants}
-                  className={`flex items-start gap-3 rounded-2xl bg-primary-50/60 px-4 py-3 ${
-                    seamless ? '' : 'border border-primary-100'
-                  }`}
+                  className="flex items-start gap-3 rounded-2xl border border-primary-100 bg-primary-50/60 px-4 py-3"
                 >
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary-600" aria-hidden="true" />
                   <span className="text-sm font-semibold leading-relaxed text-dark-700 md:text-[15px]">{point}</span>

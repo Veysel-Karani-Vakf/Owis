@@ -19,8 +19,6 @@ type PioneerJourneyProps = {
   description: string;
   stepLabel: string;
   steps: ProgramJourneyStep[];
-  /** One continuous canvas: soft tinted steps instead of bordered, shadowed cards. */
-  seamless?: boolean;
 };
 
 const stepIcons: LucideIcon[] = [UserSearch, GraduationCap, Compass, Rocket, Award];
@@ -71,7 +69,6 @@ function StepCard({
   stepLabel,
   reduced,
   pinned,
-  seamless,
 }: {
   step: ProgramJourneyStep;
   index: number;
@@ -80,33 +77,27 @@ function StepCard({
   stepLabel: string;
   reduced: boolean;
   pinned: boolean;
-  seamless: boolean;
 }) {
   // The editor's icon wins; otherwise the position-based default keeps the original look.
   const Icon = resolveIcon(step.icon, stepIcons, index);
   const isLast = index === total - 1;
-  const stepTone = seamless
-    ? isLast
-      ? 'border-transparent bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white'
-      : active
-        ? 'border-transparent bg-primary-50/75'
-        : 'border-transparent bg-primary-50/45'
-    : isLast
-      ? 'border-primary-700 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white shadow-[0_28px_70px_rgba(156,16,6,0.32)]'
-      : active
-        ? 'border-primary-200 bg-white shadow-[0_28px_70px_rgba(40,12,18,0.14)]'
-        : 'border-primary-100 bg-white shadow-[0_18px_48px_rgba(40,12,18,0.07)]';
 
   return (
     <motion.article
       animate={pinned && !reduced ? { scale: active ? 1 : 0.94, opacity: active ? 1 : 0.72, y: active ? 0 : 10 } : undefined}
       transition={{ duration: 0.45, ease: smoothEase }}
-      className={`relative flex h-full flex-col rounded-[28px] border p-6 text-start transition-colors duration-500 md:p-7 ${stepTone}`}
+      className={`relative flex h-full flex-col rounded-[28px] border p-6 text-start transition-colors duration-500 md:p-7 ${
+        isLast
+          ? 'border-primary-700 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white shadow-[0_28px_70px_rgba(156,16,6,0.32)]'
+          : active
+            ? 'border-primary-200 bg-white shadow-[0_28px_70px_rgba(40,12,18,0.14)]'
+            : 'border-primary-100 bg-white shadow-[0_18px_48px_rgba(40,12,18,0.07)]'
+      }`}
     >
       <div className="flex items-center justify-between">
         <span
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${
-            isLast ? 'bg-white/15 text-white' : seamless ? 'bg-white text-primary-700' : 'bg-primary-50 text-primary-700'
+            isLast ? 'bg-white/15 text-white' : 'bg-primary-50 text-primary-700'
           }`}
         >
           {stepLabel}
@@ -133,7 +124,7 @@ function StepCard({
       <span
         aria-hidden="true"
         className={`mt-6 block select-none text-6xl font-black leading-none tabular-nums ${
-          isLast ? 'text-white/20' : seamless ? 'text-primary-200/60' : 'text-primary-50'
+          isLast ? 'text-white/20' : 'text-primary-50'
         }`}
       >
         {String(index + 1).padStart(2, '0')}
@@ -153,7 +144,7 @@ function StepCard({
   );
 }
 
-function VerticalJourney({ eyebrow, title, description, stepLabel, steps, seamless = false }: PioneerJourneyProps) {
+function VerticalJourney({ eyebrow, title, description, stepLabel, steps }: PioneerJourneyProps) {
   const shouldReduceMotion = !!useReducedMotion();
 
   const itemVariants: Variants = {
@@ -187,7 +178,6 @@ function VerticalJourney({ eyebrow, title, description, stepLabel, steps, seamle
               stepLabel={stepLabel}
               reduced={shouldReduceMotion}
               pinned={false}
-              seamless={seamless}
             />
           </motion.li>
         ))}
@@ -196,7 +186,7 @@ function VerticalJourney({ eyebrow, title, description, stepLabel, steps, seamle
   );
 }
 
-function HorizontalJourney({ eyebrow, title, description, stepLabel, steps, seamless = false }: PioneerJourneyProps) {
+function HorizontalJourney({ eyebrow, title, description, stepLabel, steps }: PioneerJourneyProps) {
   const { isRtl } = useI18n();
   const sectionRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -241,11 +231,7 @@ function HorizontalJourney({ eyebrow, title, description, stepLabel, steps, seam
           <div className="flex flex-wrap items-end justify-between gap-6">
             <StepHeading eyebrow={eyebrow} title={title} description={description} />
 
-            <div
-              className={`min-w-[220px] rounded-2xl p-4 text-start ${
-                seamless ? 'bg-primary-50/50' : 'border border-primary-100 bg-white shadow-[0_12px_30px_rgba(35,15,20,0.05)]'
-              }`}
-            >
+            <div className="min-w-[220px] rounded-2xl border border-primary-100 bg-white p-4 text-start shadow-[0_12px_30px_rgba(35,15,20,0.05)]">
               <div className="flex items-center justify-between text-xs font-semibold text-dark-500">
                 <span>
                   {stepLabel}{' '}
@@ -301,7 +287,6 @@ function HorizontalJourney({ eyebrow, title, description, stepLabel, steps, seam
                   stepLabel={stepLabel}
                   reduced={false}
                   pinned
-                  seamless={seamless}
                 />
               </li>
             ))}
