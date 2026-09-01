@@ -29,7 +29,9 @@ function LogoTrack({
             alt={colored ? '' : partner.name}
             loading="lazy"
             className={`max-h-20 max-w-32 object-contain ${
-              colored ? '' : 'opacity-40 grayscale'
+              colored
+                ? ''
+                : 'opacity-40 grayscale transition-all duration-300 hover:scale-110 hover:opacity-100 hover:grayscale-0 motion-reduce:transition-none motion-reduce:hover:scale-100'
             }`}
             onError={(e) => {
               (e.target as HTMLImageElement).src = FALLBACK_LOGO;

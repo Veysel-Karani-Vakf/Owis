@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatNewsDate, getFeaturedNews, getLatestNews, getNewsLabels, newsRoutes } from '@/data/news';
@@ -8,6 +8,10 @@ import { useI18n } from '@/i18n/useI18n';
 export default function News() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { content, t, isRtl, locale } = useI18n();
+  const reduceMotion = Boolean(useReducedMotion());
+  const cardHover = reduceMotion
+    ? undefined
+    : { y: -5, transition: { type: 'spring', stiffness: 320, damping: 24 } };
   const newsContent = content.news;
   const labels = getNewsLabels(locale);
   // The editor sets how many articles show; the featured one always leads.
@@ -43,7 +47,7 @@ export default function News() {
           </h2>
           <Link
             to={newsRoutes.index}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
           >
             {labels.allNews}
             <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} aria-hidden="true" />
@@ -55,14 +59,15 @@ export default function News() {
             initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7 }}
-            className="group relative flex flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-lg"
+            whileHover={cardHover}
+            className="group relative flex flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-lg transition-shadow duration-300 hover:shadow-xl"
           >
             <Link to={featured.route} className="relative aspect-[16/9] overflow-hidden bg-warm">
               <img
                 src={featured.image}
                 alt={featured.imageAlt}
                 loading="lazy"
-                className="h-full w-full object-contain"
+                className="h-full w-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"%3E%3Crect fill="%232c6147" width="400" height="250"/%3E%3C/svg%3E';
@@ -105,14 +110,15 @@ export default function News() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: 0.2 + i * 0.1 }}
-                className="group flex flex-1 flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-md transition-shadow hover:shadow-lg sm:flex-row"
+                whileHover={cardHover}
+                className="group flex flex-1 flex-col overflow-hidden rounded-2xl bg-cream text-start shadow-md transition-shadow duration-300 hover:shadow-lg sm:flex-row"
               >
                 <Link to={item.route} className="relative aspect-[16/10] overflow-hidden bg-warm sm:w-2/5 sm:flex-shrink-0">
                   <img
                     src={item.image}
                     alt={item.imageAlt}
                     loading="lazy"
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"%3E%3Crect fill="%232c6147" width="400" height="250"/%3E%3C/svg%3E';

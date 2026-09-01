@@ -38,55 +38,41 @@ export default function VolunteerStatement({ program, copy }: VolunteerStatement
         <p className="mt-4 text-base leading-relaxed text-dark-600 md:text-lg">{copy.statement.description}</p>
       </div>
 
-      <motion.div
-        variants={revealVariants(reduced)}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.2 }}
-        className="relative isolate mt-10 overflow-hidden rounded-[32px] bg-dark-950 text-white shadow-[0_34px_80px_rgba(0,0,0,0.26)]"
-      >
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_88%_10%,rgba(218,8,18,0.42),transparent_58%)] rtl:bg-[radial-gradient(circle_at_12%_10%,rgba(218,8,18,0.42),transparent_58%)]"
+      <div className="mt-10 grid gap-8 lg:grid-cols-[19rem_1fr] lg:items-center lg:gap-14">
+        {/* Unit logo in its original colors on the section's own light background */}
+        <motion.img
+          initial={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.94 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: reduced ? 0.01 : 0.85, ease: smoothEase, delay: 0.1 }}
+          src={badge}
+          alt={program.overviewImageAlt ?? program.heroImageAlt}
+          width={1224}
+          height={1285}
+          loading="lazy"
+          className="mx-auto w-full max-w-[15rem] object-contain lg:mx-0 lg:max-w-none"
         />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-20 end-6 -z-10 select-none text-[18rem] font-black leading-none text-white/[0.035]"
-        >
-          ”
-        </span>
 
-        <div className="grid gap-10 p-7 md:p-10 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-14 lg:p-14">
-          {/* Badge plate */}
-          <div className="relative mx-auto w-full max-w-[15rem] shrink-0 lg:mx-0">
-            <span
-              aria-hidden="true"
-              className="absolute -inset-4 rounded-[34px] border border-dashed border-white/20"
-            />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-primary-600/25 blur-3xl"
-            />
-            <motion.div
-              initial={reduced ? { opacity: 1, rotate: -2 } : { opacity: 0, scale: 0.92, rotate: -5 }}
-              whileInView={{ opacity: 1, scale: 1, rotate: -2 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: reduced ? 0.01 : 0.85, ease: smoothEase, delay: 0.1 }}
-              className="relative overflow-hidden rounded-[26px] bg-white p-3 shadow-[0_26px_60px_rgba(0,0,0,0.4)]"
-            >
-              <img
-                src={badge}
-                alt={program.overviewImageAlt ?? program.heroImageAlt}
-                width={1080}
-                height={1080}
-                loading="lazy"
-                className="aspect-square w-full scale-[1.18] object-contain"
-              />
-            </motion.div>
-          </div>
+        <motion.div
+          variants={revealVariants(reduced)}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="relative isolate overflow-hidden rounded-[32px] bg-dark-950 text-white shadow-[0_34px_80px_rgba(0,0,0,0.26)]"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_88%_10%,rgba(218,8,18,0.42),transparent_58%)] rtl:bg-[radial-gradient(circle_at_12%_10%,rgba(218,8,18,0.42),transparent_58%)]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-20 end-6 -z-10 select-none text-[18rem] font-black leading-none text-white/[0.035]"
+          >
+            ”
+          </span>
 
           {/* Belief */}
-          <div className="text-start">
+          <div className="p-7 text-start md:p-10 lg:p-12">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-black">
               <Quote className="h-3.5 w-3.5 text-primary-300" aria-hidden="true" />
               {copy.quoteLabel}
@@ -119,8 +105,8 @@ export default function VolunteerStatement({ program, copy }: VolunteerStatement
               </ul>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
 
       {/* Contact strip */}
       {(program.contactEmail || program.contactPhone) && (

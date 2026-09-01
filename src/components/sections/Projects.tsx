@@ -18,6 +18,7 @@ type CoverflowMetrics = {
 const ease = [0.22, 1, 0.36, 1] as const;
 const projectTransitionEase = [0.45, 0, 0.55, 1] as const;
 const projectTransitionDuration = 0.65;
+const autoplayIntervalMs = 4500;
 // Focal points for the three original cards; a card's own `imagePosition` wins.
 const projectImagePositions: Record<string, string> = {
   'waqf-share': '50% 27%',
@@ -167,6 +168,11 @@ function ProjectCard({
           scale,
           opacity: isFar ? 0 : opacity,
         }}
+        whileHover={
+          isActive && !reduceMotion
+            ? { y: -10, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+            : undefined
+        }
         transition={{
           duration: projectTransitionDuration,
           ease: projectTransitionEase,
@@ -176,7 +182,7 @@ function ProjectCard({
           filter: isActive ? 'saturate(1) brightness(1)' : 'saturate(0.82) brightness(0.78)',
           pointerEvents: isFar ? 'none' : 'auto',
         }}
-        className={`flex h-[29rem] w-[min(80vw,19.5rem)] select-none flex-col overflow-hidden rounded-[1.4rem] border bg-white text-start shadow-2xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[29rem] sm:w-[21rem] md:h-[30rem] md:w-[22rem] lg:h-[32.5rem] lg:w-[26rem] ${
+        className={`group flex h-[29rem] w-[min(80vw,19.5rem)] select-none flex-col overflow-hidden rounded-[1.4rem] border bg-white text-start shadow-2xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[29rem] sm:w-[21rem] md:h-[30rem] md:w-[22rem] lg:h-[32.5rem] lg:w-[26rem] ${
           isActive
             ? 'border-primary-200 shadow-dark-950/25'
             : 'cursor-pointer border-dark-950/10 shadow-dark-950/10'
@@ -187,7 +193,7 @@ function ProjectCard({
             src={project.image}
             alt={project.imageAlt || project.name}
             loading={isActive ? 'eager' : 'lazy'}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             style={{ objectPosition: imagePosition }}
             draggable={false}
             onError={(event) => {
@@ -196,7 +202,7 @@ function ProjectCard({
                 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 520"%3E%3Crect fill="%23111111" width="700" height="520"/%3E%3Cpath fill="%23da0812" opacity=".45" d="M0 0h700v150H0z"/%3E%3C/svg%3E';
             }}
           />
-          <div className="absolute start-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-primary-700 shadow-lg">
+          <div className="absolute start-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-primary-700 shadow-lg transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
             <DollarSign className="h-4 w-4" />
             {project.contribution}
           </div>
@@ -220,7 +226,7 @@ function ProjectCard({
               <Link
                 to={detailsUrl}
                 tabIndex={isActive ? 0 : -1}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
+                className="btn-border-run inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
               >
                 {labels.viewDetails}
                 <ArrowIcon className="h-4 w-4" />
@@ -231,7 +237,7 @@ function ProjectCard({
                 target={isExternalDetails ? '_blank' : undefined}
                 rel={isExternalDetails ? 'noopener noreferrer' : undefined}
                 tabIndex={isActive ? 0 : -1}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
+                className="btn-border-run inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-black text-white transition-all hover:bg-primary-700 focus-visible:outline-primary-600"
               >
                 {labels.viewDetails}
                 <ArrowIcon className="h-4 w-4" />
@@ -242,7 +248,7 @@ function ProjectCard({
               <Link
                 to={project.contributionUrl}
                 tabIndex={isActive ? 0 : -1}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-4 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-4 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
               >
                 {labels.donateWithUs}
               </Link>
@@ -251,7 +257,7 @@ function ProjectCard({
                 type="button"
                 tabIndex={isActive ? 0 : -1}
                 onClick={onContribute}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-4 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-4 text-sm font-black text-primary-700 transition-all hover:bg-primary-100 focus-visible:outline-primary-600"
               >
                 {labels.donateWithUs}
               </button>
@@ -275,6 +281,9 @@ export default function Projects() {
   const [activeIndex, setActiveIndex] = useState(0);
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const wheelTimeoutRef = useRef<number | undefined>(undefined);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const [isStageVisible, setIsStageVisible] = useState(false);
+  const [isAutoplayPaused, setIsAutoplayPaused] = useState(false);
 
   const projectCount = projects.length;
   const reduceMotion = Boolean(shouldReduceMotion);
@@ -282,6 +291,35 @@ export default function Projects() {
   useEffect(() => {
     setActiveIndex(0);
   }, [projects]);
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setIsStageVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsStageVisible(entry.isIntersecting),
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Auto-advance between projects; any manual navigation restarts the delay
+  // (activeIndex is a dependency), and hover/focus/off-screen pauses it.
+  useEffect(() => {
+    if (reduceMotion || projectCount < 2 || !isStageVisible || isAutoplayPaused) return;
+
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      setActiveIndex((current) => normalizeIndex(current + 1, projectCount));
+    }, autoplayIntervalMs);
+
+    return () => window.clearInterval(id);
+  }, [reduceMotion, projectCount, isStageVisible, isAutoplayPaused, activeIndex]);
 
   useEffect(() => {
     return () => {
@@ -417,6 +455,7 @@ export default function Projects() {
           initial={{ opacity: 0, y: 40 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.65, delay: 0.12, ease }}
+          ref={stageRef}
           data-project-coverflow
           role="region"
           aria-label={t('accessibility.projectGallery')}
@@ -426,6 +465,14 @@ export default function Projects() {
           onPointerUp={handlePointerUp}
           onPointerCancel={() => {
             dragStart.current = null;
+          }}
+          onPointerEnter={() => setIsAutoplayPaused(true)}
+          onPointerLeave={() => setIsAutoplayPaused(false)}
+          onFocus={() => setIsAutoplayPaused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsAutoplayPaused(false);
+            }
           }}
           onWheel={handleWheel}
           className="relative mx-auto h-[32rem] max-w-[86rem] touch-pan-y select-none overflow-hidden rounded-[2rem] outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:h-[33rem] lg:h-[36.5rem]"
@@ -466,7 +513,7 @@ export default function Projects() {
                 data-project-previous
                 onClick={goPrevious}
                 aria-label={t('accessibility.previousProject')}
-                className={`absolute top-1/2 z-40 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-dark-950/10 bg-white/90 text-primary-700 shadow-xl shadow-dark-950/10 backdrop-blur-md transition-all hover:bg-white focus-visible:outline-primary-600 sm:flex ${
+                className={`btn-border-run btn-border-run--sheen-tint absolute top-1/2 z-40 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-dark-950/10 bg-white/90 text-primary-700 shadow-xl shadow-dark-950/10 backdrop-blur-md transition-all hover:bg-white focus-visible:outline-primary-600 sm:flex ${
                   isRtl ? 'right-2 lg:right-6' : 'left-2 lg:left-6'
                 }`}
               >
@@ -478,7 +525,7 @@ export default function Projects() {
                 data-project-next
                 onClick={goNext}
                 aria-label={t('accessibility.nextProject')}
-                className={`absolute top-1/2 z-40 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-dark-950/10 bg-white/90 text-primary-700 shadow-xl shadow-dark-950/10 backdrop-blur-md transition-all hover:bg-white focus-visible:outline-primary-600 sm:flex ${
+                className={`btn-border-run btn-border-run--sheen-tint absolute top-1/2 z-40 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-dark-950/10 bg-white/90 text-primary-700 shadow-xl shadow-dark-950/10 backdrop-blur-md transition-all hover:bg-white focus-visible:outline-primary-600 sm:flex ${
                   isRtl ? 'left-2 lg:left-6' : 'right-2 lg:right-6'
                 }`}
               >

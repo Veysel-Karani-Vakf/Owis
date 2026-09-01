@@ -131,6 +131,8 @@ export type ProgramMediaProduct = {
   tagline: string;
   description: string;
   icon?: string;
+  /** Destination of the card (YouTube playlist, episode, or internal route); optional. */
+  url?: string;
 };
 
 /** A featured on-ground moment of the platform, illustrated with real event photos. */
@@ -370,6 +372,18 @@ const programShared = {
     overviewImage?: string;
   }
 >;
+
+/** Where each Owais platform card leads; shared by the three locales. */
+const owaisPlatformLinks = {
+  /** The «بودكاست أويس» playlist on the waqf's YouTube channel. */
+  podcast: 'https://www.youtube.com/playlist?list=PLK5GKp2e5Cuw',
+  /** The «منصة أويس» playlist: the platform's visual materials (31 episodes). */
+  visuals: 'https://www.youtube.com/playlist?list=PLC1fEBB61OeTVFNvGGEduHVBmLYOu9WMo',
+  /** The first Owais diwaniya episode (studies centers and their renaissance role in Yemen). */
+  diwaniya: 'https://www.youtube.com/watch?v=zwjW97Dp3gk',
+  /** No standalone blog exists yet; the news page carries the written output. */
+  blog: '/news',
+} as const;
 
 const makeYemenVideos = (locale: Locale): ProgramVideo[] =>
   yemenPioneersVideos.map((videoId, index) => {
@@ -611,6 +625,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'الوحدة التطوعية: ترسيخ ثقافة العمل التطوعي وإتاحة الفرص التطوعية المختلفة لبناء قدرات المتطوعين وتحقيق أهداف الوقف.',
         heroImageAlt: 'الوحدة التطوعية في وقف أويس القرني',
+        highlights: [
+          'ترسيخ ثقافة العمل التطوعي',
+          'فرص تطوعية متنوعة',
+          'بناء قدرات المتطوعين بالممارسة',
+          'توحيد الجهود وتلاقح الأفكار',
+          'مشاركة مجتمعية لنهضة اليمن',
+        ],
         imageGallery: [
           {
             src: volunteerHeroImage,
@@ -623,8 +644,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             src: volunteerUnitLogo,
             alt: 'شعار الوحدة التطوعية',
             caption: 'الوحدة التطوعية',
-            width: 313,
-            height: 384,
+            width: 1224,
+            height: 1285,
           },
         ],
         volunteer: {
@@ -1017,6 +1038,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'حوارات مسموعة',
             description:
               'حلقات حوارية معمّقة مع مفكرين وباحثين حول قضايا الوعي والنهضة، تصل إلى المستمع أينما كان.',
+            url: owaisPlatformLinks.podcast,
           },
           {
             id: 'visuals',
@@ -1024,6 +1046,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'محتوى مرئي',
             description:
               'مقاطع وفيديوهات معرفية مكثّفة تقرّب الأفكار الكبيرة إلى الجمهور بلغة بصرية معاصرة.',
+            url: owaisPlatformLinks.visuals,
           },
           {
             id: 'diwaniya',
@@ -1031,6 +1054,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'مجلس فكري',
             description:
               'مجلس دوري يجمع النخب والمهتمين لمدارسة قضايا الفكر والنهوض الحضاري في لقاءات مباشرة.',
+            url: owaisPlatformLinks.diwaniya,
           },
           {
             id: 'blog',
@@ -1038,6 +1062,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'مقالات ورؤى',
             description:
               'مساحة مكتوبة تنشر المقالات والقراءات والرؤى التي تعمّق النقاش وتوثّق نتاج المنصة.',
+            url: owaisPlatformLinks.blog,
           },
         ],
         spotlight: {
@@ -1283,6 +1308,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'Gonulluluk Birimi: gonullu calisma kulturunu yerlestirmek ve vakfin hedeflerini gerceklestirecek cesitli gonulluluk firsatlari sunmak.',
         heroImageAlt: 'Veysel Karani Vakfi Gonulluluk Birimi',
+        highlights: [
+          'Gonullu calisma kulturunu yerlestirmek',
+          'Cesitli gonulluluk firsatlari',
+          'Uygulamayla gonullu kapasitesi insasi',
+          'Guclerin birlesmesi, fikirlerin bulusmasi',
+          'Yemenin kalkinmasi icin toplumsal katilim',
+        ],
         imageGallery: [
           {
             src: volunteerHeroImage,
@@ -1295,8 +1327,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             src: volunteerUnitLogo,
             alt: 'Gonulluluk Birimi logosu',
             caption: 'Gonulluluk Birimi',
-            width: 313,
-            height: 384,
+            width: 1224,
+            height: 1285,
           },
         ],
         volunteer: {
@@ -1688,6 +1720,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Sesli sohbetler',
             description:
               'Bilinc ve kalkinis meseleleri uzerine dusunur ve arastirmacilarla derinlemesine sohbet bolumleri; dinleyiciye her yerde ulasir.',
+            url: owaisPlatformLinks.podcast,
           },
           {
             id: 'visuals',
@@ -1695,6 +1728,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Video icerik',
             description:
               'Buyuk fikirleri cagdas bir gorsel dille izleyiciye yaklastiran yogun bilgi videolari ve kisa icerikler.',
+            url: owaisPlatformLinks.visuals,
           },
           {
             id: 'diwaniya',
@@ -1702,6 +1736,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Fikir meclisi',
             description:
               'Dusunce ve medeniyet kalkinisi meselelerini yuz yuze muzakere etmek icin seckinleri ve ilgilileri bulusturan periyodik meclis.',
+            url: owaisPlatformLinks.diwaniya,
           },
           {
             id: 'blog',
@@ -1709,6 +1744,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Makale ve gorusler',
             description:
               'Tartismayi derinlestiren ve platformun uretimini kayit altina alan makale, okuma ve goruslerin yayimlandigi yazili alan.',
+            url: owaisPlatformLinks.blog,
           },
         ],
         spotlight: {
@@ -1954,6 +1990,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         summary:
           'The Volunteer Unit: rooting the culture of volunteer work and offering varied volunteer opportunities that build capacity and serve the waqf goals.',
         heroImageAlt: 'The Volunteer Unit of Veysel Karani Waqf',
+        highlights: [
+          'Rooting the culture of volunteer work',
+          'Varied volunteer opportunities',
+          'Building volunteers capacity through practice',
+          'Uniting efforts, cross-pollinating ideas',
+          'Community participation for a better Yemen',
+        ],
         imageGallery: [
           {
             src: volunteerHeroImage,
@@ -1966,8 +2009,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             src: volunteerUnitLogo,
             alt: 'Volunteer Unit logo',
             caption: 'Volunteer Unit',
-            width: 313,
-            height: 384,
+            width: 1224,
+            height: 1285,
           },
         ],
         volunteer: {
@@ -2360,6 +2403,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Conversations in audio',
             description:
               'In-depth episodes with thinkers and researchers on questions of awareness and advancement, reaching listeners wherever they are.',
+            url: owaisPlatformLinks.podcast,
           },
           {
             id: 'visuals',
@@ -2367,6 +2411,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Video content',
             description:
               'Condensed knowledge videos and clips that bring big ideas closer to the audience in a contemporary visual language.',
+            url: owaisPlatformLinks.visuals,
           },
           {
             id: 'diwaniya',
@@ -2374,6 +2419,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'A gathering of ideas',
             description:
               'A recurring majlis that brings together thinkers and interested audiences to discuss thought and civilizational advancement face to face.',
+            url: owaisPlatformLinks.diwaniya,
           },
           {
             id: 'blog',
@@ -2381,6 +2427,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             tagline: 'Articles and views',
             description:
               'A written space publishing articles, readings and perspectives that deepen the discussion and document the platform’s output.',
+            url: owaisPlatformLinks.blog,
           },
         ],
         spotlight: {

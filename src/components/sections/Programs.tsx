@@ -39,10 +39,16 @@ function ProgramActions({
   return (
     <Link
       to={program.url || '/'}
-      className="inline-flex h-12 items-center justify-center gap-3 rounded-full bg-primary-500 px-6 text-sm font-black text-white shadow-xl shadow-dark-950/25 transition-all hover:bg-primary-600 focus-visible:outline-white"
+      className="btn-border-run btn-border-run--light inline-flex h-12 items-center justify-center gap-3 rounded-full bg-primary-500 px-6 text-sm font-black text-white shadow-xl shadow-dark-950/25 transition-all duration-300 hover:scale-[1.04] hover:bg-primary-600 active:scale-[0.97] focus-visible:outline-white motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
     >
       {label}
-      <ArrowIcon className="h-4 w-4" />
+      <ArrowIcon
+        className={`h-4 w-4 transition-transform duration-300 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0 ${
+          isRtl
+            ? 'group-hover:-translate-x-0.5 group-hover:-translate-y-0.5'
+            : 'group-hover:translate-x-0.5 group-hover:-translate-y-0.5'
+        }`}
+      />
     </Link>
   );
 }
@@ -64,7 +70,7 @@ function ProgramCardContent({
         src={program.image}
         alt={program.imageAlt || program.title}
         loading="lazy"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src =
@@ -73,16 +79,16 @@ function ProgramCardContent({
       />
 
       <div className="absolute inset-0 bg-dark-950/28" />
-      <div className="absolute inset-x-0 bottom-0 h-5/6 bg-gradient-to-t from-dark-950 via-dark-950/76 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-5/6 bg-gradient-to-t from-primary-900 via-primary-800/72 to-transparent" />
       <div
         className={`absolute inset-y-0 w-4/5 ${
           isRtl
-            ? 'right-0 bg-gradient-to-l from-dark-950/62 via-dark-950/24 to-transparent'
-            : 'left-0 bg-gradient-to-r from-dark-950/62 via-dark-950/24 to-transparent'
+            ? 'right-0 bg-gradient-to-l from-primary-900/62 via-primary-800/24 to-transparent'
+            : 'left-0 bg-gradient-to-r from-primary-900/62 via-primary-800/24 to-transparent'
         }`}
       />
 
-      <div className="absolute start-5 top-5 flex h-14 min-w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-4 text-lg font-black text-white backdrop-blur-md md:start-8 md:top-8 md:h-16 md:min-w-16 md:text-2xl">
+      <div className="absolute start-5 top-5 flex h-14 min-w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-4 text-lg font-black text-white backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:bg-white/20 motion-reduce:transition-none motion-reduce:group-hover:scale-100 md:start-8 md:top-8 md:h-16 md:min-w-16 md:text-2xl">
         {String(index + 1).padStart(2, '0')}
       </div>
 
@@ -145,7 +151,7 @@ function StackedProgramCard({
     <motion.article
       data-program-card={programKey(program, index)}
       style={{ y, scale, zIndex: index + 1 }}
-      className="absolute inset-0 origin-center overflow-hidden bg-dark-950 will-change-transform"
+      className="group absolute inset-0 origin-center overflow-hidden bg-primary-950 will-change-transform"
     >
       <ProgramCardContent
         program={program}
@@ -171,7 +177,7 @@ function StaticProgramCard({
   return (
     <article
       data-program-card={programKey(program, index)}
-      className="relative min-h-[24rem] overflow-hidden rounded-[1.5rem] border border-white/12 bg-dark-950 shadow-xl shadow-dark-950/15 md:min-h-[26rem]"
+      className="group relative min-h-[24rem] overflow-hidden rounded-[1.5rem] border border-white/12 bg-primary-950 shadow-xl shadow-dark-950/15 transition-shadow duration-300 hover:shadow-2xl md:min-h-[26rem]"
     >
       <ProgramCardContent
         program={program}
@@ -323,7 +329,7 @@ export default function Programs() {
             viewport bottom, leaving clear space on all four sides.
           */}
           <div className="sticky top-[7.25rem] h-[calc(100svh-8.75rem)] min-h-[30rem] xl:top-[8rem] xl:h-[calc(100svh-9.5rem)]">
-            <div className="relative h-full overflow-hidden rounded-[1.75rem] border-[10px] border-dark-950/25 bg-dark-950 shadow-2xl shadow-dark-950/25 md:rounded-[2.1rem]">
+            <div className="relative h-full overflow-hidden rounded-[1.75rem] border-[10px] border-primary-950/25 bg-primary-950 shadow-2xl shadow-dark-950/25 md:rounded-[2.1rem]">
               {programs.map((program, index) => (
                 <StackedProgramCard
                   key={programKey(program, index)}

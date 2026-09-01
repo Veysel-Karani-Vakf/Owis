@@ -7,6 +7,12 @@
   .icon-btn {
     @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-800;
   }
+
+  /* Positioning context for the border-run pseudos; lives in the components
+     layer so a positioning utility on the element (absolute, fixed) wins. */
+  .btn-border-run {
+    position: relative;
+  }
 }
 
 @layer base {
@@ -1153,4 +1159,110 @@
 @keyframes site-assistant-bounce {
   0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
   40% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Border-run buttons: while a button is hovered or keyboard-focused, a light
+   segment travels around its frame. The ::after paints a conic gradient just
+   outside the button, masked down to a thin band, and rotating the registered
+   --btn-run-angle carries the bright segment around the perimeter. Browsers
+   without @property fall back to a static (non-travelling) segment. */
+@property --btn-run-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-border-run {
+  isolation: isolate;
+  /* Band thickness and the two comet colours; sections override per surface. */
+  --btn-run-size: 2px;
+  --btn-run-a: #da0812;
+  --btn-run-b: #fb7185;
+  /* Surface sheen colour; white reads on coloured bodies, tint on white ones. */
+  --btn-run-sheen: rgba(255, 255, 255, 0.35);
+}
+/* Surface sheen: a glass light sweeps across the button body itself while it
+   is hovered or focused, in step with the comet running on the frame. */
+.btn-border-run::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    115deg,
+    transparent 40%,
+    var(--btn-run-sheen) 50%,
+    transparent 60%
+  );
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.btn-border-run:hover::before,
+.btn-border-run:focus-visible::before {
+  opacity: 1;
+  animation: btn-border-run-sheen 1.4s ease-in-out infinite;
+}
+/* For buttons with white or near-white bodies, where a white sheen vanishes. */
+.btn-border-run--sheen-tint {
+  --btn-run-sheen: rgba(218, 8, 18, 0.13);
+}
+@keyframes btn-border-run-sheen {
+  0% {
+    background-position: 130% 0;
+  }
+  55%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+.btn-border-run::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--btn-run-size) - 2px);
+  border-radius: inherit;
+  padding: var(--btn-run-size);
+  background: conic-gradient(
+    from var(--btn-run-angle),
+    transparent 0deg 250deg,
+    var(--btn-run-b) 300deg,
+    var(--btn-run-a) 335deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.btn-border-run:hover::after,
+.btn-border-run:focus-visible::after {
+  opacity: 1;
+  animation: btn-border-run-spin 1.4s linear infinite;
+}
+/* On dark or photographic surfaces the red comet drowns; run it white-gold. */
+.btn-border-run--light {
+  --btn-run-a: #ffffff;
+  --btn-run-b: #fb7185;
+}
+@keyframes btn-border-run-spin {
+  to {
+    --btn-run-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-border-run:hover::after,
+  .btn-border-run:focus-visible::after {
+    animation: none;
+  }
+  .btn-border-run:hover::before,
+  .btn-border-run:focus-visible::before {
+    animation: none;
+    opacity: 0;
+  }
 }

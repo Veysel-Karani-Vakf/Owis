@@ -38,8 +38,13 @@ export type ProgramHeroProps = {
   note?: { text: string; icon?: LucideIcon };
   /** Teaser chip pinned to the plate's lower corner. */
   chip?: ProgramHeroChip;
-  /** What the framed plate shows: a photo (cropped, darkened edge) or an emblem on white. */
-  plate: { image: string; alt: string; tone: 'photo' | 'emblem' };
+  /**
+   * What the plate shows: a photo (cropped, darkened edge, framed), an emblem on a
+   * white plate, or a transparent artwork floating free on the hero backdrop.
+   * Emblems zoom past their bundled white padding by default; a tightly cropped
+   * emblem asset sets fit 'contain' to sit whole inside the plate instead.
+   */
+  plate: { image: string; alt: string; tone: 'photo' | 'emblem' | 'floating'; fit?: 'zoom' | 'contain' };
   /** Icon of the small red badge on the plate; omit to drop the badge. */
   badgeIcon?: LucideIcon;
   /** Decoration pinned to the plate's bottom edge (the platform's equalizer bars). */
@@ -135,6 +140,7 @@ export default function ProgramHero({
   const duration = reduced ? 0.01 : 0.7;
   const NoteIcon = note?.icon;
   const isPhoto = plate.tone === 'photo';
+  const isFloating = plate.tone === 'floating';
 
   const reveal = (delay: number, distance = 20) => ({
     initial: { opacity: 0, y: reduced ? 0 : distance },
@@ -233,19 +239,25 @@ export default function ProgramHero({
           transition={{ duration: reduced ? 0.01 : 0.85, delay: reduced ? 0 : 0.28, ease: heroEase }}
           className="relative mx-auto w-full max-w-xl lg:max-w-none"
         >
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-3 translate-x-4 translate-y-4 rounded-[36px] border border-white/15 rtl:-translate-x-4"
-          />
+          {!isFloating && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-3 translate-x-4 translate-y-4 rounded-[36px] border border-white/15 rtl:-translate-x-4"
+            />
+          )}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute -end-12 -top-12 -z-10 h-56 w-56 rounded-full bg-primary-600/30 blur-3xl"
           />
 
           <figure
-            className={`relative overflow-hidden rounded-[30px] shadow-[0_34px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 ${
-              isPhoto ? 'bg-dark-900' : 'bg-white'
-            }`}
+            className={
+              isFloating
+                ? 'relative'
+                : `relative overflow-hidden rounded-[30px] shadow-[0_34px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 ${
+                    isPhoto ? 'bg-dark-900' : 'bg-white'
+                  }`
+            }
           >
             <img
               src={plate.image}
@@ -255,7 +267,11 @@ export default function ProgramHero({
               className={
                 isPhoto
                   ? 'aspect-[16/10] w-full object-cover [object-position:50%_5%]'
-                  : 'aspect-[16/10] w-full scale-[1.45] object-contain'
+                  : isFloating
+                    ? 'aspect-[16/10] w-full object-contain p-4 drop-shadow-[0_24px_48px_rgba(0,0,0,0.5)]'
+                    : plate.fit === 'contain'
+                      ? 'aspect-[16/10] w-full object-contain p-8'
+                      : 'aspect-[16/10] w-full scale-[1.45] object-contain'
               }
             />
             {isPhoto && (
@@ -264,7 +280,7 @@ export default function ProgramHero({
                 className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-dark-950/70 to-transparent"
               />
             )}
-            {BadgeIcon && (
+            {BadgeIcon && !isFloating && (
               <span
                 aria-hidden="true"
                 className="absolute bottom-5 end-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-[0_12px_26px_rgba(218,8,18,0.45)]"

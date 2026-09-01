@@ -49,6 +49,11 @@ function FlipCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.6, ease: smoothEase, delay: index * 0.1 }}
+      whileHover={
+        reduced
+          ? undefined
+          : { y: -6, transition: { type: 'spring', stiffness: 320, damping: 24, delay: 0 } }
+      }
       className="[perspective:1400px]"
     >
       <button

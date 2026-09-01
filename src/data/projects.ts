@@ -168,36 +168,6 @@ const sharedProjects: Record<
 
 const arProjects: LocalizedWaqfProject[] = [
   {
-    ...sharedProjects['blessed-tree'],
-    title: 'مشروع الشجرة المباركة',
-    category: 'مشروع وقفي',
-    shortDescription:
-      'مشروع وقفي استثماري دائم في تركيا يقوم على شراء واستثمار أشجار زيتون منتجة، ويرتبط ريعه ببرنامج رواد اليمن.',
-    fullDescription: [
-      'مشروع الشجرة المباركة مشروع وقفي استثماري في مزارع أشجار الزيتون المثمرة داخل تركيا، يهدف إلى بناء أصل وقفي منتج يظل ريعه مستمرًا.',
-      'توضح الصفحة الرسمية أن لكل مساهمة مجموعة من عشرين شجرة زيتون منتجة، لا يقل عمرها عن عشر سنوات، وعلى مساحة 33 مترًا مربعًا للشجرة الواحدة.',
-      'يرتبط عائد المشروع ببرنامج رواد اليمن، وهو برنامج تعليمي وتأهيلي نوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن.',
-    ],
-    imageAlt: 'صورة رسمية لمشروع الشجرة المباركة',
-    contributionValue: '100 دولار',
-    facts: [
-      { label: 'قيمة المساهمة', value: '100 دولار' },
-      { label: 'الأصل الوقفي', value: '20 شجرة زيتون' },
-      { label: 'عمر الأشجار', value: 'لا يقل عن 10 سنوات' },
-      { label: 'مصرف الريع', value: 'برنامج رواد اليمن' },
-    ],
-    returnsTitle: 'أين يصرف عائد المشروع؟',
-    returnsIntro: 'يصرف ريع الشجرة المباركة في دعم برنامج رواد اليمن بحسب النص الرسمي للمشروع.',
-    returnUses: [
-      'التعليم والتأهيل النوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن.',
-      'إعداد قادة المستقبل من خلال منح دراسية وبرامج قيادية ومهارية.',
-      'رعاية مسار تعليمي يربط المعرفة بالمسؤولية والعمل لخدمة اليمن.',
-    ],
-    ctaTitle: 'ساهم في مشروع الشجرة المباركة',
-    ctaDescription:
-      'تتم المساهمة في هذا المشروع عبر بوابة الدفع الآمنة داخل الموقع.',
-  },
-  {
     ...sharedProjects['waqf-share'],
     title: 'السهم الوقفي',
     category: 'مشروع وقفي',
@@ -208,7 +178,7 @@ const arProjects: LocalizedWaqfProject[] = [
       'تستثمر أموال الأسهم في فرص ومشاريع استثمارية مدروسة، وفق منهجية تحافظ على أصول الوقف وتنمي موارده على المدى الطويل.',
       'تدار الاستثمارات بإشراف لجنة الاستثمار في الوقف، وبمشاركة خبرات يمنية موثوقة في مجالات الاستثمار المختلفة.',
     ],
-    imageAlt: 'صورة رسمية لمشروع السهم الوقفي',
+    imageAlt: 'صورة مشروع السهم الوقفي',
     contributionValue: '100 دولار',
     facts: [
       { label: 'قيمة السهم', value: '100 دولار' },
@@ -217,7 +187,7 @@ const arProjects: LocalizedWaqfProject[] = [
       { label: 'توزيع الريع', value: '70% برامج / 30% تنمية' },
     ],
     returnsTitle: 'أين تصرف عوائد المحفظة الوقفية؟',
-    returnsIntro: 'توجه عوائد المحفظة الوقفية إلى برامج ومسارات الوقف وفق النسب المعلنة رسميًا.',
+    returnsIntro: 'توجه عوائد المحفظة الوقفية إلى برامج ومسارات الوقف وفق النسب المعلنة.',
     returnUses: [
       'تعليم وتأهيل الطلاب الموهوبين والمتفوقين من أبناء اليمن.',
       'إعداد قادة المستقبل عبر منح دراسية وبرامج قيادية ومهارية.',
@@ -250,6 +220,36 @@ const arProjects: LocalizedWaqfProject[] = [
       'تتم المساهمة في السهم الوقفي عبر بوابة الدفع الآمنة داخل الموقع.',
   },
   {
+    ...sharedProjects['blessed-tree'],
+    title: 'مشروع الشجرة المباركة',
+    category: 'مشروع وقفي',
+    shortDescription:
+      'مشروع وقفي استثماري دائم في تركيا يقوم على شراء واستثمار أشجار زيتون منتجة، ويرتبط ريعه ببرنامج رواد اليمن.',
+    fullDescription: [
+      'مشروع الشجرة المباركة مشروع وقفي استثماري في مزارع أشجار الزيتون المثمرة داخل تركيا، يهدف إلى بناء أصل وقفي منتج يظل ريعه مستمرًا.',
+      'تشمل كل مساهمة مجموعة من عشرين شجرة زيتون منتجة، لا يقل عمرها عن عشر سنوات، وعلى مساحة 33 مترًا مربعًا للشجرة الواحدة.',
+      'يرتبط عائد المشروع ببرنامج رواد اليمن، وهو برنامج تعليمي وتأهيلي نوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن.',
+    ],
+    imageAlt: 'صورة مشروع الشجرة المباركة',
+    contributionValue: '100 دولار',
+    facts: [
+      { label: 'قيمة المساهمة', value: '100 دولار' },
+      { label: 'الأصل الوقفي', value: '20 شجرة زيتون' },
+      { label: 'عمر الأشجار', value: 'لا يقل عن 10 سنوات' },
+      { label: 'مصرف الريع', value: 'برنامج رواد اليمن' },
+    ],
+    returnsTitle: 'أين يصرف عائد المشروع؟',
+    returnsIntro: 'يصرف ريع الشجرة المباركة في دعم برنامج رواد اليمن بحسب نص المشروع.',
+    returnUses: [
+      'التعليم والتأهيل النوعي للطلاب الموهوبين والمتفوقين من أبناء اليمن.',
+      'إعداد قادة المستقبل من خلال منح دراسية وبرامج قيادية ومهارية.',
+      'رعاية مسار تعليمي يربط المعرفة بالمسؤولية والعمل لخدمة اليمن.',
+    ],
+    ctaTitle: 'ساهم في مشروع الشجرة المباركة',
+    ctaDescription:
+      'تتم المساهمة في هذا المشروع عبر بوابة الدفع الآمنة داخل الموقع.',
+  },
+  {
     ...sharedProjects['gold-wallet'],
     title: 'محفظة الذهب الوقفية',
     category: 'مشروع وقفي',
@@ -257,10 +257,10 @@ const arProjects: LocalizedWaqfProject[] = [
       'محفظة وقفية تقوم على شراء الذهب والتداول فيه وفق أحكام الشريعة الإسلامية لتنمية موارد الوقف.',
     fullDescription: [
       'محفظة الذهب الوقفية مشروع استثماري يقوم على شراء الذهب والتداول فيه وفق أحكام الشريعة الإسلامية.',
-      'توضح الصفحة الرسمية أن المشروع يدار عبر محل متخصص بتجارة الذهب في إسطنبول، بما يخدم تنمية أصول الوقف والمحافظة على قيمتها.',
+      'يدار المشروع عبر محل متخصص بتجارة الذهب في إسطنبول، بما يخدم تنمية أصول الوقف والمحافظة على قيمتها.',
       'يرتبط عائد المحفظة بأهداف الوقف وبرامجه ومساراته، دون إضافة أي وعود بأرباح مضمونة أو نسب عائد غير موثقة.',
     ],
-    imageAlt: 'صورة رسمية لمحفظة الذهب الوقفية',
+    imageAlt: 'صورة محفظة الذهب الوقفية',
     contributionValue: '100 دولار',
     facts: [
       { label: 'قيمة المساهمة', value: '100 دولار' },
@@ -269,7 +269,7 @@ const arProjects: LocalizedWaqfProject[] = [
       { label: 'توزيع الريع', value: '70% برامج / 30% تنمية' },
     ],
     returnsTitle: 'أين تصرف عوائد المحفظة الوقفية؟',
-    returnsIntro: 'توجه عوائد محفظة الذهب إلى أهداف الوقف وبرامجه ومساراته وفق النسب الرسمية.',
+    returnsIntro: 'توجه عوائد محفظة الذهب إلى أهداف الوقف وبرامجه ومساراته وفق النسب المعلنة.',
     returnUses: [
       'تعليم وتأهيل الطلاب الموهوبين والمتفوقين من أبناء اليمن.',
       'إعداد قادة المستقبل عبر منح دراسية وبرامج قيادية ومهارية.',
@@ -299,36 +299,6 @@ const arProjects: LocalizedWaqfProject[] = [
 
 const enProjects: LocalizedWaqfProject[] = [
   {
-    ...sharedProjects['blessed-tree'],
-    title: 'Blessed Tree Project',
-    category: 'Waqf Project',
-    shortDescription:
-      'A permanent waqf investment in productive olive trees in Türkiye, with returns directed to the Yemen Pioneers program.',
-    fullDescription: [
-      'The Blessed Tree Project is a waqf investment in productive olive farms in Türkiye, designed to create an enduring income-generating waqf asset.',
-      'The official project page states that each contribution includes a group of twenty productive olive trees, each at least ten years old, with 33 square meters allocated per tree.',
-      'The project returns support Yemen Pioneers, a qualitative education and training program for talented and outstanding Yemeni students.',
-    ],
-    imageAlt: 'Official image for the Blessed Tree Project',
-    contributionValue: '100 USD',
-    facts: [
-      { label: 'Contribution value', value: '100 USD' },
-      { label: 'Waqf asset', value: '20 olive trees' },
-      { label: 'Tree age', value: 'At least 10 years' },
-      { label: 'Return use', value: 'Yemen Pioneers' },
-    ],
-    returnsTitle: 'Where Are Project Returns Used?',
-    returnsIntro: 'The Blessed Tree return is directed to the Yemen Pioneers program according to the official project text.',
-    returnUses: [
-      'Education and qualitative training for talented and outstanding Yemeni students.',
-      'Preparing future leaders through scholarships and leadership and skills programs.',
-      'Supporting an educational track that connects learning with responsibility and service to Yemen.',
-    ],
-    ctaTitle: 'Contribute to the Blessed Tree Project',
-    ctaDescription:
-      'Contribution to this project goes through the secure in-site payment page.',
-  },
-  {
     ...sharedProjects['waqf-share'],
     title: 'Waqf Share',
     category: 'Waqf Project',
@@ -339,7 +309,7 @@ const enProjects: LocalizedWaqfProject[] = [
       'Share funds are invested in studied opportunities and projects through an approach that preserves waqf assets and develops resources over the long term.',
       'The investments are supervised by the waqf investment committee with trusted Yemeni expertise in different investment fields.',
     ],
-    imageAlt: 'Official image for the Waqf Share project',
+    imageAlt: 'Image for the Waqf Share project',
     contributionValue: '100 USD',
     facts: [
       { label: 'Share value', value: '100 USD' },
@@ -348,7 +318,7 @@ const enProjects: LocalizedWaqfProject[] = [
       { label: 'Return allocation', value: '70% programs / 30% growth' },
     ],
     returnsTitle: 'Where Are Portfolio Returns Used?',
-    returnsIntro: 'Portfolio returns are directed to the waqf programs and pathways according to the officially stated allocations.',
+    returnsIntro: 'Portfolio returns are directed to the waqf programs and pathways according to the stated allocations.',
     returnUses: [
       'Educating and training talented and outstanding Yemeni students.',
       'Preparing future leaders through scholarships and leadership and skills programs.',
@@ -381,6 +351,36 @@ const enProjects: LocalizedWaqfProject[] = [
       'Contribution to the Waqf Share goes through the secure in-site payment page.',
   },
   {
+    ...sharedProjects['blessed-tree'],
+    title: 'Blessed Tree Project',
+    category: 'Waqf Project',
+    shortDescription:
+      'A permanent waqf investment in productive olive trees in Türkiye, with returns directed to the Yemen Pioneers program.',
+    fullDescription: [
+      'The Blessed Tree Project is a waqf investment in productive olive farms in Türkiye, designed to create an enduring income-generating waqf asset.',
+      'Each contribution includes a group of twenty productive olive trees, each at least ten years old, with 33 square meters allocated per tree.',
+      'The project returns support Yemen Pioneers, a qualitative education and training program for talented and outstanding Yemeni students.',
+    ],
+    imageAlt: 'Image for the Blessed Tree Project',
+    contributionValue: '100 USD',
+    facts: [
+      { label: 'Contribution value', value: '100 USD' },
+      { label: 'Waqf asset', value: '20 olive trees' },
+      { label: 'Tree age', value: 'At least 10 years' },
+      { label: 'Return use', value: 'Yemen Pioneers' },
+    ],
+    returnsTitle: 'Where Are Project Returns Used?',
+    returnsIntro: 'The Blessed Tree return is directed to the Yemen Pioneers program according to the project text.',
+    returnUses: [
+      'Education and qualitative training for talented and outstanding Yemeni students.',
+      'Preparing future leaders through scholarships and leadership and skills programs.',
+      'Supporting an educational track that connects learning with responsibility and service to Yemen.',
+    ],
+    ctaTitle: 'Contribute to the Blessed Tree Project',
+    ctaDescription:
+      'Contribution to this project goes through the secure in-site payment page.',
+  },
+  {
     ...sharedProjects['gold-wallet'],
     title: 'Waqf Gold Portfolio',
     category: 'Waqf Project',
@@ -388,10 +388,10 @@ const enProjects: LocalizedWaqfProject[] = [
       'A waqf portfolio based on buying and trading gold in accordance with Islamic law to grow waqf resources.',
     fullDescription: [
       'The Waqf Gold Portfolio is an investment project based on buying and trading gold in accordance with Islamic law.',
-      'The official page states that the project is managed through a specialized gold trading shop in Istanbul to serve waqf asset growth and value preservation.',
+      'The project is managed through a specialized gold trading shop in Istanbul to serve waqf asset growth and value preservation.',
       'The portfolio returns are connected to the waqf goals, programs, and pathways, without adding any unsupported promises of profit or return rates.',
     ],
-    imageAlt: 'Official image for the Waqf Gold Portfolio',
+    imageAlt: 'Image for the Waqf Gold Portfolio',
     contributionValue: '100 USD',
     facts: [
       { label: 'Contribution value', value: '100 USD' },
@@ -400,7 +400,7 @@ const enProjects: LocalizedWaqfProject[] = [
       { label: 'Return allocation', value: '70% programs / 30% growth' },
     ],
     returnsTitle: 'Where Are Portfolio Returns Used?',
-    returnsIntro: 'The Gold Portfolio returns are directed to the waqf goals, programs, and pathways according to the official allocations.',
+    returnsIntro: 'The Gold Portfolio returns are directed to the waqf goals, programs, and pathways according to the stated allocations.',
     returnUses: [
       'Educating and training talented and outstanding Yemeni students.',
       'Preparing future leaders through scholarships and leadership and skills programs.',
@@ -430,36 +430,6 @@ const enProjects: LocalizedWaqfProject[] = [
 
 const trProjects: LocalizedWaqfProject[] = [
   {
-    ...sharedProjects['blessed-tree'],
-    title: 'Bereketli Ağaç Projesi',
-    category: 'Vakıf Projesi',
-    shortDescription:
-      'Türkiye’de verimli zeytin ağaçlarına dayanan kalıcı bir vakıf yatırımı; geliri Yemen Öncüleri programına yönlendirilir.',
-    fullDescription: [
-      'Bereketli Ağaç Projesi, Türkiye’de verimli zeytin bahçelerine yapılan bir vakıf yatırımıdır ve sürekli gelir üreten kalıcı bir vakıf varlığı oluşturmayı amaçlar.',
-      'Resmi proje sayfasında her katkının, her biri en az on yaşında olan yirmi verimli zeytin ağacından oluştuğu ve her ağaç için 33 metrekare alan ayrıldığı belirtilir.',
-      'Projenin geliri, Yemenli yetenekli ve başarılı öğrenciler için nitelikli eğitim ve yetiştirme programı olan Yemen Öncüleri programına bağlıdır.',
-    ],
-    imageAlt: 'Bereketli Ağaç Projesi resmi görseli',
-    contributionValue: '100 USD',
-    facts: [
-      { label: 'Katkı değeri', value: '100 USD' },
-      { label: 'Vakıf varlığı', value: '20 zeytin ağacı' },
-      { label: 'Ağaç yaşı', value: 'En az 10 yıl' },
-      { label: 'Gelir kullanımı', value: 'Yemen Öncüleri' },
-    ],
-    returnsTitle: 'Proje Geliri Nerede Kullanılır?',
-    returnsIntro: 'Bereketli Ağaç geliri, resmi metne göre Yemen Öncüleri programını desteklemek için kullanılır.',
-    returnUses: [
-      'Yemenli yetenekli ve başarılı öğrencilerin eğitimi ve nitelikli yetiştirilmesi.',
-      'Burslar, liderlik ve beceri programlarıyla geleceğin liderlerinin hazırlanması.',
-      'Bilgiyi sorumluluk ve Yemen’e hizmet bilinciyle birleştiren eğitim yolunun desteklenmesi.',
-    ],
-    ctaTitle: 'Bereketli Ağaç Projesine Katkı Sun',
-    ctaDescription:
-      'Bu projeye katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
-  },
-  {
     ...sharedProjects['waqf-share'],
     title: 'Vakıf Hissesi',
     category: 'Vakıf Projesi',
@@ -470,7 +440,7 @@ const trProjects: LocalizedWaqfProject[] = [
       'Hisse kaynakları, vakıf varlıklarını koruyan ve kaynakları uzun vadede geliştiren bir yaklaşımla çalışılmış yatırım fırsatları ve projelerde değerlendirilir.',
       'Yatırımlar, farklı yatırım alanlarında güvenilir Yemenli uzmanlıkların katkısıyla vakfın yatırım komitesi tarafından denetlenir.',
     ],
-    imageAlt: 'Vakıf Hissesi projesi resmi görseli',
+    imageAlt: 'Vakıf Hissesi projesi görseli',
     contributionValue: '100 USD',
     facts: [
       { label: 'Hisse değeri', value: '100 USD' },
@@ -479,7 +449,7 @@ const trProjects: LocalizedWaqfProject[] = [
       { label: 'Gelir dağılımı', value: '%70 program / %30 büyüme' },
     ],
     returnsTitle: 'Portföy Gelirleri Nerede Kullanılır?',
-    returnsIntro: 'Portföy gelirleri, resmi olarak belirtilen oranlara göre vakıf programlarına ve yollarına yönlendirilir.',
+    returnsIntro: 'Portföy gelirleri, belirtilen oranlara göre vakıf programlarına ve yollarına yönlendirilir.',
     returnUses: [
       'Yemenli yetenekli ve başarılı öğrencilerin eğitimi ve yetiştirilmesi.',
       'Burslar, liderlik ve beceri programlarıyla geleceğin liderlerinin hazırlanması.',
@@ -512,6 +482,36 @@ const trProjects: LocalizedWaqfProject[] = [
       'Vakıf Hissesine katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
   },
   {
+    ...sharedProjects['blessed-tree'],
+    title: 'Bereketli Ağaç Projesi',
+    category: 'Vakıf Projesi',
+    shortDescription:
+      'Türkiye’de verimli zeytin ağaçlarına dayanan kalıcı bir vakıf yatırımı; geliri Yemen Öncüleri programına yönlendirilir.',
+    fullDescription: [
+      'Bereketli Ağaç Projesi, Türkiye’de verimli zeytin bahçelerine yapılan bir vakıf yatırımıdır ve sürekli gelir üreten kalıcı bir vakıf varlığı oluşturmayı amaçlar.',
+      'Her katkı, her biri en az on yaşında olan yirmi verimli zeytin ağacından oluşur ve her ağaç için 33 metrekare alan ayrılır.',
+      'Projenin geliri, Yemenli yetenekli ve başarılı öğrenciler için nitelikli eğitim ve yetiştirme programı olan Yemen Öncüleri programına bağlıdır.',
+    ],
+    imageAlt: 'Bereketli Ağaç Projesi görseli',
+    contributionValue: '100 USD',
+    facts: [
+      { label: 'Katkı değeri', value: '100 USD' },
+      { label: 'Vakıf varlığı', value: '20 zeytin ağacı' },
+      { label: 'Ağaç yaşı', value: 'En az 10 yıl' },
+      { label: 'Gelir kullanımı', value: 'Yemen Öncüleri' },
+    ],
+    returnsTitle: 'Proje Geliri Nerede Kullanılır?',
+    returnsIntro: 'Bereketli Ağaç geliri, proje metnine göre Yemen Öncüleri programını desteklemek için kullanılır.',
+    returnUses: [
+      'Yemenli yetenekli ve başarılı öğrencilerin eğitimi ve nitelikli yetiştirilmesi.',
+      'Burslar, liderlik ve beceri programlarıyla geleceğin liderlerinin hazırlanması.',
+      'Bilgiyi sorumluluk ve Yemen’e hizmet bilinciyle birleştiren eğitim yolunun desteklenmesi.',
+    ],
+    ctaTitle: 'Bereketli Ağaç Projesine Katkı Sun',
+    ctaDescription:
+      'Bu projeye katkı, site içindeki güvenli ödeme sayfası üzerinden yapılır.',
+  },
+  {
     ...sharedProjects['gold-wallet'],
     title: 'Vakıf Altın Portföyü',
     category: 'Vakıf Projesi',
@@ -519,10 +519,10 @@ const trProjects: LocalizedWaqfProject[] = [
       'Vakıf kaynaklarını büyütmek için İslami hükümlere uygun altın alım-satımına dayanan vakıf portföyü.',
     fullDescription: [
       'Vakıf Altın Portföyü, İslami hükümlere uygun şekilde altın satın alma ve altın ticaretine dayanan bir yatırım projesidir.',
-      'Resmi sayfa, projenin vakıf varlıklarının büyümesine ve değerinin korunmasına hizmet etmek üzere İstanbul’da altın ticaretinde uzmanlaşmış bir mağaza üzerinden yönetildiğini belirtir.',
+      'Proje, vakıf varlıklarının büyümesine ve değerinin korunmasına hizmet etmek üzere İstanbul’da altın ticaretinde uzmanlaşmış bir mağaza üzerinden yönetilir.',
       'Portföy geliri vakfın hedefleri, programları ve yollarıyla ilişkilidir; belgelenmeyen kâr garantisi veya getiri oranı eklenmez.',
     ],
-    imageAlt: 'Vakıf Altın Portföyü resmi görseli',
+    imageAlt: 'Vakıf Altın Portföyü görseli',
     contributionValue: '100 USD',
     facts: [
       { label: 'Katkı değeri', value: '100 USD' },
@@ -531,7 +531,7 @@ const trProjects: LocalizedWaqfProject[] = [
       { label: 'Gelir dağılımı', value: '%70 program / %30 büyüme' },
     ],
     returnsTitle: 'Portföy Gelirleri Nerede Kullanılır?',
-    returnsIntro: 'Altın Portföyü gelirleri, resmi oranlara göre vakfın hedeflerine, programlarına ve yollarına yönlendirilir.',
+    returnsIntro: 'Altın Portföyü gelirleri, belirtilen oranlara göre vakfın hedeflerine, programlarına ve yollarına yönlendirilir.',
     returnUses: [
       'Yemenli yetenekli ve başarılı öğrencilerin eğitimi ve yetiştirilmesi.',
       'Burslar, liderlik ve beceri programlarıyla geleceğin liderlerinin hazırlanması.',
@@ -602,7 +602,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       overview: 'تفاصيل المشروع',
       allocation: 'توزيع الريع',
       returns: 'مصارف العوائد',
-      video: 'الفيديو الرسمي',
+      video: 'فيديو المشروع',
       otherProjects: 'مشاريع أخرى',
       backToProjects: 'العودة إلى المشاريع',
       quantity: 'الكمية',
@@ -656,7 +656,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       overview: 'Proje detayları',
       allocation: 'Gelir dağılımı',
       returns: 'Gelir kullanım alanları',
-      video: 'Resmi video',
+      video: 'Proje videosu',
       otherProjects: 'Diğer projeler',
       backToProjects: 'Projelere dön',
       quantity: 'Adet',
@@ -710,7 +710,7 @@ const pageContent: Record<Locale, Omit<ProjectsPageContent, 'projects'>> = {
       overview: 'Project details',
       allocation: 'Return allocation',
       returns: 'Return uses',
-      video: 'Official video',
+      video: 'Project video',
       otherProjects: 'Other Projects',
       backToProjects: 'Back to Projects',
       quantity: 'Qty',

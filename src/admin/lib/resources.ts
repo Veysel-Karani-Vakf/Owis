@@ -234,6 +234,7 @@ const mediaProductItem: PageFieldDef[] = [
   F.title,
   { path: 'tagline', label: L('الشعار القصير', 'Kısa slogan', 'Tagline'), type: 'text' },
   F.description,
+  { ...F.url, help: L('اختياري — يجعل البطاقة قابلة للنقر', 'İsteğe bağlı — kartı bağlantıya çevirir', 'Optional — makes the card a link') },
   F.icon,
 ];
 
@@ -413,7 +414,7 @@ export const RESOURCES: FullResourceDef[] = [
         itemFields: allocationItem,
         itemTitleField: 'title',
       },
-      { key: 'video', label: L('الفيديو الرسمي', 'Resmi video', 'Official video'), type: 'group', itemFields: projectVideoGroup },
+      { key: 'video', label: L('فيديو المشروع', 'Proje videosu', 'Project video'), type: 'group', itemFields: projectVideoGroup },
       { key: 'cta_title', label: L('عنوان الدعوة للمساهمة', 'CTA başlığı', 'Call-to-action title'), type: 'localized' },
       { key: 'cta_description', label: L('وصف الدعوة للمساهمة', 'CTA açıklaması', 'Call-to-action description'), type: 'localizedTextarea' },
       group('seo', L('الظهور في محركات البحث', 'Arama motorları', 'Search engines'), seoGroup, { advanced: true }),

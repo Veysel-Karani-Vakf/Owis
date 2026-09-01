@@ -466,7 +466,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'منح تعليمية', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'رائد ورائدة', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
         { label: 'أبحاث علمية محكّمة', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
         { label: 'ملتقيات تدريبية', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'مشاركات دولية', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
@@ -476,7 +476,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'أثر الوقف',
       title: 'أويس في أرقام',
       description:
-        'أرقام رسمية من تقرير «أويس في أرقام» — الإصدار السابع، حتى ديسمبر 2025م.',
+        'أرقام موثقة من تقرير «أويس في أرقام» — الإصدار السابع، حتى ديسمبر 2025م.',
       indicators: [
         { label: 'سهماً وقفياً', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'إجمالي الأسهم الوقفية التي جُمعت لتنمية أصول الوقف واستدامة مساراته التنموية.', icon: shared.statisticIcons[0] },
         { label: 'مساهماً ومساهمة من 22 دولة', value: shared.waqfStatistics.contributors, suffix: '', detail: 'واقفون وواقفات من 22 دولة حول العالم شاركوا في بناء الوقف وتنميته.', icon: shared.statisticIcons[1] },
@@ -604,7 +604,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       { label: 'Katıl', href: '/participate' },
     ],
     hero: {
-      title: "Yemen'in dirilişi için birlikte vakfettik",
+      title: "Yemen'in Yeniden Yükselişi İçin Birlikte Durduk",
       secondaryButton: 'Şimdi Katkı Sun',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
@@ -733,7 +733,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'Eğitim Bursu', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'Kadın ve Erkek Öncü', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
         { label: 'Hakemli Bilimsel Araştırma', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
         { label: 'Eğitim Buluşması', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'Uluslararası Katılım', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
@@ -743,7 +743,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'Vakfın Etkisi',
       title: 'Rakamlarla Oveys',
       description:
-        '“Rakamlarla Oveys” raporundan resmi rakamlar — 7. sayı, Aralık 2025’e kadar.',
+        '“Rakamlarla Oveys” raporundan rakamlar — 7. sayı, Aralık 2025’e kadar.',
       indicators: [
         { label: 'Vakıf Hissesi', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Vakıf varlıklarını büyütmek ve programlarını sürdürülebilir kılmak için toplanan toplam vakıf hissesi.', icon: shared.statisticIcons[0] },
         { label: '22 Ülkeden Katkı Sunan', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Dünya genelinde 22 ülkeden vakfın kuruluşuna ve büyümesine katkı sunan bağışçılar.', icon: shared.statisticIcons[1] },
@@ -871,7 +871,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       { label: 'Participate', href: '/participate' },
     ],
     hero: {
-      title: 'Together we stand for the renaissance of Yemen',
+      title: "Together, We Stood for Yemen's Renaissance",
       secondaryButton: 'Contribute Now',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
@@ -1000,7 +1000,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       url: shared.routes.yemenPioneers,
       image: shared.mainImage,
       indicators: [
-        { label: 'Educational Scholarships', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
+        { label: 'Male & Female Pioneers', value: shared.yemenPioneersStatistics.educationalScholarships, icon: shared.pioneerIcons[0] },
         { label: 'Peer-Reviewed Studies', value: shared.yemenPioneersStatistics.peerReviewedResearch, icon: shared.pioneerIcons[1] },
         { label: 'Training Forums', value: shared.yemenPioneersStatistics.trainingForums, icon: shared.pioneerIcons[2] },
         { label: 'International Participations', value: shared.yemenPioneersStatistics.internationalParticipations, icon: shared.pioneerIcons[3] },
@@ -1010,7 +1010,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       eyebrow: 'Waqf Impact',
       title: 'Owais in Numbers',
       description:
-        'Official figures from the “Owais in Numbers” report — 7th edition, through December 2025.',
+        'Figures from the “Owais in Numbers” report — 7th edition, through December 2025.',
       indicators: [
         { label: 'Waqf Shares', value: shared.waqfStatistics.waqfShares, suffix: '', detail: 'Total waqf shares contributed to grow the endowment’s assets and sustain its development tracks.', icon: shared.statisticIcons[0] },
         { label: 'Contributors from 22 Countries', value: shared.waqfStatistics.contributors, suffix: '', detail: 'Donors from 22 countries around the world who have taken part in building and growing the waqf.', icon: shared.statisticIcons[1] },

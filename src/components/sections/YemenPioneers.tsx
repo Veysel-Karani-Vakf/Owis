@@ -53,6 +53,11 @@ function PioneersStatCard({
           ? { duration: 0.4 }
           : { type: 'spring', stiffness: 260, damping: 22, mass: 0.8, delay }
       }
+      whileHover={
+        reduceMotion
+          ? undefined
+          : { y: -6, scale: 1.02, transition: { type: 'spring', stiffness: 320, damping: 24, delay: 0 } }
+      }
       className="h-full"
     >
       <div className="pioneers-stat-card group relative flex h-full flex-col items-center overflow-hidden rounded-2xl p-6 text-center">
@@ -64,7 +69,7 @@ function PioneersStatCard({
               ? { duration: 0.01 }
               : { type: 'spring', stiffness: 300, damping: 18, delay: delay + 0.15 }
           }
-          className="pioneers-stat-icon mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors"
+          className="pioneers-stat-icon mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:-rotate-3 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100"
         >
           <Icon className="h-6 w-6" />
         </motion.div>
@@ -94,7 +99,7 @@ export default function YemenPioneers() {
   const isExternalButton = buttonUrl.startsWith('http');
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const buttonClassName =
-    'pioneers-button group flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-300';
+    'btn-border-run btn-border-run--light pioneers-button group flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-300';
   const buttonBody = (
     <>
       {yemenPioneersContent.button}

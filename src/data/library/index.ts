@@ -457,13 +457,13 @@ const collectionText: Record<
       title: 'المنتدى الوقفي',
       shortTitle: 'المنتدى',
       eyebrow: 'مقالات ودراسات',
-      description: 'مقالات الوقف والتنمية واليمن المنشورة في المنتدى الرسمي لوقف أويس القرني.',
+      description: 'مقالات الوقف والتنمية واليمن المنشورة في منتدى وقف أويس القرني.',
     },
     'periodic-reports': {
       title: 'التقارير الدورية',
       shortTitle: 'التقارير الدورية',
       eyebrow: 'أرقام ونشرات',
-      description: 'إصدارات أويس في أرقام والنشرات الدورية المتاحة في أرشيف الوقف الرسمي.',
+      description: 'إصدارات أويس في أرقام والنشرات الدورية المتاحة في أرشيف الوقف.',
     },
     'waqf-books': {
       title: 'كتب وقفية',
@@ -487,13 +487,13 @@ const collectionText: Record<
       title: 'قصص النجاح',
       shortTitle: 'قصص نجاح',
       eyebrow: 'نماذج ملهمة',
-      description: 'قصص يمنيين بارزين في الابتكار والبحث كما ظهرت في صفحة قصص النجاح الرسمية.',
+      description: 'قصص يمنيين بارزين في الابتكار والبحث كما ظهرت في صفحة قصص النجاح.',
     },
     gallery: {
       title: 'معرض الصور',
       shortTitle: 'معرض الصور',
       eyebrow: 'توثيق بصري',
-      description: 'صور رسمية من معرض وقف أويس القرني مع عرض ضوئي مخصص داخل الموقع الجديد.',
+      description: 'صور من معرض وقف أويس القرني مع عرض ضوئي مخصص داخل الموقع الجديد.',
     },
   },
   en: {
@@ -501,13 +501,13 @@ const collectionText: Record<
       title: 'Waqf Forum',
       shortTitle: 'Forum',
       eyebrow: 'Articles and Studies',
-      description: 'Articles on waqf, development, and Yemen published in the official Veysel Karani Waqf forum.',
+      description: 'Articles on waqf, development, and Yemen published in the Veysel Karani Waqf forum.',
     },
     'periodic-reports': {
       title: 'Periodic Reports',
       shortTitle: 'Reports',
       eyebrow: 'Numbers and Bulletins',
-      description: 'Owais in Numbers editions and periodic bulletins available in the official waqf archive.',
+      description: 'Owais in Numbers editions and periodic bulletins available in the waqf archive.',
     },
     'waqf-books': {
       title: 'Waqf Books',
@@ -531,13 +531,13 @@ const collectionText: Record<
       title: 'Success Stories',
       shortTitle: 'Success Stories',
       eyebrow: 'Inspiring Models',
-      description: 'Stories of Yemeni innovators and researchers shown on the official success stories page.',
+      description: 'Stories of Yemeni innovators and researchers shown on the success stories page.',
     },
     gallery: {
       title: 'Photo Gallery',
       shortTitle: 'Gallery',
       eyebrow: 'Visual Documentation',
-      description: 'Official photos from the Veysel Karani Waqf gallery with an in-site lightbox.',
+      description: 'Photos from the Veysel Karani Waqf gallery with an in-site lightbox.',
     },
   },
   tr: {
@@ -545,13 +545,13 @@ const collectionText: Record<
       title: 'Vakıf Forumu',
       shortTitle: 'Forum',
       eyebrow: 'Makaleler ve İncelemeler',
-      description: 'Veysel Karani Vakfı resmi forumunda yayımlanan vakıf, kalkınma ve Yemen yazıları.',
+      description: 'Veysel Karani Vakfı forumunda yayımlanan vakıf, kalkınma ve Yemen yazıları.',
     },
     'periodic-reports': {
       title: 'Dönemsel Raporlar',
       shortTitle: 'Raporlar',
       eyebrow: 'Sayılar ve Bültenler',
-      description: 'Resmi vakıf arşivindeki Owais in Numbers sayıları ve dönemsel bültenler.',
+      description: 'Vakıf arşivindeki Owais in Numbers sayıları ve dönemsel bültenler.',
     },
     'waqf-books': {
       title: 'Vakıf Kitapları',
@@ -575,13 +575,13 @@ const collectionText: Record<
       title: 'Başarı Hikayeleri',
       shortTitle: 'Başarı Hikayeleri',
       eyebrow: 'İlham Veren Örnekler',
-      description: 'Resmi başarı hikayeleri sayfasında yer alan Yemenli yenilikçi ve araştırmacıların hikayeleri.',
+      description: 'Başarı hikayeleri sayfasında yer alan Yemenli yenilikçi ve araştırmacıların hikayeleri.',
     },
     gallery: {
       title: 'Fotoğraf Galerisi',
       shortTitle: 'Galeri',
       eyebrow: 'Görsel Dokümantasyon',
-      description: 'Veysel Karani Vakfı resmi galerisinden fotoğraflar ve site içi ışıklı galeri.',
+      description: 'Veysel Karani Vakfı galerisinden fotoğraflar ve site içi ışıklı galeri.',
     },
   },
 };
@@ -650,17 +650,17 @@ const heroText: Record<Locale, Omit<LibraryContent['hero'], 'image' | 'imageAlt'
   ar: {
     title: 'المكتبة',
     eyebrow: 'أرشيف وقف أويس القرني',
-    description: 'مركز واحد للمقالات، التقارير، الكتب، الأدبيات، قصص النجاح، والصور الرسمية المنقولة من موقع الوقف القديم.',
+    description: 'مركز واحد للمقالات، التقارير، الكتب، الأدبيات، قصص النجاح، والصور المنقولة من موقع الوقف القديم.',
   },
   en: {
     title: 'Library',
     eyebrow: 'Veysel Karani Waqf Archive',
-    description: 'One place for official articles, reports, books, literature, success stories, and photos migrated from the old waqf website.',
+    description: 'One place for articles, reports, books, literature, success stories, and photos migrated from the old waqf website.',
   },
   tr: {
     title: 'Kütüphane',
     eyebrow: 'Veysel Karani Vakfı Arşivi',
-    description: 'Eski vakıf sitesinden taşınan resmi makaleler, raporlar, kitaplar, literatür, başarı hikayeleri ve fotoğraflar.',
+    description: 'Eski vakıf sitesinden taşınan makaleler, raporlar, kitaplar, literatür, başarı hikayeleri ve fotoğraflar.',
   },
 };
 

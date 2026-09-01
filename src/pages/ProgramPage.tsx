@@ -1618,13 +1618,12 @@ function heroSlots({
       tags: hashtags.slice(1).map((label) => ({ label, icon: Hash })),
       note: volunteerCopy.slogan ? { text: volunteerCopy.slogan, icon: Quote } : undefined,
       chip: hashtags[0] ? { label: hashtags[0] } : statChip,
-      // The unit's badge sits on the plate; the photo stays behind as the backdrop.
+      // The unit's cut-out logo floats free on the hero; the photo stays behind as the backdrop.
       plate: {
         image: program.overviewImage ?? program.heroImage,
         alt: program.overviewImageAlt || program.heroImageAlt,
-        tone: 'emblem',
+        tone: 'floating',
       },
-      badgeIcon: HeartHandshake,
       backdropImage: program.heroImage,
     };
   }

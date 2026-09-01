@@ -132,7 +132,7 @@ export default function ParticipationCTA({ standalone = false }: ParticipationCT
           {participationContent.primaryButton && (
             <CtaLink
               href={primaryUrl}
-              className="group flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-sm font-semibold text-dark-900 shadow-xl transition-all duration-300 hover:bg-gold-300 hover:shadow-2xl"
+              className="btn-border-run btn-border-run--light group flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-sm font-semibold text-dark-900 shadow-xl transition-all duration-300 hover:scale-[1.04] hover:bg-gold-300 hover:shadow-2xl active:scale-[0.97] motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
             >
               {participationContent.primaryButton}
               <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
@@ -142,7 +142,7 @@ export default function ParticipationCTA({ standalone = false }: ParticipationCT
           {participationContent.secondaryButton && (
             <CtaLink
               href={secondaryUrl}
-              className="group flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10"
+              className="btn-border-run btn-border-run--light group flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-[1.04] hover:border-white/40 hover:bg-white/10 active:scale-[0.97] motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
             >
               {participationContent.secondaryButton}
               <ArrowIcon className={`h-4 w-4 transition-transform ${arrowHoverClass}`} />
