@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HandHeart, PhoneCall, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
 import { useMemo } from 'react';
 import FadeContent from '@/components/effects/FadeContent';
 import SpotlightCard from '@/components/effects/SpotlightCard';
@@ -87,7 +87,7 @@ function DonationCard({
             {opportunity.available && opportunity.url ? (
               <Link
                 to={opportunity.url}
-                aria-label={`${labels.contribute}: ${opportunity.title}. ${labels.externalNotice}`}
+                aria-label={`${labels.contribute}: ${opportunity.title}`}
                 className="group/link inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 <HandHeart className="h-4 w-4" aria-hidden="true" />
@@ -189,7 +189,7 @@ function FeaturedDonationCard({
               {opportunity.available && opportunity.url ? (
                 <Link
                   to={opportunity.url}
-                  aria-label={`${labels.contribute}: ${opportunity.title}. ${labels.externalNotice}`}
+                  aria-label={`${labels.contribute}: ${opportunity.title}`}
                   className="group/link inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-8 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   <HandHeart className="h-5 w-5" aria-hidden="true" />
@@ -275,10 +275,6 @@ export default function DonatePage() {
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
-              <div className="mx-auto mt-6 flex w-fit items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-4 py-2 text-sm font-bold text-primary-700">
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                {page.labels.officialNotice}
-              </div>
             </FadeContent>
           </div>
         </section>
@@ -329,15 +325,6 @@ export default function DonatePage() {
                 )}
               </>
             )}
-
-            <div className="mt-10 flex items-start gap-4 rounded-[22px] border border-primary-100 bg-white p-5 text-start shadow-[0_14px_36px_rgba(40,12,18,0.06)] md:p-6">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600">
-                <PhoneCall className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <p className="text-sm leading-relaxed text-dark-600 md:text-base">
-                {page.labels.externalNotice}
-              </p>
-            </div>
           </div>
         </section>
       </main>

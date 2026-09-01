@@ -69,6 +69,7 @@ import {
   type VolunteerCopy,
 } from '@/data/programs';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
+import { localizedContent, type Locale, type SiteContent } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
 import { resolveIcon } from '@/lib/icons';
 import type { ProgramLayout } from '@/lib/types';
@@ -93,6 +94,31 @@ function absoluteUrl(path: string) {
   if (path.startsWith('http')) return path;
   if (typeof window === 'undefined') return path;
   return `${window.location.origin}${path}`;
+}
+
+function applyHomePioneersHero(
+  program: Program | undefined,
+  homePioneers: Pick<SiteContent['yemenPioneers'], 'image' | 'title'>,
+  locale: Locale,
+): Program | undefined {
+  const dashboardImage = homePioneers.image?.trim();
+  const defaultHomeImage = localizedContent[locale].yemenPioneers.image.trim();
+  if (
+    !program ||
+    program.slug !== 'yemen-pioneers' ||
+    !dashboardImage ||
+    dashboardImage === defaultHomeImage ||
+    dashboardImage === program.heroImage
+  ) {
+    return program;
+  }
+
+  return {
+    ...program,
+    heroImage: dashboardImage,
+    heroImageAlt: program.heroImageAlt || homePioneers.title || program.title,
+    images: [dashboardImage, ...(program.images ?? []).filter((image) => image !== dashboardImage)],
+  };
 }
 
 function SectionHeading({ eyebrow, title, description, centered = false }: SectionHeadingProps) {
@@ -226,18 +252,7 @@ function StatisticsSection({
     );
   }
 
-  if (!program.statistics?.length) {
-    return program.mediaNote ? (
-      <section className="bg-[#faf8f8] py-12 md:py-16">
-        <div className="mx-auto max-w-4xl px-4 md:px-8">
-          <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
-            <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
-            <p className="mt-2">{program.mediaNote}</p>
-          </div>
-        </div>
-      </section>
-    ) : null;
-  }
+  if (!program.statistics?.length) return null;
 
   return (
     <section id="cms-program-stats" className="bg-[#faf8f8] py-16 md:py-20">
@@ -476,6 +491,7 @@ function MediaGallery({
   const videos = program.videos ?? [];
   // A single gallery image that merely repeats the hero adds nothing next to a video carousel.
   const showImages =
+    program.slug !== 'yemen-pioneers' &&
     program.imageGallery.length > 0 &&
     (videos.length < 2 || program.imageGallery.some((image) => image.src !== program.heroImage));
   const useCarousel = videos.length >= 2;
@@ -868,22 +884,9 @@ function InstitutionalShowcase({
             statistics={statistics}
             eyebrow={labels.statsEyebrow}
             title={labels.statistics}
-            note={program.mediaNote}
-            noteLabel={labels.noVerifiedStats}
           />
         </section>
-      ) : (
-        program.mediaNote && (
-          <section className="bg-[#faf8f8] py-10 md:py-12">
-            <div className="mx-auto max-w-4xl px-4 md:px-8">
-              <div className="rounded-[22px] border border-primary-100 bg-white p-5 text-start text-sm leading-relaxed text-dark-600 shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
-                <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
-                <p className="mt-2">{program.mediaNote}</p>
-              </div>
-            </div>
-          </section>
-        )
-      )}
+      ) : null}
 
       {audiences.length > 0 && (
         <section className="overflow-hidden bg-white py-16 md:py-24">
@@ -1240,16 +1243,6 @@ function AwarenessShowcase({
         </section>
       )}
 
-      {program.mediaNote && (
-        <section className="bg-white py-10 md:py-12">
-          <div className="mx-auto max-w-4xl px-4 md:px-8">
-            <div className="rounded-[22px] border border-primary-100 bg-[#faf8f8] p-5 text-start text-sm leading-relaxed text-dark-600">
-              <span className="font-bold text-primary-700">{labels.noVerifiedStats}</span>
-              <p className="mt-2">{program.mediaNote}</p>
-            </div>
-          </div>
-        </section>
-      )}
     </>
   );
 }
@@ -1376,7 +1369,8 @@ function heroSlots({
 export default function ProgramPage() {
   const { slug } = useParams();
   const { locale, isRtl, content, formatNumber } = useI18n();
-  const program = getProgram(locale, slug);
+  const sourceProgram = getProgram(locale, slug);
+  const program = applyHomePioneersHero(sourceProgram, content.yemenPioneers, locale);
   const page = getProgramsContent(locale);
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
   const siteName = content.siteConfig.name;
@@ -1467,13 +1461,13 @@ export default function ProgramPage() {
                 <h2 className="mt-4 text-3xl font-bold leading-tight text-dark-950">{page.labels.overview}</h2>
                 <p className="mt-4 text-base leading-relaxed text-dark-600">{program.summary}</p>
                 {program.contactEmail && (
-                  <a
-                    href={`mailto:${program.contactEmail}`}
+                  <Link
+                    to={participateRoutes.contact}
                     className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary-700 hover:text-primary-800"
                   >
                     <Mail className="h-4 w-4" aria-hidden="true" />
                     {page.labels.contact}: {program.contactEmail}
-                  </a>
+                  </Link>
                 )}
               </div>
             </FadeContent>
