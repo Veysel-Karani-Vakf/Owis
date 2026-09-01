@@ -923,6 +923,18 @@ const trainingAxisIcons: LucideIcon[] = [Target, Wallet, Scale, Users];
 const yemenProgramAnchor = 'program-yemen';
 const sphereProgramAnchor = 'program-sphere';
 
+/** Registration marks in the corners of the two program-dossier cards. */
+function CornerTicks({ className = 'border-primary-200' }: { className?: string }) {
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute inset-2.5">
+      <span className={`absolute start-0 top-0 h-3 w-3 border-s-2 border-t-2 ${className}`} />
+      <span className={`absolute end-0 top-0 h-3 w-3 border-e-2 border-t-2 ${className}`} />
+      <span className={`absolute bottom-0 start-0 h-3 w-3 border-b-2 border-s-2 ${className}`} />
+      <span className={`absolute bottom-0 end-0 h-3 w-3 border-b-2 border-e-2 ${className}`} />
+    </span>
+  );
+}
+
 /**
  * The institutional track's field record. It opens with the track's two programs side by
  * side — the Yemen capacity raising program and the Sphere program held in Istanbul —
@@ -986,15 +998,20 @@ function InstitutionalDossier({
   return (
     <>
       {programCards.length > 0 && (
-        <section className="bg-white py-16 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <section className="relative overflow-hidden bg-white py-16 md:py-24">
+          {/* A faint drafting grid marks the track's own two-program overview. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(40,12,18,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(40,12,18,0.03)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_75%_75%_at_50%_40%,black,transparent)]"
+          />
+          <div className="relative mx-auto max-w-7xl px-4 md:px-8">
             <SectionHeading
               eyebrow={labels.trackProgramsEyebrow}
               title={labels.trackPrograms}
               description={labels.trackProgramsDescription}
               centered
             />
-            <div className={`grid gap-6 ${programCards.length > 1 ? 'lg:grid-cols-2' : 'mx-auto max-w-3xl'}`}>
+            <div className={`grid gap-x-6 gap-y-10 ${programCards.length > 1 ? 'lg:grid-cols-2' : 'mx-auto max-w-3xl'}`}>
               {programCards.map((card, index) => (
                 <FadeContent
                   key={card.id}
@@ -1006,42 +1023,48 @@ function InstitutionalDossier({
                   threshold={0.16}
                   once
                 >
-                  <article className="group relative flex h-full flex-col overflow-hidden rounded-[26px] border border-primary-100 bg-[#faf8f8] p-7 text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_26px_60px_rgba(40,12,18,0.11)] motion-reduce:hover:translate-y-0 md:p-9">
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -end-14 -top-14 h-48 w-48 rounded-full bg-primary-100/50 blur-2xl"
-                    />
-                    <div className="relative flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center rounded-full bg-primary-600 px-4 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(195,7,16,0.24)]">
-                        {card.label}
-                      </span>
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary-700 ring-1 ring-primary-100">
-                        <card.icon className="h-6 w-6" aria-hidden="true" />
-                      </span>
-                    </div>
-                    <h3 className="relative mt-5 text-2xl font-bold leading-tight text-dark-950">{card.title}</h3>
-                    {card.meta && (
-                      <p className="relative mt-3 inline-flex items-center gap-2 self-start rounded-full bg-white px-4 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-primary-100">
-                        <CalendarDays className="h-4 w-4" aria-hidden="true" />
-                        {card.meta}
-                      </p>
-                    )}
-                    {card.description && (
-                      <p className="relative mt-4 text-base leading-relaxed text-dark-600">{card.description}</p>
-                    )}
-                    <a
-                      href={`#${card.id}`}
-                      className="relative mt-auto inline-flex items-center gap-2 pt-5 text-sm font-bold text-primary-700 transition-colors hover:text-primary-800"
-                    >
-                      {labels.details}
-                      <ArrowIcon
-                        className={`h-4 w-4 transition-transform ${
-                          isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
-                        }`}
+                  {/* A dossier folder: the program label rides a tab fused to the card below it. */}
+                  <div className="group flex h-full flex-col transition-transform duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0">
+                    <span className="relative z-10 -mb-px inline-flex items-center gap-2.5 self-start rounded-t-2xl border border-b-0 border-primary-100 bg-[#faf8f8] px-5 py-3 text-xs font-black text-primary-700 transition-colors duration-300 group-hover:border-primary-200">
+                      <span aria-hidden="true" className="h-2 w-2 bg-primary-600" />
+                      {card.label}
+                      <span aria-hidden="true" className="absolute inset-x-px -bottom-px h-px bg-[#faf8f8]" />
+                    </span>
+                    <article className="relative flex flex-1 flex-col overflow-hidden rounded-[26px] rounded-ss-none border border-primary-100 bg-[#faf8f8] p-7 text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)] transition-all duration-300 group-hover:border-primary-200 group-hover:shadow-[0_26px_60px_rgba(40,12,18,0.11)] md:p-9">
+                      <CornerTicks />
+                      <span
                         aria-hidden="true"
-                      />
-                    </a>
-                  </article>
+                        dir="ltr"
+                        className="pointer-events-none absolute -bottom-7 end-4 select-none text-[7rem] font-black leading-none tabular-nums text-primary-600/[0.05]"
+                      >
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <div className="relative flex items-start justify-between gap-4">
+                        <h3 className="text-2xl font-bold leading-tight text-dark-950">{card.title}</h3>
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-primary-100 bg-white text-primary-700">
+                          <card.icon className="h-6 w-6" aria-hidden="true" />
+                        </span>
+                      </div>
+                      {card.meta && (
+                        <p className="relative mt-4 inline-flex items-center gap-2 self-start border border-primary-100 bg-white px-4 py-1.5 text-sm font-bold text-primary-700">
+                          <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                          {card.meta}
+                        </p>
+                      )}
+                      {card.description && (
+                        <p className="relative mt-4 text-base leading-relaxed text-dark-600">{card.description}</p>
+                      )}
+                      <a
+                        href={`#${card.id}`}
+                        className="relative mt-auto inline-flex items-center gap-3 self-start pt-6 text-sm font-black text-primary-700"
+                      >
+                        {labels.details}
+                        <span className="flex h-9 w-9 items-center justify-center border border-primary-200 bg-white transition-colors duration-300 group-hover:border-primary-600 group-hover:bg-primary-600 group-hover:text-white">
+                          <ArrowIcon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                      </a>
+                    </article>
+                  </div>
                 </FadeContent>
               ))}
             </div>
@@ -1198,23 +1221,26 @@ function InstitutionalDossier({
             />
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={18} threshold={0.16} once>
               <article className="relative overflow-hidden rounded-[28px] border border-primary-100 bg-white p-7 text-start shadow-[0_24px_64px_rgba(40,12,18,0.09)] md:p-12">
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -end-16 -top-16 h-56 w-56 rounded-full bg-primary-50 blur-3xl"
-                />
+                <CornerTicks />
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute -bottom-20 -start-16 h-64 w-64 rounded-full bg-primary-100/40 blur-3xl"
                 />
-                <div className="relative flex items-start gap-4 md:gap-5">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 ring-1 ring-primary-100">
-                    <Globe2 className="h-7 w-7" aria-hidden="true" />
+                {/* A travel-stamp for the Istanbul program; the brand name stays Latin in every locale. */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-10 -end-10 grid h-40 w-40 rotate-12 place-items-center rounded-full border-2 border-dashed border-primary-200/80 text-primary-300 md:-end-8 md:bottom-auto md:-top-8"
+                >
+                  <span dir="ltr" className="grid place-items-center gap-1 text-center">
+                    <Globe2 className="h-6 w-6" aria-hidden="true" />
+                    <span className="text-[10px] font-black tracking-[0.28em]">SPHERE</span>
+                    <span className="text-[10px] font-black tracking-[0.28em]">2024</span>
                   </span>
-                  <div className="space-y-4 text-base leading-relaxed text-dark-600">
-                    {(sphere.paragraphs ?? []).slice(1).map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
-                    ))}
-                  </div>
+                </span>
+                <div className="relative max-w-3xl space-y-4 text-base leading-relaxed text-dark-600">
+                  {(sphere.paragraphs ?? []).slice(1).map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
                 </div>
                 {(sphere.bullets?.length ?? 0) > 0 && (
                   <div role="list" className="relative mt-8 grid gap-3 md:grid-cols-3">
