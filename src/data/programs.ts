@@ -11,7 +11,7 @@ import capacityTaizImage from '@/assets/programs/capacity-taiz.jpeg';
 import institutionalDevelopmentImage from '@/assets/programs/institutional-development.jpg';
 import volunteerHeroImage from '@/assets/participate/participate-hero.jpg';
 import awarenessOwaisPlatformImage from '@/assets/programs/awareness-owais-platform.jpg';
-import awarenessVolunteerUnitImage from '@/assets/programs/awareness-volunteer-unit.jpg';
+import volunteerUnitLogo from '@/assets/programs/volunteer-unit-logo.png';
 
 export const programRoutes = {
   yemenPioneers: '/programs/yemen-pioneers',
@@ -257,6 +257,12 @@ export type ProgramsPageContent = {
     recommendationsDescription: string;
     forumEyebrow: string;
     forumObjectives: string;
+    /** Heading block of the institutional track's two-program overview. */
+    trackProgramsEyebrow: string;
+    trackPrograms: string;
+    trackProgramsDescription: string;
+    programOneLabel: string;
+    programTwoLabel: string;
     statsEyebrow: string;
     manifestoEyebrow: string;
     focusAreas: string;
@@ -327,10 +333,10 @@ const programShared = {
     slug: 'capacity-building',
     route: programRoutes.capacityBuilding,
     heroImage: volunteerHeroImage,
-    images: [volunteerHeroImage, awarenessVolunteerUnitImage],
+    images: [volunteerHeroImage, volunteerUnitLogo],
     contactEmail: 'volunteering@veysvakfi.org',
     contactPhone: '+90 536 745 6199',
-    overviewImage: awarenessVolunteerUnitImage,
+    overviewImage: volunteerUnitLogo,
   },
   'institutional-development': {
     id: 'institutional-development',
@@ -369,14 +375,14 @@ const makeYemenVideos = (locale: Locale): ProgramVideo[] =>
   yemenPioneersVideos.map((videoId, index) => {
     const number = index + 1;
     const titleByLocale: Record<Locale, string> = {
-      ar: `فيديو رسمي من برنامج رواد اليمن ${number}`,
-      tr: `Yemen Onculeri Programi resmi videosu ${number}`,
-      en: `Official Yemen Pioneers Program video ${number}`,
+      ar: `فيديو من برنامج رواد اليمن ${number}`,
+      tr: `Yemen Onculeri Programi videosu ${number}`,
+      en: `Yemen Pioneers Program video ${number}`,
     };
     const descriptionByLocale: Record<Locale, string> = {
-      ar: 'فيديو رسمي منشور ضمن صفحة برنامج رواد اليمن.',
-      tr: 'Yemen Onculeri Programi sayfasinda yayinlanan resmi video.',
-      en: 'An official video published on the Yemen Pioneers Program page.',
+      ar: 'فيديو منشور ضمن صفحة برنامج رواد اليمن.',
+      tr: 'Yemen Onculeri Programi sayfasinda yayinlanan video.',
+      en: 'A video published on the Yemen Pioneers Program page.',
     };
 
     return {
@@ -404,7 +410,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       overview: 'التعريف بالبرنامج',
       goals: 'الأهداف',
       components: 'مكونات البرنامج',
-      officialMedia: 'الصور والفيديوهات الرسمية',
+      officialMedia: 'الصور والفيديوهات',
       information: 'المعلومات والنتائج',
       statistics: 'إحصائيات موثقة',
       cityMedia: 'توثيق المدن',
@@ -426,7 +432,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pillarsDescription:
         'ثلاث ركائز متكاملة تُبنى عليها تجربة الرائد: المنحة، والبرنامج القيادي، والمتابعة والإرشاد.',
       videoGallery: 'من قلب البرنامج',
-      videoGalleryDescription: 'فيديوهات رسمية منشورة من فعاليات ولقاءات برنامج رواد اليمن.',
+      videoGalleryDescription: 'فيديوهات منشورة من فعاليات ولقاءات برنامج رواد اليمن.',
       previous: 'السابق',
       next: 'التالي',
       highlights: 'أبرز ملامح البرنامج',
@@ -439,6 +445,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         'خرجت المرحلة الأولى بمجموعة من التوصيات العملية التي ترسم ملامح المراحل القادمة من البرنامج.',
       forumEyebrow: 'مبادرة مصاحبة',
       forumObjectives: 'أهداف الملتقى',
+      trackProgramsEyebrow: 'برامج المسار',
+      trackPrograms: 'برنامجا مسار التطوير المؤسسي',
+      trackProgramsDescription:
+        'يضم المسار برنامجين رئيسيين: برنامج رفع قدرات منظمات المجتمع المدني الذي أُقيمت مرحلته الأولى في اليمن، وبرنامج إسفير (Sphere) للمعايير الإنسانية الذي أُقيم في مدينة إسطنبول بمشاركة عدة منظمات.',
+      programOneLabel: 'البرنامج الأول',
+      programTwoLabel: 'البرنامج الثاني',
       statsEyebrow: 'أرقام المرحلة الأولى',
       manifestoEyebrow: 'رؤية المسار',
       focusAreas: 'مجالات العمل',
@@ -463,7 +475,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsEyebrow: 'خلاصات البرنامج',
       pioneerStatsTitle: 'رواد اليمن في أرقام',
       pioneerStatsDescription:
-        'أرقام موثقة من التقرير الرسمي «أويس في أرقام» تلخّص ما قدّمه البرنامج للرواد حتى ديسمبر 2025.',
+        'أرقام موثقة من تقرير «أويس في أرقام» تلخّص ما قدّمه البرنامج للرواد حتى ديسمبر 2025.',
       pioneerStatsCenter: 'خلاصات',
       pioneersEyebrow: 'برنامج المنح والتأهيل القيادي',
       exploreProgram: 'استكشف البرنامج',
@@ -479,8 +491,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: yemenPioneersHero,
-            alt: 'صورة رسمية من صفحة برنامج رواد اليمن',
-            caption: 'صورة رسمية منشورة ضمن صفحة برنامج رواد اليمن.',
+            alt: 'صورة من صفحة برنامج رواد اليمن',
+            caption: 'صورة منشورة ضمن صفحة برنامج رواد اليمن.',
             width: 1536,
             height: 649,
           },
@@ -583,7 +595,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'ادعم مسار إعداد القادة',
           description:
-            'تفتح صفحة المساهمة فرص الدعم الرسمية المنشورة لدى وقف أويس القرني دون إنشاء نظام دفع داخلي.',
+            'تفتح صفحة المساهمة فرص الدعم المنشورة لدى وقف أويس القرني دون إنشاء نظام دفع داخلي.',
           button: 'اذهب إلى صفحة المساهمة',
         },
         seo: {
@@ -602,17 +614,17 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: volunteerHeroImage,
-            alt: 'صورة قسم التطوع الرسمية في وقف أويس القرني',
+            alt: 'صورة قسم التطوع في وقف أويس القرني',
             caption: 'وقفنا معاً لنهضة اليمن',
             width: 1024,
             height: 400,
           },
           {
-            src: awarenessVolunteerUnitImage,
+            src: volunteerUnitLogo,
             alt: 'شعار الوحدة التطوعية',
             caption: 'الوحدة التطوعية',
-            width: 1080,
-            height: 1080,
+            width: 313,
+            height: 384,
           },
         ],
         volunteer: {
@@ -710,7 +722,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'ادعم بناء القدرات والعمل التطوعي',
           description:
-            'تجمع صفحة المساهمة الرسمية الفرص المتاحة لدعم مشاريع الوقف وبرامجه التنموية.',
+            'تجمع صفحة المساهمة الفرص المتاحة لدعم مشاريع الوقف وبرامجه التنموية.',
           button: 'اذهب إلى صفحة المساهمة',
         },
         seo: {
@@ -728,7 +740,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: institutionalDevelopmentImage,
-            alt: 'صورة رسمية مستخدمة في الموقع لمسار التطوير المؤسسي',
+            alt: 'صورة مستخدمة في الموقع لمسار التطوير المؤسسي',
             width: 1080,
             height: 1080,
           },
@@ -831,6 +843,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           '13 محافظة يمنية',
           '4 مدن: حضرموت الساحل، حضرموت الوادي، مأرب، تعز',
           'شراكات محلية ودولية',
+          'برنامج إسفير للمعايير الإنسانية في إسطنبول بمشاركة عدة منظمات',
           'الملتقى الوطني لتوطين العمل الإنساني والتنموي',
         ],
         audiences: [
@@ -860,7 +873,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             id: 'capacity-intro',
-            title: 'برنامج رفع قدرات منظمات المجتمع المدني',
+            title: 'برنامج رفع قدرات منظمات المجتمع المدني — اليمن',
             paragraphs: [
               'يترجم المسار أهدافه ميدانياً عبر برنامج رفع القدرات الذي يعمل على تأهيل قيادات المؤسسات الحكومية والأهلية وتطوير أدائهم، وقد نُفذت مرحلته الأولى مع منظمات المجتمع المدني في أربع مدن يمنية.',
               'ويأتي البرنامج في إطار المسار الثالث لوقف أويس القرني المعني بتطوير المؤسسات الحكومية والأهلية، لتعزيز قدرات هذه المنظمات ورفع مستوى كفاءتها بما يحقق التنمية المستدامة ويعزز العمل الإنساني والتنموي في كافة أنحاء اليمن، وصولاً إلى تحقيق النهوض الحضاري باليمن.',
@@ -901,6 +914,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             ],
           },
           {
+            id: 'sphere',
+            title: 'برنامج إسفير (Sphere) للمعايير الإنسانية — إسطنبول',
+            paragraphs: [
+              'نظّم وقف أويس القرني الملتقى التدريبي الأول لأدلة ومعايير إسفير (Sphere) في مدينة إسطنبول التركية خلال الفترة من 1 إلى 5 مايو 2024، بالشراكة مع جمعية ناس للدعم المجتمعي.',
+              'شاركت في البرنامج عدة منظمات من منظمات المجتمع المدني، بواقع 22 متدرباً من ممثلي المنظمات والناشطين في المجال التنموي والإنساني.',
+              'قدّم الملتقى المدرب الدكتور محمد محفوظ بايعشوت، وتمحورت فعالياته حول تطوير قدرات المنظمات والناشطين في مجال المعايير العالمية للعمل الإنساني باستخدام دليل إسفير المعتمد، الذي يُعد من أكثر المعايير انتشاراً حول العالم، وتستخدمه كثير من الوكالات الإنسانية والمجموعات المناصرة والحكومات والجهات المانحة كأدوات مرجعية.',
+            ],
+            bullets: [
+              'شرح مفصل عن دليل إسفير ومعاييره على مدى خمسة أيام تدريبية.',
+              'إكساب المشاركين المهارات اللازمة لتطبيق المعايير ميدانياً عند الاستجابة.',
+              'مشاركة ممثلي عدة منظمات مجتمع مدني وناشطين في المجال التنموي والإنساني.',
+            ],
+          },
+          {
             id: 'forum',
             title: 'الملتقى الوطني لتوطين العمل الإنساني والتنموي',
             paragraphs: [
@@ -921,13 +948,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'ساهم في دعم التطوير المؤسسي',
           description:
-            'يمكن الوصول إلى فرص المساهمة الرسمية المنشورة لدى وقف أويس القرني من صفحة المساهمة الداخلية.',
+            'يمكن الوصول إلى فرص المساهمة المنشورة لدى وقف أويس القرني من صفحة المساهمة الداخلية.',
           button: 'اذهب إلى صفحة المساهمة',
         },
         seo: {
           title: 'التطوير المؤسسي | وقف أويس القرني',
           description:
-            'مسار التطوير المؤسسي لتطوير أداء المؤسسات الحكومية والأهلية، وبرنامج رفع قدرات منظمات المجتمع المدني في أربع مدن يمنية.',
+            'مسار التطوير المؤسسي لتطوير أداء المؤسسات الحكومية والأهلية: برنامج رفع قدرات منظمات المجتمع المدني في أربع مدن يمنية، وبرنامج إسفير للمعايير الإنسانية في إسطنبول.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
@@ -1029,7 +1056,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'ادعم منصة أويس',
           description:
-            'تعرض صفحة المساهمة الرسمية فرص الدعم المتاحة لدى وقف أويس القرني دون بناء نظام دفع داخلي.',
+            'تعرض صفحة المساهمة فرص الدعم المتاحة لدى وقف أويس القرني دون بناء نظام دفع داخلي.',
           button: 'اذهب إلى صفحة المساهمة',
         },
         seo: {
@@ -1055,7 +1082,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       overview: 'Program Ozeti',
       goals: 'Hedefler',
       components: 'Program Bilesenleri',
-      officialMedia: 'Resmi Gorseller ve Videolar',
+      officialMedia: 'Gorseller ve Videolar',
       information: 'Bilgiler ve Sonuclar',
       statistics: 'Dogrulanmis Veriler',
       cityMedia: 'Sehir Belgeleri',
@@ -1077,7 +1104,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pillarsDescription:
         'Oncu deneyimini olusturan uc tamamlayici temel: burs, liderlik programi ve takip-rehberlik.',
       videoGallery: 'Programin Icinden',
-      videoGalleryDescription: 'Yemen Onculeri Programi etkinlik ve bulusmalarindan yayinlanan resmi videolar.',
+      videoGalleryDescription: 'Yemen Onculeri Programi etkinlik ve bulusmalarindan yayinlanan videolar.',
       previous: 'Onceki',
       next: 'Sonraki',
       highlights: 'Programin One Cikanlari',
@@ -1090,6 +1117,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         'Birinci asama, programin sonraki asamalarina yon veren bir dizi uygulanabilir oneriyle tamamlandi.',
       forumEyebrow: 'Eslik Eden Girisim',
       forumObjectives: 'Forumun Hedefleri',
+      trackProgramsEyebrow: 'Eksen Programlari',
+      trackPrograms: 'Kurumsal Gelisim Ekseninin Iki Programi',
+      trackProgramsDescription:
+        'Eksen iki ana programdan olusur: birinci asamasi Yemende uygulanan Sivil Toplum Kuruluslari Kapasite Artirma Programi ve Istanbulda birden cok kurulusun katilimiyla duzenlenen Sphere (Isfir) Insani Standartlar Programi.',
+      programOneLabel: 'Birinci Program',
+      programTwoLabel: 'Ikinci Program',
       statsEyebrow: 'Birinci Asama Rakamlari',
       manifestoEyebrow: 'Programin Vizyonu',
       focusAreas: 'Calisma Alanlari',
@@ -1114,7 +1147,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsEyebrow: 'Programin Ozeti',
       pioneerStatsTitle: 'Rakamlarla Yemen Onculeri',
       pioneerStatsDescription:
-        'Resmi "Rakamlarla Uveys" raporundan alinan ve programin Aralik 2025 itibariyla onculere sundugunu ozetleyen dogrulanmis rakamlar.',
+        '"Rakamlarla Uveys" raporundan alinan ve programin Aralik 2025 itibariyla onculere sundugunu ozetleyen dogrulanmis rakamlar.',
       pioneerStatsCenter: 'Ozet',
       pioneersEyebrow: 'Burs ve Liderlik Programi',
       exploreProgram: 'Programi Kesfedin',
@@ -1130,8 +1163,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: yemenPioneersHero,
-            alt: 'Yemen Onculeri Programi resmi gorseli',
-            caption: 'Yemen Onculeri Programi sayfasindan resmi gorsel.',
+            alt: 'Yemen Onculeri Programi gorseli',
+            caption: 'Yemen Onculeri Programi sayfasindan gorsel.',
             width: 1536,
             height: 649,
           },
@@ -1234,7 +1267,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Lider Yetistirme Calismalarini Destekleyin',
           description:
-            'Katki sayfasi, vakfin resmi destek firsatlarini dahili bir odeme sistemi kurmadan gosterir.',
+            'Katki sayfasi, vakfin destek firsatlarini dahili bir odeme sistemi kurmadan gosterir.',
           button: 'Katki Sayfasina Git',
         },
         seo: {
@@ -1253,17 +1286,17 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: volunteerHeroImage,
-            alt: 'Veysel Karani Vakfi resmi gonulluluk bolumu gorseli',
+            alt: 'Veysel Karani Vakfi gonulluluk bolumu gorseli',
             caption: 'Yemenin kalkinisi icin birlikte',
             width: 1024,
             height: 400,
           },
           {
-            src: awarenessVolunteerUnitImage,
+            src: volunteerUnitLogo,
             alt: 'Gonulluluk Birimi logosu',
             caption: 'Gonulluluk Birimi',
-            width: 1080,
-            height: 1080,
+            width: 313,
+            height: 384,
           },
         ],
         volunteer: {
@@ -1360,7 +1393,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         ],
         cta: {
           title: 'Kapasite Gelistirmeyi ve Gonullulugu Destekleyin',
-          description: 'Resmi katkı sayfasi, vakfin mevcut proje ve program destek firsatlarini bir araya getirir.',
+          description: 'Katki sayfasi, vakfin mevcut proje ve program destek firsatlarini bir araya getirir.',
           button: 'Katki Sayfasina Git',
         },
         seo: {
@@ -1378,7 +1411,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: institutionalDevelopmentImage,
-            alt: 'Kurumsal Gelisim programi icin resmi site gorseli',
+            alt: 'Kurumsal Gelisim programi icin site gorseli',
             width: 1080,
             height: 1080,
           },
@@ -1481,6 +1514,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           '13 Yemen ili',
           '4 sehir: Hadramut Sahili, Hadramut Vadisi, Marib, Taiz',
           'Yerel ve uluslararasi ortakliklar',
+          'Istanbulda birden cok kurulusun katilimiyla Sphere Insani Standartlar Programi',
           'Insani ve Kalkinma Calismalarinin Yerellestirilmesi Ulusal Forumu',
         ],
         audiences: [
@@ -1510,7 +1544,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             id: 'capacity-intro',
-            title: 'Sivil Toplum Kuruluslari Kapasite Artirma Programi',
+            title: 'Sivil Toplum Kuruluslari Kapasite Artirma Programi — Yemen',
             paragraphs: [
               'Program hedeflerini sahada kapasite artirma calismasiyla hayata gecirir: kamu ve sivil kurum liderlerini yetistirir ve performanslarini gelistirir. Birinci asamasi dort Yemen sehrinde sivil toplum kuruluslariyla uygulandi.',
               'Program, Veysel Karani Vakfinin kamu ve sivil kurumlarin gelisimine odaklanan ucuncu ekseni kapsaminda yurutulur; bu kuruluslarin kapasitelerini ve yetkinliklerini gelistirerek surdurulebilir kalkinmaya, Yemen genelinde insani ve kalkinma calismalarinin guclenmesine ve Yemenin medeniyet yukselisine katki saglamayi amaclar.',
@@ -1551,6 +1585,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             ],
           },
           {
+            id: 'sphere',
+            title: 'Sphere (Isfir) Insani Standartlar Programi — Istanbul',
+            paragraphs: [
+              'Veysel Karani Vakfi, Sphere el kitabi ve standartlarina yonelik ilk egitim bulusmasini 1-5 Mayis 2024 tarihlerinde Istanbulda, NAS Toplumsal Destek Dernegi ortakliginda duzenledi.',
+              'Programa birden cok sivil toplum kurulusu katildi: kurum temsilcileri ile insani yardim ve kalkinma alaninda calisan aktivistlerden olusan 22 katilimci egitim aldi.',
+              'Dr. Muhammed Mahfuz Bayasut tarafindan sunulan bulusma, dunyada en yaygin insani standartlar arasinda yer alan ve bircok insani yardim kurulusu, savunuculuk grubu, hukumet ve donor tarafindan referans olarak kullanilan Sphere el kitabiyla kurum ve aktivistlerin kapasitelerini gelistirmeye odaklandi.',
+            ],
+            bullets: [
+              'Bes egitim gunu boyunca Sphere el kitabi ve standartlarinin ayrintili anlatimi.',
+              'Standartlari sahada mudahale sirasinda uygulamaya yonelik becerilerin kazandirilmasi.',
+              'Birden cok sivil toplum kurulusunun temsilcileri ile insani ve kalkinma alanindaki aktivistlerin katilimi.',
+            ],
+          },
+          {
             id: 'forum',
             title: 'Yemende Insani ve Kalkinma Calismalarinin Yerellestirilmesi Ulusal Forumu',
             paragraphs: [
@@ -1571,13 +1619,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Kurumsal Gelisimi Destekleyin',
           description:
-            'Veysel Karani Vakfinin resmi destek firsatlarina dahili katkı sayfasi uzerinden ulasilabilir.',
+            'Veysel Karani Vakfinin destek firsatlarina dahili katkı sayfasi uzerinden ulasilabilir.',
           button: 'Katki Sayfasina Git',
         },
         seo: {
           title: 'Kurumsal Gelisim | Veysel Karani Vakfi',
           description:
-            'Kamu ve sivil kurum performansini gelistiren kurumsal gelisim ekseni ve dort Yemen sehrinde uygulanan sivil toplum kapasite artirma programi.',
+            'Kamu ve sivil kurum performansini gelistiren kurumsal gelisim ekseni: dort Yemen sehrinde sivil toplum kapasite artirma programi ve Istanbulda Sphere insani standartlar programi.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
@@ -1679,7 +1727,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Owais Platformunu Destekleyin',
           description:
-            'Resmi katkı sayfasi, dahili bir odeme sistemi kurmadan vakfin mevcut destek firsatlarini gosterir.',
+            'Katki sayfasi, dahili bir odeme sistemi kurmadan vakfin mevcut destek firsatlarini gosterir.',
           button: 'Katki Sayfasina Git',
         },
         seo: {
@@ -1705,7 +1753,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       overview: 'Program Overview',
       goals: 'Goals',
       components: 'Program Components',
-      officialMedia: 'Official Images and Videos',
+      officialMedia: 'Images and Videos',
       information: 'Information and Results',
       statistics: 'Verified Statistics',
       cityMedia: 'City Documentation',
@@ -1727,7 +1775,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pillarsDescription:
         'Three complementary pillars shape the pioneer experience: the scholarship, the leadership program, and follow-up and mentoring.',
       videoGallery: 'Inside the Program',
-      videoGalleryDescription: 'Official videos published from Yemen Pioneers Program events and gatherings.',
+      videoGalleryDescription: 'Videos published from Yemen Pioneers Program events and gatherings.',
       previous: 'Previous',
       next: 'Next',
       highlights: 'Program Highlights',
@@ -1740,6 +1788,12 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         'The first phase concluded with a set of practical recommendations that shape the next phases of the program.',
       forumEyebrow: 'Companion Initiative',
       forumObjectives: 'Forum Objectives',
+      trackProgramsEyebrow: 'Track Programs',
+      trackPrograms: 'The Two Programs of the Institutional Development Track',
+      trackProgramsDescription:
+        'The track comprises two main programs: the Civil Society Organizations Capacity Raising Program, whose first phase was held in Yemen, and the Sphere Humanitarian Standards Program held in Istanbul with the participation of several organizations.',
+      programOneLabel: 'Program One',
+      programTwoLabel: 'Program Two',
       statsEyebrow: 'First Phase in Numbers',
       manifestoEyebrow: 'Track Vision',
       focusAreas: 'Areas of Work',
@@ -1764,7 +1818,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
       pioneerStatsEyebrow: 'Program Summary',
       pioneerStatsTitle: 'Yemen Pioneers in Numbers',
       pioneerStatsDescription:
-        'Verified figures from the official "Owais in Numbers" report, summarising what the program has delivered for its pioneers through December 2025.',
+        'Verified figures from the "Owais in Numbers" report, summarising what the program has delivered for its pioneers through December 2025.',
       pioneerStatsCenter: 'At a Glance',
       pioneersEyebrow: 'Scholarship & Leadership Program',
       exploreProgram: 'Explore the Program',
@@ -1780,8 +1834,8 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: yemenPioneersHero,
-            alt: 'Official Yemen Pioneers Program image',
-            caption: 'Official image published on the Yemen Pioneers Program page.',
+            alt: 'Yemen Pioneers Program image',
+            caption: 'Image published on the Yemen Pioneers Program page.',
             width: 1536,
             height: 649,
           },
@@ -1884,7 +1938,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Support Leadership Preparation',
           description:
-            'The contribution page presents the official support opportunities published by Veysel Karani Waqf without creating an internal payment system.',
+            'The contribution page presents the support opportunities published by Veysel Karani Waqf without creating an internal payment system.',
           button: 'Go to Contribution Page',
         },
         seo: {
@@ -1903,17 +1957,17 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: volunteerHeroImage,
-            alt: 'Official volunteer section image from Veysel Karani Waqf',
+            alt: 'Volunteer section image from Veysel Karani Waqf',
             caption: 'Standing together for Yemen’s advancement',
             width: 1024,
             height: 400,
           },
           {
-            src: awarenessVolunteerUnitImage,
+            src: volunteerUnitLogo,
             alt: 'Volunteer Unit logo',
             caption: 'Volunteer Unit',
-            width: 1080,
-            height: 1080,
+            width: 313,
+            height: 384,
           },
         ],
         volunteer: {
@@ -2011,7 +2065,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Support Capacity Building and Volunteering',
           description:
-            'The official contribution page gathers available opportunities to support the waqf projects and development programs.',
+            'The contribution page gathers available opportunities to support the waqf projects and development programs.',
           button: 'Go to Contribution Page',
         },
         seo: {
@@ -2029,7 +2083,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         imageGallery: [
           {
             src: institutionalDevelopmentImage,
-            alt: 'Official site image for Institutional Development',
+            alt: 'Site image for Institutional Development',
             width: 1080,
             height: 1080,
           },
@@ -2132,6 +2186,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           '13 Yemeni governorates',
           '4 cities: Hadramout Coast, Hadramout Valley, Marib, Taiz',
           'Local and international partnerships',
+          'Sphere Humanitarian Standards Program in Istanbul with several organizations',
           'National Forum for Localization of Humanitarian and Development Work',
         ],
         audiences: [
@@ -2161,7 +2216,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
           },
           {
             id: 'capacity-intro',
-            title: 'Civil Society Organizations Capacity Raising Program',
+            title: 'Civil Society Organizations Capacity Raising Program — Yemen',
             paragraphs: [
               'The track turns its goals into field work through the capacity raising program, which qualifies leaders of governmental and civil institutions and improves their performance. Its first phase was implemented with civil society organizations across four Yemeni cities.',
               'The program falls under the third track of Veysel Karani Waqf, dedicated to developing governmental and civil institutions: strengthening the capacities of these organizations and raising their efficiency to achieve sustainable development, reinforce humanitarian and development work across Yemen, and contribute to the civilizational rise of Yemen.',
@@ -2202,6 +2257,20 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
             ],
           },
           {
+            id: 'sphere',
+            title: 'Sphere Humanitarian Standards Program — Istanbul',
+            paragraphs: [
+              'Veysel Karani Waqf organized the first training forum on the Sphere handbook and standards in Istanbul, Türkiye, from 1 to 5 May 2024, in partnership with the NAS Community Support Association.',
+              'Several civil society organizations took part in the program: 22 trainees representing these organizations alongside activists working in the humanitarian and development field.',
+              'Delivered by Dr. Mohammed Mahfoodh Baashuot, the forum focused on developing the capacities of organizations and activists in international humanitarian standards using the accredited Sphere handbook — one of the most widespread standards worldwide, used by many humanitarian agencies, advocacy groups, governments and donors as reference tools.',
+            ],
+            bullets: [
+              'A detailed walkthrough of the Sphere handbook and its standards over five training days.',
+              'Equipping participants with the skills to apply the standards in the field during response.',
+              'Participation of representatives of several civil society organizations and humanitarian and development activists.',
+            ],
+          },
+          {
             id: 'forum',
             title: 'National Forum for Localization of Humanitarian and Development Work in Yemen',
             paragraphs: [
@@ -2222,13 +2291,13 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Support Institutional Development',
           description:
-            'The official support opportunities published by Veysel Karani Waqf can be reached through the internal contribution page.',
+            'The support opportunities published by Veysel Karani Waqf can be reached through the internal contribution page.',
           button: 'Go to Contribution Page',
         },
         seo: {
           title: 'Institutional Development | Veysel Karani Waqf',
           description:
-            'Institutional Development track for improving governmental and civil institution performance, and the civil society capacity raising program across four Yemeni cities.',
+            'Institutional Development track for improving governmental and civil institution performance: the civil society capacity raising program across four Yemeni cities and the Sphere humanitarian standards program in Istanbul.',
           canonical: officialSources.institutionalDevelopment,
         },
       },
@@ -2330,7 +2399,7 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
         cta: {
           title: 'Support Owais Platform',
           description:
-            'The official contribution page presents available support opportunities without creating an internal payment system.',
+            'The contribution page presents available support opportunities without creating an internal payment system.',
           button: 'Go to Contribution Page',
         },
         seo: {

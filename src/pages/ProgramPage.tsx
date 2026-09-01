@@ -12,6 +12,7 @@ import {
   Users,
   Wallet,
   Clapperboard,
+  Globe2,
   GraduationCap,
   HandHeart,
   Hash,
@@ -19,6 +20,7 @@ import {
   Landmark,
   Layers3,
   Mail,
+  MapPin,
   MessagesSquare,
   Mic,
   PenLine,
@@ -917,42 +919,141 @@ function InstitutionalShowcase({
 
 const trainingAxisIcons: LucideIcon[] = [Target, Wallet, Scale, Users];
 
+/** Anchor targets of the two-program overview cards on the institutional track. */
+const yemenProgramAnchor = 'program-yemen';
+const sphereProgramAnchor = 'program-sphere';
+
 /**
- * The institutional track's field record, drawn as four distinct movements instead of a
- * stack of look-alike cards: the phase panel beside the official statement, the training
- * areas as an icon grid, the recommendations as a numbered roadmap, and the national
- * forum as a gradient showpiece. Sections with ids this design does not know still render
- * as plain blocks, so dashboard-authored sections never disappear.
+ * The institutional track's field record. It opens with the track's two programs side by
+ * side — the Yemen capacity raising program and the Sphere program held in Istanbul —
+ * then walks through program one (the phase panel beside the official statement, the
+ * city documentation, the training areas as an icon grid, the recommendations as a
+ * numbered roadmap), presents the Sphere program as its own movement, and closes with
+ * the national forum as a gradient showpiece. Sections with ids this design does not
+ * know still render as plain blocks, so dashboard-authored sections never disappear.
  */
 function InstitutionalDossier({
   program,
   labels,
+  onVideoSelect,
 }: {
   program: Program;
   labels: ReturnType<typeof getProgramsContent>['labels'];
+  onVideoSelect: (video: ActiveVideo) => void;
 }) {
+  const { isRtl } = useI18n();
   const sections = program.sections ?? [];
   const byId = new Map(sections.map((section) => [section.id, section]));
   const capacityIntro = byId.get('capacity-intro');
   const axes = byId.get('training-axes');
   const statement = byId.get('closing-statement');
   const recommendations = byId.get('recommendations');
+  const sphere = byId.get('sphere');
   const forum = byId.get('forum');
   // The intro section feeds the development-areas map above.
-  const bespokeIds = new Set(['intro', 'capacity-intro', 'training-axes', 'closing-statement', 'recommendations', 'forum']);
+  const bespokeIds = new Set(['intro', 'capacity-intro', 'training-axes', 'closing-statement', 'recommendations', 'sphere', 'forum']);
   const genericSections = sections.filter((section) => !bespokeIds.has(section.id));
   const phase = program.phase;
   const hasRecord = Boolean(phase || statement || capacityIntro);
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
-  if (!hasRecord && !axes && !recommendations && !forum && !genericSections.length) return null;
+  // The two programs of the track, presented up front so neither gets lost in the record.
+  const programCards = [
+    hasRecord
+      ? {
+          id: yemenProgramAnchor,
+          label: labels.programOneLabel,
+          icon: MapPin,
+          title: capacityIntro?.title ?? labels.information,
+          meta: phase ? `${phase.label} · ${phase.period}` : undefined,
+          description: capacityIntro?.paragraphs?.[0] ?? phase?.description,
+        }
+      : null,
+    sphere
+      ? {
+          id: sphereProgramAnchor,
+          label: labels.programTwoLabel,
+          icon: Globe2,
+          title: sphere.title,
+          meta: undefined,
+          description: sphere.paragraphs?.[0],
+        }
+      : null,
+  ].filter((card): card is NonNullable<typeof card> & { icon: LucideIcon } => Boolean(card));
+
+  if (!hasRecord && !axes && !recommendations && !sphere && !forum && !genericSections.length) return null;
 
   return (
     <>
-      {hasRecord && (
+      {programCards.length > 0 && (
         <section className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <SectionHeading
-              eyebrow={labels.phaseEyebrow}
+              eyebrow={labels.trackProgramsEyebrow}
+              title={labels.trackPrograms}
+              description={labels.trackProgramsDescription}
+              centered
+            />
+            <div className={`grid gap-6 ${programCards.length > 1 ? 'lg:grid-cols-2' : 'mx-auto max-w-3xl'}`}>
+              {programCards.map((card, index) => (
+                <FadeContent
+                  key={card.id}
+                  blur={false}
+                  duration={620}
+                  initialOpacity={0}
+                  yOffset={16}
+                  delay={index * 90}
+                  threshold={0.16}
+                  once
+                >
+                  <article className="group relative flex h-full flex-col overflow-hidden rounded-[26px] border border-primary-100 bg-[#faf8f8] p-7 text-start shadow-[0_18px_48px_rgba(40,12,18,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_26px_60px_rgba(40,12,18,0.11)] motion-reduce:hover:translate-y-0 md:p-9">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -end-14 -top-14 h-48 w-48 rounded-full bg-primary-100/50 blur-2xl"
+                    />
+                    <div className="relative flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center rounded-full bg-primary-600 px-4 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(195,7,16,0.24)]">
+                        {card.label}
+                      </span>
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary-700 ring-1 ring-primary-100">
+                        <card.icon className="h-6 w-6" aria-hidden="true" />
+                      </span>
+                    </div>
+                    <h3 className="relative mt-5 text-2xl font-bold leading-tight text-dark-950">{card.title}</h3>
+                    {card.meta && (
+                      <p className="relative mt-3 inline-flex items-center gap-2 self-start rounded-full bg-white px-4 py-1.5 text-sm font-bold text-primary-700 ring-1 ring-primary-100">
+                        <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                        {card.meta}
+                      </p>
+                    )}
+                    {card.description && (
+                      <p className="relative mt-4 text-base leading-relaxed text-dark-600">{card.description}</p>
+                    )}
+                    <a
+                      href={`#${card.id}`}
+                      className="relative mt-auto inline-flex items-center gap-2 pt-5 text-sm font-bold text-primary-700 transition-colors hover:text-primary-800"
+                    >
+                      {labels.details}
+                      <ArrowIcon
+                        className={`h-4 w-4 transition-transform ${
+                          isRtl ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </a>
+                  </article>
+                </FadeContent>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hasRecord && (
+        <section id={yemenProgramAnchor} className="scroll-mt-24 bg-[#faf8f8] py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <SectionHeading
+              eyebrow={`${labels.programOneLabel} — ${labels.phaseEyebrow}`}
               title={capacityIntro?.title ?? labels.information}
               description={capacityIntro?.paragraphs?.[0]}
               centered
@@ -966,7 +1067,7 @@ function InstitutionalDossier({
             >
               {phase && (
                 <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
-                  <aside className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-[#faf8f8] p-7 text-start md:p-8 lg:sticky lg:top-28">
+                  <aside className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-white p-7 text-start md:p-8 lg:sticky lg:top-28">
                     <span
                       aria-hidden="true"
                       className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-100/60 blur-2xl"
@@ -1000,6 +1101,9 @@ function InstitutionalDossier({
           </div>
         </section>
       )}
+
+      {/* City documentation belongs to program one, so it renders inside its flow. */}
+      <MediaGallery program={program} labels={labels} onVideoSelect={onVideoSelect} />
 
       {axes && (axes.bullets?.length ?? 0) > 0 && (
         <section className="bg-[#faf8f8] py-16 md:py-24">
@@ -1083,8 +1187,57 @@ function InstitutionalDossier({
         </section>
       )}
 
+      {sphere && (
+        <section id={sphereProgramAnchor} className="scroll-mt-24 bg-[#faf8f8] py-16 md:py-24">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <SectionHeading
+              eyebrow={labels.programTwoLabel}
+              title={sphere.title}
+              description={sphere.paragraphs?.[0]}
+              centered
+            />
+            <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={18} threshold={0.16} once>
+              <article className="relative overflow-hidden rounded-[28px] border border-primary-100 bg-white p-7 text-start shadow-[0_24px_64px_rgba(40,12,18,0.09)] md:p-12">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -end-16 -top-16 h-56 w-56 rounded-full bg-primary-50 blur-3xl"
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -bottom-20 -start-16 h-64 w-64 rounded-full bg-primary-100/40 blur-3xl"
+                />
+                <div className="relative flex items-start gap-4 md:gap-5">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700 ring-1 ring-primary-100">
+                    <Globe2 className="h-7 w-7" aria-hidden="true" />
+                  </span>
+                  <div className="space-y-4 text-base leading-relaxed text-dark-600">
+                    {(sphere.paragraphs ?? []).slice(1).map((paragraph) => (
+                      <p key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+                {(sphere.bullets?.length ?? 0) > 0 && (
+                  <div role="list" className="relative mt-8 grid gap-3 md:grid-cols-3">
+                    {(sphere.bullets ?? []).map((bullet) => (
+                      <div
+                        role="listitem"
+                        key={bullet}
+                        className="flex items-start gap-3 rounded-2xl bg-[#faf8f8] p-4 ring-1 ring-primary-100"
+                      >
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-primary-600" aria-hidden="true" />
+                        <p className="text-sm leading-relaxed text-dark-700">{bullet}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </FadeContent>
+          </div>
+        </section>
+      )}
+
       {forum && (
-        <section className="bg-[#faf8f8] py-16 md:py-24">
+        <section className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
             <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={18} threshold={0.16} once>
               <article className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-primary-800 via-primary-700 to-primary-950 p-7 text-start text-white shadow-[0_28px_70px_rgba(125,7,12,0.35)] md:p-12">
@@ -1535,10 +1688,7 @@ export default function ProgramPage() {
         )}
 
         {isInstitutional && (
-          <>
-            <InstitutionalDossier program={program} labels={page.labels} />
-            <MediaGallery program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
-          </>
+          <InstitutionalDossier program={program} labels={page.labels} onVideoSelect={setActiveVideo} />
         )}
 
         {!hasCustomLayout && (
