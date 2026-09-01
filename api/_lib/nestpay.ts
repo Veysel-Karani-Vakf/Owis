@@ -60,7 +60,7 @@ export type GateRequestInput = {
   oid: string;
   /** Major units, e.g. 250 → '250.00'. */
   amount: number;
-  /** ISO 4217 numeric code; TRY = '949'. */
+  /** ISO 4217 numeric code; USD = '840', TRY = '949'. */
   currencyCode: string;
   okUrl: string;
   failUrl: string;

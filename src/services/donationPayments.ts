@@ -13,8 +13,8 @@ export type PaymentConfig = {
 /** Used until /api/payments/config answers (and when it is unreachable). */
 export const DEFAULT_PAYMENT_CONFIG: PaymentConfig = {
   mode: 'mock',
-  currency: 'TRY',
-  minAmount: 20,
+  currency: 'USD',
+  minAmount: 1,
   maxAmount: 500_000,
   presets: [100, 250, 500, 1000, 2500],
 };

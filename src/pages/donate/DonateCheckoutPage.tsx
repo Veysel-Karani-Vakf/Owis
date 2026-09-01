@@ -26,10 +26,10 @@ const inputClass =
 
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
 
-function formatTry(amount: number, locale: string): string {
+function formatAmount(amount: number, locale: string, currency: string): string {
   return new Intl.NumberFormat(localeTags[locale] ?? 'en-US', {
     style: 'currency',
-    currency: 'TRY',
+    currency,
     maximumFractionDigits: 0,
   }).format(amount);
 }
@@ -269,7 +269,7 @@ export default function DonateCheckoutPage() {
                                 : 'border-primary-100 bg-white text-dark-800 hover:border-primary-300 hover:text-primary-700'
                             }`}
                           >
-                            {formatTry(preset, locale)}
+                            {formatAmount(preset, locale, config.currency)}
                           </button>
                         );
                       })}
@@ -422,7 +422,7 @@ export default function DonateCheckoutPage() {
                       )}
                       {submitting ? content.submitProcessing : content.submitIdle}
                       {amountValue && Number.isFinite(amountValue) && amountValue > 0
-                        ? ` — ${formatTry(amountValue, locale)}`
+                        ? ` — ${formatAmount(amountValue, locale, config.currency)}`
                         : ''}
                     </button>
                     <p className="mt-3 text-xs font-semibold leading-relaxed text-dark-500">{content.redirectNote}</p>

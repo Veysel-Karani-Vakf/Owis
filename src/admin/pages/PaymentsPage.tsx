@@ -36,7 +36,7 @@ function formatAmount(row: PaymentRow, locale: Locale): string {
   const tag = locale === 'ar' ? 'ar' : locale === 'tr' ? 'tr-TR' : 'en-US';
   const amount = Number(row.amount);
   try {
-    return new Intl.NumberFormat(tag, { style: 'currency', currency: row.currency || 'TRY' }).format(amount);
+    return new Intl.NumberFormat(tag, { style: 'currency', currency: row.currency || 'USD' }).format(amount);
   } catch {
     return `${amount} ${row.currency}`;
   }
@@ -106,7 +106,7 @@ export default function PaymentsPage() {
   const exportCsv = () => {
     const header = [
       s.date,
-      label('المتبرع', 'Bağışçı', 'Donor'),
+      label('المساهم', 'Katkı sahibi', 'Contributor'),
       s.email,
       label('الفرصة', 'Fırsat', 'Opportunity'),
       label('المبلغ', 'Tutar', 'Amount'),
@@ -182,7 +182,7 @@ export default function PaymentsPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={label('ابحث باسم المتبرع أو البريد أو رقم العملية…', 'Bağışçı, e-posta veya işlem no ara…', 'Search donor, email or order id…')}
+            placeholder={label('ابحث باسم المساهم أو البريد أو رقم العملية…', 'Katkı sahibi, e-posta veya işlem no ara…', 'Search contributor, email or order id…')}
             className="w-full rounded-lg border border-slate-300 bg-white py-2 text-sm ltr:pl-9 ltr:pr-3 rtl:pl-3 rtl:pr-9 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
           />
         </div>
@@ -219,7 +219,7 @@ export default function PaymentsPage() {
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3 text-start font-semibold">{s.date}</th>
-                  <th className="px-4 py-3 text-start font-semibold">{label('المتبرع', 'Bağışçı', 'Donor')}</th>
+                  <th className="px-4 py-3 text-start font-semibold">{label('المساهم', 'Katkı sahibi', 'Contributor')}</th>
                   <th className="px-4 py-3 text-start font-semibold">{label('الفرصة', 'Fırsat', 'Opportunity')}</th>
                   <th className="px-4 py-3 text-start font-semibold">{label('المبلغ', 'Tutar', 'Amount')}</th>
                   <th className="px-4 py-3 text-start font-semibold">{label('الحالة', 'Durum', 'Status')}</th>

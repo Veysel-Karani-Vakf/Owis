@@ -62,7 +62,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     storeKey,
     oid,
     amount,
-    currencyCode: params.currency ?? '949',
+    currencyCode: params.currency ?? '840',
     maskedPan: masked,
   };
 
@@ -119,7 +119,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     200,
     challengePage({
       lang,
-      amountLabelValue: `${amount} TRY`,
+      amountLabelValue: `${amount} ${params.currency === '949' ? 'TRY' : 'USD'}`,
       oid,
       maskedPan: masked,
       okUrl,

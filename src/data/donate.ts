@@ -10,7 +10,6 @@ import goldWalletImage from '@/assets/donate/gold-wallet.jpg';
 import waqfLandImage from '@/assets/donate/waqf-land.jpeg';
 import waqfCarsImage from '@/assets/donate/waqf-cars.jpeg';
 import blessedTreeImage from '@/assets/donate/blessed-tree.jpg';
-import blessedTreeFarmImage from '@/assets/donate/blessed-tree-farm.jpg';
 
 export const donateRoute = '/donate';
 
@@ -129,27 +128,6 @@ const sharedOpportunities = {
     url: donateCheckoutRoute('blessed-tree'),
     available: true,
   },
-  blessedTreeFarmOne: {
-    id: 'blessed-tree-farm-one',
-    price: '$0.00',
-    image: blessedTreeFarmImage,
-    url: donateCheckoutRoute('blessed-tree-farm-one'),
-    available: false,
-  },
-  blessedTreeFarmTwo: {
-    id: 'blessed-tree-farm-two',
-    price: '$100.00',
-    image: blessedTreeFarmImage,
-    url: donateCheckoutRoute('blessed-tree-farm-two'),
-    available: false,
-  },
-  blessedTreeFarmThree: {
-    id: 'blessed-tree-farm-three',
-    price: '$100.00',
-    image: blessedTreeFarmImage,
-    url: donateCheckoutRoute('blessed-tree-farm-three'),
-    available: true,
-  },
 } as const;
 
 export const localizedDonateContent: Record<Locale, DonatePageContent> = {
@@ -172,7 +150,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       { label: 'ساهم الآن' },
     ],
     intro: {
-      eyebrow: 'فرص المساهمة الرسمية',
+      eyebrow: 'فرص المساهمة',
       title: 'المساهمة عبر بوابة الدفع داخل الموقع',
       paragraphs: [
         'هذه الصفحة تعرض فرص المساهمة المعتمدة لدى وقف أويس القرني.',
@@ -199,68 +177,50 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfShare,
         title: 'السهم الوقفي',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 100 دولار.',
+        description: 'فرصة مساهمة بقيمة منشورة قدرها 100 دولار.',
         imageAlt: 'السهم الوقفي',
       },
       {
         ...sharedOpportunities.waqfApartments,
         title: 'الشقق الوقفية',
-        description: 'فرصة مساهمة رسمية لدى وقف أويس القرني.',
+        description: 'فرصة مساهمة لدى وقف أويس القرني.',
         imageAlt: 'الشقق الوقفية',
       },
       {
         ...sharedOpportunities.waqfGift,
         title: 'الهدية الوقفية',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 1 دولار.',
+        description: 'فرصة مساهمة بقيمة منشورة قدرها 1 دولار.',
         imageAlt: 'الهدية الوقفية',
       },
       {
         ...sharedOpportunities.motherYemen,
         title: 'مبادرة أمي اليمن',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 1 دولار.',
+        description: 'فرصة مساهمة بقيمة منشورة قدرها 1 دولار.',
         imageAlt: 'مبادرة أمي اليمن',
       },
       {
         ...sharedOpportunities.goldWallet,
         title: 'محفظة الذهب الوقفية',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 100 دولار.',
+        description: 'فرصة مساهمة بقيمة منشورة قدرها 100 دولار.',
         imageAlt: 'محفظة الذهب الوقفية',
       },
       {
         ...sharedOpportunities.waqfLand,
         title: 'مشروع الأراضي الوقفية',
-        description: 'فرصة مساهمة رسمية لدى وقف أويس القرني.',
+        description: 'فرصة مساهمة لدى وقف أويس القرني.',
         imageAlt: 'مشروع الأراضي الوقفية',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'مشروع السيارات الوقفية',
-        description: 'فرصة مساهمة رسمية لدى وقف أويس القرني.',
+        description: 'فرصة مساهمة لدى وقف أويس القرني.',
         imageAlt: 'مشروع السيارات الوقفية',
       },
       {
         ...sharedOpportunities.blessedTree,
         title: 'مشروع الشجرة المباركة',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 100 دولار.',
+        description: 'فرصة مساهمة بقيمة منشورة قدرها 100 دولار.',
         imageAlt: 'مشروع الشجرة المباركة',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmOne,
-        title: 'مشروع الشجرة المباركة - المزرعة 1',
-        description: 'فرصة مساهمة رسمية لدى وقف أويس القرني.',
-        imageAlt: 'مشروع الشجرة المباركة - المزرعة 1',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmTwo,
-        title: 'مشروع الشجرة المباركة - المزرعة 2',
-        description: 'فرصة مساهمة رسمية لدى وقف أويس القرني.',
-        imageAlt: 'مشروع الشجرة المباركة - المزرعة 2',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmThree,
-        title: 'مشروع الشجرة المباركة - قيمة السهم 100$',
-        description: 'فرصة مساهمة رسمية بقيمة منشورة قدرها 100 دولار.',
-        imageAlt: 'مشروع الشجرة المباركة - قيمة السهم 100$',
       },
     ],
   },
@@ -283,7 +243,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       { label: 'Simdi Katki Sun' },
     ],
     intro: {
-      eyebrow: 'Resmi Katki Firsatlari',
+      eyebrow: 'Katki Firsatlari',
       title: 'Katki site icindeki odeme sayfasiyla yapilir',
       paragraphs: [
         'Bu sayfa, Veysel Karani Vakfinin onayli katkı firsatlarini listeler.',
@@ -310,68 +270,50 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfShare,
         title: 'Vakif Hissesi',
-        description: 'Resmi katkı firsati; yayinlanan deger 100 dolardir.',
+        description: 'Katki firsati; yayinlanan deger 100 dolardir.',
         imageAlt: 'Vakif hissesi',
       },
       {
         ...sharedOpportunities.waqfApartments,
         title: 'Vakif Daireleri',
-        description: 'Veysel Karani Vakfinin resmi katkı firsati.',
+        description: 'Veysel Karani Vakfinin katkı firsati.',
         imageAlt: 'Vakif daireleri',
       },
       {
         ...sharedOpportunities.waqfGift,
         title: 'Vakif Hediyesi',
-        description: 'Resmi katkı firsati; yayinlanan deger 1 dolardir.',
+        description: 'Katki firsati; yayinlanan deger 1 dolardir.',
         imageAlt: 'Vakif hediyesi',
       },
       {
         ...sharedOpportunities.motherYemen,
         title: 'Anne Yemen Girisimi',
-        description: 'Resmi katkı firsati; yayinlanan deger 1 dolardir.',
+        description: 'Katki firsati; yayinlanan deger 1 dolardir.',
         imageAlt: 'Anne Yemen Girisimi',
       },
       {
         ...sharedOpportunities.goldWallet,
         title: 'Vakif Altin Portfoyu',
-        description: 'Resmi katkı firsati; yayinlanan deger 100 dolardir.',
+        description: 'Katki firsati; yayinlanan deger 100 dolardir.',
         imageAlt: 'Vakif Altin Portfoyu',
       },
       {
         ...sharedOpportunities.waqfLand,
         title: 'Vakif Arazileri Projesi',
-        description: 'Veysel Karani Vakfinin resmi katkı firsati.',
+        description: 'Veysel Karani Vakfinin katkı firsati.',
         imageAlt: 'Vakif Arazileri Projesi',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'Vakif Araclari Projesi',
-        description: 'Veysel Karani Vakfinin resmi katkı firsati.',
+        description: 'Veysel Karani Vakfinin katkı firsati.',
         imageAlt: 'Vakif Araclari Projesi',
       },
       {
         ...sharedOpportunities.blessedTree,
         title: 'Bereketli Agac Projesi',
-        description: 'Resmi katkı firsati; yayinlanan deger 100 dolardir.',
+        description: 'Katki firsati; yayinlanan deger 100 dolardir.',
         imageAlt: 'Bereketli Agac Projesi',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmOne,
-        title: 'Bereketli Agac Projesi - 1. Ciftlik',
-        description: 'Veysel Karani Vakfinin resmi katkı firsati.',
-        imageAlt: 'Bereketli Agac Projesi - 1. Ciftlik',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmTwo,
-        title: 'Bereketli Agac Projesi - 2. Ciftlik',
-        description: 'Veysel Karani Vakfinin resmi katkı firsati.',
-        imageAlt: 'Bereketli Agac Projesi - 2. Ciftlik',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmThree,
-        title: 'Bereketli Agac Projesi - 100$ Hisse Degeri',
-        description: 'Resmi katkı firsati; yayinlanan deger 100 dolardir.',
-        imageAlt: 'Bereketli Agac Projesi - 100$ Hisse Degeri',
       },
     ],
   },
@@ -394,7 +336,7 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       { label: 'Contribute Now' },
     ],
     intro: {
-      eyebrow: 'Official Contribution Opportunities',
+      eyebrow: 'Contribution Opportunities',
       title: 'Contributions are made through the in-site payment page',
       paragraphs: [
         'This page lists the approved contribution opportunities of Veysel Karani Waqf.',
@@ -421,68 +363,50 @@ export const localizedDonateContent: Record<Locale, DonatePageContent> = {
       {
         ...sharedOpportunities.waqfShare,
         title: 'Waqf Share',
-        description: 'Official contribution opportunity with a published value of 100 dollars.',
+        description: 'Contribution opportunity with a published value of 100 dollars.',
         imageAlt: 'Waqf Share',
       },
       {
         ...sharedOpportunities.waqfApartments,
         title: 'Waqf Apartments',
-        description: 'An official contribution opportunity of Veysel Karani Waqf.',
+        description: 'A contribution opportunity of Veysel Karani Waqf.',
         imageAlt: 'Waqf Apartments',
       },
       {
         ...sharedOpportunities.waqfGift,
         title: 'Waqf Gift',
-        description: 'Official contribution opportunity with a published value of 1 dollar.',
+        description: 'Contribution opportunity with a published value of 1 dollar.',
         imageAlt: 'Waqf Gift',
       },
       {
         ...sharedOpportunities.motherYemen,
         title: 'Mother Yemen Initiative',
-        description: 'Official contribution opportunity with a published value of 1 dollar.',
+        description: 'Contribution opportunity with a published value of 1 dollar.',
         imageAlt: 'Mother Yemen Initiative',
       },
       {
         ...sharedOpportunities.goldWallet,
         title: 'Gold Waqf Wallet',
-        description: 'Official contribution opportunity with a published value of 100 dollars.',
+        description: 'Contribution opportunity with a published value of 100 dollars.',
         imageAlt: 'Gold Waqf Wallet',
       },
       {
         ...sharedOpportunities.waqfLand,
         title: 'Waqf Land Project',
-        description: 'An official contribution opportunity of Veysel Karani Waqf.',
+        description: 'A contribution opportunity of Veysel Karani Waqf.',
         imageAlt: 'Waqf Land Project',
       },
       {
         ...sharedOpportunities.waqfCars,
         title: 'Waqf Cars Project',
-        description: 'An official contribution opportunity of Veysel Karani Waqf.',
+        description: 'A contribution opportunity of Veysel Karani Waqf.',
         imageAlt: 'Waqf Cars Project',
       },
       {
         ...sharedOpportunities.blessedTree,
         title: 'Blessed Tree Project',
-        description: 'Official contribution opportunity with a published value of 100 dollars.',
+        description: 'Contribution opportunity with a published value of 100 dollars.',
         imageAlt: 'Blessed Tree Project',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmOne,
-        title: 'Blessed Tree Project - Farm 1',
-        description: 'An official contribution opportunity of Veysel Karani Waqf.',
-        imageAlt: 'Blessed Tree Project - Farm 1',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmTwo,
-        title: 'Blessed Tree Project - Farm 2',
-        description: 'An official contribution opportunity of Veysel Karani Waqf.',
-        imageAlt: 'Blessed Tree Project - Farm 2',
-      },
-      {
-        ...sharedOpportunities.blessedTreeFarmThree,
-        title: 'Blessed Tree Project - 100$ Share Value',
-        description: 'Official contribution opportunity with a published value of 100 dollars.',
-        imageAlt: 'Blessed Tree Project - 100$ Share Value',
       },
     ],
   },

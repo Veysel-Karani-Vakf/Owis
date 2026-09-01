@@ -9,10 +9,10 @@ import { fetchPaymentStatus, type PaymentStatus } from '@/services/donationPayme
 
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
 
-function formatTry(amount: number, locale: string): string {
+function formatAmount(amount: number, locale: string, currency: string): string {
   return new Intl.NumberFormat(localeTags[locale] ?? 'en-US', {
     style: 'currency',
-    currency: 'TRY',
+    currency: currency || 'USD',
   }).format(amount);
 }
 
@@ -101,7 +101,7 @@ export default function DonateResultPage() {
                   <dl className="mt-7 grid gap-3 rounded-2xl border border-primary-100 bg-primary-50/40 p-5 text-start text-sm">
                     <div className="flex items-center justify-between gap-4">
                       <dt className="font-bold text-dark-600">{content.success.amountLabel}</dt>
-                      <dd className="text-lg font-black text-dark-950">{formatTry(payment.amount, locale)}</dd>
+                      <dd className="text-lg font-black text-dark-950">{formatAmount(payment.amount, locale, payment.currency)}</dd>
                     </div>
                     {payment.opportunityTitle && (
                       <div className="flex items-center justify-between gap-4">
