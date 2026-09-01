@@ -968,6 +968,12 @@ function InstitutionalDossier({
   const phase = program.phase;
   const hasRecord = Boolean(phase || statement || capacityIntro);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  // The statement reads as an official communiqué: an emphasised lead, the body,
+  // and — when more than one paragraph exists — the closing formula set apart.
+  const statementParagraphs = statement?.paragraphs ?? [];
+  const statementClosing =
+    statementParagraphs.length > 1 ? statementParagraphs[statementParagraphs.length - 1] : undefined;
+  const statementBody = statementClosing ? statementParagraphs.slice(0, -1) : statementParagraphs;
 
   // The two programs of the track, presented up front so neither gets lost in the record.
   const programCards = [
@@ -1073,8 +1079,13 @@ function InstitutionalDossier({
       )}
 
       {hasRecord && (
-        <section id={yemenProgramAnchor} className="scroll-mt-24 bg-[#faf8f8] py-16 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <section id={yemenProgramAnchor} className="relative scroll-mt-24 overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+          {/* The same drafting grid as the two-program overview: program one's record belongs to the dossier. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(40,12,18,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(40,12,18,0.035)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_75%_75%_at_50%_40%,black,transparent)]"
+          />
+          <div className="relative mx-auto max-w-7xl px-4 md:px-8">
             <SectionHeading
               eyebrow={`${labels.programOneLabel} — ${labels.phaseEyebrow}`}
               title={capacityIntro?.title ?? labels.information}
@@ -1090,17 +1101,24 @@ function InstitutionalDossier({
             >
               {phase && (
                 <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} threshold={0.18} once>
-                  <aside className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-white p-7 text-start md:p-8 lg:sticky lg:top-28">
+                  {/* The phase plate: the record's official cover, dark like the forum showpiece. */}
+                  <aside className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-primary-800 via-primary-700 to-primary-950 p-7 text-start text-white shadow-[0_24px_60px_rgba(125,7,12,0.3)] md:p-8 lg:sticky lg:top-28">
+                    <CornerTicks className="border-white/25" />
                     <span
                       aria-hidden="true"
-                      className="pointer-events-none absolute -end-12 -top-12 h-44 w-44 rounded-full bg-primary-100/60 blur-2xl"
+                      className="pointer-events-none absolute -end-14 -top-14 h-48 w-48 rounded-full bg-white/10 blur-2xl"
                     />
-                    <CalendarDays className="relative h-9 w-9 text-primary-600" aria-hidden="true" />
-                    <p className="relative mt-4 text-sm font-bold text-primary-700">{phase.label}</p>
-                    <p className="relative mt-1 text-3xl font-bold leading-tight text-dark-950">{phase.period}</p>
-                    <p className="relative mt-4 text-base leading-relaxed text-dark-600">{phase.description}</p>
+                    <span className="relative flex h-12 w-12 items-center justify-center border border-white/25 bg-white/10">
+                      <CalendarDays className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <p className="relative mt-5 flex items-center gap-2.5 text-sm font-black text-white/80">
+                      <span aria-hidden="true" className="h-2 w-2 shrink-0 bg-white" />
+                      {phase.label}
+                    </p>
+                    <p className="relative mt-1.5 text-3xl font-bold leading-tight md:text-4xl">{phase.period}</p>
+                    <p className="relative mt-4 text-base leading-relaxed text-white/85">{phase.description}</p>
                     {capacityIntro?.paragraphs?.[1] && (
-                      <p className="relative mt-4 border-t border-primary-100 pt-4 text-sm leading-relaxed text-dark-600">
+                      <p className="relative mt-5 rounded-2xl bg-white/10 p-4 text-sm leading-relaxed text-white/90 ring-1 ring-white/15">
                         {capacityIntro.paragraphs[1]}
                       </p>
                     )}
@@ -1109,14 +1127,35 @@ function InstitutionalDossier({
               )}
               {statement && (
                 <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={16} delay={90} threshold={0.18} once>
-                  <article className="rounded-[24px] border border-primary-100 bg-white p-7 text-start shadow-[0_20px_56px_rgba(40,12,18,0.08)] md:p-9">
-                    <Quote className="h-8 w-8 text-primary-300" aria-hidden="true" />
-                    <h3 className="mt-3 text-2xl font-bold text-dark-950">{statement.title}</h3>
-                    <div className="mt-5 space-y-4 border-s-2 border-primary-100 ps-5 text-base leading-relaxed text-dark-600">
-                      {(statement.paragraphs ?? []).map((paragraph) => (
-                        <p key={paragraph}>{paragraph}</p>
+                  {/* The communiqué: a lead line, the body, and the closing formula set apart. */}
+                  <article className="relative overflow-hidden rounded-[24px] border border-primary-100 bg-white p-7 text-start shadow-[0_20px_56px_rgba(40,12,18,0.08)] md:p-10">
+                    <CornerTicks />
+                    <Quote
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -end-6 -top-6 h-36 w-36 rotate-6 text-primary-600/[0.05]"
+                    />
+                    <div className="relative flex items-start justify-between gap-4">
+                      <h3 className="text-2xl font-bold leading-tight text-dark-950 md:text-3xl">{statement.title}</h3>
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-primary-100 bg-primary-50 text-primary-600">
+                        <Quote className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                    </div>
+                    <div className="relative mt-4 flex items-center gap-2.5" aria-hidden="true">
+                      <span className="h-2 w-2 bg-primary-600" />
+                      <span className="h-px flex-1 bg-primary-100" />
+                    </div>
+                    <div className="relative mt-6 space-y-5 text-base leading-relaxed text-dark-600">
+                      {statementBody.map((paragraph, index) => (
+                        <p key={paragraph} className={index === 0 ? 'font-semibold text-dark-800' : undefined}>
+                          {paragraph}
+                        </p>
                       ))}
                     </div>
+                    {statementClosing && (
+                      <p className="relative mt-6 border-t border-dashed border-primary-200 pt-5 text-base leading-relaxed text-dark-500">
+                        {statementClosing}
+                      </p>
+                    )}
                   </article>
                 </FadeContent>
               )}
