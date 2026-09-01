@@ -14,6 +14,7 @@ import SubscribersPage from './pages/SubscribersPage';
 import PaymentsPage from './pages/PaymentsPage';
 import ContentManagementPage from './pages/ContentManagementPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
+import AssistantAiPage from './pages/AssistantAiPage';
 import SeedPage from './pages/SeedPage';
 import HelpPage from './pages/HelpPage';
 
@@ -142,6 +143,14 @@ function AdminRoutes() {
         element={
           <Protected>
             <MediaLibraryPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="assistant-ai"
+        element={
+          <Protected>
+            <AssistantAiPage />
           </Protected>
         }
       />

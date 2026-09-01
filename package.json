@@ -20,6 +20,7 @@
     "cms:seed": "node scripts/seed-content.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "^2.57.4",
     "embla-carousel-react": "^8.6.0",

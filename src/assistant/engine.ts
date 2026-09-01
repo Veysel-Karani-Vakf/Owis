@@ -9,9 +9,10 @@ import { getProjectsContent, projectRoutes } from '@/data/projects';
 import type { Locale, SiteContent } from '@/i18n/content';
 
 /**
- * A self-contained, offline site assistant. Everything it knows comes from the
- * site's own content (static data merged with the CMS snapshot); it never
- * calls an external service and never answers about anything outside the site.
+ * The assistant's knowledge base and offline engine. Everything it knows comes
+ * from the site's own content (static data merged with the CMS snapshot). The
+ * index feeds the AI endpoint with retrieval context, and the intent/search
+ * engine below doubles as the offline fallback when that endpoint is down.
  */
 
 export type AssistantLink = {
@@ -120,7 +121,7 @@ export const assistantLabels: Record<Locale, AssistantLabels> = {
     governance: 'تجد سياسات الحوكمة المعتمدة في الوقف في صفحة الحوكمة:',
     language: 'يمكنك تغيير لغة الموقع (العربية، التركية، الإنجليزية) من زر اللغة في أعلى الصفحة.',
     typing: 'جارٍ الكتابة…',
-    poweredBy: 'يعمل بالكامل داخل الموقع دون أي خدمة خارجية',
+    poweredBy: 'يجيب اعتماداً على المحتوى الرسمي المنشور في الموقع فقط',
   },
   tr: {
     title: 'Site Asistanı',
@@ -164,7 +165,7 @@ export const assistantLabels: Record<Locale, AssistantLabels> = {
     governance: 'Vakfın onaylı yönetişim politikalarını yönetişim sayfasında bulabilirsiniz:',
     language: 'Site dilini (Arapça, Türkçe, İngilizce) sayfanın üst kısmındaki dil düğmesinden değiştirebilirsiniz.',
     typing: 'Yazıyor…',
-    poweredBy: 'Tamamen site içinde, harici bir hizmet olmadan çalışır',
+    poweredBy: 'Yalnızca sitede yayımlanan resmi içeriğe dayanarak yanıt verir',
   },
   en: {
     title: 'Site Assistant',
@@ -208,7 +209,7 @@ export const assistantLabels: Record<Locale, AssistantLabels> = {
     governance: 'The waqf’s approved governance policies are on the governance page:',
     language: 'You can switch the site language (Arabic, Turkish, English) from the language button at the top of the page.',
     typing: 'Typing…',
-    poweredBy: 'Runs entirely inside the site, with no external service',
+    poweredBy: 'Answers based only on the official content published on this site',
   },
 };
 
@@ -295,9 +296,21 @@ export function buildSiteIndex(locale: Locale, site: SiteContent): IndexEntry[] 
     id: 'about-waqf',
     kind: 'page',
     title: about.waqf.hero.title,
-    description: `${about.waqf.hero.description} ${about.waqf.intro.paragraphs.join(' ')} ${site.about.vision} ${site.about.mission.join(' ')} ${site.about.values.join(' ')}`,
+    description: `${about.waqf.hero.description} ${about.waqf.intro.paragraphs.join(' ')} ${site.about.vision} ${site.about.mission.join(' ')} ${site.about.values.join(' ')} ${about.waqf.goals.title}: ${about.waqf.goals.items.join(' ')} ${about.waqf.intro.facts.map((fact) => `${fact.label}: ${fact.value}`).join('. ')}`,
     href: aboutRoutes.waqf,
     keywords: ['عن الوقف', 'رؤية', 'رسالة', 'قيم', 'تعريف', 'من نحن', 'about', 'vision', 'mission', 'values', 'hakkında', 'vizyon', 'misyon', 'değerler'],
+  });
+
+  entries.push({
+    id: 'about-president',
+    kind: 'page',
+    title: `${about.waqf.president.title} — ${about.waqf.president.name}`,
+    description: `${about.waqf.president.name} (${about.waqf.president.role}). ${about.waqf.president.paragraphs.join(' ')}`,
+    href: aboutRoutes.waqf,
+    keywords: [
+      ...about.waqf.president.name.split(/[\s/]+/).filter((part) => part.length > 2),
+      'رئيس الوقف', 'رئيس', 'كلمة الرئيس', 'president', 'chairman', 'başkan',
+    ],
   });
 
   entries.push({
@@ -528,6 +541,62 @@ export function searchIndexScored(index: IndexEntry[], query: string, limit = 5)
       return true;
     })
     .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// AI context retrieval
+
+export type AiContextEntry = {
+  id: string;
+  kind: EntryKind;
+  title: string;
+  href: string;
+  text: string;
+};
+
+/** Entries the AI must be able to route to even when retrieval finds nothing. */
+const AI_FALLBACK_IDS = ['about-waqf', 'donate', 'projects', 'news', 'library', 'form-contact', 'form-volunteer'];
+
+const AI_CONTEXT_LIMIT = 8;
+const AI_TEXT_LIMIT = 1600;
+
+/**
+ * The site-content snippets sent to the AI endpoint: the best index matches
+ * for the question, padded with the main sections so the model can always
+ * route general questions ("who are you", "how do I contribute") somewhere.
+ */
+export function retrieveAiContext(index: IndexEntry[], query: string, previousQuery?: string): AiContextEntry[] {
+  let matches = searchIndexScored(index, query, AI_CONTEXT_LIMIT).map((item) => item.entry);
+  // Short follow-ups ("and how do I join it?") often only make sense together
+  // with the previous question; retry with both before falling back.
+  if (matches.length < 2 && previousQuery) {
+    matches = searchIndexScored(index, `${previousQuery} ${query}`, AI_CONTEXT_LIMIT).map((item) => item.entry);
+  }
+  const seen = new Set(matches.map((entry) => entry.id));
+  for (const id of AI_FALLBACK_IDS) {
+    if (matches.length >= AI_CONTEXT_LIMIT) break;
+    if (seen.has(id)) continue;
+    const entry = index.find((item) => item.id === id);
+    if (entry) {
+      matches.push(entry);
+      seen.add(id);
+    }
+  }
+  return matches.map((entry) => ({
+    id: entry.id,
+    kind: entry.kind,
+    title: entry.title,
+    href: entry.href,
+    text: entry.description.slice(0, AI_TEXT_LIMIT),
+  }));
+}
+
+/** Resolves the link ids the AI picked back into renderable links. */
+export function resolveAiLinks(index: IndexEntry[], ids: string[]): AssistantLink[] {
+  const entries = ids
+    .map((id) => index.find((entry) => entry.id === id))
+    .filter((entry): entry is IndexEntry => Boolean(entry));
+  return entryLinks(entries);
 }
 
 // ---------------------------------------------------------------------------

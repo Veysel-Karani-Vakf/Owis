@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUp, BookOpen, FileText, Landmark, Newspaper, PenLine, X, LayoutGrid, Layers } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { answer, assistantLabels, buildSiteIndex, type AssistantLink, type AssistantReply, type EntryKind } from '@/assistant/engine';
+import { assistantLabels, buildSiteIndex, type AssistantLink, type AssistantReply, type EntryKind } from '@/assistant/engine';
+import { askAssistant, type ChatHistoryItem } from '@/assistant/aiClient';
 import { useI18n } from '@/i18n/useI18n';
 import AssistantIcon from '@/components/icons/AssistantIcon';
 
@@ -95,19 +96,26 @@ export default function SiteAssistant() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const ask = (question: string) => {
+  const ask = async (question: string) => {
     const trimmed = question.trim();
     if (!trimmed || thinking) return;
+    // History for the AI: what is on screen before this question, minus the
+    // canned welcome message.
+    const history: ChatHistoryItem[] = messages
+      .filter((message) => message.text !== labels.welcome)
+      .map((message) => ({ role: message.role, text: message.text }));
     setMessages((current) => [...current, { id: nextId(), role: 'user', text: trimmed }]);
     setInput('');
     setThinking(true);
-    const reply: AssistantReply = answer(trimmed, { locale, site: content, index });
-    // A short pause keeps the exchange readable instead of instantaneous.
+    const started = Date.now();
+    const reply: AssistantReply = await askAssistant(trimmed, history, { locale, site: content, index });
+    // The offline fallback answers instantly; a short pause keeps it readable.
+    const delay = Math.max(0, 350 - (Date.now() - started));
     timerRef.current = window.setTimeout(() => {
       setMessages((current) => [...current, { id: nextId(), role: 'assistant', ...reply }]);
       setThinking(false);
       timerRef.current = null;
-    }, 350);
+    }, delay);
   };
 
   const onSubmit = (event: FormEvent) => {

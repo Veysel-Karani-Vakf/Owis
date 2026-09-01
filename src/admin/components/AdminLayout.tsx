@@ -11,6 +11,7 @@ import {
   RotateCcw,
   ExternalLink,
   Images,
+  Bot,
   ChevronDown,
   Search,
   BookOpen,
@@ -151,6 +152,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       title: strings.navTools,
       entries: [
         { to: '/admin/media', label: strings.mediaLibrary, icon: Images },
+        {
+          to: '/admin/assistant-ai',
+          label: label('ذكاء المساعد', 'Asistan yapay zekâsı', 'Assistant AI'),
+          icon: Bot,
+        },
         { to: '/admin/restore', label: strings.restoreContent, icon: RotateCcw },
         { to: '/admin/help', label: strings.help, icon: BookOpen },
       ],

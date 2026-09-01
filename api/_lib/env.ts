@@ -3,13 +3,14 @@ import type { IncomingMessage } from 'node:http';
 export type PaymentMode = 'mock' | 'test' | 'production';
 
 /**
- * Payment limits and presets served to the checkout page. Amounts are Turkish
- * Lira; the İş Bankası virtual POS settles in TRY (ISO 4217 code 949).
+ * Payment limits and presets served to the checkout page. Amounts are US
+ * Dollars; the virtual POS charges in USD (ISO 4217 code 840). The minimum
+ * stays at 1 so the $1 opportunities (waqf gift, Mother Yemen) are payable.
  */
 export const PAYMENT_LIMITS = {
-  currency: 'TRY',
-  currencyCode: '949',
-  minAmount: 20,
+  currency: 'USD',
+  currencyCode: '840',
+  minAmount: 1,
   maxAmount: 500_000,
   presets: [100, 250, 500, 1000, 2500],
 } as const;
@@ -90,3 +91,6 @@ export function supabaseServiceRoleKey(): string {
   if (value) return value;
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for the payment functions.');
 }
+
+// Assistant AI provider keys moved to api/_lib/aiConfig.ts (one env var per
+// provider; the active provider is chosen in the dashboard).
