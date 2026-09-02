@@ -57,9 +57,9 @@ const heroEase = [0.22, 1, 0.36, 1] as const;
 
 const actionClass = {
   primary:
-    'group inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-black text-white shadow-[0_18px_40px_rgba(218,8,18,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0',
+    'btn-border-run btn-border-run--light group inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-black text-white shadow-[0_18px_40px_rgba(218,8,18,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0',
   secondary:
-    'group inline-flex min-h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white',
+    'btn-border-run btn-border-run--light group inline-flex min-h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white',
 } as const;
 
 function HeroAction({

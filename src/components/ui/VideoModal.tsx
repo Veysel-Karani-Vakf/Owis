@@ -198,7 +198,7 @@ export default function VideoModal({
               type="button"
               onClick={onClose}
               aria-label={t('accessibility.closeVideo')}
-              className={`absolute -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white ${
+              className={`btn-border-run btn-border-run--light absolute -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white ${
                 isRtl ? 'left-0' : 'right-0'
               }`}
             >

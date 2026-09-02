@@ -102,7 +102,7 @@ export default function LibrarySearch({ locale, labels, isRtl }: LibrarySearchPr
                 inputRef.current?.focus();
               }}
               aria-label={labels.clearFilters}
-              className="absolute end-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-dark-500 transition-colors hover:bg-primary-50 hover:text-primary-700"
+              className="btn-border-run btn-border-run--sheen-tint absolute end-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-dark-500 transition-colors hover:bg-primary-50 hover:text-primary-700"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -125,7 +125,7 @@ export default function LibrarySearch({ locale, labels, isRtl }: LibrarySearchPr
                     setQuery(suggestion);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-full border border-primary-100 bg-white px-3 py-1.5 font-bold text-primary-700 transition-colors hover:border-primary-300 hover:bg-primary-50"
+                  className="btn-border-run btn-border-run--sheen-tint rounded-full border border-primary-100 bg-white px-3 py-1.5 font-bold text-primary-700 transition-colors hover:border-primary-300 hover:bg-primary-50"
                 >
                   {suggestion}
                 </button>

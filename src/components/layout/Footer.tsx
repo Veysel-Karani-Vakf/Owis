@@ -180,7 +180,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-white/60 transition-all duration-300 hover:bg-primary-500 hover:text-white"
+                  className="btn-border-run btn-border-run--light flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-white/60 transition-all duration-300 hover:bg-primary-500 hover:text-white"
                 >
                   <social.icon className="h-5 w-5" />
                 </a>
@@ -252,7 +252,7 @@ export default function Footer() {
               />
               <button
                 type="submit"
-                className="flex items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+                className="btn-border-run btn-border-run--light flex items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
               >
                 {subscribed ? t('common.subscribed') : t('common.subscribe')}
                 <ArrowIcon className="h-4 w-4" />
@@ -262,7 +262,7 @@ export default function Footer() {
             <button
               type="button"
               onClick={() => handleNavClick(donateUrl)}
-              className="mt-4 w-full rounded-full border border-gold-400/30 bg-gold-400/10 px-4 py-2.5 text-sm font-semibold text-gold-300 transition-all hover:bg-gold-400/20"
+              className="btn-border-run btn-border-run--light mt-4 w-full rounded-full border border-gold-400/30 bg-gold-400/10 px-4 py-2.5 text-sm font-semibold text-gold-300 transition-all hover:bg-gold-400/20"
             >
               {t('common.donateNow')}
             </button>

@@ -68,7 +68,7 @@ export default function LibraryPdfViewer({ item, labels, onClose }: LibraryPdfVi
                 href={item.pdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary-100 px-3.5 text-xs font-bold text-primary-700 transition-colors hover:bg-primary-50"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-10 items-center gap-2 rounded-full border border-primary-100 px-3.5 text-xs font-bold text-primary-700 transition-colors hover:bg-primary-50"
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">{labels.openInNewTab}</span>
@@ -76,7 +76,7 @@ export default function LibraryPdfViewer({ item, labels, onClose }: LibraryPdfVi
               <a
                 href={item.pdfUrl}
                 download
-                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-3.5 text-xs font-bold text-white transition-colors hover:bg-primary-700"
+                className="btn-border-run inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-3.5 text-xs font-bold text-white transition-colors hover:bg-primary-700"
               >
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">{labels.downloadPdf}</span>
@@ -85,7 +85,7 @@ export default function LibraryPdfViewer({ item, labels, onClose }: LibraryPdfVi
                 type="button"
                 onClick={onClose}
                 aria-label={labels.closePreview}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-dark-600 transition-colors hover:bg-primary-50 hover:text-primary-700"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 w-10 items-center justify-center rounded-full text-dark-600 transition-colors hover:bg-primary-50 hover:text-primary-700"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>

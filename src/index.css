@@ -1245,6 +1245,12 @@
   opacity: 1;
   animation: btn-border-run-spin 1.4s linear infinite;
 }
+/* Persistent run for the currently selected tab: the comet keeps circling
+   (slower, ambient) without hover; the body sheen stays a hover-only treat. */
+.btn-border-run--on::after {
+  opacity: 1;
+  animation: btn-border-run-spin 2.6s linear infinite;
+}
 /* On dark or photographic surfaces the red comet drowns; run it white-gold. */
 .btn-border-run--light {
   --btn-run-a: #ffffff;
@@ -1257,12 +1263,592 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .btn-border-run:hover::after,
-  .btn-border-run:focus-visible::after {
+  .btn-border-run:focus-visible::after,
+  .btn-border-run--on::after {
     animation: none;
   }
   .btn-border-run:hover::before,
   .btn-border-run:focus-visible::before {
     animation: none;
     opacity: 0;
+  }
+}
+/* Surfaces that opt out of the running light entirely (the floating header):
+   tabs and buttons keep their colour states, no comet, no sheen. */
+.no-border-run .btn-border-run::before,
+.no-border-run .btn-border-run::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Library profile page — «العرض التعريفي» (scoped: .profile-*)              */
+/* The cinematic presentation inside the library. Everything here is scoped  */
+/* to the page; the crimson stage palette lives on .profile-stage vars.      */
+/* ------------------------------------------------------------------------- */
+
+@property --profile-gauge-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.profile-page {
+  --profile-red: #da0812;
+  --profile-rose: #fb7185;
+  /* True gold, reserved for the numbers vault hairlines (Tailwind "gold" is rose). */
+  --profile-gold: #b8933f;
+  --profile-gold-soft: rgba(184, 147, 63, 0.5);
+}
+
+/* Stage plates now mirror the homepage's section language: clean flat surfaces
+   (white and warm #faf8f8) punctuated by the dark feature plates the chapters
+   declare themselves (photo hero, crimson problem plate, dark photo finale). */
+.profile-stage {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: #ffffff;
+}
+.profile-stage--soft {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: #ffffff;
+}
+.profile-stage-pattern {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.16;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .profile-stage-pattern--drift {
+    animation: profile-pattern-drift 26s linear infinite;
+  }
+}
+@keyframes profile-pattern-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 120px 120px;
+  }
+}
+
+/* Slide counter chip: digits roll vertically when the chapter changes. */
+.profile-roll {
+  display: inline-block;
+  animation: profile-roll-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes profile-roll-in {
+  from {
+    transform: translateY(0.55em);
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Ghost numerals behind chapter content (oversized, stroked, faint),
+   drifting slowly so the backdrop of every chapter stays alive. */
+.profile-ghost {
+  -webkit-text-stroke: 1px rgba(218, 8, 18, 0.22);
+  color: transparent;
+  user-select: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .profile-ghost {
+    animation: profile-ghost-drift 11s ease-in-out infinite alternate;
+  }
+}
+@keyframes profile-ghost-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+/* Ghost numerals on the dark plates trade the red stroke for a white one. */
+.profile-ghost--light {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+}
+
+/* Ken Burns: the opening shot settles once; the finale breathes forever. */
+@media (prefers-reduced-motion: no-preference) {
+  .profile-kenburns {
+    animation: profile-kenburns-in 14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .profile-kenburns--loop {
+    animation: profile-kenburns-loop 36s ease-in-out infinite alternate;
+  }
+}
+@keyframes profile-kenburns-in {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes profile-kenburns-loop {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+
+/* Pioneers philosophy chain: a heartbeat travels العلم → القيادة → المجتمع → الوطن.
+   Runs only once the chapter is in view; each icon sets --chain-delay inline. */
+@media (prefers-reduced-motion: no-preference) {
+  .profile-inview .profile-chain-icon {
+    animation: profile-chain-pulse 4.4s ease-in-out var(--chain-delay, 0s) infinite;
+  }
+}
+@keyframes profile-chain-pulse {
+  0%,
+  22%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 12px 30px rgba(218, 8, 18, 0.14);
+  }
+  9% {
+    transform: scale(1.12);
+    box-shadow: 0 12px 34px rgba(218, 8, 18, 0.38);
+  }
+}
+
+/* Governance decision chain: the token rides the track to whichever stage is
+   in session — its position is set inline, the glide happens here. */
+.profile-token {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #da0812;
+  box-shadow: 0 0 0 4px rgba(218, 8, 18, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    inset-inline-start 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s ease;
+}
+.profile-inview .profile-token {
+  opacity: 1;
+}
+
+/* Identity values orbit: the ring turns, the chips counter-turn to stay
+   upright; hovering the scene holds the whole sky still. */
+@media (prefers-reduced-motion: no-preference) {
+  .profile-orbit {
+    animation: profile-orbit-spin 48s linear infinite;
+  }
+  .profile-orbit-unspin {
+    animation: profile-orbit-unspin 48s linear infinite;
+  }
+  .profile-orbit:hover,
+  .profile-orbit:hover .profile-orbit-unspin {
+    animation-play-state: paused;
+  }
+}
+@keyframes profile-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes profile-orbit-unspin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Numbers vault: the gold frame breathes while the chapter is on stage. */
+@media (prefers-reduced-motion: no-preference) {
+  .profile-inview .profile-gold-line {
+    animation: profile-gold-breathe 4.5s ease-in-out infinite;
+  }
+}
+@keyframes profile-gold-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(184, 147, 63, 0.35);
+  }
+}
+
+/* Finale star: a gentle, endless pulse once it has landed. */
+@media (prefers-reduced-motion: no-preference) {
+  .profile-star-pulse {
+    animation: profile-star-pulse 3.2s ease-in-out 2.2s infinite;
+  }
+}
+@keyframes profile-star-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.85;
+  }
+}
+
+/* Porcelain cards: white cards with a whisper of red in the ring and shadow. */
+.profile-glass {
+  background: #ffffff;
+  border: 1px solid rgba(218, 8, 18, 0.09);
+  box-shadow: 0 16px 40px rgba(40, 12, 18, 0.07);
+}
+
+/* Audit ledger (السهم الوقفي: ما هو / ماذا لا يعني). */
+.profile-ledger-row {
+  position: relative;
+}
+.profile-ledger-row::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.14;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--profile-delay, 0ms);
+}
+html[dir='rtl'] .profile-ledger-row::after {
+  transform-origin: 100% 50%;
+}
+.profile-inview .profile-ledger-row::after {
+  transform: scaleX(1);
+}
+
+/* Sequential ignition ladder: children light up with an inline --profile-delay. */
+.profile-ignite {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease;
+  transition-delay: var(--profile-delay, 0ms);
+}
+.profile-inview .profile-ignite {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stepper track filling behind the decision-stage nodes. */
+.profile-track {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+  transition-delay: var(--profile-delay, 0.15s);
+}
+html[dir='rtl'] .profile-track {
+  transform-origin: 100% 50%;
+}
+.profile-inview .profile-track {
+  transform: scaleX(1);
+}
+/* Vertical variant: the vault frame's side rails. */
+.profile-track--y {
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+}
+.profile-inview .profile-track--y {
+  transform: scaleY(1);
+}
+
+/* 51.67% conic ring gauge (numbers vault). Falls back to a static ring. */
+.profile-gauge {
+  background: conic-gradient(
+    from 0deg,
+    var(--profile-red) var(--profile-gauge-angle),
+    rgba(218, 8, 18, 0.08) 0deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 10px), #000 calc(100% - 9px));
+  transition: --profile-gauge-angle 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+}
+.profile-inview .profile-gauge {
+  --profile-gauge-angle: 186deg;
+}
+
+/* Ripen micro-interaction: the corner glyph fills on hover (fine pointers). */
+.profile-ripen {
+  fill: #ffe1e4;
+  transition: fill 0.3s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .profile-card:hover .profile-ripen {
+    fill: var(--profile-red, #da0812);
+  }
+}
+
+/* Counter digits: stable width while counting (Latin digits per brand). */
+.profile-count {
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+}
+
+/* Landing pulse ring stamped when a hero counter completes. */
+.profile-pulse {
+  animation: profile-pulse 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes profile-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+/* Chapter rail (xl+): thin track, dot per chapter. */
+.profile-rail-dot {
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+.profile-rail-dot--active {
+  transform: scale(1.45);
+  box-shadow: 0 0 0 4px rgba(218, 8, 18, 0.18);
+}
+
+/* The drawn scroll cue line in the hero. */
+.profile-cue-line {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+}
+.profile-cue-line--drawn {
+  animation: profile-cue-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.9s forwards;
+}
+@keyframes profile-cue-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* After the line draws, a light bead keeps travelling down it. */
+.profile-cue-dot {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .profile-cue-dot--live {
+    animation: profile-cue-dot 2.4s ease-in-out 2.2s infinite;
+  }
+}
+@keyframes profile-cue-dot {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(58px);
+    opacity: 0;
+  }
+}
+
+/* Numbers vault — the four-track ledger: each row rules itself once its own band is
+   on screen (the vault frame is a .profile-inview ancestor, so gating is per row). */
+.profile-rule {
+  position: relative;
+}
+.profile-rule::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.12;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--profile-delay, 0ms);
+}
+html[dir='rtl'] .profile-rule::after {
+  transform-origin: 100% 50%;
+}
+.profile-rule--drawn::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-ignite,
+  .profile-ledger-row::after,
+  .profile-track {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .profile-rule::after {
+    transform: none;
+    transition: none;
+  }
+  .profile-gauge {
+    --profile-gauge-angle: 186deg;
+    transition: none;
+  }
+  .profile-roll,
+  .profile-pulse,
+  .profile-stage-pattern--drift,
+  .profile-ghost,
+  .profile-cue-dot--live,
+  .profile-kenburns,
+  .profile-kenburns--loop,
+  .profile-chain-icon,
+  .profile-gold-line,
+  .profile-star-pulse,
+  .profile-orbit,
+  .profile-orbit-unspin {
+    animation: none;
+  }
+  .profile-token {
+    transition: none;
+  }
+  .profile-cue-line {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+/* Tracks journey (chapter 09): the station line drifts sideways, the active
+   disc breathes, a light runs along the line, and the edge figures read
+   spine-wise like a poster margin. */
+.profile-journey-viewport {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+.profile-journey-stat {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+.profile-journey-dash {
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .profile-station-halo {
+    animation: profile-station-halo 2.6s ease-in-out infinite;
+  }
+  .profile-journey-dash {
+    animation: profile-journey-dash 2.4s linear infinite;
+  }
+}
+@keyframes profile-station-halo {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.2;
+  }
+}
+@keyframes profile-journey-dash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+/* Chapter 07 — the blessed tree: the olive artwork grows in from the roots.  */
+/* Driven by [data-grown] on .blessed-tree; per-element delays are inline.     */
+.blessed-tree__photo {
+  transform: scale(1.06);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 33%, #000 47%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 33%, #000 47%, #000 100%);
+  -webkit-mask-size: 100% 300%;
+  mask-size: 100% 300%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0%;
+  mask-position: 0 0%;
+  transition:
+    transform 7s cubic-bezier(0.2, 0.6, 0.2, 1),
+    -webkit-mask-position 3.2s cubic-bezier(0.45, 0, 0.2, 1) 0.2s,
+    mask-position 3.2s cubic-bezier(0.45, 0, 0.2, 1) 0.2s;
+}
+.blessed-tree[data-grown='true'] .blessed-tree__photo {
+  transform: scale(1);
+  -webkit-mask-position: 0 100%;
+  mask-position: 0 100%;
+}
+.blessed-tree__mark {
+  opacity: 0;
+  transition: opacity 1s ease-out;
+}
+.blessed-tree__label {
+  transform-box: view-box;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.9s ease-out,
+    transform 0.9s ease-out;
+}
+.blessed-tree[data-grown='true'] .blessed-tree__mark,
+.blessed-tree[data-grown='true'] .blessed-tree__label {
+  opacity: 1;
+  transform: none;
+}
+.blessed-tree__orbit {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: rotate(var(--tilt, 0deg));
+  opacity: 0;
+  transition: opacity 1.8s ease-out 2.6s;
+}
+.blessed-tree[data-grown='true'] .blessed-tree__orbit {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .blessed-tree[data-grown='true'] .blessed-tree__orbit {
+    animation: blessed-tree-orbit 160s linear infinite;
+  }
+}
+@keyframes blessed-tree-orbit {
+  from {
+    transform: rotate(var(--tilt, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--tilt, 0deg) + 360deg));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blessed-tree__photo,
+  .blessed-tree__mark,
+  .blessed-tree__label,
+  .blessed-tree__orbit {
+    transition: none;
+  }
+  .blessed-tree__photo {
+    transform: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }

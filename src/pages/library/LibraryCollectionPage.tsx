@@ -112,7 +112,7 @@ export default function LibraryCollectionPage({ collection }: LibraryCollectionP
             type="button"
             onClick={() => updateParams((params) => params.delete('year'))}
             aria-pressed={year === 'all'}
-            className={`rounded-full border px-3 py-1.5 transition-colors ${
+            className={`btn-border-run rounded-full border px-3 py-1.5 transition-colors ${
               year === 'all'
                 ? 'border-primary-600 bg-primary-600 text-white'
                 : 'border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'
@@ -131,7 +131,7 @@ export default function LibraryCollectionPage({ collection }: LibraryCollectionP
                 })
               }
               aria-pressed={String(option) === year}
-              className={`rounded-full border px-3 py-1.5 transition-colors ${
+              className={`btn-border-run rounded-full border px-3 py-1.5 transition-colors ${
                 String(option) === year
                   ? 'border-primary-600 bg-primary-600 text-white'
                   : 'border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'

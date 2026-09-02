@@ -170,7 +170,7 @@ export default function GovernancePage() {
                           openPolicyFromNav(policy.id);
                         }}
                         aria-current={active ? 'true' : undefined}
-                        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+                        className={`btn-border-run flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                           active
                             ? 'bg-primary-600 text-white shadow-sm'
                             : 'bg-white text-dark-700 hover:bg-primary-50 hover:text-primary-700'

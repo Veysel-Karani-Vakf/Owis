@@ -23,6 +23,7 @@ import NewsIndexPage from '@/pages/NewsIndexPage';
 import NewsArticlePage from '@/pages/NewsArticlePage';
 import ParticipatePage from '@/pages/ParticipatePage';
 import LibraryIndexPage from '@/pages/library/LibraryIndexPage';
+import LibraryProfilePage from '@/pages/library/LibraryProfilePage';
 import LibraryCollectionPage from '@/pages/library/LibraryCollectionPage';
 import LibraryTextPage from '@/pages/library/LibraryTextPage';
 import LibraryGalleryPage from '@/pages/library/LibraryGalleryPage';
@@ -64,6 +65,7 @@ function App() {
           <Route path="/participate" element={<Navigate to="/participate/share-ideas" replace />} />
           <Route path="/participate/:slug" element={<ParticipatePage />} />
           <Route path="/library" element={<LibraryIndexPage />} />
+          <Route path="/library/profile" element={<LibraryProfilePage />} />
           <Route path="/library/forum" element={<LibraryCollectionPage collection="forum" />} />
           <Route path="/library/forum/:slug" element={<LibraryTextPage type="forum" />} />
           <Route path="/library/periodic-reports" element={<LibraryDocumentsPage collection="periodic-reports" />} />

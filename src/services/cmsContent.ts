@@ -21,6 +21,7 @@ import type { Program as ProgramDetail } from '@/data/programs';
 import {
   documentCollectionSlugs,
   libraryRoutes,
+  textCollectionRoutes,
   type LibraryContent,
   type LibraryCounts,
   type LibraryDocumentCollectionSlug,
@@ -384,7 +385,7 @@ export function mapLibraryArticleRow(row: LibraryArticleRow, locale: Locale): Li
   return {
     id: row.id,
     slug: row.slug,
-    route: row.route ?? `${row.collection === 'forum' ? libraryRoutes.forum : libraryRoutes.successStories}/${row.slug}`,
+    route: row.route ?? `${textCollectionRoutes[row.collection]}/${row.slug}`,
     title,
     originalTitle: row.original_title ?? title,
     sourceUrl: row.source_url ?? '',

@@ -68,7 +68,7 @@ export default function LibraryArticleBody({
             const internal = resolveInternalUrl(block.url);
             const label = block.text || (internal ? labels.donateCta : block.url.replace(/^https?:\/\//, ''));
             const className =
-              'my-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-primary-600 px-6 py-3 text-base font-bold text-white shadow-[0_14px_34px_rgba(195,7,16,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600';
+              'btn-border-run my-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-primary-600 px-6 py-3 text-base font-bold text-white shadow-[0_14px_34px_rgba(195,7,16,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600';
             return internal ? (
               <div key={`${block.type}-${index}`}>
                 <Link to={internal} className={className}>

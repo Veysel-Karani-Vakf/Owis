@@ -88,7 +88,7 @@ function DonationCard({
               <Link
                 to={opportunity.url}
                 aria-label={`${labels.contribute}: ${opportunity.title}`}
-                className="group/link inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                className="btn-border-run group/link inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 <HandHeart className="h-4 w-4" aria-hidden="true" />
                 {labels.contribute}
@@ -190,7 +190,7 @@ function FeaturedDonationCard({
                 <Link
                   to={opportunity.url}
                   aria-label={`${labels.contribute}: ${opportunity.title}`}
-                  className="group/link inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-8 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                  className="btn-border-run group/link inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-8 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   <HandHeart className="h-5 w-5" aria-hidden="true" />
                   {labels.contribute}

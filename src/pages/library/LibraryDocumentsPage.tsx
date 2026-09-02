@@ -142,7 +142,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
             onClick={() => changeView('grid')}
             aria-pressed={view === 'grid'}
             aria-label={labels.viewGrid}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+            className={`btn-border-run inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               view === 'grid' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
             }`}
             title={labels.viewGrid}
@@ -154,7 +154,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
             onClick={() => changeView('news')}
             aria-pressed={view === 'news'}
             aria-label={labels.viewNews}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+            className={`btn-border-run inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               view === 'news' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
             }`}
             title={labels.viewNews}
@@ -166,7 +166,7 @@ export default function LibraryDocumentsPage({ collection }: LibraryDocumentsPag
             onClick={() => changeView('list')}
             aria-pressed={view === 'list'}
             aria-label={labels.viewList}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+            className={`btn-border-run inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               view === 'list' ? 'bg-white text-primary-700 shadow-sm' : 'text-dark-500 hover:text-primary-700'
             }`}
             title={labels.viewList}
@@ -337,7 +337,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
+      className={`btn-border-run inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
         active
           ? 'border-primary-600 bg-primary-600 text-white'
           : 'border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'

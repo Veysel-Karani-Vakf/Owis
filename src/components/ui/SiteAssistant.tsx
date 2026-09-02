@@ -161,7 +161,7 @@ export default function SiteAssistant() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={labels.close}
-                className="relative grid h-9 w-9 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="btn-border-run btn-border-run--light relative grid h-9 w-9 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -191,7 +191,7 @@ export default function SiteAssistant() {
                               onClick={() => {
                                 if (window.innerWidth < 768) setOpen(false);
                               }}
-                              className={`group flex items-start gap-3 rounded-xl border px-3 py-2.5 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                              className={`btn-border-run btn-border-run--sheen-tint group flex items-start gap-3 rounded-xl border px-3 py-2.5 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
                                 isActive(item.href)
                                   ? 'border-primary-200 bg-primary-50'
                                   : 'border-black/5 bg-white hover:border-primary-200 hover:bg-primary-50'
@@ -219,7 +219,7 @@ export default function SiteAssistant() {
                           key={`${message.id}-${suggestion}`}
                           type="button"
                           onClick={() => ask(suggestion)}
-                          className="rounded-full border border-primary-200 bg-white px-3 py-1 text-xs font-medium text-primary-700 transition hover:bg-primary-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                          className="btn-border-run btn-border-run--sheen-tint rounded-full border border-primary-200 bg-white px-3 py-1 text-xs font-medium text-primary-700 transition hover:bg-primary-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                         >
                           {suggestion}
                         </button>
@@ -255,7 +255,7 @@ export default function SiteAssistant() {
                   type="submit"
                   disabled={!input.trim() || thinking}
                   aria-label={labels.send}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-500 text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-dark-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                  className="btn-border-run grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-500 text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-dark-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                 >
                   <ArrowUp className="h-4 w-4" />
                 </button>
@@ -273,7 +273,7 @@ export default function SiteAssistant() {
         aria-label={open ? labels.close : labels.open}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="relative grid h-14 w-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_12px_30px_-8px_rgba(218,8,18,0.6)] transition-colors hover:bg-primary-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
+        className="btn-border-run relative grid h-14 w-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_12px_30px_-8px_rgba(218,8,18,0.6)] transition-colors hover:bg-primary-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"
       >
         <AnimatePresence initial={false} mode="wait">
           {open ? (

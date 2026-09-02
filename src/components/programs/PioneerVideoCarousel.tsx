@@ -109,7 +109,7 @@ export default function PioneerVideoCarousel({
               type="button"
               onClick={scrollPrev}
               aria-label={labels.previous}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run btn-border-run--sheen-tint flex h-12 w-12 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <PrevIcon className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -117,7 +117,7 @@ export default function PioneerVideoCarousel({
               type="button"
               onClick={scrollNext}
               aria-label={labels.next}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-600 text-white shadow-[0_12px_26px_rgba(195,7,16,0.3)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run flex h-12 w-12 items-center justify-center rounded-full bg-primary-600 text-white shadow-[0_12px_26px_rgba(195,7,16,0.3)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <NextIcon className="h-5 w-5" aria-hidden="true" />
             </button>

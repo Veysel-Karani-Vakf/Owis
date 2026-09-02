@@ -113,7 +113,7 @@ export default function PioneerPillars({
                 aria-selected={isActive}
                 aria-controls={`pillar-panel-${pillar.id}`}
                 onClick={() => goTo(index)}
-                className={`group relative isolate flex min-h-[4.25rem] w-full items-center gap-4 overflow-hidden rounded-2xl border px-4 py-3 text-start transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                className={`btn-border-run btn-border-run--sheen-tint group relative isolate flex min-h-[4.25rem] w-full items-center gap-4 overflow-hidden rounded-2xl border px-4 py-3 text-start transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                   isActive ? 'border-primary-200 text-dark-950' : 'border-primary-100 bg-white text-dark-700 hover:border-primary-200'
                 }`}
               >

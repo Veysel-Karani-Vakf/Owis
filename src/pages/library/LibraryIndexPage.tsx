@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Clock, ExternalLink, FileText, Images, Newspaper, Trophy, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clapperboard, Clock, ExternalLink, FileText, Images, Newspaper, Trophy, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
@@ -21,6 +21,7 @@ import {
   getYemeniFigures,
   type LibrarySearchHit,
 } from '@/data/library';
+import { getLibraryProfileContent, libraryProfileRoute } from '@/data/library/profile';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/i18n/content';
@@ -40,6 +41,7 @@ const cardBase =
 export default function LibraryIndexPage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const page = getLibraryContent(locale);
+  const profileContent = getLibraryProfileContent(locale);
   const shouldReduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
@@ -117,6 +119,37 @@ export default function LibraryIndexPage() {
         <div className="mt-10 md:mt-14">
           <LibraryPillNav active="index" />
         </div>
+
+        {/* Spotlight: the cinematic institutional presentation */}
+        <section className="bg-white pt-14 md:pt-20">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <motion.div {...reveal(0)}>
+              <Link
+                to={libraryProfileRoute}
+                className="profile-page group relative block overflow-hidden rounded-[26px] border border-primary-100 shadow-[0_24px_60px_rgba(40,12,18,0.1)]"
+              >
+                <div className="profile-stage relative flex min-h-[240px] flex-col justify-center gap-4 p-8 md:min-h-[280px] md:p-12">
+                  <div aria-hidden="true" className="profile-stage-pattern geometric-pattern" />
+                  <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary-100 bg-white px-4 py-1.5 text-xs font-bold text-primary-700 shadow-sm">
+                    <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" />
+                    {profileContent.labels.watchNumbers} · {profileContent.labels.untilDate}
+                  </span>
+                  <h2 className="max-w-2xl bg-gradient-to-b from-primary-500 via-primary-600 to-primary-900 bg-clip-text font-brand text-3xl font-bold leading-snug text-transparent md:text-4xl">
+                    {profileContent.meta.title} — {profileContent.hero.title}
+                  </h2>
+                  <p className="max-w-xl text-sm leading-relaxed text-dark-500 md:text-base">
+                    {profileContent.meta.seoDescription}
+                  </p>
+                  <span className="btn-border-run mt-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-primary-600 px-6 text-sm font-bold text-white shadow-[0_12px_30px_rgba(195,7,16,0.24)] transition-colors group-hover:bg-primary-700">
+                    <Clapperboard className="h-4 w-4" aria-hidden="true" />
+                    {profileContent.labels.scrollHint}
+                    <ArrowIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
+                  </span>
+                </div>
+              </Link>
+            </motion.div>
+          </div>
+        </section>
 
         {/* Bento grid of sections */}
         <section className="bg-white py-14 md:py-20">

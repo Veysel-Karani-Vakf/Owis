@@ -40,7 +40,11 @@ export default function ScrollRestoration() {
       if (cancelled) return;
       const element = document.getElementById(targetId);
       if (!element) return;
-      const top = element.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      // A target may ask for its own clearance (data-scroll-offset): full-screen
+      // slides that reserve their own room under the floating header land at 0.
+      const own = Number(element.dataset.scrollOffset);
+      const offset = element.dataset.scrollOffset !== undefined && Number.isFinite(own) ? own : HEADER_OFFSET;
+      const top = element.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top: Math.max(top, 0), behavior: behavior ?? getScrollBehavior() });
     };
 

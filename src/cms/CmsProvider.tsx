@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCmsVersion, setDraft, setPublished, subscribeCms } from './store';
+import { getCmsVersion, markCmsSettled, setDraft, setPublished, subscribeCms } from './store';
 import { hydrateCms } from './hydrate';
 import {
   ADMIN_SOURCE,
@@ -47,6 +47,10 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         // Offline or misconfigured Supabase: the static content already shown
         // stays in place rather than blanking the site.
+      })
+      .finally(() => {
+        // Pages holding a redirect for CMS-only content may now decide.
+        if (active) markCmsSettled();
       });
     return () => {
       active = false;

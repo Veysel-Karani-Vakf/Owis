@@ -47,7 +47,7 @@ function RelatedProjectCard({ project, detailsLabel, isRtl }: RelatedProjectCard
         </p>
         <Link
           to={project.route}
-          className="group/link mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+          className="btn-border-run group/link mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
         >
           {detailsLabel}
           <ArrowIcon
@@ -183,7 +183,7 @@ export default function ProjectDetailPage() {
                   <Link
                     to={project.officialContributionUrl}
                     aria-label={`${page.labels.contribute}: ${project.title}. ${page.labels.externalNotice}`}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    className="btn-border-run inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                   >
                     <HandHeart className="h-4 w-4" aria-hidden="true" />
                     {page.labels.contribute}
@@ -271,7 +271,7 @@ export default function ProjectDetailPage() {
                   <button
                     type="button"
                     onClick={() => setVideoOpen(true)}
-                    className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    className="btn-border-run mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                   >
                     <PlayCircle className="h-5 w-5" aria-hidden="true" />
                     {project.video.buttonLabel}
@@ -319,7 +319,7 @@ export default function ProjectDetailPage() {
                 <Link
                   to={project.officialContributionUrl}
                   aria-label={`${page.labels.contribute}: ${project.title}. ${page.labels.externalNotice}`}
-                  className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                  className="btn-border-run mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-primary-600 px-7 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   {page.labels.contribute}
                   <ArrowIcon className="h-4 w-4" aria-hidden="true" />
@@ -347,7 +347,7 @@ export default function ProjectDetailPage() {
                 </div>
                 <Link
                   to={projectRoutes.index}
-                  className="group/link inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                  className="btn-border-run btn-border-run--sheen-tint group/link inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                 >
                   {page.labels.backToProjects}
                   <ArrowIcon

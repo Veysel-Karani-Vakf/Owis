@@ -77,7 +77,7 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
           <button
             onClick={onClose}
             aria-label={t('accessibility.closeMenu')}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
+            className="btn-border-run btn-border-run--light flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
           >
             <X className="h-6 w-6" />
           </button>
@@ -106,9 +106,9 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                   onClick={() => {
                     setProgramsOpen(false);                    setAboutOpen((value) => !value);
                   }}
-                  className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-4 py-4 text-start text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                  className={`btn-border-run btn-border-run--light flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-4 py-4 text-start text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
                     active
-                      ? 'bg-primary-600 text-white'
+                      ? 'btn-border-run--on bg-primary-600 text-white'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -142,9 +142,9 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                                 event.preventDefault();
                                 onNavClick(item.href);
                               }}
-                              className={`flex min-h-12 items-center rounded-xl px-4 py-3 text-base font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                              className={`btn-border-run btn-border-run--light flex min-h-12 items-center rounded-xl px-4 py-3 text-base font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
                                 itemActive
-                                  ? 'bg-white text-primary-700'
+                                  ? 'btn-border-run--on bg-white text-primary-700'
                                   : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                               }`}
                             >
@@ -177,9 +177,9 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                   onClick={() => {
                     setAboutOpen(false);                    setProgramsOpen((value) => !value);
                   }}
-                  className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-4 py-4 text-start text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                  className={`btn-border-run btn-border-run--light flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-4 py-4 text-start text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
                     active
-                      ? 'bg-primary-600 text-white'
+                      ? 'btn-border-run--on bg-primary-600 text-white'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -213,9 +213,9 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                                 event.preventDefault();
                                 onNavClick(item.href);
                               }}
-                              className={`flex min-h-12 items-center rounded-xl px-4 py-3 text-base font-medium leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                              className={`btn-border-run btn-border-run--light flex min-h-12 items-center rounded-xl px-4 py-3 text-base font-medium leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
                                 itemActive
-                                  ? 'bg-white text-primary-700'
+                                  ? 'btn-border-run--on bg-white text-primary-700'
                                   : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                               }`}
                             >
@@ -245,8 +245,8 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                 event.preventDefault();
                 onNavClick(link.href);
               }}
-              className={`flex min-h-14 items-center justify-between rounded-xl px-4 py-4 text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
-                active ? 'bg-primary-600 text-white' : 'text-white/90 hover:bg-white/10 hover:text-white'
+              className={`btn-border-run btn-border-run--light flex min-h-14 items-center justify-between rounded-xl px-4 py-4 text-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                active ? 'btn-border-run--on bg-primary-600 text-white' : 'text-white/90 hover:bg-white/10 hover:text-white'
               }`}
             >
               {link.label}
@@ -258,7 +258,7 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
       <div className="border-t border-white/10 p-4">
         <button
           onClick={() => onNavClick(donateUrl)}
-          className="w-full rounded-full bg-primary-500 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-primary-600"
+          className="btn-border-run btn-border-run--light w-full rounded-full bg-primary-500 px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-primary-600"
         >
           {t('common.donateNow')}
         </button>

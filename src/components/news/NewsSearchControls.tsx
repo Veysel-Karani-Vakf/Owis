@@ -52,10 +52,10 @@ export default function NewsSearchControls({
               type="button"
               onClick={() => onYearChange(option.value)}
               aria-pressed={option.value === year}
-              className={`inline-flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+              className={`btn-border-run inline-flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                 option.value === year
                   ? 'bg-primary-600 text-white'
-                  : 'border border-primary-100 bg-white text-primary-700 hover:bg-primary-50'
+                  : 'btn-border-run--sheen-tint border border-primary-100 bg-white text-primary-700 hover:bg-primary-50'
               }`}
             >
               {option.label}
@@ -67,7 +67,7 @@ export default function NewsSearchControls({
           <button
             type="button"
             onClick={onClear}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-4 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-4 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           >
             <X className="h-4 w-4" aria-hidden="true" />
             {labels.clearSearch}

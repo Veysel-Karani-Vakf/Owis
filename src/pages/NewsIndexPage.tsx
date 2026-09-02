@@ -216,7 +216,7 @@ export default function NewsIndexPage() {
                     </p>
                     <Link
                       to={spotlight.route}
-                      className="mt-5 inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                      className="btn-border-run mt-5 inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     >
                       {labels.readArticle}
                       <ArrowIcon
@@ -294,7 +294,7 @@ export default function NewsIndexPage() {
                     type="button"
                     onClick={() => setPage(item)}
                     aria-current={item === currentPage ? 'page' : undefined}
-                    className={`flex h-11 min-w-11 items-center justify-center rounded-full px-4 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+                    className={`btn-border-run flex h-11 min-w-11 items-center justify-center rounded-full px-4 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                       item === currentPage
                         ? 'bg-primary-600 text-white'
                         : 'border border-primary-100 bg-white text-primary-700 hover:bg-primary-50'

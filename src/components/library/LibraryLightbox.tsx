@@ -59,7 +59,7 @@ export default function LibraryLightbox({
             type="button"
             onClick={onClose}
             aria-label={labels.closeImage}
-            className="absolute end-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50"
+            className="btn-border-run btn-border-run--light btn-border-run--sheen-tint absolute end-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -68,7 +68,7 @@ export default function LibraryLightbox({
             type="button"
             onClick={() => onMove(activeIndex - 1)}
             aria-label={labels.previousImage}
-            className="absolute start-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50 sm:flex"
+            className="btn-border-run btn-border-run--light btn-border-run--sheen-tint absolute start-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50 sm:flex"
           >
             {isRtl ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6" />}
           </button>
@@ -98,7 +98,7 @@ export default function LibraryLightbox({
             type="button"
             onClick={() => onMove(activeIndex + 1)}
             aria-label={labels.nextImage}
-            className="absolute end-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50 sm:flex"
+            className="btn-border-run btn-border-run--light btn-border-run--sheen-tint absolute end-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white text-dark-950 shadow-lg transition-colors hover:bg-primary-50 sm:flex"
           >
             {isRtl ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
           </button>

@@ -1,12 +1,13 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { LayoutGrid } from 'lucide-react';
+import { Clapperboard, LayoutGrid } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getLibraryContent, getLibraryCounts, libraryRoutes, type LibraryCollectionSlug } from '@/data/library';
+import { getLibraryProfileContent, libraryProfileRoute } from '@/data/library/profile';
 import { useI18n } from '@/i18n/useI18n';
 import { librarySectionIcons, librarySectionOrder } from './librarySections';
 
-export type LibraryNavActive = LibraryCollectionSlug | 'gallery' | 'index';
+export type LibraryNavActive = LibraryCollectionSlug | 'gallery' | 'index' | 'profile';
 
 /* ------------------------------------------------------------------ */
 /* Floating pill (mobile / tablet, and pages without a sidebar)        */
@@ -65,6 +66,12 @@ export function LibraryPillNav({ active, mobileOnly = false }: LibraryPillNavPro
       href: libraryRoutes.index,
       Icon: LayoutGrid,
     },
+    {
+      key: 'profile',
+      label: getLibraryProfileContent(locale).meta.shortTitle,
+      href: libraryProfileRoute,
+      Icon: Clapperboard,
+    },
     ...librarySectionOrder.map((slug) => ({
       key: slug as LibraryNavActive,
       label: content.collections[slug].shortTitle,
@@ -92,8 +99,8 @@ export function LibraryPillNav({ active, mobileOnly = false }: LibraryPillNavPro
                   ref={isActive ? activeRef : undefined}
                   to={href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`relative z-10 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full px-3.5 transition-colors ${
-                    isActive ? 'text-white' : 'text-dark-600 hover:text-primary-700'
+                  className={`btn-border-run relative z-10 inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-full px-3.5 transition-colors ${
+                    isActive ? 'btn-border-run--light text-white' : 'btn-border-run--sheen-tint text-dark-600 hover:text-primary-700'
                   }`}
                 >
                   <Icon className="h-4 w-4" aria-hidden="true" />
@@ -123,6 +130,7 @@ export function LibraryPillNav({ active, mobileOnly = false }: LibraryPillNavPro
 export function LibrarySidebarNav({ active }: { active: LibraryNavActive }) {
   const { locale } = useI18n();
   const content = getLibraryContent(locale);
+  const profile = getLibraryProfileContent(locale);
   const counts = getLibraryCounts(locale);
 
   return (
@@ -133,12 +141,24 @@ export function LibrarySidebarNav({ active }: { active: LibraryNavActive }) {
       <Link
         to={libraryRoutes.index}
         aria-current={active === 'index' ? 'page' : undefined}
-        className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-colors ${
-          active === 'index' ? 'bg-primary-600 text-white' : 'text-dark-900 hover:bg-primary-50 hover:text-primary-700'
+        className={`btn-border-run flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-colors ${
+          active === 'index' ? 'bg-primary-600 text-white' : 'btn-border-run--sheen-tint text-dark-900 hover:bg-primary-50 hover:text-primary-700'
         }`}
       >
         <LayoutGrid className="h-4 w-4" aria-hidden="true" />
         {content.labels.library}
+      </Link>
+      <Link
+        to={libraryProfileRoute}
+        aria-current={active === 'profile' ? 'page' : undefined}
+        className={`btn-border-run mt-1 flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-colors ${
+          active === 'profile'
+            ? 'bg-primary-600 text-white'
+            : 'btn-border-run--sheen-tint text-dark-900 hover:bg-primary-50 hover:text-primary-700'
+        }`}
+      >
+        <Clapperboard className="h-4 w-4" aria-hidden="true" />
+        {profile.meta.shortTitle}
       </Link>
       <p className="mb-1 mt-3 px-3 text-[11px] font-bold uppercase tracking-wide text-dark-400">
         {content.labels.allSections}
@@ -153,10 +173,10 @@ export function LibrarySidebarNav({ active }: { active: LibraryNavActive }) {
               <Link
                 to={collection.route}
                 aria-current={isActive ? 'page' : undefined}
-                className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-colors ${
+                className={`btn-border-run group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition-colors ${
                   isActive
                     ? 'bg-primary-600 text-white shadow-[0_10px_24px_rgba(195,7,16,0.24)]'
-                    : 'text-dark-700 hover:bg-primary-50 hover:text-primary-700'
+                    : 'btn-border-run--sheen-tint text-dark-700 hover:bg-primary-50 hover:text-primary-700'
                 }`}
               >
                 <span

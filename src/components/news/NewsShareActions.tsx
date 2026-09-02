@@ -49,7 +49,7 @@ export default function NewsShareActions({ labels, title }: NewsShareActionsProp
         <button
           type="button"
           onClick={copyLink}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+          className="btn-border-run inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
         >
           {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
           {copied ? labels.linkCopied : labels.copyLink}
@@ -61,7 +61,7 @@ export default function NewsShareActions({ labels, title }: NewsShareActionsProp
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-4 py-2 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-4 py-2 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           >
             <link.icon className="h-4 w-4" aria-hidden="true" />
             {link.label}

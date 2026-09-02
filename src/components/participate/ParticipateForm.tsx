@@ -298,7 +298,7 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
             <button
               type="button"
               onClick={() => setStepIndex((current) => Math.max(current - 1, 0))}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-dark-700 transition-colors hover:border-primary-300 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-dark-700 transition-colors hover:border-primary-300 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <PreviousIcon className="h-4 w-4" aria-hidden="true" />
               {labels.previous}
@@ -309,7 +309,7 @@ export default function ParticipateForm({ form, sourceUrl, labels, isRtl }: Part
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(156,16,6,0.24)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:bg-dark-300 disabled:shadow-none disabled:hover:translate-y-0 motion-reduce:hover:translate-y-0"
+          className="btn-border-run inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(156,16,6,0.24)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:bg-dark-300 disabled:shadow-none disabled:hover:translate-y-0 motion-reduce:hover:translate-y-0"
         >
           {isLastStep ? (submitting ? labels.submitting : labels.submit) : labels.next}
           {isLastStep ? <Send className="h-4 w-4" aria-hidden="true" /> : <NextIcon className="h-4 w-4" aria-hidden="true" />}

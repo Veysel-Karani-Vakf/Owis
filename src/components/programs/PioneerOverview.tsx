@@ -129,7 +129,7 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
           {labels.contact && (
             <Link
               to={participateRoutes.contact}
-              className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(195,7,16,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run group inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_30px_rgba(195,7,16,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <Mail className="h-4 w-4 transition-transform group-hover:-rotate-6" aria-hidden="true" />
               {labels.contact}
@@ -138,7 +138,7 @@ export default function PioneerOverview({ program, labels }: PioneerOverviewProp
           {phone && (
             <a
               href={`tel:${phone.replace(/[^+\d]/g, '')}`}
-              className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run btn-border-run--sheen-tint group inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-100 bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <Phone className="h-4 w-4 transition-transform group-hover:-rotate-6" aria-hidden="true" />
               <span dir="ltr" className="font-semibold">

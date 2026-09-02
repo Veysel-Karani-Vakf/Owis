@@ -308,7 +308,7 @@ export default function ProjectShowcase({ projects, labels, isRtl }: ProjectShow
             <Link
               to={project.officialContributionUrl}
               aria-label={`${labels.contribute}: ${project.title}. ${labels.externalNotice}`}
-              className="group/cta mt-4 inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 px-8 py-3 text-sm font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_rgba(218,8,18,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(218,8,18,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
+              className="btn-border-run group/cta mt-4 inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 px-8 py-3 text-sm font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_rgba(218,8,18,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(218,8,18,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
             >
               <Plus className="h-4 w-4 transition-transform group-hover/cta:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
               {labels.contribute}
@@ -320,7 +320,7 @@ export default function ProjectShowcase({ projects, labels, isRtl }: ProjectShow
                 onClick={share}
                 aria-label={labels.share}
                 title={labels.share}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-dark-100 bg-white text-dark-500 shadow-[0_8px_20px_rgba(40,12,18,0.08)] transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 w-10 items-center justify-center rounded-full border border-dark-100 bg-white text-dark-500 shadow-[0_8px_20px_rgba(40,12,18,0.08)] transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 motion-reduce:hover:translate-y-0"
               >
                 {copied ? (
                   <Check className="h-5 w-5 text-primary-600" aria-hidden="true" />
@@ -366,7 +366,7 @@ export default function ProjectShowcase({ projects, labels, isRtl }: ProjectShow
                   aria-label={item.title}
                   title={item.title}
                   onClick={() => selectProject(item.slug)}
-                  className={`group/thumb relative h-14 w-14 overflow-hidden rounded-full border-2 bg-white p-1 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 md:h-16 md:w-16 ${
+                  className={`btn-border-run btn-border-run--sheen-tint group/thumb relative h-14 w-14 overflow-hidden rounded-full border-2 bg-white p-1 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 md:h-16 md:w-16 ${
                     isActive
                       ? 'scale-105 border-dark-950 shadow-[0_10px_24px_rgba(40,12,18,0.16)]'
                       : 'border-dark-100 hover:border-dark-300 hover:shadow-[0_8px_18px_rgba(40,12,18,0.1)]'

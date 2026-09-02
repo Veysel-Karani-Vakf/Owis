@@ -334,7 +334,7 @@ export default function YouTubeEmbed({
             <button
               type="button"
               onClick={retryVideo}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              className="btn-border-run btn-border-run--light btn-border-run--sheen-tint inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary-700 transition-colors hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               {labels.retry}
@@ -343,7 +343,7 @@ export default function YouTubeEmbed({
               href={watchUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/35 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              className="btn-border-run btn-border-run--light inline-flex min-h-10 items-center gap-2 rounded-full border border-white/35 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               {labels.open}

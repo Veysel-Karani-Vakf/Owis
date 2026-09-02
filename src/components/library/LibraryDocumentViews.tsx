@@ -72,7 +72,7 @@ export function LibraryDocumentTile({ item, labels, locale, onPreview }: Documen
               <button
                 type="button"
                 onClick={() => onPreview(item)}
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                className="btn-border-run inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-4 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 <Eye className="h-4 w-4" aria-hidden="true" />
                 {labels.preview}
@@ -83,7 +83,7 @@ export function LibraryDocumentTile({ item, labels, locale, onPreview }: Documen
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${labels.downloadPdf}: ${item.title}`}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
               </a>
@@ -135,7 +135,7 @@ export function LibraryDocumentRow({ item, labels, locale, onPreview }: Document
             <button
               type="button"
               onClick={() => onPreview(item)}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-3.5 text-xs font-bold text-white transition-colors hover:bg-primary-700"
+              className="btn-border-run inline-flex min-h-10 items-center gap-2 rounded-full bg-primary-600 px-3.5 text-xs font-bold text-white transition-colors hover:bg-primary-700"
             >
               <Eye className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">{labels.preview}</span>
@@ -146,7 +146,7 @@ export function LibraryDocumentRow({ item, labels, locale, onPreview }: Document
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${labels.downloadPdf}: ${item.title}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
+              className="btn-border-run btn-border-run--sheen-tint inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
             </a>
@@ -205,7 +205,7 @@ export function LibraryDocumentNewsCard({ item, labels, locale, onPreview }: Doc
               <button
                 type="button"
                 onClick={() => onPreview(item)}
-                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                className="btn-border-run inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 <Eye className="h-4 w-4" aria-hidden="true" />
                 {labels.preview}
@@ -216,7 +216,7 @@ export function LibraryDocumentNewsCard({ item, labels, locale, onPreview }: Doc
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${labels.downloadPdf}: ${item.title}`}
-                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
+                className="btn-border-run btn-border-run--sheen-tint inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary-100 text-primary-700 transition-colors hover:bg-primary-50"
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
               </a>

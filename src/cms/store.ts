@@ -82,6 +82,20 @@ export function setDraft(next: CmsSnapshot | null) {
   recompute();
 }
 
+/** True once the initial hydrate attempt has finished, successfully or not. */
+let settled = false;
+
+export function isCmsSettled(): boolean {
+  return settled;
+}
+
+export function markCmsSettled() {
+  if (settled) return;
+  settled = true;
+  version += 1;
+  listeners.forEach((fn) => fn());
+}
+
 export function subscribeCms(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

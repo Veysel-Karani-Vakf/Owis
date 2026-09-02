@@ -101,7 +101,7 @@ function CopyButton({
       type="button"
       onClick={onClick}
       aria-live="polite"
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+      className={`btn-border-run btn-border-run--sheen-tint inline-flex shrink-0 items-center gap-1.5 rounded-full border font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
         compact ? 'min-h-9 px-3 text-xs' : 'min-h-10 px-4 text-sm'
       } ${
         copied
@@ -284,7 +284,7 @@ function BankCard({
               type="button"
               onClick={() => copy(`${bank.id}:swift`, bank.swift as string)}
               aria-label={`${labels.copy}: ${labels.swift} ${bank.swift}`}
-              className={`mr-4 mt-3 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${chipBg} ${
+              className={`btn-border-run mr-4 mt-3 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${chipBg} ${
                 ink === 'light' ? 'hover:bg-white/25' : 'hover:bg-black/20'
               }`}
             >
@@ -338,7 +338,7 @@ function BankCard({
                   onClick={() => copy(key, account.iban)}
                   aria-label={`${copied ? labels.copied : labels.copy}: ${labels.iban} ${account.currency}`}
                   aria-live="polite"
-                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                  className={`btn-border-run inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
                     copied
                       ? 'border-emerald-300 bg-emerald-400 text-dark-950'
                       : ink === 'light'
@@ -465,7 +465,7 @@ export default function BankAccountsPage() {
                   href={`#${bank.id}`}
                   aria-label={bank.name}
                   title={bank.name}
-                  className="inline-flex min-h-12 items-center rounded-full border border-primary-100 bg-white px-5 py-2 transition-colors hover:border-primary-300 hover:shadow-sm"
+                  className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-12 items-center rounded-full border border-primary-100 bg-white px-5 py-2 transition-colors hover:border-primary-300 hover:shadow-sm"
                 >
                   <BankLogo bank={bank} className="h-6 max-w-[130px]" />
                 </a>
@@ -482,7 +482,7 @@ export default function BankAccountsPage() {
               <p className="text-base font-bold text-dark-950">{page.labels.contactPrompt}</p>
               <Link
                 to={contributeContactRoute}
-                className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                className="btn-border-run group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 {page.labels.contactCta}
                 <ArrowIcon

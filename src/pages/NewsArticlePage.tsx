@@ -201,7 +201,7 @@ export default function NewsArticlePage() {
 
               <Link
                 to={newsRoutes.index}
-                className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                className="btn-border-run mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
               >
                 <ArrowIcon className="h-4 w-4" aria-hidden="true" />
                 {labels.backToNews}

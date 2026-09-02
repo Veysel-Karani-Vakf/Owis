@@ -244,7 +244,7 @@ export default function WaqfIdentityTabs({
                       focusTab(tabs.length - 1, 1);
                     }
                   }}
-                  className={`group relative isolate flex w-full items-center gap-4 overflow-hidden rounded-2xl border px-4 py-4 text-start transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 motion-reduce:transition-none ${
+                  className={`btn-border-run btn-border-run--sheen-tint group relative isolate flex w-full items-center gap-4 overflow-hidden rounded-2xl border px-4 py-4 text-start transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 motion-reduce:transition-none ${
                     isActive
                       ? 'border-primary-200 bg-white shadow-[0_14px_38px_rgba(35,15,20,0.09)]'
                       : 'border-transparent bg-white/60 hover:border-primary-100 hover:bg-white'

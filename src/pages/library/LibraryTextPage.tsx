@@ -31,6 +31,7 @@ import {
   type LibraryTextCollectionSlug,
   type LibraryTextItem,
 } from '@/data/library';
+import { isCmsSettled } from '@/cms/store';
 import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/i18n/content';
 
@@ -157,6 +158,9 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
   }, [copyLink, item]);
 
   if (!item) {
+    // A direct link to a CMS-only article can land before hydration finishes;
+    // hold the redirect until the fetch settles so the deep link doesn't bounce.
+    if (!isCmsSettled()) return null;
     return <Navigate to={textCollectionRoutes[type]} replace />;
   }
 
@@ -193,7 +197,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
           <button
             type="button"
             onClick={share}
-            className="inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
           >
             <Share2 className="h-4 w-4" aria-hidden="true" />
             {labels.share}
@@ -201,7 +205,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
           <button
             type="button"
             onClick={copyLink}
-            className="inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
             aria-live="polite"
           >
             {copied ? (
@@ -214,7 +218,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-10 flex-col items-center justify-center gap-1 rounded-2xl bg-[#faf8f8] px-2 text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
           >
             <Printer className="h-4 w-4" aria-hidden="true" />
             {labels.print}
@@ -313,7 +317,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
                             <Link
                               to={part.route}
                               aria-current={isCurrent ? 'page' : undefined}
-                              className={`inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-xs font-bold transition-colors ${
+                              className={`btn-border-run inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-xs font-bold transition-colors ${
                                 isCurrent
                                   ? 'bg-primary-600 text-white'
                                   : 'border border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'
@@ -363,7 +367,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
                       download
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                      className="btn-border-run inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     >
                       <Download className="h-4 w-4" aria-hidden="true" />
                       {labels.downloadPdf}
@@ -371,7 +375,7 @@ export default function LibraryTextPage({ type }: LibraryTextPageProps) {
                   )}
                   <Link
                     to={parent.route}
-                    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                    className={`btn-border-run inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                       item.pdfUrl
                         ? 'border border-primary-100 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-50'
                         : 'bg-primary-600 text-white hover:bg-primary-700'

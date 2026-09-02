@@ -55,7 +55,7 @@ export default function VolunteerSteps({
   const contactIndex = contactStepIndex(steps.length);
   const hasContact = Boolean(contactEmail || contactPhone);
   const contactLinkClass =
-    'inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';
+    'btn-border-run btn-border-run--light inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';
 
   return (
     <div className="mx-auto max-w-5xl px-4 md:px-8">
@@ -132,7 +132,7 @@ export default function VolunteerSteps({
       >
         <Link
           to={joinTo}
-          className="group inline-flex min-h-13 items-center gap-2 rounded-full bg-primary-600 px-8 py-3.5 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0"
+          className="btn-border-run btn-border-run--light group inline-flex min-h-13 items-center gap-2 rounded-full bg-primary-600 px-8 py-3.5 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0"
         >
           <HandHeart className="h-4 w-4" aria-hidden="true" />
           {copy.joinCta}

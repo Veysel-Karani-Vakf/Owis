@@ -149,7 +149,7 @@ export default function ParticipatePage() {
                           window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
                         }}
                         aria-current={active ? 'page' : undefined}
-                        className={`group flex min-h-14 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-start transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                        className={`btn-border-run group flex min-h-14 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-start transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                           active
                             ? 'border-primary-500 bg-primary-600 text-white shadow-[0_14px_30px_rgba(156,16,6,0.2)]'
                             : 'border-white bg-white text-dark-800 hover:border-primary-200 hover:text-primary-700'

@@ -263,7 +263,7 @@ export default function DonateCheckoutPage() {
                               setCustomAmount('');
                             }}
                             aria-pressed={active}
-                            className={`min-h-11 rounded-full border px-5 py-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                            className={`btn-border-run min-h-11 rounded-full border px-5 py-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                               active
                                 ? 'border-primary-600 bg-primary-600 text-white'
                                 : 'border-primary-100 bg-white text-dark-800 hover:border-primary-300 hover:text-primary-700'
@@ -413,7 +413,7 @@ export default function DonateCheckoutPage() {
                   <div>
                     <button
                       type="submit"
-                      className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="btn-border-run inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {submitting ? (
                         <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />

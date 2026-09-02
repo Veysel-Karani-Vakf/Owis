@@ -10,7 +10,7 @@ type AwarenessSpotlightProps = {
 
 const smoothEase = [0.22, 1, 0.36, 1] as const;
 const linkClass =
-  'group inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-dark-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0';
+  'btn-border-run btn-border-run--light btn-border-run--sheen-tint group inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-dark-950 shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:hover:translate-y-0';
 
 /** A featured platform event, told with the real photos mirrored in this site's news. */
 export default function AwarenessSpotlight({ spotlight }: AwarenessSpotlightProps) {

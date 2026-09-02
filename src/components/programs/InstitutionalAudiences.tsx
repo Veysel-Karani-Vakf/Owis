@@ -100,7 +100,7 @@ export default function InstitutionalAudiences({
 
                 <Link
                   to={donateRoute}
-                  className="group/link mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  className="btn-border-run btn-border-run--light btn-border-run--sheen-tint group/link mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
                   {donateLabel}
                   <ArrowIcon

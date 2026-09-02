@@ -118,7 +118,7 @@ export default function CapacityCities({
                 aria-controls={`capacity-city-panel-${city.id}`}
                 id={`capacity-city-tab-${city.id}`}
                 onClick={() => goTo(index)}
-                className={`group relative isolate flex min-w-[15rem] shrink-0 items-center gap-4 overflow-hidden rounded-[22px] border p-4 text-start transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 lg:min-w-0 ${
+                className={`btn-border-run btn-border-run--sheen-tint group relative isolate flex min-w-[15rem] shrink-0 items-center gap-4 overflow-hidden rounded-[22px] border p-4 text-start transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 lg:min-w-0 ${
                   isActive
                     ? 'border-primary-200 bg-white shadow-[0_20px_48px_rgba(156,16,6,0.14)]'
                     : 'border-primary-100 bg-white/70 hover:border-primary-200 hover:bg-white'
@@ -251,7 +251,7 @@ export default function CapacityCities({
                       posterImage: cityImage(active),
                     })
                   }
-                  className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  className="btn-border-run btn-border-run--light btn-border-run--sheen-tint group inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-primary-700 shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
                   <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white">
                     {!reduced && (

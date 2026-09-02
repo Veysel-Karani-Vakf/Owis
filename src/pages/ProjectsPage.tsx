@@ -74,7 +74,7 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
           <div className="mt-auto flex flex-wrap gap-2 pt-3">
             <Link
               to={project.route}
-              className="group/link inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run group/link inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               {labels.details}
               <ArrowIcon
@@ -88,7 +88,7 @@ function ProjectCard({ project, index, labels, isRtl }: ProjectCardProps) {
             <Link
               to={project.officialContributionUrl}
               aria-label={`${labels.contribute}: ${project.title}. ${labels.externalNotice}`}
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-primary-100 bg-white px-3.5 py-1.5 text-xs font-bold text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+              className="btn-border-run btn-border-run--sheen-tint inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-primary-100 bg-white px-3.5 py-1.5 text-xs font-bold text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
             >
               <HandHeart className="h-4 w-4" aria-hidden="true" />
               {labels.contribute}

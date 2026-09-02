@@ -151,7 +151,9 @@ export default function Header() {
   };
 
   const navItemClass = (active = false) =>
-    `whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 2xl:px-3 ${
+    `btn-border-run ${scrolled ? 'btn-border-run--sheen-tint' : 'btn-border-run--light'} ${
+      active ? 'btn-border-run--on' : ''
+    } whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 2xl:px-3 ${
       active
         ? scrolled
           ? 'bg-primary-50 text-primary-700'
@@ -167,7 +169,7 @@ export default function Header() {
         initial={{ y: -120 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, delay: 1.05, ease: 'easeOut' }}
-        className="pointer-events-none fixed inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 sm:pt-4 md:px-8 md:pt-5 xl:px-16 xl:pt-8 2xl:px-20"
+        className="no-border-run pointer-events-none fixed inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 sm:pt-4 md:px-8 md:pt-5 xl:px-16 xl:pt-8 2xl:px-20"
       >
         <div
           className={`pointer-events-auto mx-auto flex h-16 w-full max-w-[1712px] items-center justify-between rounded-[18px] border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 sm:px-5 md:h-20 md:rounded-[22px] md:px-7 ${
@@ -299,9 +301,9 @@ export default function Header() {
                                     focusAboutItem(aboutNavItems.length - 1);
                                   }
                                 }}
-                                className={`relative flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                                className={`btn-border-run btn-border-run--light relative flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
                                   active
-                                    ? 'bg-primary-600 text-white'
+                                    ? 'btn-border-run--on bg-primary-600 text-white'
                                     : 'text-white/80 hover:bg-primary-600/20 hover:text-white'
                                 }`}
                               >
@@ -408,9 +410,9 @@ export default function Header() {
                                     focusProgramItem(programNavItems.length - 1);
                                   }
                                 }}
-                                className={`relative flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                                className={`btn-border-run btn-border-run--light relative flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
                                   active
-                                    ? 'bg-primary-600 text-white'
+                                    ? 'btn-border-run--on bg-primary-600 text-white'
                                     : 'text-white/80 hover:bg-primary-600/20 hover:text-white'
                                 }`}
                               >
@@ -474,10 +476,10 @@ export default function Header() {
               aria-label={t('accessibility.openMenu')}
               aria-controls="mobile-navigation"
               aria-expanded={mobileOpen}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors xl:hidden ${
+              className={`btn-border-run flex h-10 w-10 items-center justify-center rounded-xl transition-colors xl:hidden ${
                 scrolled
-                  ? 'text-dark-800 hover:bg-primary-50 hover:text-primary-700'
-                  : 'text-white drop-shadow-[0_1px_7px_rgba(0,0,0,0.7)] hover:bg-white/10'
+                  ? 'btn-border-run--sheen-tint text-dark-800 hover:bg-primary-50 hover:text-primary-700'
+                  : 'btn-border-run--light text-white drop-shadow-[0_1px_7px_rgba(0,0,0,0.7)] hover:bg-white/10'
               }`}
             >
               <Menu className="h-6 w-6" />

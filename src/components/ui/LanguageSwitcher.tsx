@@ -61,8 +61,8 @@ export default function LanguageSwitcher({
   };
 
   const buttonClass = darkSurface
-    ? 'border-white/25 bg-white/10 text-white hover:bg-white/15'
-    : 'border-dark-950/10 bg-white/75 text-dark-800 hover:bg-white';
+    ? 'btn-border-run--light border-white/25 bg-white/10 text-white hover:bg-white/15'
+    : 'btn-border-run--sheen-tint border-dark-950/10 bg-white/75 text-dark-800 hover:bg-white';
 
   return (
     <div ref={wrapperRef} className="relative shrink-0">
@@ -72,7 +72,7 @@ export default function LanguageSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={`inline-flex h-11 min-w-[4.6rem] items-center justify-center gap-2 rounded-full border px-3 text-xs font-black uppercase backdrop-blur-md transition-all focus-visible:outline-primary-600 ${buttonClass} ${
+        className={`btn-border-run inline-flex h-11 min-w-[4.6rem] items-center justify-center gap-2 rounded-full border px-3 text-xs font-black uppercase backdrop-blur-md transition-all focus-visible:outline-primary-600 ${buttonClass} ${
           compact ? 'min-w-[4.25rem] px-2.5' : ''
         }`}
       >
@@ -132,7 +132,7 @@ export default function LanguageSwitcher({
                       focusOption(languages.length - 1);
                     }
                   }}
-                  className={`relative flex h-11 w-full items-center justify-center rounded-[10px] text-sm font-bold uppercase tracking-[0.04em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                  className={`btn-border-run btn-border-run--sheen-tint relative flex h-11 w-full items-center justify-center rounded-[10px] text-sm font-bold uppercase tracking-[0.04em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
                     selected
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-dark-700 hover:bg-primary-50 hover:text-primary-700'

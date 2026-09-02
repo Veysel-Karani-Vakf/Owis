@@ -345,7 +345,7 @@ function CityMedia({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setSelectedCityId(city.id)}
-                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                className={`btn-border-run inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
                   active
                     ? 'bg-primary-600 text-white shadow-[0_12px_28px_rgba(195,7,16,0.28)]'
                     : 'border border-primary-100 bg-white text-primary-700 hover:border-primary-200 hover:bg-primary-50'
@@ -412,7 +412,7 @@ function CityMedia({
                         posterImage: selectedCity.image,
                       })
                     }
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                    className="btn-border-run inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                   >
                     <Play className="h-4 w-4" aria-hidden="true" />
                     {labels.watchVideo}
@@ -423,7 +423,7 @@ function CityMedia({
                       type="button"
                       aria-label={labels.previous}
                       onClick={() => stepCity(-1)}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                      className="btn-border-run btn-border-run--sheen-tint flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     >
                       <PrevIcon className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -431,7 +431,7 @@ function CityMedia({
                       type="button"
                       aria-label={labels.next}
                       onClick={() => stepCity(1)}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
+                      className="btn-border-run btn-border-run--sheen-tint flex h-11 w-11 items-center justify-center rounded-full border border-primary-100 bg-white text-primary-700 transition-colors hover:border-primary-200 hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
                     >
                       <NextIcon className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -760,7 +760,7 @@ function DonateCta({
   const to = cta.url?.trim() || donateRoute;
   const isExternal = /^https?:\/\//.test(to);
   const buttonClass =
-    'group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold-400 px-7 py-3 text-sm font-black text-dark-950 transition-colors hover:bg-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300';
+    'btn-border-run btn-border-run--light group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold-400 px-7 py-3 text-sm font-black text-dark-950 transition-colors hover:bg-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-300';
   const arrow = (
     <ArrowIcon
       className={`h-4 w-4 transition-transform ${

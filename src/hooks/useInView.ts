@@ -40,8 +40,10 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
       return;
     }
 
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
+    // Records can arrive batched (e.g. a hash-jump lands between attach and the
+    // first delivery); reading only the first entry would miss the intersecting one.
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
         setInView(true);
         observer.disconnect();
       }

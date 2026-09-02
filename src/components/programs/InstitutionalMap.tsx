@@ -238,7 +238,7 @@ export default function InstitutionalMap({
                   onPointerEnter={() => setActiveIndex(index)}
                   onFocus={() => setActiveIndex(index)}
                   onClick={() => setActiveIndex(index)}
-                  className={`group relative isolate flex w-full items-center gap-5 overflow-hidden rounded-[24px] border bg-white p-5 text-start transition-all duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 md:p-6 ${
+                  className={`btn-border-run btn-border-run--sheen-tint group relative isolate flex w-full items-center gap-5 overflow-hidden rounded-[24px] border bg-white p-5 text-start transition-all duration-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 md:p-6 ${
                     isActive
                       ? 'border-primary-300 shadow-[0_24px_56px_rgba(156,16,6,0.16)] md:-translate-x-1 rtl:md:translate-x-1'
                       : 'border-primary-100 shadow-[0_14px_36px_rgba(40,12,18,0.06)] hover:border-primary-200'
