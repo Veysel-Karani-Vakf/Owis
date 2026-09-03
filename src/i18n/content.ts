@@ -233,7 +233,10 @@ export const languages: { code: Locale; label: string; nativeName: string; short
 ];
 
 const shared = {
+  /** English wordmark; the default logo for the en branch. */
   logo: '/media/waqf-owais-logo.png',
+  /** Bilingual wordmark (Arabic + Latin) used by the ar and tr branches. */
+  logoArTr: '/media/waqf-owais-logo-ar-tr.png',
   videoId: 'LMK-Sv__71w',
   mainImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   socialLinks: {
@@ -319,11 +322,12 @@ export const localizedContent: Record<Locale, SiteContent> = {
       title: 'وقف أويس القرني',
       description:
         'مؤسسة وقفية تسعى إلى إيجاد أوعية استثمارية مبتكرة ومستدامة، والتكامل مع الشركاء في بناء القدرات وتنفيذ البرامج المساندة التي تخدم نهوض اليمن.',
-      ogImage: shared.logo,
+      ogImage: shared.logoArTr,
     },
     siteConfig: {
       ...siteBase,
       name: 'وقف أويس القرني',
+      logo: shared.logoArTr,
     },
     navLinks: [
       { label: 'الرئيسية', href: '#hero' },
@@ -587,11 +591,12 @@ export const localizedContent: Record<Locale, SiteContent> = {
       title: 'Veysel Karani Vakfı',
       description:
         'Yemenin kalkınmasına hizmet eden eğitim, kapasite geliştirme ve destek programları için yenilikçi ve sürdürülebilir vakıf yatırım araçları geliştiren bir vakıf kurumu.',
-      ogImage: shared.logo,
+      ogImage: shared.logoArTr,
     },
     siteConfig: {
       ...siteBase,
       name: 'Veysel Karani Vakfı',
+      logo: shared.logoArTr,
     },
     navLinks: [
       { label: 'Ana Sayfa', href: '#hero' },

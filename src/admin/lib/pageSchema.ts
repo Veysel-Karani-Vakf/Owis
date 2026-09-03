@@ -610,7 +610,16 @@ export const SITE_PAGES: SitePageDef[] = [
         icon: Building2,
         fields: [
           { path: 'siteConfig.name', label: L('اسم المؤسسة', 'Kurum adı', 'Organisation name'), type: 'text' },
-          { path: 'siteConfig.logo', label: L('الشعار', 'Logo', 'Logo'), type: 'image' },
+          {
+            path: 'siteConfig.logo',
+            label: L('الشعار', 'Logo', 'Logo'),
+            type: 'image',
+            help: L(
+              'لكل لغة شعارها الخاص: بدّل اللغة من أعلى الصفحة لرفع شعار مختلف للعربية والتركية والإنجليزية. يُفضّل PNG بخلفية شفافة.',
+              'Her dilin kendi logosu vardır: Arapça, Türkçe ve İngilizce için farklı logo yüklemek üzere sayfanın üstünden dili değiştirin. Şeffaf arka planlı PNG tercih edilir.',
+              'Each language has its own logo: switch the language at the top of the page to upload a different logo for Arabic, Turkish and English. A PNG with a transparent background works best.'
+            ),
+          },
           {
             path: 'siteConfig.donateUrl',
             label: L('وجهة زر "ساهم الآن"', '"Bağış yap" hedefi', '"Donate now" destination'),
