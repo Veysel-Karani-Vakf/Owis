@@ -45,6 +45,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Banknote,
+  Clapperboard,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -88,6 +89,8 @@ export type PageFieldDef = {
   /** Tucked into a collapsed "more settings" block instead of the main grid. */
   advanced?: boolean;
   placeholder?: string;
+  /** `number` fields: accept fractions even when the key is one the record forms treat as an integer. */
+  decimal?: boolean;
 };
 
 export type PageSectionDef = {
@@ -258,6 +261,97 @@ const libraryCollectionKeys: [string, string, string, string][] = [
   ['success-stories', 'قصص النجاح', 'Başarı hikayeleri', 'Success stories'],
   ['gallery', 'معرض الصور', 'Galeri', 'Photo gallery'],
 ];
+
+
+// The waqf-story presentation (/library/profile): every chapter is a heading +
+// standfirst and a few "title + text" cards, photographed; the numbers vault
+// counts stats that each carry a number, a label and an optional suffix.
+const profileHeadingFields = (prefix: string): PageFieldDef[] => [
+  { path: `${prefix}.heading`, label: L('عنوان الفصل', 'Bölüm başlığı', 'Chapter heading'), type: 'text' },
+  { path: `${prefix}.subheading`, label: L('السطر التمهيدي تحت العنوان', 'Başlık altı satır', 'Standfirst under the heading'), type: 'textarea' },
+];
+
+const profileCardFields: PageFieldDef[] = [
+  { path: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+  { path: 'text', label: L('النص', 'Metin', 'Text'), type: 'textarea' },
+];
+
+const profileCards = (path: string, label: Record<Locale, string>, extra: Partial<PageFieldDef> = {}): PageFieldDef => ({
+  path,
+  label,
+  type: 'repeater',
+  itemTitleField: 'title',
+  itemFields: profileCardFields,
+  ...extra,
+});
+
+/** A single titled card stored as `prefix.title` + `prefix.text`. */
+const profileCard = (prefix: string, name: Record<Locale, string>): PageFieldDef[] => [
+  { path: `${prefix}.title`, label: L(`${name.ar} — العنوان`, `${name.tr} — başlık`, `${name.en} — title`), type: 'text' },
+  { path: `${prefix}.text`, label: L(`${name.ar} — النص`, `${name.tr} — metin`, `${name.en} — text`), type: 'textarea' },
+];
+
+const profilePhotoFields: PageFieldDef[] = [
+  { path: 'src', label: L('الصورة', 'Görsel', 'Image'), type: 'image' },
+  {
+    path: 'alt',
+    label: L('وصف الصورة', 'Görsel açıklaması', 'Image description'),
+    type: 'text',
+    help: L('لقارئات الشاشة ومحركات البحث', 'Ekran okuyucular ve arama motorları için', 'For screen readers and search engines'),
+  },
+];
+
+const profilePhotos = (path: string, label: Record<Locale, string>, max?: number): PageFieldDef => ({
+  path,
+  label,
+  type: 'repeater',
+  itemTitleField: 'alt',
+  itemFields: profilePhotoFields,
+  max,
+  help: L('احذف كل الصور لإخفاء الشريط', 'Şeridi gizlemek için tüm görselleri kaldırın', 'Remove every photo to hide the band'),
+});
+
+const profileStatFields: PageFieldDef[] = [
+  { path: 'value', label: L('الرقم', 'Sayı', 'Number'), type: 'number', decimal: true },
+  { path: 'label', label: L('البيان', 'Etiket', 'Label'), type: 'text' },
+  {
+    path: 'suffix',
+    label: L('لاحقة بعد الرقم', 'Sayı soneki', 'Suffix after the number'),
+    type: 'text',
+    help: L('مثل % أو M+ — اتركها فارغة إن لم تلزم', 'Örneğin % veya M+ — gerekmiyorsa boş bırakın', 'E.g. % or M+ — leave empty when not needed'),
+  },
+  { path: 'sublabel', label: L('سطر توضيحي', 'Açıklama satırı', 'Explanatory line'), type: 'text' },
+  {
+    path: 'decimals',
+    label: L('المنازل العشرية', 'Ondalık basamak', 'Decimal places'),
+    type: 'number',
+    advanced: true,
+    help: L('0 للأرقام الصحيحة', 'Tam sayılar için 0', '0 for whole numbers'),
+  },
+];
+
+/** One stat stored as `prefix.value`, `prefix.label`, … */
+const profileStat = (prefix: string, name: Record<Locale, string>): PageFieldDef[] =>
+  profileStatFields.map((field) => ({
+    ...field,
+    path: `${prefix}.${field.path}`,
+    label: L(`${name.ar} — ${field.label.ar}`, `${name.tr} — ${field.label.tr}`, `${name.en} — ${field.label.en}`),
+  }));
+
+const profileStats = (path: string, label: Record<Locale, string>, extra: Partial<PageFieldDef> = {}): PageFieldDef => ({
+  path,
+  label,
+  type: 'repeater',
+  itemTitleField: 'label',
+  itemFields: profileStatFields,
+  ...extra,
+});
+
+const profileChapterNote = (path: string): PageFieldDef => ({
+  path,
+  label: L('الخلاصة في آخر الفصل', 'Bölüm sonu notu', 'Closing line of the chapter'),
+  type: 'textarea',
+});
 
 // PAGES ----------------------------------------------------------------------
 export const SITE_PAGES: SitePageDef[] = [
@@ -1716,6 +1810,337 @@ export const SITE_PAGES: SitePageDef[] = [
       },
     ],
   },
+  // LIBRARY: THE WAQF STORY --------------------------------------------------
+  {
+    key: 'library-profile',
+    group: 'library',
+    label: L('العرض التعريفي', 'Tanıtım sunumu', 'Waqf story'),
+    description: L(
+      'صفحة /library/profile كاملة: الفصول الثلاثة عشر، صورها، وأرقام «أويس في أرقام»',
+      '/library/profile sayfasının tamamı: on üç bölüm, görseller ve “Owais rakamlarla”',
+      'The whole /library/profile page: the thirteen chapters, their photos and the “Owais in Numbers” figures',
+    ),
+    icon: Clapperboard,
+    route: '/library/profile',
+    sections: [
+      {
+        key: 'meta',
+        label: L('اسم الصفحة ووصفها', 'Sayfa adı ve açıklaması', 'Page name & description'),
+        description: L(
+          'العنوان في تبويب المتصفح وقائمة المكتبة وبطاقة العرض في صفحة المكتبة',
+          'Tarayıcı sekmesindeki, kütüphane menüsündeki ve kütüphane sayfasındaki kartın adı',
+          'The name in the browser tab, the library menu and the spotlight card on the library page',
+        ),
+        icon: Search,
+        fields: [
+          { path: 'meta.title', label: L('اسم الصفحة', 'Sayfa adı', 'Page name'), type: 'text' },
+          { path: 'meta.shortTitle', label: L('الاسم القصير (في قائمة المكتبة)', 'Kısa ad (kütüphane menüsünde)', 'Short name (in the library menu)'), type: 'text' },
+          { path: 'meta.seoDescription', label: L('وصف الصفحة في جوجل', 'Google açıklaması', 'Search-engine description'), type: 'textarea' },
+        ],
+      },
+      {
+        key: 'hero',
+        label: L('01 · الافتتاحية', '01 · Açılış', '01 · Opening'),
+        description: L('الشاشة الأولى: الصورة الكاملة والعنوان والشعار', 'İlk ekran: tam görsel, başlık ve slogan', 'The first screen: the full-bleed photo, headline and slogan'),
+        icon: ImageIcon,
+        anchor: '#profile-hero',
+        fields: [
+          { path: 'hero.eyebrow', label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
+          { path: 'hero.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+          { path: 'hero.subtitle', label: L('العنوان الفرعي', 'Alt başlık', 'Subtitle'), type: 'textarea' },
+          { path: 'hero.slogan', label: L('الشعار', 'Slogan', 'Slogan'), type: 'text' },
+          { path: 'hero.intro', label: L('التمهيد', 'Giriş cümlesi', 'Intro line'), type: 'textarea' },
+          { path: 'hero.image', label: L('صورة الخلفية', 'Arka plan görseli', 'Background image'), type: 'image' },
+        ],
+      },
+      {
+        key: 'pillars',
+        label: L('02 · من الفكرة إلى الأثر', '02 · Fikirden etkiye', '02 · From idea to impact'),
+        description: L('الركائز الأربع المتراكبة في أول فصل', 'İlk bölümdeki üst üste dizilen dört sütun', 'The four stacked pillars of the first chapter'),
+        icon: LayoutGrid,
+        anchor: '#profile-pillars',
+        fields: [
+          ...profileHeadingFields('pillars'),
+          profileCards('pillars.items', L('الركائز', 'Sütunlar', 'Pillars')),
+          profileChapterNote('pillars.outro'),
+        ],
+      },
+      {
+        key: 'problem',
+        label: L('03 · المشكلة التي نعالجها', '03 · Ele aldığımız sorun', '03 · The problem we address'),
+        description: L(
+          'اللوحة الحمراء: ثلاث بطاقات تنقلب لتُظهر المصرف الذي يجيب عنها',
+          'Kırmızı pano: cevap veren mecrayı göstermek için dönen üç kart',
+          'The crimson plate: three cards that flip to reveal the track answering each need',
+        ),
+        icon: AlertTriangle,
+        anchor: '#profile-problem',
+        fields: [
+          ...profileHeadingFields('problem'),
+          profileCards('problem.cards', L('الاحتياجات الثلاثة', 'Üç ihtiyaç', 'The three needs'), {
+            max: 3,
+            help: L('التصميم مبني على ثلاث بطاقات', 'Tasarım üç kart için yapılmıştır', 'The layout is built for three cards'),
+          }),
+          profileChapterNote('problem.note'),
+        ],
+      },
+      {
+        key: 'story',
+        label: L('04 · قصة التأسيس', '04 · Kuruluş hikayesi', '04 · Founding story'),
+        description: L('الخط الزمني، التجارب الأربع، وشريط الصور تحتها', 'Zaman çizelgesi, dört deneyim ve altındaki fotoğraf şeridi', 'The timeline, the four experiences and the photo band under them'),
+        icon: RouteIcon,
+        anchor: '#profile-story',
+        fields: [
+          ...profileHeadingFields('story'),
+          {
+            path: 'story.milestones',
+            label: L('محطات الخط الزمني', 'Zaman çizelgesi durakları', 'Timeline milestones'),
+            type: 'repeater',
+            itemTitleField: 'title',
+            itemFields: [
+              { path: 'year', label: L('السنة أو التاريخ', 'Yıl veya tarih', 'Year or date'), type: 'text' },
+              ...profileCardFields,
+            ],
+          },
+          { path: 'story.experiencesHeading', label: L('عنوان التجارب', 'Deneyimler başlığı', 'Experiences heading'), type: 'text' },
+          { path: 'story.experiencesSubheading', label: L('السطر تحت عنوان التجارب', 'Deneyimler alt satırı', 'Line under the experiences heading'), type: 'text' },
+          profileCards('story.experiences', L('التجارب', 'Deneyimler', 'Experiences')),
+          profileChapterNote('story.conclusion'),
+          profilePhotos('story.photos', L('شريط الصور', 'Fotoğraf şeridi', 'Photo band'), 3),
+        ],
+      },
+      {
+        key: 'identity',
+        label: L('05 · الهوية والمعنى', '05 · Kimlik ve anlam', '05 · Identity & meaning'),
+        description: L('صورة أويس، التعريف، الرؤية والرسالة، وقيم المدار', 'Owais portresi, tanım, vizyon-misyon ve dönen değerler', 'The Owais portrait, the definition, vision & mission and the orbiting values'),
+        icon: Compass,
+        anchor: '#profile-identity',
+        fields: [
+          ...profileHeadingFields('identity'),
+          { path: 'identity.image', label: L('الصورة الجانبية', 'Yan görsel', 'Side portrait'), type: 'image' },
+          ...profileCard('identity.why', L('لماذا أويس', 'Neden Owais', 'Why Owais')),
+          ...profileCard('identity.what', L('ما هو الوقف', 'Vakıf nedir', 'What the waqf is')),
+          ...profileCard('identity.vision', L('الرؤية', 'Vizyon', 'Vision')),
+          ...profileCard('identity.mission', L('الرسالة', 'Misyon', 'Mission')),
+          { path: 'identity.values.title', label: L('عنوان القيم', 'Değerler başlığı', 'Values heading'), type: 'text' },
+          {
+            path: 'identity.values.items',
+            label: L('القيم', 'Değerler', 'Values'),
+            type: 'list',
+            help: L('كلمة واحدة لكل قيمة؛ تدور حول المركز', 'Her değer için tek kelime; merkez etrafında döner', 'One word per value; they orbit the centre'),
+          },
+          profileChapterNote('identity.note'),
+        ],
+      },
+      {
+        key: 'cycle',
+        label: L('06 · الدورة الوقفية', '06 · Vakıf döngüsü', '06 · The waqf cycle'),
+        description: L('الحلقة ذات المراحل الثلاث والوظيفتان المتكاملتان', 'Üç aşamalı halka ve iki tamamlayıcı işlev', 'The three-stage ring and the two complementary functions'),
+        icon: RouteIcon,
+        anchor: '#profile-cycle',
+        fields: [
+          ...profileHeadingFields('cycle'),
+          profileCards('cycle.stages', L('مراحل الدورة', 'Döngü aşamaları', 'Cycle stages'), {
+            max: 3,
+            help: L('الرسم مبني على ثلاث مراحل', 'Çizim üç aşama için yapılmıştır', 'The diagram is drawn for three stages'),
+          }),
+          profileChapterNote('cycle.note'),
+          { path: 'cycle.duality.heading', label: L('عنوان الوظيفتين', 'İki işlev başlığı', 'Two-functions heading'), type: 'text' },
+          ...profileCard('cycle.duality.direct', L('العطاء المباشر', 'Doğrudan bağış', 'Direct giving')),
+          ...profileCard('cycle.duality.waqf', L('المساهمة الوقفية', 'Vakıf katkısı', 'Waqf contribution')),
+          { path: 'cycle.duality.note', label: L('خلاصة الوظيفتين', 'İki işlev notu', 'Two-functions note'), type: 'textarea' },
+        ],
+      },
+      {
+        key: 'creation',
+        label: L('07 · إيجاد الوقف', '07 · Vakfın oluşturulması', '07 · Creating the waqf'),
+        description: L('السهم الوقفي، صور الشقق، صور إيجاد الوقف، والشجرة المباركة', 'Vakıf hissesi, daire fotoğrafları, katkı biçimleri ve kutlu ağaç', 'The waqf share, the apartment photos, the forms of contribution and the blessed tree'),
+        icon: Landmark,
+        anchor: '#profile-creation',
+        fields: [
+          ...profileHeadingFields('creation'),
+          { path: 'creation.share.heading', label: L('عنوان السهم الوقفي', 'Vakıf hissesi başlığı', 'Waqf share heading'), type: 'text' },
+          ...profileCard('creation.share.what', L('ما هو', 'Nedir', 'What it is')),
+          ...profileCard('creation.share.whatNot', L('ماذا لا يعني', 'Ne değildir', 'What it is not')),
+          { path: 'creation.share.note', label: L('ملاحظة السهم', 'Hisse notu', 'Share note'), type: 'textarea' },
+          profilePhotos('creation.photos', L('صور الشقق الوقفية', 'Vakıf dairelerinin fotoğrafları', 'Waqf apartment photos'), 4),
+          { path: 'creation.formsHeading', label: L('عنوان صور إيجاد الوقف', 'Katkı biçimleri başlığı', 'Forms-of-contribution heading'), type: 'text' },
+          { path: 'creation.formsSubheading', label: L('السطر تحت عنوان الصور', 'Katkı biçimleri alt satırı', 'Line under the forms heading'), type: 'text' },
+          profileCards('creation.forms', L('صور إيجاد الوقف', 'Katkı biçimleri', 'Forms of contribution')),
+          { path: 'creation.tree.heading', label: L('عنوان الشجرة المباركة', 'Kutlu ağaç başlığı', 'Blessed-tree heading'), type: 'text' },
+          { path: 'creation.tree.subheading', label: L('السطر فوق عنوان الشجرة', 'Ağaç başlığı üstü satır', 'Line above the tree heading'), type: 'text' },
+          {
+            path: 'creation.tree.image',
+            label: L('لوحة الشجرة', 'Ağaç görseli', 'Tree artwork'),
+            type: 'image',
+            help: L('صورة مربعة؛ تنمو من الجذور إلى الأعلى عند الوصول إليها', 'Kare görsel; görünüre girince köklerden yukarı büyür', 'A square image; it grows from the roots up as it comes into view'),
+          },
+          profileCards('creation.tree.steps', L('خطوات الشجرة', 'Ağaç adımları', 'Tree steps')),
+          { path: 'creation.tree.note', label: L('خلاصة الشجرة', 'Ağaç notu', 'Tree note'), type: 'textarea' },
+        ],
+      },
+      {
+        key: 'investment',
+        label: L('08 · التثمير', '08 · Yatırım', '08 · Investment'),
+        description: L('المبادئ، مراحل القرار المتحركة، الفصل المؤسسي، والعائد القابل للتخصيص', 'İlkeler, hareketli karar aşamaları, kurumsal ayrım ve dağıtılabilir getiri', 'The principles, the animated decision stages, the institutional separation and the distributable yield'),
+        icon: BarChart3,
+        anchor: '#profile-governance',
+        fields: [
+          ...profileHeadingFields('investment'),
+          profileCards('investment.principles', L('مبادئ الاستثمار', 'Yatırım ilkeleri', 'Investment principles')),
+          { path: 'investment.stagesHeading', label: L('عنوان مراحل القرار', 'Karar aşamaları başlığı', 'Decision-stages heading'), type: 'text' },
+          profileCards('investment.stages', L('مراحل القرار', 'Karar aşamaları', 'Decision stages')),
+          { path: 'investment.governance.heading', label: L('عنوان الفصل المؤسسي', 'Kurumsal ayrım başlığı', 'Institutional-separation heading'), type: 'text' },
+          { path: 'investment.governance.subheading', label: L('السطر تحت عنوان الفصل المؤسسي', 'Kurumsal ayrım alt satırı', 'Line under the separation heading'), type: 'text' },
+          profileCards('investment.governance.bodies', L('الجهات', 'Organlar', 'Bodies')),
+          { path: 'investment.governance.note', label: L('خلاصة الفصل المؤسسي', 'Kurumsal ayrım notu', 'Separation note'), type: 'textarea' },
+          { path: 'investment.yield.heading', label: L('عنوان العائد', 'Getiri başlığı', 'Yield heading'), type: 'text' },
+          { path: 'investment.yield.subheading', label: L('السطر تحت عنوان العائد', 'Getiri alt satırı', 'Line under the yield heading'), type: 'text' },
+          profileCards('investment.yield.steps', L('خطوات العائد', 'Getiri adımları', 'Yield steps')),
+          { path: 'investment.yield.note', label: L('خلاصة العائد', 'Getiri notu', 'Yield note'), type: 'textarea' },
+        ],
+      },
+      {
+        key: 'tracks',
+        label: L('09 · مصارف الوقف', '09 · Vakıf mecraları', '09 · Waqf tracks'),
+        description: L('الشاشة الداكنة: أربع محطات على الخط الأحمر، لكل مصرف صورته', 'Koyu ekran: kırmızı hat üzerinde dört durak, her mecranın kendi fotoğrafı', 'The dark screen: four stations on the crimson line, one photo per track'),
+        icon: Megaphone,
+        anchor: '#profile-tracks',
+        fields: [
+          ...profileHeadingFields('tracks'),
+          {
+            path: 'tracks.items',
+            label: L('المصارف الأربعة', 'Dört mecra', 'The four tracks'),
+            type: 'repeater',
+            itemTitleField: 'title',
+            max: 4,
+            help: L('الخط مرسوم لأربع محطات؛ تُستخدم الصورة الافتراضية إن تُركت فارغة', 'Hat dört durak için çizilmiştir; boş bırakılan görsel yerine varsayılan kullanılır', 'The line is drawn for four stations; an empty picture falls back to the built-in one'),
+            itemFields: [
+              ...profileCardFields,
+              { path: 'image', label: L('صورة المحطة', 'Durak fotoğrafı', 'Station photo'), type: 'image' },
+            ],
+          },
+        ],
+      },
+      {
+        key: 'pioneers',
+        label: L('10 · برنامج رواد اليمن', '10 · Yemenli Öncüler programı', '10 · Yemen Pioneers program'),
+        description: L('الفكرة والغاية، سلسلة الفلسفة، المرتكزات والمسارات، وشريط الصور', 'Fikir ve amaç, felsefe zinciri, dayanaklar ve yollar, fotoğraf şeridi', 'The idea and goal, the philosophy chain, the pillars and paths and the photo band'),
+        icon: GraduationCap,
+        anchor: '#profile-pioneers',
+        fields: [
+          ...profileHeadingFields('pioneers'),
+          ...profileCard('pioneers.idea', L('الفكرة', 'Fikir', 'The idea')),
+          ...profileCard('pioneers.goal', L('الغاية', 'Amaç', 'The goal')),
+          { path: 'pioneers.philosophyHeading', label: L('عنوان سلسلة الفلسفة', 'Felsefe zinciri başlığı', 'Philosophy-chain heading'), type: 'text' },
+          profileCards('pioneers.philosophy', L('حلقات السلسلة', 'Zincir halkaları', 'Chain links')),
+          { path: 'pioneers.pillarsHeading', label: L('عنوان المرتكزات', 'Dayanaklar başlığı', 'Pillars heading'), type: 'text' },
+          profileCards('pioneers.pillars', L('المرتكزات', 'Dayanaklar', 'Pillars')),
+          { path: 'pioneers.pathsHeading', label: L('عنوان المسارات', 'Yollar başlığı', 'Paths heading'), type: 'text' },
+          profileCards('pioneers.paths', L('المسارات', 'Yollar', 'Paths')),
+          profileChapterNote('pioneers.note'),
+          profilePhotos('pioneers.photos', L('شريط الصور', 'Fotoğraf şeridi', 'Photo band'), 2),
+        ],
+      },
+      {
+        key: 'numbers',
+        label: L('11 · أويس في أرقام', '11 · Owais rakamlarla', '11 · Owais in Numbers'),
+        description: L(
+          'الخزانة: أرقام إيجاد الوقف والتثمير، البرامج والمستفيدون، سجل المسارات الأربعة، ولوحات الإنفوجرافيك',
+          'Kasa: oluşturma ve yatırım rakamları, programlar ve faydalanıcılar, dört mecra kaydı ve infografik panoları',
+          'The vault: creation and investment figures, programs and beneficiaries, the four-track record and the infographic boards',
+        ),
+        icon: BarChart3,
+        anchor: '#profile-numbers',
+        fields: [
+          { path: 'numbers.eyebrow', label: L('السطر الصغير فوق العنوان', 'Başlık üstü satır', 'Line above the title'), type: 'text' },
+          ...profileHeadingFields('numbers'),
+          { path: 'numbers.capital.heading', label: L('عنوان إيجاد الوقف', 'Oluşturma başlığı', 'Creation heading'), type: 'text' },
+          profileStats('numbers.capital.stats', L('أرقام إيجاد الوقف', 'Oluşturma rakamları', 'Creation figures')),
+          { path: 'numbers.investment.heading', label: L('عنوان التثمير', 'Yatırım başlığı', 'Investment heading'), type: 'text' },
+          { path: 'numbers.investment.lead', label: L('سطر التثمير', 'Yatırım satırı', 'Investment lead line'), type: 'text' },
+          ...profileStat('numbers.investment.profit', L('رقم الأرباح', 'Kâr rakamı', 'Profit figure')),
+          { path: 'numbers.investment.activities', label: L('الأنشطة الاستثمارية', 'Yatırım faaliyetleri', 'Investment activities'), type: 'list' },
+          ...profileStat('numbers.programsStat', L('رقم البرامج', 'Program rakamı', 'Programs figure')),
+          ...profileStat('numbers.beneficiariesStat', L('رقم المستفيدين', 'Faydalanıcı rakamı', 'Beneficiaries figure')),
+          {
+            path: 'numbers.groups',
+            label: L('سجل المسارات الأربعة', 'Dört mecra kaydı', 'The four-track record'),
+            type: 'repeater',
+            itemTitleField: 'heading',
+            max: 4,
+            help: L('أول رقم في كل مسار يظهر كبيراً والبقية في سطور', 'Her mecranın ilk rakamı büyük, kalanlar satır satır görünür', 'The first figure of each track is shown large, the rest as rows'),
+            itemFields: [
+              {
+                path: 'heading',
+                label: L('اسم المسار', 'Mecra adı', 'Track name'),
+                type: 'text',
+                help: L('الترتيب والاسم يفصل بينهما « · »', 'Sıra ve ad « · » ile ayrılır', 'Ordinal and name separated by « · »'),
+              },
+              { path: 'caption', label: L('السطر تحت الاسم', 'Adın altındaki satır', 'Line under the name'), type: 'text' },
+              profileStats('stats', L('أرقام المسار', 'Mecra rakamları', 'Track figures')),
+            ],
+          },
+          { path: 'numbers.platformsNote', label: L('ملاحظة المنصات', 'Platform notu', 'Platforms note'), type: 'textarea' },
+          { path: 'numbers.closing', label: L('الخاتمة', 'Kapanış', 'Closing line'), type: 'textarea' },
+          profilePhotos('numbers.boards', L('لوحات الإنفوجرافيك', 'İnfografik panoları', 'Infographic boards')),
+        ],
+      },
+      {
+        key: 'participate',
+        label: L('12 · آليات المشاركة', '12 · Katılım yolları', '12 · Ways to participate'),
+        description: L('بطاقات المشاركة الست وشراكات الاستدامة', 'Altı katılım kartı ve sürdürülebilirlik ortaklıkları', 'The six participation cards and the sustainability partnerships'),
+        icon: Handshake,
+        anchor: '#profile-participate',
+        fields: [
+          ...profileHeadingFields('participate'),
+          profileCards('participate.ways', L('طرق المشاركة', 'Katılım yolları', 'Ways to participate')),
+          { path: 'participate.partners.heading', label: L('عنوان الشراكات', 'Ortaklıklar başlığı', 'Partnerships heading'), type: 'text' },
+          { path: 'participate.partners.subheading', label: L('السطر تحت عنوان الشراكات', 'Ortaklıklar alt satırı', 'Line under the partnerships heading'), type: 'text' },
+          profileCards('participate.partners.items', L('أشكال الشراكة', 'Ortaklık biçimleri', 'Partnership forms')),
+          { path: 'participate.partners.note', label: L('خلاصة الشراكات', 'Ortaklıklar notu', 'Partnerships note'), type: 'textarea' },
+        ],
+      },
+      {
+        key: 'cta',
+        label: L('13 · الختام', '13 · Kapanış', '13 · Closing'),
+        description: L('اللوحة الداكنة الأخيرة: العنوان، الشعار، وزرا المساهمة والمشاركة', 'Son koyu pano: başlık, slogan, bağış ve katılım butonları', 'The final dark plate: the title, slogan and the donate & participate buttons'),
+        icon: HandHeart,
+        anchor: '#profile-cta',
+        fields: [
+          { path: 'cta.title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
+          { path: 'cta.text', label: L('النص', 'Metin', 'Text'), type: 'textarea' },
+          { path: 'cta.slogan', label: L('الشعار', 'Slogan', 'Slogan'), type: 'text' },
+          { path: 'cta.donate', label: L('زر المساهمة', 'Bağış butonu', 'Donate button'), type: 'text' },
+          { path: 'cta.participate', label: L('زر المشاركة', 'Katılım butonu', 'Participate button'), type: 'text' },
+          { path: 'cta.backToLibrary', label: L('رابط العودة إلى المكتبة', 'Kütüphaneye dönüş bağlantısı', 'Back-to-library link'), type: 'text' },
+          { path: 'cta.image', label: L('صورة الخلفية', 'Arka plan görseli', 'Background image'), type: 'image' },
+        ],
+      },
+      {
+        key: 'labels',
+        label: L('كلمات صغيرة', 'Küçük sözler', 'Small words'),
+        description: L('التسميات القصيرة المنتشرة في الصفحة: شريط الفصول، تلميحات، أزرار التنقل', 'Sayfaya dağılmış kısa etiketler: bölüm şeridi, ipuçları, gezinme butonları', 'Short labels scattered over the page: the chapter rail, hints, navigation buttons'),
+        icon: Type,
+        fields: labelFields('labels', [
+          ['chapter', 'كلمة "الفصل" في الشريط الجانبي', 'Kenar şeridindeki "Bölüm"', '"Chapter" in the side rail'],
+          ['scrollHint', 'تلميح التمرير في الافتتاحية', 'Açılıştaki kaydırma ipucu', 'Scroll hint on the opening'],
+          ['untilDate', 'تاريخ تحديث الأرقام', 'Rakamların güncellenme tarihi', 'Figures-as-of date'],
+          ['watchNumbers', 'اسم قسم الأرقام (في بطاقة المكتبة)', 'Rakamlar bölümünün adı (kütüphane kartında)', 'Name of the numbers section (on the library card)'],
+          ['openInfographics', 'زر فتح الإنفوجرافيك', 'İnfografik açma butonu', 'Open-infographics button'],
+          ['infographicsNote', 'وصف لوحات الإنفوجرافيك', 'İnfografik panoları açıklaması', 'Infographic boards caption'],
+          ['flipHint', 'تلميح قلب البطاقة (فصل المشكلة)', 'Kart çevirme ipucu (sorun bölümü)', 'Flip hint (problem chapter)'],
+          ['flipResponse', 'عنوان وجه البطاقة الخلفي', 'Kartın arka yüzü başlığı', 'Card back-face heading'],
+          ['track', 'كلمة "المصرف" فوق العنوان الكبير', 'Büyük başlığın üstündeki "Mecra"', '"Track" above the big title'],
+          ['previousTrack', 'زر المصرف السابق', 'Önceki mecra butonu', 'Previous-track button'],
+          ['nextTrack', 'زر المصرف التالي', 'Sonraki mecra butonu', 'Next-track button'],
+          ['pauseReel', 'زر إيقاف التنقل التلقائي', 'Otomatik geçişi durdurma butonu', 'Pause auto-advance button'],
+          ['playReel', 'زر تشغيل التنقل التلقائي', 'Otomatik geçişi başlatma butonu', 'Resume auto-advance button'],
+        ]),
+      },
+    ],
+  },
+
   {
     key: 'news-page',
     group: 'library',

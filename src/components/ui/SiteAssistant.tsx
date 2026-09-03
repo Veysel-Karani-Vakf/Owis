@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEven
 import { Link, useLocation } from 'react-router-dom';
 import { assistantLabels, buildSiteIndex, type AssistantLink, type AssistantReply, type EntryKind } from '@/assistant/engine';
 import { askAssistant, type ChatHistoryItem } from '@/assistant/aiClient';
+import { useScrolled } from '@/hooks/useScrolled';
+import { useTopOnlyChrome } from '@/hooks/useTopOnlyChrome';
 import { useI18n } from '@/i18n/useI18n';
 import AssistantIcon from '@/components/icons/AssistantIcon';
 
@@ -41,6 +43,13 @@ export default function SiteAssistant() {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<number | null>(null);
+
+  // On top-only-chrome routes the launcher lives at the top of the page: once
+  // the visitor scrolls into the content it parks out of the way and comes back
+  // at the top. An open conversation is never yanked away mid-scroll.
+  const topOnly = useTopOnlyChrome();
+  const scrolledPast = useScrolled(80);
+  const parked = topOnly && scrolledPast && !open;
 
   // Rebuilt whenever the locale or the CMS snapshot changes (`content` is a new object then).
   const index = useMemo(() => buildSiteIndex(locale, content), [locale, content]);
@@ -135,7 +144,14 @@ export default function SiteAssistant() {
   return (
     // The inline-start corner: the home hero already parks its play button at
     // the inline-end corner, and the two would sit on top of each other.
-    <div className="site-assistant fixed bottom-5 z-[120] flex flex-col items-start gap-3 print:hidden" style={{ insetInlineStart: '1.25rem' }} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className={`site-assistant fixed bottom-5 z-[120] flex flex-col items-start gap-3 transition-[opacity,transform] duration-300 ease-out print:hidden ${
+        parked ? 'pointer-events-none translate-y-6 opacity-0' : 'translate-y-0 opacity-100'
+      }`}
+      style={{ insetInlineStart: '1.25rem' }}
+      dir={isRtl ? 'rtl' : 'ltr'}
+      aria-hidden={parked || undefined}
+    >
       <AnimatePresence>
         {open && (
           <motion.section
@@ -271,6 +287,7 @@ export default function SiteAssistant() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label={open ? labels.close : labels.open}
+        tabIndex={parked ? -1 : undefined}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className="btn-border-run relative grid h-14 w-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_12px_30px_-8px_rgba(218,8,18,0.6)] transition-colors hover:bg-primary-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-200"

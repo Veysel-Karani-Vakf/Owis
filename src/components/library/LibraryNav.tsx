@@ -36,14 +36,19 @@ type LibraryPillNavProps = {
   active: LibraryNavActive;
   /** Only render below the `xl` breakpoint (when a sidebar takes over). */
   mobileOnly?: boolean;
+  /**
+   * Pin the pill under the header and hide/show it on scroll (default).
+   * `false` leaves it in the flow, so it scrolls away with the page.
+   */
+  sticky?: boolean;
 };
 
-export function LibraryPillNav({ active, mobileOnly = false }: LibraryPillNavProps) {
+export function LibraryPillNav({ active, mobileOnly = false, sticky = true }: LibraryPillNavProps) {
   const { locale } = useI18n();
   const content = getLibraryContent(locale);
   const location = useLocation();
   const activeRef = useRef<HTMLAnchorElement>(null);
-  const hidden = useHideOnScroll();
+  const hidden = useHideOnScroll() && sticky;
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -82,9 +87,11 @@ export function LibraryPillNav({ active, mobileOnly = false }: LibraryPillNavPro
 
   return (
     <div
-      className={`pointer-events-none sticky top-[84px] z-30 flex justify-center px-3 transition-transform duration-300 ease-out md:top-[108px] xl:top-[120px] ${
-        mobileOnly ? 'xl:hidden' : ''
-      } ${hidden ? '-translate-y-[150%]' : 'translate-y-0'}`}
+      className={`pointer-events-none z-30 flex justify-center px-3 ${
+        sticky
+          ? 'sticky top-[84px] transition-transform duration-300 ease-out md:top-[108px] xl:top-[120px]'
+          : 'relative'
+      } ${mobileOnly ? 'xl:hidden' : ''} ${hidden ? '-translate-y-[150%]' : 'translate-y-0'}`}
     >
       <nav
         aria-label={content.labels.sectionsNav}

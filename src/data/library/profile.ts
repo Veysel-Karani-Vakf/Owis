@@ -1,9 +1,11 @@
+import { cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 
 /**
  * "العرض التعريفي" — the cinematic institutional presentation page inside the library.
  * Content distilled from the official 29-slide deck + the "Owais in Numbers" (Dec 2025) infographics.
- * Static-only by design: no site_pages row exists for this page, so edits here ship directly.
+ * The copy below is the built-in default; the dashboard's `library-profile` site_pages row is
+ * layered over it per language (`getLibraryProfileContent`).
  */
 
 export const libraryProfileRoute = '/library/profile';
@@ -19,6 +21,14 @@ type Stat = {
 };
 
 type Step = { title: string; text: string };
+
+/** A photograph the dashboard can swap; `alt` is read by screen readers (empty = decorative). */
+export type LibraryProfilePhoto = { src: string; alt?: string };
+
+type TrackItem = Step & {
+  /** Photograph on the track's station card; the built-in one is used when empty. */
+  image?: string;
+};
 
 export type LibraryProfileContent = {
   meta: {
@@ -47,6 +57,8 @@ export type LibraryProfileContent = {
     subtitle: string;
     slogan: string;
     intro: string;
+    /** Full-viewport photograph behind the opening scene. */
+    image: string;
   };
   pillars: {
     heading: string;
@@ -68,10 +80,14 @@ export type LibraryProfileContent = {
     experiencesSubheading: string;
     experiences: Step[];
     conclusion: string;
+    /** Photo band under the timeline. */
+    photos: LibraryProfilePhoto[];
   };
   identity: {
     heading: string;
     subheading: string;
+    /** Portrait plate beside the definition (Owais by default). */
+    image: string;
     why: Step;
     what: Step;
     vision: Step;
@@ -100,12 +116,16 @@ export type LibraryProfileContent = {
       whatNot: Step;
       note: string;
     };
+    /** The asset in pictures: the revenue apartments. */
+    photos: LibraryProfilePhoto[];
     formsHeading: string;
     formsSubheading: string;
     forms: Step[];
     tree: {
       heading: string;
       subheading: string;
+      /** The olive-tree artwork the card grows; a square image works best. */
+      image: string;
       steps: Step[];
       note: string;
     };
@@ -132,7 +152,7 @@ export type LibraryProfileContent = {
   tracks: {
     heading: string;
     subheading: string;
-    items: Step[];
+    items: TrackItem[];
   };
   pioneers: {
     heading: string;
@@ -146,6 +166,8 @@ export type LibraryProfileContent = {
     philosophyHeading: string;
     philosophy: Step[];
     note: string;
+    /** Photo band under the chain. */
+    photos: LibraryProfilePhoto[];
   };
   numbers: {
     eyebrow: string;
@@ -163,6 +185,8 @@ export type LibraryProfileContent = {
     groups: { heading: string; caption?: string; stats: Stat[] }[];
     platformsNote: string;
     closing: string;
+    /** The original infographic boards, opened in the lightbox. */
+    boards: LibraryProfilePhoto[];
   };
   participate: {
     heading: string;
@@ -182,8 +206,43 @@ export type LibraryProfileContent = {
     donate: string;
     participate: string;
     backToLibrary: string;
+    /** Dimmed photograph behind the closing plate. */
+    image: string;
   };
 };
+
+/** Photographs shared by every language — the same event is the same picture. */
+const photos = {
+  hero: '/library/profile/photos/sphere-4.jpg',
+  cta: '/library/profile/photos/inst-4.jpg',
+  identity: '/library/yemeni-figures/owais-al-qarni.jpeg',
+  tree: '/library/profile/blessed-tree-olive.jpg',
+  story: ['/library/profile/photos/inst-1.jpg', '/library/profile/photos/sphere-1.jpg', '/library/profile/photos/inst-3.jpg'],
+  creation: [
+    '/library/profile/photos/apartments-1.jpg',
+    '/library/profile/photos/apartments-3.jpg',
+    '/library/profile/photos/apartments-4.jpg',
+    '/library/profile/photos/apartments-2.jpg',
+  ],
+  pioneers: ['/library/profile/photos/sphere-2.jpg', '/library/profile/photos/sphere-3.jpg'],
+  tracks: [
+    '/library/profile/photos/pioneers-hero.jpeg',
+    '/library/profile/photos/inst-4.jpg',
+    '/library/profile/photos/inst-2.jpg',
+    '/library/profile/photos/owaisya-platform.jpg',
+  ],
+  /** The five original "Owais in Numbers" infographic boards (Dec 2025 edition). */
+  boards: [
+    '/library/profile/numbers-waqf-creation.jpg',
+    '/library/profile/numbers-track1.jpg',
+    '/library/profile/numbers-tracks23.jpg',
+    '/library/profile/numbers-track4.jpg',
+    '/library/profile/numbers-beneficiaries.jpg',
+  ],
+} as const;
+
+const withAlts = (sources: readonly string[], alts: string[]): LibraryProfilePhoto[] =>
+  sources.map((src, index) => ({ src, alt: alts[index] ?? '' }));
 
 const ar: LibraryProfileContent = {
   meta: {
@@ -213,6 +272,7 @@ const ar: LibraryProfileContent = {
     subtitle: 'المشروع لم يعد فكرة؛ بل أصول وبرامج وشراكات تتنامى.',
     slogan: 'وقفنا معًا لنهضة اليمن',
     intro: 'هذه ليست صفحة تعريفية عادية، بل رحلة في قصة وقفٍ يبني الإنسان والمؤسسة والوعي.',
+    image: photos.hero,
   },
   pillars: {
     heading: 'من الفكرة إلى الأثر',
@@ -253,10 +313,12 @@ const ar: LibraryProfileContent = {
       { title: 'التجربة التركية', text: 'قانون وحوكمة واستثمار' },
     ],
     conclusion: 'الخلاصة: نحتاج وعاءً يحفظ المال، وينميه، ويوجه أثره إلى المستقبل.',
+    photos: withAlts(photos.story, ['فعالية بناء قدرات في اليمن', 'قاعة تدريب إسفير في إسطنبول', 'ورشة تطوير مؤسسي']),
   },
   identity: {
     heading: 'الهوية والمعنى',
     subheading: 'اسم أويس القرني يجمع البرّ باليمن والأثر المستدام',
+    image: photos.identity,
     why: {
       title: 'لماذا أويس؟',
       text: 'لما تحمله سيرته من البر والوفاء والإخلاص؛ فيتحول البر بالأم إلى برٍّ بأمنا اليمن، ولما يمتلكه التابعي الجليل أويس القرني من قيم ومكانة لدى المجتمع التركي.',
@@ -307,6 +369,7 @@ const ar: LibraryProfileContent = {
       },
       note: 'يمكن أن تساهم عن نفسك أو والديك أو من تحب، عبر القنوات الرسمية للوقف.',
     },
+    photos: withAlts(photos.creation, ['الشقق الوقفية في إسطنبول 1', 'الشقق الوقفية في إسطنبول 2', 'الشقق الوقفية في إسطنبول 3', 'الشقق الوقفية في إسطنبول 4']),
     formsHeading: 'صور إيجاد الوقف',
     formsSubheading: 'تتعدد المساهمة ويجمعها مقصد واحد: أصلٌ يبقى',
     forms: [
@@ -320,6 +383,7 @@ const ar: LibraryProfileContent = {
     tree: {
       heading: 'نموذج تطبيقي: الشجرة المباركة',
       subheading: 'من مساهمات صغيرة إلى أصل زراعي منتج',
+      image: photos.tree,
       steps: [
         { title: 'الدراسة والمساهمة', text: 'اختيار الفرصة الزراعية وتجميع المساهمات المرتبطة بها.' },
         { title: 'الشراء والإدارة', text: 'تكوين الأصل وإدارته فنيًا وتشغيليًا بصورة مهنية.' },
@@ -374,10 +438,10 @@ const ar: LibraryProfileContent = {
     heading: 'ثالثًا: مصارف الوقف',
     subheading: 'أربعة مسارات تبني شروط النهوض',
     items: [
-      { title: 'قيادات المستقبل', text: 'تأهيل الموهوبين والمتميزين من أبناء اليمن وإعدادهم قادةً للمستقبل.' },
-      { title: 'القيادات الحالية', text: 'بناء قدرات القيادات والكوادر الإدارية والمجتمعية.' },
-      { title: 'تطوير المؤسسات', text: 'رفع كفاءة الجهات الحكومية والأهلية واستدامتها.' },
-      { title: 'الوعي والهوية', text: 'تعزيز المشاركة والتعايش والهوية الوطنية الجامعة.' },
+      { image: photos.tracks[0], title: 'قيادات المستقبل', text: 'تأهيل الموهوبين والمتميزين من أبناء اليمن وإعدادهم قادةً للمستقبل.' },
+      { image: photos.tracks[1], title: 'القيادات الحالية', text: 'بناء قدرات القيادات والكوادر الإدارية والمجتمعية.' },
+      { image: photos.tracks[2], title: 'تطوير المؤسسات', text: 'رفع كفاءة الجهات الحكومية والأهلية واستدامتها.' },
+      { image: photos.tracks[3], title: 'الوعي والهوية', text: 'تعزيز المشاركة والتعايش والهوية الوطنية الجامعة.' },
     ],
   },
   pioneers: {
@@ -414,6 +478,7 @@ const ar: LibraryProfileContent = {
       { title: 'الوطن', text: 'مسؤولية تتجاوز النجاح الفردي' },
     ],
     note: 'لا تنتهي العلاقة بالتخرج؛ بل تنتقل إلى شبكة عطاء وتأثير ومسؤولية أكبر.',
+    photos: withAlts(photos.pioneers, ['رواد اليمن في قاعة تدريب إسفير 1', 'رواد اليمن في قاعة تدريب إسفير 2']),
   },
   numbers: {
     eyebrow: 'ثمرة المسيرة · حتى ديسمبر 2025',
@@ -433,8 +498,8 @@ const ar: LibraryProfileContent = {
       profit: { value: 51.67, suffix: '%', decimals: 2, label: 'أرباح رأس المال', sublabel: 'ارتفاع قيمة أصول الوقف' },
       activities: ['الشجرة المباركة', 'الشقق الوقفية', 'الذهب', 'الأراضي الزراعية', 'إدارة أملاك وخدمات عقارية', 'الصفقات قصيرة المدى'],
     },
-    programsStat: { value: 40, label: 'برنامجًا تنمويًا', sublabel: 'ضمن المسارات الوقفية' },
-    beneficiariesStat: { value: 1556, label: 'إجمالي المستفيدين', sublabel: 'من المسارات الوقفية' },
+    programsStat: { value: 40, suffix: '', decimals: 0, label: 'برنامجًا تنمويًا', sublabel: 'ضمن المسارات الوقفية' },
+    beneficiariesStat: { value: 1556, suffix: '', decimals: 0, label: 'إجمالي المستفيدين', sublabel: 'من المسارات الوقفية' },
     groups: [
       {
         heading: 'المسار الأول · رواد اليمن',
@@ -482,6 +547,7 @@ const ar: LibraryProfileContent = {
     platformsNote: 'تجاوزت مشاهدات مواد المنصة المليون، وتخطى الوصول لحساباتها خمسة ملايين.',
     closing:
       'إن ما قُدِّم ويُقدَّم حتى اليوم من برامج ومبادرات، ليس سوى نماذج لما يمكن أن تصنعه مساهماتكم الوقفية من أثرٍ ممتد وعوائد مستدامة.',
+    boards: withAlts(photos.boards, ['لوحة إيجاد الوقف', 'لوحة المسار الأول: رواد اليمن', 'لوحة المسارين الثاني والثالث', 'لوحة المسار الرابع: الوعي المجتمعي', 'لوحة المستفيدين']),
   },
   participate: {
     heading: 'آليات المشاركة',
@@ -512,6 +578,7 @@ const ar: LibraryProfileContent = {
     donate: 'ساهم الآن في الوقف',
     participate: 'اكتشف طرق المشاركة',
     backToLibrary: 'العودة إلى المكتبة',
+    image: photos.cta,
   },
 };
 
@@ -543,6 +610,7 @@ const en: LibraryProfileContent = {
     subtitle: 'No longer an idea — growing assets, programs, and partnerships.',
     slogan: 'Together, an endowment for Yemen’s renaissance',
     intro: 'This is not an ordinary about page — it is a journey through a waqf that builds people, institutions, and awareness.',
+    image: photos.hero,
   },
   pillars: {
     heading: 'From Idea to Impact',
@@ -583,10 +651,12 @@ const en: LibraryProfileContent = {
       { title: 'The Turkish Experience', text: 'Law, governance, and investment' },
     ],
     conclusion: 'The conclusion: we need a vessel that preserves wealth, grows it, and directs its impact toward the future.',
+    photos: withAlts(photos.story, ['A capacity-building event in Yemen', 'A Sphere training room in Istanbul', 'An institutional development workshop']),
   },
   identity: {
     heading: 'Identity & Meaning',
     subheading: 'The name Owais al-Qarani unites devotion to Yemen with lasting impact',
+    image: photos.identity,
     why: {
       title: 'Why Owais?',
       text: 'For the devotion, loyalty, and sincerity of his life — devotion to one’s mother becomes devotion to our mother Yemen — and for the values and standing the revered Owais al-Qarani holds in Turkish society.',
@@ -637,6 +707,7 @@ const en: LibraryProfileContent = {
       },
       note: 'You can contribute for yourself, your parents, or someone you love — through the waqf’s official channels.',
     },
+    photos: withAlts(photos.creation, ['The waqf apartments in Istanbul 1', 'The waqf apartments in Istanbul 2', 'The waqf apartments in Istanbul 3', 'The waqf apartments in Istanbul 4']),
     formsHeading: 'Forms of Creating the Waqf',
     formsSubheading: 'Contributions vary, united by one purpose: an asset that endures',
     forms: [
@@ -650,6 +721,7 @@ const en: LibraryProfileContent = {
     tree: {
       heading: 'A Working Model: The Blessed Tree',
       subheading: 'From small contributions to a productive agricultural asset',
+      image: photos.tree,
       steps: [
         { title: 'Study & Contribution', text: 'Selecting the agricultural opportunity and pooling its contributions.' },
         { title: 'Purchase & Management', text: 'Forming the asset and managing it technically and operationally.' },
@@ -704,10 +776,10 @@ const en: LibraryProfileContent = {
     heading: 'Third: The Waqf Tracks',
     subheading: 'Four tracks build the conditions of renaissance',
     items: [
-      { title: 'Future Leaders', text: 'Preparing gifted and outstanding Yemenis as leaders for the future.' },
-      { title: 'Current Leaders', text: 'Building the capacity of existing administrative and community leaderships.' },
-      { title: 'Institutional Development', text: 'Raising the capacity and sustainability of public and civil bodies.' },
-      { title: 'Awareness & Identity', text: 'Strengthening participation, coexistence, and an inclusive national identity.' },
+      { image: photos.tracks[0], title: 'Future Leaders', text: 'Preparing gifted and outstanding Yemenis as leaders for the future.' },
+      { image: photos.tracks[1], title: 'Current Leaders', text: 'Building the capacity of existing administrative and community leaderships.' },
+      { image: photos.tracks[2], title: 'Institutional Development', text: 'Raising the capacity and sustainability of public and civil bodies.' },
+      { image: photos.tracks[3], title: 'Awareness & Identity', text: 'Strengthening participation, coexistence, and an inclusive national identity.' },
     ],
   },
   pioneers: {
@@ -744,6 +816,7 @@ const en: LibraryProfileContent = {
       { title: 'Nation', text: 'A responsibility beyond individual success' },
     ],
     note: 'The relationship does not end at graduation; it becomes a network of giving, influence, and greater responsibility.',
+    photos: withAlts(photos.pioneers, ['Yemen Pioneers in a Sphere training room 1', 'Yemen Pioneers in a Sphere training room 2']),
   },
   numbers: {
     eyebrow: 'The Journey’s Fruit · Up to December 2025',
@@ -763,8 +836,8 @@ const en: LibraryProfileContent = {
       profit: { value: 51.67, suffix: '%', decimals: 2, label: 'capital gains', sublabel: 'Growth in waqf asset value' },
       activities: ['The Blessed Tree', 'Waqf Apartments', 'Gold', 'Agricultural Land', 'Property Management & Real Estate', 'Short-Term Deals'],
     },
-    programsStat: { value: 40, label: 'development programs', sublabel: 'Across the waqf tracks' },
-    beneficiariesStat: { value: 1556, label: 'total beneficiaries', sublabel: 'Across the waqf tracks' },
+    programsStat: { value: 40, suffix: '', decimals: 0, label: 'development programs', sublabel: 'Across the waqf tracks' },
+    beneficiariesStat: { value: 1556, suffix: '', decimals: 0, label: 'total beneficiaries', sublabel: 'Across the waqf tracks' },
     groups: [
       {
         heading: 'Track One · Yemen Pioneers',
@@ -812,6 +885,7 @@ const en: LibraryProfileContent = {
     platformsNote: 'Platform content passed one million views, and account reach exceeded five million.',
     closing:
       'What has been delivered so far — programs and initiatives — is only a sample of the extended impact and sustainable returns your waqf contributions can create.',
+    boards: withAlts(photos.boards, ['Creating the waqf board', 'Track one board: Yemen Pioneers', 'Tracks two and three board', 'Track four board: community awareness', 'Beneficiaries board']),
   },
   participate: {
     heading: 'Ways to Participate',
@@ -842,6 +916,7 @@ const en: LibraryProfileContent = {
     donate: 'Contribute to the waqf',
     participate: 'Discover ways to participate',
     backToLibrary: 'Back to Library',
+    image: photos.cta,
   },
 };
 
@@ -873,6 +948,7 @@ const tr: LibraryProfileContent = {
     subtitle: 'Artık bir fikir değil; büyüyen varlıklar, programlar ve ortaklıklar.',
     slogan: 'Yemen’in yükselişi için birlikte vakfettik',
     intro: 'Bu sıradan bir tanıtım sayfası değil; insanı, kurumu ve bilinci inşa eden bir vakfın hikayesinde bir yolculuk.',
+    image: photos.hero,
   },
   pillars: {
     heading: 'Fikirden Etkiye',
@@ -913,10 +989,12 @@ const tr: LibraryProfileContent = {
       { title: 'Türkiye Deneyimi', text: 'Hukuk, yönetişim ve yatırım' },
     ],
     conclusion: 'Sonuç: Malı koruyan, büyüten ve etkisini geleceğe yönlendiren bir kaba ihtiyacımız var.',
+    photos: withAlts(photos.story, ['Yemen’de bir kapasite geliştirme etkinliği', 'İstanbul’da bir Sphere eğitim salonu', 'Bir kurumsal gelişim atölyesi']),
   },
   identity: {
     heading: 'Kimlik ve Anlam',
     subheading: 'Veysel Karani ismi, Yemen’e vefayı kalıcı etkiyle buluşturur',
+    image: photos.identity,
     why: {
       title: 'Neden Veysel Karani?',
       text: 'Hayatındaki iyilik, vefa ve ihlas için — anneye iyilik, anamız Yemen’e iyiliğe dönüşür — ve yüce tabiin Veysel Karani’nin Türk toplumundaki değeri ve konumu için.',
@@ -967,6 +1045,7 @@ const tr: LibraryProfileContent = {
       },
       note: 'Kendiniz, anne-babanız veya sevdiğiniz biri adına, vakfın resmi kanallarından katkıda bulunabilirsiniz.',
     },
+    photos: withAlts(photos.creation, ['İstanbul’daki vakıf daireleri 1', 'İstanbul’daki vakıf daireleri 2', 'İstanbul’daki vakıf daireleri 3', 'İstanbul’daki vakıf daireleri 4']),
     formsHeading: 'Vakıf Oluşturma Biçimleri',
     formsSubheading: 'Katkılar çeşitlenir; hepsini tek amaç birleştirir: kalıcı bir varlık',
     forms: [
@@ -980,6 +1059,7 @@ const tr: LibraryProfileContent = {
     tree: {
       heading: 'Uygulamalı Model: Mübarek Ağaç',
       subheading: 'Küçük katkılardan üretken bir tarım varlığına',
+      image: photos.tree,
       steps: [
         { title: 'İnceleme ve Katkı', text: 'Tarımsal fırsatın seçilmesi ve katkıların toplanması.' },
         { title: 'Satın Alma ve Yönetim', text: 'Varlığın oluşturulması, teknik ve operasyonel yönetimi.' },
@@ -1034,10 +1114,10 @@ const tr: LibraryProfileContent = {
     heading: 'Üçüncüsü: Vakıf Mecraları',
     subheading: 'Dört mecra, yükselişin koşullarını inşa eder',
     items: [
-      { title: 'Geleceğin Liderleri', text: 'Yetenekli ve seçkin Yemenlileri geleceğin liderleri olarak hazırlamak.' },
-      { title: 'Mevcut Liderler', text: 'İdari ve toplumsal kadroların kapasitesini geliştirmek.' },
-      { title: 'Kurumsal Gelişim', text: 'Kamu ve sivil kurumların verimliliğini ve sürekliliğini yükseltmek.' },
-      { title: 'Bilinç ve Kimlik', text: 'Katılımı, birlikte yaşamayı ve kapsayıcı milli kimliği güçlendirmek.' },
+      { image: photos.tracks[0], title: 'Geleceğin Liderleri', text: 'Yetenekli ve seçkin Yemenlileri geleceğin liderleri olarak hazırlamak.' },
+      { image: photos.tracks[1], title: 'Mevcut Liderler', text: 'İdari ve toplumsal kadroların kapasitesini geliştirmek.' },
+      { image: photos.tracks[2], title: 'Kurumsal Gelişim', text: 'Kamu ve sivil kurumların verimliliğini ve sürekliliğini yükseltmek.' },
+      { image: photos.tracks[3], title: 'Bilinç ve Kimlik', text: 'Katılımı, birlikte yaşamayı ve kapsayıcı milli kimliği güçlendirmek.' },
     ],
   },
   pioneers: {
@@ -1074,6 +1154,7 @@ const tr: LibraryProfileContent = {
       { title: 'Vatan', text: 'Bireysel başarıyı aşan sorumluluk' },
     ],
     note: 'İlişki mezuniyetle bitmez; daha büyük bir verme, etki ve sorumluluk ağına dönüşür.',
+    photos: withAlts(photos.pioneers, ['Sphere eğitim salonunda Yemenli Öncüler 1', 'Sphere eğitim salonunda Yemenli Öncüler 2']),
   },
   numbers: {
     eyebrow: 'Yolculuğun Meyvesi · Aralık 2025’e kadar',
@@ -1093,8 +1174,8 @@ const tr: LibraryProfileContent = {
       profit: { value: 51.67, suffix: '%', decimals: 2, label: 'sermaye kazancı', sublabel: 'Vakıf varlık değerindeki artış' },
       activities: ['Mübarek Ağaç', 'Vakıf Daireleri', 'Altın', 'Tarım Arazileri', 'Emlak Yönetimi ve Gayrimenkul', 'Kısa Vadeli İşlemler'],
     },
-    programsStat: { value: 40, label: 'kalkınma programı', sublabel: 'Vakıf mecraları kapsamında' },
-    beneficiariesStat: { value: 1556, label: 'toplam faydalanıcı', sublabel: 'Vakıf mecralarından' },
+    programsStat: { value: 40, suffix: '', decimals: 0, label: 'kalkınma programı', sublabel: 'Vakıf mecraları kapsamında' },
+    beneficiariesStat: { value: 1556, suffix: '', decimals: 0, label: 'toplam faydalanıcı', sublabel: 'Vakıf mecralarından' },
     groups: [
       {
         heading: 'Birinci Mecra · Yemenli Öncüler',
@@ -1142,6 +1223,7 @@ const tr: LibraryProfileContent = {
     platformsNote: 'Platform içerikleri bir milyon görüntülemeyi, hesap erişimi beş milyonu aştı.',
     closing:
       'Bugüne dek sunulan program ve girişimler; vakıf katkılarınızın oluşturabileceği kalıcı etki ve sürdürülebilir getirilerin yalnızca birer örneğidir.',
+    boards: withAlts(photos.boards, ['Vakfın oluşturulması panosu', 'Birinci mecra panosu: Yemenli Öncüler', 'İkinci ve üçüncü mecra panosu', 'Dördüncü mecra panosu: toplumsal bilinç', 'Faydalanıcılar panosu']),
   },
   participate: {
     heading: 'Katılım Yolları',
@@ -1172,20 +1254,121 @@ const tr: LibraryProfileContent = {
     donate: 'Vakfa katkıda bulun',
     participate: 'Katılım yollarını keşfet',
     backToLibrary: 'Kütüphaneye Dön',
+    image: photos.cta,
   },
 };
 
 const content: Record<Locale, LibraryProfileContent> = { ar, en, tr };
 
-export function getLibraryProfileContent(locale: Locale): LibraryProfileContent {
+/** The copy as it ships in this repo — what the dashboard's restore tool falls back to. */
+export function staticLibraryProfileContent(locale: Locale): LibraryProfileContent {
   return content[locale] ?? content.ar;
 }
 
-/** The five original "Owais in Numbers" infographic boards (Dec 2025 edition). */
-export const libraryProfileInfographics = [
-  { src: '/library/profile/numbers-waqf-creation.jpg', key: 'creation' },
-  { src: '/library/profile/numbers-track1.jpg', key: 'track1' },
-  { src: '/library/profile/numbers-tracks23.jpg', key: 'tracks23' },
-  { src: '/library/profile/numbers-track4.jpg', key: 'track4' },
-  { src: '/library/profile/numbers-beneficiaries.jpg', key: 'beneficiaries' },
-] as const;
+/**
+ * What visitors see: the `library-profile` site_pages row for this language layered
+ * over the built-in copy, then tidied — numbers typed in the dashboard may come back as
+ * strings or blanks, and a photo row without a picture must not render a broken frame.
+ */
+export function getLibraryProfileContent(locale: Locale): LibraryProfileContent {
+  const base = staticLibraryProfileContent(locale);
+  const merged = cmsPageContent('library-profile', locale, base);
+  return merged === base ? base : sanitize(merged, base);
+}
+
+function toNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function optionalText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+function pictureOr(value: unknown, fallback: string): string {
+  return optionalText(value) ?? fallback;
+}
+
+function stat(value: unknown, fallback: Stat): Stat {
+  const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const decimals = Math.round(toNumber(raw.decimals, fallback.decimals ?? 0));
+  return {
+    value: toNumber(raw.value, fallback.value),
+    suffix: optionalText(raw.suffix),
+    decimals: decimals > 0 ? decimals : undefined,
+    label: typeof raw.label === 'string' ? raw.label : fallback.label,
+    sublabel: optionalText(raw.sublabel),
+  };
+}
+
+const emptyStat: Stat = { value: 0, label: '' };
+
+function statList(value: unknown, fallback: Stat[]): Stat[] {
+  return Array.isArray(value) ? value.map((item) => stat(item, emptyStat)) : fallback;
+}
+
+function photoList(value: unknown, fallback: LibraryProfilePhoto[]): LibraryProfilePhoto[] {
+  if (!Array.isArray(value)) return fallback;
+  return value.flatMap((item) => {
+    const raw = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>;
+    const src = optionalText(raw.src);
+    return src ? [{ src, alt: optionalText(raw.alt) ?? '' }] : [];
+  });
+}
+
+function stringList(value: unknown, fallback: string[]): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : fallback;
+}
+
+function sanitize(merged: LibraryProfileContent, base: LibraryProfileContent): LibraryProfileContent {
+  const numbers = merged.numbers;
+  const groups = Array.isArray(numbers.groups) ? numbers.groups : base.numbers.groups;
+  return {
+    ...merged,
+    hero: { ...merged.hero, image: pictureOr(merged.hero.image, base.hero.image) },
+    story: { ...merged.story, photos: photoList(merged.story.photos, base.story.photos) },
+    identity: {
+      ...merged.identity,
+      image: pictureOr(merged.identity.image, base.identity.image),
+      values: {
+        ...merged.identity.values,
+        items: stringList(merged.identity.values?.items, base.identity.values.items),
+      },
+    },
+    creation: {
+      ...merged.creation,
+      photos: photoList(merged.creation.photos, base.creation.photos),
+      tree: { ...merged.creation.tree, image: pictureOr(merged.creation.tree?.image, base.creation.tree.image) },
+    },
+    tracks: {
+      ...merged.tracks,
+      items: (Array.isArray(merged.tracks.items) ? merged.tracks.items : base.tracks.items).map((item) => ({
+        ...item,
+        image: optionalText(item.image),
+      })),
+    },
+    pioneers: { ...merged.pioneers, photos: photoList(merged.pioneers.photos, base.pioneers.photos) },
+    numbers: {
+      ...numbers,
+      capital: { ...numbers.capital, stats: statList(numbers.capital?.stats, base.numbers.capital.stats) },
+      investment: {
+        ...numbers.investment,
+        profit: stat(numbers.investment?.profit, base.numbers.investment.profit),
+        activities: stringList(numbers.investment?.activities, base.numbers.investment.activities),
+      },
+      programsStat: stat(numbers.programsStat, base.numbers.programsStat),
+      beneficiariesStat: stat(numbers.beneficiariesStat, base.numbers.beneficiariesStat),
+      groups: groups.map((group) => ({
+        ...group,
+        caption: optionalText(group.caption),
+        stats: statList(group.stats, []),
+      })),
+      boards: photoList(numbers.boards, base.numbers.boards),
+    },
+    cta: { ...merged.cta, image: pictureOr(merged.cta.image, base.cta.image) },
+  };
+}

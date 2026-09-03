@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Newspaper,
   BookOpen,
+  Clapperboard,
   MessageSquare,
   HandHeart,
   Banknote,
@@ -221,6 +222,26 @@ export const SITE_AREAS: SiteArea[] = [
       { type: 'collection', resourceKey: 'library_documents' },
       { type: 'collection', resourceKey: 'gallery_images' },
       { type: 'content', pageKey: 'library-page', label: pageTexts },
+    ],
+  },
+  {
+    key: 'library-profile',
+    icon: Clapperboard,
+    label: L('العرض التعريفي', 'Tanıtım sunumu', 'Waqf story'),
+    description: L(
+      'رحلة التعريف بالوقف داخل المكتبة: فصولها الثلاثة عشر وصورها وأرقام «أويس في أرقام»',
+      'Kütüphanedeki tanıtım sunumu: on üç bölümü, görselleri ve “Owais rakamlarla” sayıları',
+      'The waqf-story presentation inside the library: its thirteen chapters, photos and the “Owais in Numbers” figures',
+    ),
+    route: '/library/profile',
+    tone: {
+      soft: 'bg-fuchsia-100 text-fuchsia-700',
+      solid: 'bg-fuchsia-600 text-white',
+      bar: 'bg-fuchsia-500',
+      hover: 'hover:border-fuchsia-300',
+    },
+    parts: [
+      { type: 'content', pageKey: 'library-profile', label: L('فصول العرض', 'Sunum bölümleri', 'Presentation chapters') },
     ],
   },
   {

@@ -17,6 +17,7 @@ import {
   staticDonateCheckoutPage,
 } from '@/data/donateCheckout';
 import { getLibraryContent, staticLibraryContent } from '@/data/library';
+import { getLibraryProfileContent, staticLibraryProfileContent } from '@/data/library/profile';
 import { getNewsLabels, newsLabels } from '@/data/news';
 import { getParticipateContent, staticParticipateContent } from '@/data/participate';
 import { getProgramsContent, localizedPrograms } from '@/data/programs';
@@ -63,6 +64,8 @@ function pageSource(pageKey: string, locale: Locale, mode: PageSource): unknown 
       return live ? getParticipateContent(locale) : staticParticipateContent(locale);
     case 'library-page':
       return live ? getLibraryContent(locale) : staticLibraryContent(locale);
+    case 'library-profile':
+      return live ? getLibraryProfileContent(locale) : staticLibraryProfileContent(locale);
     case 'news-page':
       return live ? getNewsLabels(locale) : newsLabels[locale];
     default:

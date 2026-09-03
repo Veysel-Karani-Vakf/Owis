@@ -8,14 +8,6 @@ import { Chapter, SectionHeading, WordReveal, containerVariants, revealVariants,
 const problemIcons = [Users, Building2, Sparkles];
 const experienceIcons = [Compass, Lightbulb, Users, Scale];
 
-/* Moments from the journey the milestones describe — capacity events in Yemen
-   and the Sphere training rooms in Istanbul. */
-const storyPhotos = [
-  '/library/profile/photos/inst-1.jpg',
-  '/library/profile/photos/sphere-1.jpg',
-  '/library/profile/photos/inst-3.jpg',
-];
-
 /* Each need flips over to reveal the track that answers it:
    الإنسان → قيادات المستقبل، المؤسسات → تطوير المؤسسات، الوعي → الوعي والهوية. */
 const responseTrackIndex = [0, 2, 3];
@@ -293,41 +285,43 @@ export function ProfileStoryChapter({ content }: { content: LibraryProfileConten
         </div>
 
         {/* The story in frames: the journey the milestones describe, photographed. */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
-          className="mt-16 grid gap-5 sm:grid-cols-3"
-        >
-          {storyPhotos.map((photo, index) => (
-            <motion.div
-              key={photo}
-              variants={
-                shouldReduceMotion
-                  ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
-                  : {
-                      hidden: { opacity: 0, clipPath: 'inset(100% 0% 0% 0%)' },
-                      show: {
-                        opacity: 1,
-                        clipPath: 'inset(0% 0% 0% 0%)',
-                        transition: { duration: 0.85, ease: smoothEase },
-                      },
-                    }
-              }
-              className={`overflow-hidden rounded-[24px] shadow-[0_18px_46px_rgba(40,12,18,0.14)] ring-1 ring-primary-100/60 ${
-                index === 1 ? 'sm:translate-y-6' : ''
-              }`}
-            >
-              <img
-                src={photo}
-                alt=""
-                loading="lazy"
-                className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+        {story.photos.length > 0 && (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
+            className="mt-16 grid gap-5 sm:grid-cols-3"
+          >
+            {story.photos.map((photo, index) => (
+              <motion.div
+                key={`${photo.src}-${index}`}
+                variants={
+                  shouldReduceMotion
+                    ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
+                    : {
+                        hidden: { opacity: 0, clipPath: 'inset(100% 0% 0% 0%)' },
+                        show: {
+                          opacity: 1,
+                          clipPath: 'inset(0% 0% 0% 0%)',
+                          transition: { duration: 0.85, ease: smoothEase },
+                        },
+                      }
+                }
+                className={`overflow-hidden rounded-[24px] shadow-[0_18px_46px_rgba(40,12,18,0.14)] ring-1 ring-primary-100/60 ${
+                  index === 1 ? 'sm:translate-y-6' : ''
+                }`}
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.alt ?? ''}
+                  loading="lazy"
+                  className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </Chapter>
   );
@@ -357,7 +351,7 @@ export function ProfileIdentityChapter({ content }: { content: LibraryProfileCon
           >
             <div ref={imageRef} className="relative h-full min-h-[380px] overflow-hidden rounded-[26px] shadow-[0_24px_60px_rgba(40,12,18,0.16)]">
               <motion.img
-                src="/library/yemeni-figures/owais-al-qarni.jpeg"
+                src={identity.image}
                 alt={identity.why.title}
                 loading="lazy"
                 style={{ y: parallaxY, scale: shouldReduceMotion ? 1 : 1.12 }}

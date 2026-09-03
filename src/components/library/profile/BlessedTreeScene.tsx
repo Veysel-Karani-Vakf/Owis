@@ -37,7 +37,7 @@ const LABELS: ReadonlyArray<{ x: number; y: number; to: { x: number; y: number }
   { x: 92, y: 836, to: { x: 240, y: 740 }, text: 'n 0.42 · Ø 14' },
 ];
 
-export function BlessedTreeScene({ inView, alt }: { inView: boolean; alt: string }) {
+export function BlessedTreeScene({ inView, alt, src = PHOTO }: { inView: boolean; alt: string; src?: string }) {
   // Growth only starts once the artwork is actually painted, so the reveal never sweeps over a blank frame.
   const imageRef = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
@@ -51,7 +51,7 @@ export function BlessedTreeScene({ inView, alt }: { inView: boolean; alt: string
       <div className="relative aspect-square overflow-hidden rounded-[22px] bg-[#f1ede6] shadow-[0_18px_40px_rgba(60,40,30,0.14)]">
         <img
           ref={imageRef}
-          src={PHOTO}
+          src={src || PHOTO}
           alt={alt}
           loading="lazy"
           decoding="async"

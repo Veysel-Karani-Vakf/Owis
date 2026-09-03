@@ -16,9 +16,10 @@ import type { LibraryProfileContent } from '@/data/library/profile';
 import { useI18n } from '@/i18n/useI18n';
 import { Chapter, SectionHeading, smoothEase } from './profileShared';
 
-/* One photograph and one glyph per track, in deck order. */
+/* One glyph per track, in deck order, and the built-in photographs a track falls back to
+   when the dashboard leaves its picture empty. */
 const trackIcons = [GraduationCap, Users, Building2, Megaphone];
-const trackImages = [
+const fallbackTrackImages = [
   pioneersHero,
   '/library/profile/photos/inst-4.jpg',
   '/library/profile/photos/inst-2.jpg',
@@ -91,6 +92,10 @@ export function ProfileTracksChapter({ content }: { content: LibraryProfileConte
   const shouldReduceMotion = useReducedMotion();
   const { tracks, labels, numbers } = content;
   const count = tracks.items.length;
+  const trackImages = useMemo(
+    () => tracks.items.map((item, index) => item.image || fallbackTrackImages[index] || pioneersHero),
+    [tracks.items]
+  );
 
   const [active, setActive] = useState(0);
   const [held, setHeld] = useState(false);
@@ -205,7 +210,7 @@ export function ProfileTracksChapter({ content }: { content: LibraryProfileConte
         <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
           {trackImages.map((image, index) => (
             <motion.img
-              key={image}
+              key={index}
               src={image}
               alt=""
               loading={index === 0 ? 'eager' : 'lazy'}

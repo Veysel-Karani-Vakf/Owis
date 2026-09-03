@@ -3,6 +3,7 @@ import { ChevronDown, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
+import { useTopOnlyChrome } from '@/hooks/useTopOnlyChrome';
 import { useI18n } from '@/i18n/useI18n';
 import { getAboutContent } from '@/data/about';
 import { donateRoute } from '@/data/donate';
@@ -12,7 +13,10 @@ import MobileMenu from './MobileMenu';
 import { navMenuFor } from '@/i18n/content';
 
 export default function Header() {
-  const scrolled = useScrolled(60);
+  // On top-only-chrome routes the header sits at the top of the document and
+  // scrolls away with it, so it never needs the glassy "scrolled" treatment.
+  const topOnly = useTopOnlyChrome();
+  const scrolled = useScrolled(60) && !topOnly;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [programsOpen, setProgramsOpen] = useState(false);
@@ -169,7 +173,9 @@ export default function Header() {
         initial={{ y: -120 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, delay: 1.05, ease: 'easeOut' }}
-        className="no-border-run pointer-events-none fixed inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 sm:pt-4 md:px-8 md:pt-5 xl:px-16 xl:pt-8 2xl:px-20"
+        className={`no-border-run pointer-events-none inset-x-0 top-0 z-[100] px-3 pt-3 sm:px-5 sm:pt-4 md:px-8 md:pt-5 xl:px-16 xl:pt-8 2xl:px-20 ${
+          topOnly ? 'absolute' : 'fixed'
+        }`}
       >
         <div
           className={`pointer-events-auto mx-auto flex h-16 w-full max-w-[1712px] items-center justify-between rounded-[18px] border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 sm:px-5 md:h-20 md:rounded-[22px] md:px-7 ${

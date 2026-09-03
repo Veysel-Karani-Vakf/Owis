@@ -173,8 +173,8 @@ export function PageFieldControl({ field, value, onChange, dir, onDimensions }: 
         <input
           type="number"
           dir="ltr"
-          inputMode={isIntegerKey(field.path) ? 'numeric' : 'decimal'}
-          step={isIntegerKey(field.path) ? 1 : undefined}
+          inputMode={!field.decimal && isIntegerKey(field.path) ? 'numeric' : 'decimal'}
+          step={field.decimal ? 'any' : isIntegerKey(field.path) ? 1 : undefined}
           className={inputBase}
           value={value === null || value === undefined ? '' : String(value)}
           onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}

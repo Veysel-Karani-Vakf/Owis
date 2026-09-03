@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { LibraryProfileContent } from '@/data/library/profile';
 import { useInView } from '@/hooks/useInView';
+import { InvestmentPrinciplesRule, InvestmentSeparationChart } from './ProfileInvestmentBlocks';
 import { useI18n } from '@/i18n/useI18n';
 import { BlessedTreeScene } from './BlessedTreeScene';
 import { Chapter, SectionHeading, containerVariants, revealVariants, smoothEase } from './profileShared';
@@ -26,28 +27,49 @@ import { Chapter, SectionHeading, containerVariants, revealVariants, smoothEase 
 const cycleIcons = [HandCoins, TrendingUp, Recycle];
 const formIcons = [Coins, TreeDeciduous, Landmark, Gem, Gift, HeartHandshake];
 
-/* The asset itself: the waqf's revenue apartments in Istanbul. */
-const apartmentPhotos = [
-  '/library/profile/photos/apartments-1.jpg',
-  '/library/profile/photos/apartments-3.jpg',
-  '/library/profile/photos/apartments-4.jpg',
-  '/library/profile/photos/apartments-2.jpg',
-];
+/**
+ * The cycle diagram lives on a 400×400 box: three seats on an r=150 ring, read
+ * clockwise from the top (SVG degrees, y-down). Seat positions, the shortened
+ * arcs, and where each arrowhead lands all derive from these three angles.
+ */
+const RING = { cx: 200, cy: 200, r: 150 };
+const seatAngles = [270, 30, 150];
+/** Degrees kept clear on both sides of a seat so the arrowhead lands just outside the disc. */
+const SEAT_GAP = 14;
+const ARROW_HEAD = 'M -11 -6.5 L 0 0 L -11 6.5 L -7.5 0 Z';
+/**
+ * Seats and the centre caption are anchored by their middle. framer-motion owns
+ * `transform` on anything whose scale it animates, so the -50% centring offset
+ * has to travel with the animation values rather than as a Tailwind class.
+ */
+const centre = { x: '-50%', y: '-50%' } as const;
+/** One stage holds the floor for this long before handing on. */
+const STAGE_BEAT_MS = 3000;
 
-/** Node positions on the 400×400 cycle diagram (percentages of the box). */
-const cycleNodes = [
-  { x: 50, y: 12.5 },
-  { x: 82.5, y: 68.75 },
-  { x: 17.5, y: 68.75 },
-];
+function ringPoint(deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  return { x: RING.cx + RING.r * Math.cos(rad), y: RING.cy + RING.r * Math.sin(rad) };
+}
 
-const cycleArcs = [
-  'M 200 50 A 150 150 0 0 1 329.9 275',
-  'M 329.9 275 A 150 150 0 0 1 70.1 275',
-  'M 70.1 275 A 150 150 0 0 1 200 50',
-];
+/** Seat positions as percentages of the box — the HTML seats overlay the SVG. */
+const cycleNodes = seatAngles.map((deg) => {
+  const point = ringPoint(deg);
+  return { x: point.x / 4, y: point.y / 4 };
+});
 
-/** Chapter 06 — الدورة الوقفية: the cycle literally circulates. */
+/** Arc i runs clockwise from seat i to seat i+1, stopping short of both discs. */
+const cycleArcs = seatAngles.map((from, index) => {
+  const toDeg = seatAngles[(index + 1) % seatAngles.length] - SEAT_GAP;
+  const start = ringPoint(from + SEAT_GAP);
+  const end = ringPoint(toDeg);
+  return {
+    d: `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} A ${RING.r} ${RING.r} 0 0 1 ${end.x.toFixed(1)} ${end.y.toFixed(1)}`,
+    // A clockwise ring's tangent at θ points at θ+90°.
+    tip: `translate(${end.x.toFixed(1)} ${end.y.toFixed(1)}) rotate(${toDeg + 90})`,
+  };
+});
+
+/** Chapter 06 — الدورة الوقفية: a relay — each stage hands the value on to the next. */
 export function ProfileCycleChapter({ content }: { content: LibraryProfileContent }) {
   const shouldReduceMotion = useReducedMotion();
   const { ref, inView } = useInView({ threshold: 0.3 });
@@ -55,15 +77,23 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
   const reveal = revealVariants(shouldReduceMotion);
   const anchors = ['#profile-creation', '#profile-governance', '#profile-tracks'];
 
-  // The stage cards light up in step with the sap dot circulating the ring
-  // (9s per lap, three stages → one handoff every 3s).
+  // One stage holds the floor at a time: its seat ripples, the arc leaving it
+  // fills with light, and on the beat the next seat takes over. The relay
+  // starts once the seats have landed.
   const [activeStage, setActiveStage] = useState(-1);
   useEffect(() => {
     if (!inView || shouldReduceMotion) return;
-    setActiveStage(0);
-    const id = window.setInterval(() => setActiveStage((stage) => (stage + 1) % 3), 3000);
-    return () => window.clearInterval(id);
+    let beat: number | undefined;
+    const kickoff = window.setTimeout(() => {
+      setActiveStage(0);
+      beat = window.setInterval(() => setActiveStage((stage) => (stage + 1) % 3), STAGE_BEAT_MS);
+    }, 700);
+    return () => {
+      window.clearTimeout(kickoff);
+      if (beat !== undefined) window.clearInterval(beat);
+    };
   }, [inView, shouldReduceMotion]);
+  const activeArc = activeStage >= 0 ? cycleArcs[activeStage] : undefined;
 
   return (
     <Chapter id="profile-cycle" className="profile-stage--soft py-20 md:py-28">
@@ -71,68 +101,118 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
         <SectionHeading index={6} eyebrow={content.meta.title} heading={cycle.heading} subheading={cycle.subheading} className="mb-12" />
 
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          {/* The animated ring: arcs draw in order, then the sap dot circulates forever. */}
-          <div ref={ref} className="relative mx-auto w-full max-w-[480px]">
-            <svg viewBox="0 0 400 400" fill="none" className="w-full" aria-hidden="true">
+          {/* The relay ring: the track drifts, the seat in session ripples, and the arc it sends out fills with light. */}
+          <div ref={ref} className={`relative mx-auto w-full max-w-[480px] ${inView ? 'profile-inview' : ''}`}>
+            <svg viewBox="0 0 400 400" fill="none" className="w-full overflow-visible" aria-hidden="true">
               <defs>
-                <marker id="profile-cycle-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#b91c30" />
-                </marker>
+                <radialGradient id="profile-cycle-halo">
+                  <stop offset="0%" stopColor="#da0812" stopOpacity="0.13" />
+                  <stop offset="65%" stopColor="#da0812" stopOpacity="0.035" />
+                  <stop offset="100%" stopColor="#da0812" stopOpacity="0" />
+                </radialGradient>
+                <filter id="profile-cycle-glow" x="-25%" y="-25%" width="150%" height="150%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
-              <circle cx="200" cy="200" r="150" stroke="#b91c30" strokeOpacity="0.12" strokeWidth="2" strokeDasharray="3 7" />
-              {cycleArcs.map((d, index) => (
-                <motion.path
-                  key={d}
-                  d={d}
-                  stroke="#b91c30"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  markerEnd="url(#profile-cycle-arrow)"
-                  initial={{ pathLength: shouldReduceMotion ? 1 : 0, opacity: shouldReduceMotion ? 1 : 0 }}
-                  animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-                  transition={
-                    shouldReduceMotion
-                      ? { duration: 0.01 }
-                      : { delay: index * 0.38, duration: 0.85, ease: smoothEase }
-                  }
-                />
-              ))}
-              {/* SMIL ignores the reduced-motion CSS nuke — render the dot only when motion is allowed. */}
-              {!shouldReduceMotion && inView && (
-                <circle r="6" fill="#da0812">
-                  <animateMotion dur="9s" repeatCount="indefinite" path="M200,50 a150,150 0 1,1 -0.1,0 z" />
-                </circle>
-              )}
+
+              {/* Breathing halo behind the centre caption — on the handoff beat. */}
+              <circle cx={RING.cx} cy={RING.cy} r="118" fill="url(#profile-cycle-halo)" className="profile-cycle-halo" />
+
+              {/* The flowing track: dashes drift clockwise forever — the circulation itself. */}
+              <circle
+                cx={RING.cx}
+                cy={RING.cy}
+                r={RING.r}
+                stroke="#b91c30"
+                strokeOpacity="0.16"
+                strokeWidth="2"
+                strokeDasharray="3 7"
+                className="profile-cycle-track"
+              />
+
+              {/* Resting arcs: the loop reads at a glance before (and without) any motion. */}
+              <motion.g
+                initial={{ opacity: shouldReduceMotion ? 1 : 0 }}
+                animate={inView ? { opacity: 1 } : {}}
+                transition={{ duration: shouldReduceMotion ? 0.01 : 0.9, ease: smoothEase }}
+              >
+                {cycleArcs.map((arc) => (
+                  <g key={arc.d}>
+                    <path d={arc.d} stroke="#b91c30" strokeOpacity="0.32" strokeWidth="3" strokeLinecap="round" />
+                    <path d={ARROW_HEAD} fill="#b91c30" fillOpacity="0.42" transform={arc.tip} />
+                  </g>
+                ))}
+              </motion.g>
+
+              {/* The relay: the arc leaving the stage in session fills with light; its arrowhead ignites on arrival. */}
+              <AnimatePresence initial={false}>
+                {activeArc && (
+                  <motion.g key={activeStage} initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.45 } }}>
+                    <motion.path
+                      d={activeArc.d}
+                      stroke="#da0812"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      filter="url(#profile-cycle-glow)"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 2.4, ease: [0.4, 0, 0.2, 1] }}
+                    />
+                    <g transform={activeArc.tip}>
+                      <motion.path
+                        d={ARROW_HEAD}
+                        fill="#da0812"
+                        filter="url(#profile-cycle-glow)"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 2.2, duration: 0.3 }}
+                      />
+                    </g>
+                  </motion.g>
+                )}
+              </AnimatePresence>
             </svg>
 
             {cycle.stages.map((stage, index) => {
               const Icon = cycleIcons[index] ?? Recycle;
               const node = cycleNodes[index];
+              // The diagram seats three; a fourth stage (hand-edited data) has no place on the ring.
+              if (!node) return null;
+              const isActive = activeStage === index;
               return (
                 <motion.div
                   key={stage.title}
-                  initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.7 }}
-                  animate={inView ? { opacity: 1, scale: 1 } : {}}
+                  initial={shouldReduceMotion ? { opacity: 1, scale: 1, ...centre } : { opacity: 0, scale: 0.7, ...centre }}
+                  animate={inView ? { opacity: 1, scale: 1, ...centre } : {}}
                   transition={
                     shouldReduceMotion
                       ? { duration: 0.01 }
-                      : { delay: 0.4 + index * 0.38, type: 'spring', stiffness: 260, damping: 20 }
+                      : { delay: 0.15 + index * 0.18, type: 'spring', stiffness: 260, damping: 20 }
                   }
                   style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                  className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
+                  className="absolute flex flex-col items-center gap-1.5"
                 >
                   <span
-                    className={`flex h-16 w-16 items-center justify-center rounded-full shadow-[0_12px_30px_rgba(185,28,48,0.22)] ring-2 transition-all duration-500 ${
-                      activeStage === index
-                        ? 'scale-110 bg-primary-600 text-white ring-primary-300'
-                        : 'bg-white text-primary-600 ring-primary-100'
+                    className={`relative flex h-16 w-16 items-center justify-center rounded-full shadow-[0_12px_30px_rgba(185,28,48,0.22)] ring-2 transition-all duration-500 ${
+                      isActive ? 'scale-110 bg-primary-600 text-white ring-primary-300' : 'bg-white text-primary-600 ring-primary-100'
                     }`}
                   >
-                    <Icon className="h-6 w-6" aria-hidden="true" />
+                    {/* The seat in session sends out rings — the "in session" pulse. */}
+                    {isActive && !shouldReduceMotion && (
+                      <>
+                        <span aria-hidden="true" className="profile-cycle-ripple pointer-events-none absolute inset-0 rounded-full border-2 border-primary-500" />
+                        <span aria-hidden="true" className="profile-cycle-ripple profile-cycle-ripple--late pointer-events-none absolute inset-0 rounded-full border-2 border-primary-400" />
+                      </>
+                    )}
+                    <Icon className="relative h-6 w-6" aria-hidden="true" />
                   </span>
                   <span
                     className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold shadow-sm ring-1 transition-colors duration-500 ${
-                      activeStage === index ? 'bg-primary-600 text-white ring-primary-400' : 'bg-white text-dark-800 ring-primary-100'
+                      isActive ? 'bg-primary-600 text-white ring-primary-400' : 'bg-white text-dark-800 ring-primary-100'
                     }`}
                   >
                     {stage.title}
@@ -142,10 +222,10 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
             })}
 
             <motion.div
-              initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.85 }}
-              animate={inView ? { opacity: 1, scale: 1 } : {}}
-              transition={shouldReduceMotion ? { duration: 0.01 } : { delay: 1.5, type: 'spring', stiffness: 220, damping: 20 }}
-              className="absolute left-1/2 top-1/2 w-40 -translate-x-1/2 -translate-y-1/2 text-center"
+              initial={shouldReduceMotion ? { opacity: 1, scale: 1, ...centre } : { opacity: 0, scale: 0.85, ...centre }}
+              animate={inView ? { opacity: 1, scale: 1, ...centre } : {}}
+              transition={shouldReduceMotion ? { duration: 0.01 } : { delay: 0.6, type: 'spring', stiffness: 220, damping: 20 }}
+              className="absolute left-1/2 top-1/2 w-40 text-center"
             >
               <p className="font-brand text-lg font-bold leading-snug text-primary-800">{cycle.heading}</p>
               <p className="mt-1 text-[11px] font-bold text-dark-400">{cycle.note}</p>
@@ -159,32 +239,8 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
             viewport={{ once: true, amount: 0.25, margin: '0px 0px -8% 0px' }}
             className="grid gap-4"
           >
-            {cycle.stages.map((stage, index) => (
-              <motion.a
-                key={stage.title}
-                href={anchors[index]}
-                variants={reveal}
-                className={`btn-border-run btn-border-run--sheen-tint group flex items-start gap-4 rounded-[22px] border bg-white p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary-200 ${
-                  activeStage === index
-                    ? 'border-primary-300 shadow-[0_18px_44px_rgba(218,8,18,0.16)]'
-                    : 'border-primary-100 shadow-[0_14px_36px_rgba(40,12,18,0.05)]'
-                }`}
-              >
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-brand text-base font-bold transition-colors duration-500 group-hover:bg-primary-600 group-hover:text-white ${
-                    activeStage === index ? 'bg-primary-600 text-white' : 'bg-primary-50 text-primary-700'
-                  }`}
-                >
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className="min-w-0">
-                  <span className="block font-bold text-dark-900">{stage.title}</span>
-                  <span className="mt-1 block text-sm leading-relaxed text-dark-500">{stage.text}</span>
-                </span>
-              </motion.a>
-            ))}
-
-            <motion.div variants={reveal} className="mt-2 grid gap-4 sm:grid-cols-2">
+            {/* The two giving models open the column; the cycle's stages follow. */}
+            <motion.div variants={reveal} className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-[22px] border border-dark-100 bg-white p-5">
                 <h4 className="font-bold text-dark-700">{cycle.duality.direct.title}</h4>
                 <p className="mt-1.5 text-sm leading-relaxed text-dark-500">{cycle.duality.direct.text}</p>
@@ -197,6 +253,33 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
             <motion.p variants={reveal} className="text-sm font-bold text-dark-500">
               {cycle.duality.note}
             </motion.p>
+
+            <div className="mt-2 grid gap-4">
+              {cycle.stages.map((stage, index) => (
+                <motion.a
+                  key={stage.title}
+                  href={anchors[index]}
+                  variants={reveal}
+                  className={`btn-border-run btn-border-run--sheen-tint group flex items-start gap-4 rounded-[22px] border bg-white p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary-200 ${
+                    activeStage === index
+                      ? 'border-primary-300 shadow-[0_18px_44px_rgba(218,8,18,0.16)]'
+                      : 'border-primary-100 shadow-[0_14px_36px_rgba(40,12,18,0.05)]'
+                  }`}
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-brand text-base font-bold transition-colors duration-500 group-hover:bg-primary-600 group-hover:text-white ${
+                      activeStage === index ? 'bg-primary-600 text-white' : 'bg-primary-50 text-primary-700'
+                    }`}
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-bold text-dark-900">{stage.title}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-dark-500">{stage.text}</span>
+                  </span>
+                </motion.a>
+              ))}
+            </div>
           </motion.div>
         </div>
       </div>
@@ -263,40 +346,42 @@ export function ProfileCreationChapter({ content }: { content: LibraryProfileCon
         <p className="mt-5 text-sm font-bold text-dark-500">{creation.share.note}</p>
 
         {/* The asset in pictures: the revenue apartments the shares actually buy into. */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
-          className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4"
-        >
-          {apartmentPhotos.map((photo) => (
-            <motion.div
-              key={photo}
-              variants={
-                shouldReduceMotion
-                  ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
-                  : {
-                      // The asset "builds" from the ground up, photo by photo.
-                      hidden: { opacity: 0, clipPath: 'inset(100% 0% 0% 0%)' },
-                      show: {
-                        opacity: 1,
-                        clipPath: 'inset(0% 0% 0% 0%)',
-                        transition: { duration: 0.85, ease: smoothEase },
-                      },
-                    }
-              }
-              className="overflow-hidden rounded-[20px] shadow-[0_14px_36px_rgba(40,12,18,0.12)] ring-1 ring-primary-100/60"
-            >
-              <img
-                src={photo}
-                alt=""
-                loading="lazy"
-                className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+        {creation.photos.length > 0 && (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
+            className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4"
+          >
+            {creation.photos.map((photo, index) => (
+              <motion.div
+                key={`${photo.src}-${index}`}
+                variants={
+                  shouldReduceMotion
+                    ? { hidden: { opacity: 1 }, show: { opacity: 1 } }
+                    : {
+                        // The asset "builds" from the ground up, photo by photo.
+                        hidden: { opacity: 0, clipPath: 'inset(100% 0% 0% 0%)' },
+                        show: {
+                          opacity: 1,
+                          clipPath: 'inset(0% 0% 0% 0%)',
+                          transition: { duration: 0.85, ease: smoothEase },
+                        },
+                      }
+                }
+                className="overflow-hidden rounded-[20px] shadow-[0_14px_36px_rgba(40,12,18,0.12)] ring-1 ring-primary-100/60"
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.alt ?? ''}
+                  loading="lazy"
+                  className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         <div className="mt-16">
           <h3 className="font-brand text-2xl font-bold text-dark-900 md:text-3xl">{creation.formsHeading}</h3>
@@ -336,7 +421,7 @@ export function ProfileCreationChapter({ content }: { content: LibraryProfileCon
           ref={treeInView.ref}
           className="mt-16 grid gap-8 overflow-hidden rounded-[26px] border border-primary-100 bg-white p-8 md:p-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-center"
         >
-          <BlessedTreeScene inView={treeInView.inView} alt={creation.tree.heading} />
+          <BlessedTreeScene inView={treeInView.inView} src={creation.tree.image} alt={creation.tree.heading} />
           <div>
             <p className="text-sm font-bold text-primary-600">{creation.tree.subheading}</p>
             <h3 className="mt-1 font-brand text-2xl font-bold text-dark-900">{creation.tree.heading}</h3>
@@ -395,19 +480,7 @@ export function ProfileGovernanceChapter({ content }: { content: LibraryProfileC
           className="mb-12"
         />
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {investment.principles.map((principle, index) => (
-            <div
-              key={principle.title}
-              style={{ '--profile-delay': `${index * 120}ms` } as React.CSSProperties}
-              className="profile-ignite rounded-[20px] bg-[#faf8f8] p-5 ring-1 ring-primary-100"
-            >
-              <span className="font-brand text-sm font-bold text-primary-600">{String(index + 1).padStart(2, '0')}</span>
-              <h3 className="mt-2 font-bold text-dark-900">{principle.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-dark-500">{principle.text}</p>
-            </div>
-          ))}
-        </div>
+        <InvestmentPrinciplesRule principles={investment.principles} />
 
         {/* Institutional separation: the divider itself draws the point. */}
         <div className="mt-16">
@@ -425,32 +498,7 @@ export function ProfileGovernanceChapter({ content }: { content: LibraryProfileC
             </motion.p>
           </motion.div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {investment.governance.bodies.slice(0, 3).map((body, index) => (
-              <div
-                key={body.title}
-                style={{ '--profile-delay': `${300 + index * 130}ms` } as React.CSSProperties}
-                className="profile-ignite rounded-[20px] border border-primary-100 bg-[#faf8f8] p-5"
-              >
-                <h4 className="font-bold text-dark-900">{body.title}</h4>
-                <p className="mt-1.5 text-sm leading-relaxed text-dark-500">{body.text}</p>
-              </div>
-            ))}
-          </div>
-          <div aria-hidden="true" className="profile-track my-4 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent" />
-          <div className="grid gap-4 md:grid-cols-3">
-            {investment.governance.bodies.slice(3).map((body, index) => (
-              <div
-                key={body.title}
-                style={{ '--profile-delay': `${750 + index * 130}ms` } as React.CSSProperties}
-                className="profile-ignite rounded-[20px] border border-primary-100 bg-[#faf8f8] p-5"
-              >
-                <h4 className="font-bold text-dark-900">{body.title}</h4>
-                <p className="mt-1.5 text-sm leading-relaxed text-dark-500">{body.text}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-sm font-bold text-dark-500">{investment.governance.note}</p>
+          <InvestmentSeparationChart bodies={investment.governance.bodies} note={investment.governance.note} className="mt-8" />
         </div>
 
         {/* Decision chain: nodes ignite in order while the track fills behind them. */}

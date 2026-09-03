@@ -47,7 +47,7 @@ export function ProfileHeroChapter({ content, breadcrumbs }: HeroProps) {
         className="absolute inset-0"
       >
         <img
-          src="/library/profile/photos/sphere-4.jpg"
+          src={hero.image}
           alt=""
           className="profile-kenburns h-full w-full object-cover"
           loading="eager"
@@ -174,7 +174,7 @@ export function ProfileCtaChapter({ content }: { content: LibraryProfileContent 
     <Chapter id="profile-cta" className="relative overflow-hidden bg-dark-900">
       <div className="absolute inset-0">
         <img
-          src="/library/profile/photos/inst-4.jpg"
+          src={cta.image}
           alt=""
           loading="lazy"
           className="profile-kenburns--loop h-full w-full object-cover opacity-25"

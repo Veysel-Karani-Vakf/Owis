@@ -2,10 +2,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Flag, HeartHandshake, Star } from 'lucide-react';
 import type { LibraryProfileContent } from '@/data/library/profile';
 import { useInView } from '@/hooks/useInView';
+import { PioneerPathsRadar, PioneerPillarsStrip } from './ProfilePioneerBlueprint';
 import { Chapter, SectionHeading, containerVariants, revealVariants } from './profileShared';
-
-/* The future leaders at work: Sphere training rooms in Istanbul. */
-const pioneersPhotos = ['/library/profile/photos/sphere-2.jpg', '/library/profile/photos/sphere-3.jpg'];
 
 const philosophyIcons = [BookOpen, Star, HeartHandshake, Flag];
 
@@ -68,75 +66,34 @@ export function ProfilePioneersChapter({ content }: { content: LibraryProfileCon
         </div>
 
         {/* The chain, photographed: pioneers inside the Sphere training rooms. */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
-          className="mt-16 grid gap-5 sm:grid-cols-2"
-        >
-          {pioneersPhotos.map((photo) => (
-            <motion.div
-              key={photo}
-              variants={reveal}
-              className="overflow-hidden rounded-[24px] shadow-[0_18px_46px_rgba(40,12,18,0.14)] ring-1 ring-primary-100/60"
-            >
-              <img
-                src={photo}
-                alt=""
-                loading="lazy"
-                className="aspect-[16/9] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+        {pioneers.photos.length > 0 && (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2, margin: '0px 0px -8% 0px' }}
+            className="mt-16 grid gap-5 sm:grid-cols-2"
+          >
+            {pioneers.photos.map((photo, index) => (
+              <motion.div
+                key={`${photo.src}-${index}`}
+                variants={reveal}
+                className="overflow-hidden rounded-[24px] shadow-[0_18px_46px_rgba(40,12,18,0.14)] ring-1 ring-primary-100/60"
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.alt ?? ''}
+                  loading="lazy"
+                  className="aspect-[16/9] h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
-        <div className="mt-16 grid gap-10 lg:grid-cols-2">
-          <div>
-            <h3 className="font-brand text-xl font-bold text-dark-900">{pioneers.pillarsHeading}</h3>
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.25 }}
-              className="mt-6 grid gap-4 sm:grid-cols-2"
-            >
-              {pioneers.pillars.map((pillar, index) => (
-                <motion.div key={pillar.title} variants={reveal} className="rounded-[20px] border border-primary-100 bg-[#faf8f8] p-5">
-                  <span className="font-brand text-sm font-bold text-primary-600">{String(index + 1).padStart(2, '0')}</span>
-                  <h4 className="mt-1.5 font-bold text-dark-900">{pillar.title}</h4>
-                  <p className="mt-1 text-sm leading-relaxed text-dark-500">{pillar.text}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-          <div>
-            <h3 className="font-brand text-xl font-bold text-dark-900">{pioneers.pathsHeading}</h3>
-            <motion.ol
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.25 }}
-              className="mt-6 grid gap-3"
-            >
-              {pioneers.paths.map((path, index) => (
-                <motion.li
-                  key={path.title}
-                  variants={reveal}
-                  className="flex items-start gap-4 rounded-[18px] border border-primary-100 bg-[#faf8f8] p-4"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 font-brand text-sm font-bold text-primary-700">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block font-bold text-dark-900">{path.title}</span>
-                    <span className="mt-0.5 block text-sm text-dark-500">{path.text}</span>
-                  </span>
-                </motion.li>
-              ))}
-            </motion.ol>
-          </div>
-        </div>
+        {/* The cornerstones strip and the five-path radar (ProfilePioneerBlueprint). */}
+        <PioneerPillarsStrip heading={pioneers.pillarsHeading} pillars={pioneers.pillars} className="mt-16" />
+        <PioneerPathsRadar heading={pioneers.pathsHeading} paths={pioneers.paths} className="mt-16" />
       </div>
     </Chapter>
   );

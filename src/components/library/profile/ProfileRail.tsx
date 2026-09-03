@@ -1,5 +1,3 @@
-import { motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
-import { useI18n } from '@/i18n/useI18n';
 import { profileChapterIds, useActiveChapter } from './profileShared';
 
 type ProfileRailProps = {
@@ -10,28 +8,19 @@ type ProfileRailProps = {
 
 /**
  * The reel's projector apparatus: a fixed dot rail with the current chapter
- * numeral at xl+, and a slim top progress bar plus a floating ٠٣/١٣ counter
- * chip below xl. One IntersectionObserver owns the active-chapter state.
+ * numeral at xl+, and a floating ٠٣/١٣ counter chip below xl. It is the only
+ * fixed chrome this page keeps once the header scrolls away (the site-wide
+ * top progress bar covers position feedback). One IntersectionObserver owns
+ * the active-chapter state.
  */
 export default function ProfileRail({ titles, chapterLabel }: ProfileRailProps) {
-  const { isRtl } = useI18n();
-  const shouldReduceMotion = useReducedMotion();
   const active = useActiveChapter();
-  const { scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
 
   const total = profileChapterIds.length;
   const pad = (value: number) => String(value).padStart(2, '0');
 
   return (
     <>
-      {/* Top progress bar (all sizes): position feedback, kept under reduced motion. */}
-      <motion.div
-        aria-hidden="true"
-        style={{ scaleX: shouldReduceMotion ? scrollYProgress : progress, transformOrigin: isRtl ? '100% 50%' : '0% 50%' }}
-        className="fixed inset-x-0 top-[64px] z-40 h-[3px] bg-gradient-to-r from-primary-600 via-primary-500 to-[#fb7185] md:top-[88px] xl:top-[96px]"
-      />
-
       {/* Floating slide counter chip (below xl). */}
       <div
         aria-hidden="true"

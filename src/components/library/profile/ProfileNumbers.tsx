@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Building2, GraduationCap, Images, Megaphone, Users } from 'lucide-react';
 import LibraryLightbox from '@/components/library/LibraryLightbox';
 import { getLibraryContent, type LibraryGalleryImage } from '@/data/library';
-import { libraryProfileInfographics, type LibraryProfileContent } from '@/data/library/profile';
+import type { LibraryProfileContent } from '@/data/library/profile';
 import { useInView } from '@/hooks/useInView';
 import { useI18n } from '@/i18n/useI18n';
 import { Chapter, CountUpNumber, containerVariants, revealVariants, smoothEase } from './profileShared';
@@ -187,13 +187,13 @@ export default function ProfileNumbersChapter({ content }: { content: LibraryPro
   const libraryLabels = getLibraryContent(locale).labels;
   const reveal = revealVariants(shouldReduceMotion);
 
-  const infographicImages: LibraryGalleryImage[] = libraryProfileInfographics.map((item, index) => ({
-    id: item.key,
-    title: `${numbers.heading} ${index + 1}/${libraryProfileInfographics.length}`,
-    image: item.src,
-    thumbnail: item.src,
+  const infographicImages: LibraryGalleryImage[] = numbers.boards.map((board, index) => ({
+    id: `board-${index}`,
+    title: board.alt ? `${numbers.heading} · ${board.alt}` : `${numbers.heading} ${index + 1}/${numbers.boards.length}`,
+    image: board.src,
+    thumbnail: board.src,
     sourceUrl: '',
-    imageAlt: `${numbers.heading} — ${labels.infographicsNote}`,
+    imageAlt: board.alt || `${numbers.heading} — ${labels.infographicsNote}`,
     width: 720,
     height: 1280,
   }));

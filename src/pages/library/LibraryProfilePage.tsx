@@ -25,8 +25,8 @@ import { useI18n } from '@/i18n/useI18n';
 /**
  * «العرض التعريفي» — the library's cinematic presentation: one continuous
  * crimson reel of 13 chapters where scroll is the projector, closing on the
- * live "Owais in Numbers" record. Static content (no site_pages row): edits
- * in src/data/library/profile.ts ship directly.
+ * live "Owais in Numbers" record. Content is the `library-profile` site_pages
+ * row (edited from the dashboard) layered over src/data/library/profile.ts.
  */
 export default function LibraryProfilePage() {
   const { locale, content: siteContent, contentVersion } = useI18n();
@@ -72,7 +72,7 @@ export default function LibraryProfilePage() {
         title={`${content.meta.title} | ${siteContent.siteConfig.name}`}
         description={content.meta.seoDescription}
         canonical={libraryProfileRoute}
-        image="/library/profile/numbers-waqf-creation.jpg"
+        image={content.hero.image}
         structuredData={structuredData}
       />
 
@@ -81,8 +81,9 @@ export default function LibraryProfilePage() {
 
         <ProfileHeroChapter content={content} breadcrumbs={breadcrumbs} />
 
+        {/* In the flow (not pinned): the presentation keeps only its chapter rail fixed. */}
         <div className="mt-6">
-          <LibraryPillNav active="profile" />
+          <LibraryPillNav active="profile" sticky={false} />
         </div>
 
         <ProfilePillarsChapter content={content} />
