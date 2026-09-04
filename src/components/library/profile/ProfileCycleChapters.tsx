@@ -15,7 +15,6 @@ import {
   Sprout,
   TreeDeciduous,
   TrendingUp,
-  X,
 } from 'lucide-react';
 import type { LibraryProfileContent } from '@/data/library/profile';
 import { useInView } from '@/hooks/useInView';
@@ -98,7 +97,7 @@ export function ProfileCycleChapter({ content }: { content: LibraryProfileConten
   return (
     <Chapter id="profile-cycle" className="profile-stage--soft py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <SectionHeading index={6} eyebrow={content.meta.title} heading={cycle.heading} subheading={cycle.subheading} className="mb-12" />
+        <SectionHeading index={6} heading={cycle.heading} subheading={cycle.subheading} className="mb-12" />
 
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* The relay ring: the track drifts, the seat in session ripples, and the arc it sends out fills with light. */}
@@ -310,39 +309,24 @@ export function ProfileCreationChapter({ content }: { content: LibraryProfileCon
   return (
     <Chapter id="profile-creation" className="bg-[#faf8f8] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <SectionHeading index={7} eyebrow={content.meta.title} heading={creation.heading} subheading={creation.subheading} className="mb-12" />
+        <SectionHeading index={7} heading={creation.heading} subheading={creation.subheading} className="mb-12" />
 
-        {/* The is / is-not visual argument slides in from opposite sides. */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: isRtl ? 32 : -32 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: shouldReduceMotion ? 0.01 : 0.65, ease: smoothEase }}
-            className="rounded-[24px] bg-primary-700 p-7 text-white shadow-[0_18px_46px_rgba(156,16,6,0.3)]"
-          >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-              <Check className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <h3 className="mt-4 font-brand text-xl font-bold">
-              {creation.share.heading} — {creation.share.what.title}
-            </h3>
-            <p className="mt-2 leading-relaxed text-white/85">{creation.share.what.text}</p>
-          </motion.div>
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: isRtl ? -32 : 32 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: shouldReduceMotion ? 0.01 : 0.65, ease: smoothEase }}
-            className="rounded-[24px] border border-primary-100 bg-white p-7"
-          >
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#faf8f8] text-primary-600 ring-1 ring-primary-100">
-              <X className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <h3 className="mt-4 font-brand text-xl font-bold text-dark-900">{creation.share.whatNot.title}</h3>
-            <p className="mt-2 leading-relaxed text-dark-600">{creation.share.whatNot.text}</p>
-          </motion.div>
-        </div>
+        {/* The definition of the share, stated once and in full width. */}
+        <motion.div
+          initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: isRtl ? 32 : -32 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: shouldReduceMotion ? 0.01 : 0.65, ease: smoothEase }}
+          className="rounded-[24px] bg-primary-700 p-7 text-white shadow-[0_18px_46px_rgba(156,16,6,0.3)]"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+            <Check className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <h3 className="mt-4 font-brand text-xl font-bold">
+            {creation.share.heading} — {creation.share.what.title}
+          </h3>
+          <p className="mt-2 leading-relaxed text-white/85">{creation.share.what.text}</p>
+        </motion.div>
         <p className="mt-5 text-sm font-bold text-dark-500">{creation.share.note}</p>
 
         {/* The asset in pictures: the revenue apartments the shares actually buy into. */}
@@ -474,7 +458,6 @@ export function ProfileGovernanceChapter({ content }: { content: LibraryProfileC
       <div ref={ref} className={`mx-auto max-w-7xl px-4 md:px-8 ${inView ? 'profile-inview' : ''}`}>
         <SectionHeading
           index={8}
-          eyebrow={content.meta.title}
           heading={investment.heading}
           subheading={investment.subheading}
           className="mb-12"

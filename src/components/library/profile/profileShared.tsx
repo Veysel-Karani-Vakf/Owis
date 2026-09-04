@@ -71,7 +71,6 @@ export function Chapter({ id, className = '', scrollOffset, children }: ChapterP
 
 type SectionHeadingProps = {
   index: number;
-  eyebrow?: string;
   heading: string;
   subheading?: string;
   /** 'light' on crimson plates, 'dark' on paper surfaces. */
@@ -79,8 +78,8 @@ type SectionHeadingProps = {
   className?: string;
 };
 
-/** Chapter header: ghost folio numeral bleeding behind an eyebrow + heading + standfirst. */
-export function SectionHeading({ index, eyebrow, heading, subheading, tone = 'dark', className = '' }: SectionHeadingProps) {
+/** Chapter header: ghost folio numeral bleeding behind a heading + standfirst. */
+export function SectionHeading({ index, heading, subheading, tone = 'dark', className = '' }: SectionHeadingProps) {
   const reveal = revealVariants();
   const numeral = String(index).padStart(2, '0');
 
@@ -98,19 +97,9 @@ export function SectionHeading({ index, eyebrow, heading, subheading, tone = 'da
       >
         {numeral}
       </span>
-      {eyebrow && (
-        <motion.p
-          variants={reveal}
-          className={`relative mb-3 text-sm font-bold tracking-wide ${
-            tone === 'light' ? 'text-[#fb7185]' : 'text-primary-600'
-          }`}
-        >
-          {eyebrow}
-        </motion.p>
-      )}
       <motion.h2
         variants={reveal}
-        className={`relative max-w-3xl text-balance font-brand text-3xl font-bold leading-tight md:text-4xl lg:text-[42px] ${
+        className={`relative max-w-3xl text-balance font-brand text-3xl/[1.6] font-bold md:text-4xl/[1.6] lg:text-[42px]/[1.6] ${
           tone === 'light' ? 'text-white' : 'text-dark-900'
         }`}
       >

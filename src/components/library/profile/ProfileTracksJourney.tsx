@@ -234,7 +234,6 @@ export function ProfileTracksChapter({ content }: { content: LibraryProfileConte
         <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-6 px-4 pb-5 pt-8 md:px-8 lg:grid-cols-2 lg:items-start lg:gap-12 lg:pe-32">
           <SectionHeading
             index={9}
-            eyebrow={content.meta.title}
             heading={tracks.heading}
             subheading={tracks.subheading}
             tone="light"

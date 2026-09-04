@@ -125,7 +125,7 @@ export function ProfilePillarsChapter({ content }: { content: LibraryProfileCont
       <div className="mx-auto max-w-7xl px-4 md:px-8 lg:grid lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-[132px]">
-            <SectionHeading index={2} eyebrow={content.meta.title} heading={pillars.heading} subheading={pillars.subheading} />
+            <SectionHeading index={2} heading={pillars.heading} subheading={pillars.subheading} />
             <motion.p
               initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}

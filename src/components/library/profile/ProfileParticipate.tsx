@@ -589,7 +589,6 @@ export default function ProfileParticipateChapter({ content }: { content: Librar
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <SectionHeading
           index={12}
-          eyebrow={content.meta.title}
           heading={participate.heading}
           subheading={participate.subheading}
           className="mb-12"

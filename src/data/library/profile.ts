@@ -113,7 +113,6 @@ export type LibraryProfileContent = {
     share: {
       heading: string;
       what: Step;
-      whatNot: Step;
       note: string;
     };
     /** The asset in pictures: the revenue apartments. */
@@ -362,10 +361,6 @@ const ar: LibraryProfileContent = {
       what: {
         title: 'ما هو؟',
         text: 'وحدة مساهمة تُجمع مع غيرها لتكوين أصل وقفي مشترك يُحفظ ويُستثمر.',
-      },
-      whatNot: {
-        title: 'ماذا لا يعني؟',
-        text: 'لا يمنح المساهم ملكية شخصية أو أرباحًا فردية أو حق استرداد الأصل الموقوف.',
       },
       note: 'يمكن أن تساهم عن نفسك أو والديك أو من تحب، عبر القنوات الرسمية للوقف.',
     },
@@ -701,10 +696,6 @@ const en: LibraryProfileContent = {
         title: 'What is it?',
         text: 'A contribution unit pooled with others to form a shared endowment asset that is preserved and invested.',
       },
-      whatNot: {
-        title: 'What it is not',
-        text: 'It grants no personal ownership, no individual profits, and no right to reclaim the endowed asset.',
-      },
       note: 'You can contribute for yourself, your parents, or someone you love — through the waqf’s official channels.',
     },
     photos: withAlts(photos.creation, ['The waqf apartments in Istanbul 1', 'The waqf apartments in Istanbul 2', 'The waqf apartments in Istanbul 3', 'The waqf apartments in Istanbul 4']),
@@ -1038,10 +1029,6 @@ const tr: LibraryProfileContent = {
       what: {
         title: 'Nedir?',
         text: 'Korunan ve yatırılan ortak bir vakıf varlığı oluşturmak için diğerleriyle birleştirilen katkı birimi.',
-      },
-      whatNot: {
-        title: 'Ne değildir?',
-        text: 'Katkı sahibine kişisel mülkiyet, bireysel kâr veya vakfedilen varlığı geri alma hakkı vermez.',
       },
       note: 'Kendiniz, anne-babanız veya sevdiğiniz biri adına, vakfın resmi kanallarından katkıda bulunabilirsiniz.',
     },

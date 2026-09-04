@@ -201,7 +201,7 @@ export function ProfileStoryChapter({ content }: { content: LibraryProfileConten
   return (
     <Chapter id="profile-story" className="profile-stage--soft overflow-hidden py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <SectionHeading index={4} eyebrow={content.meta.title} heading={story.heading} subheading={story.subheading} className="mb-14" />
+        <SectionHeading index={4} heading={story.heading} subheading={story.subheading} className="mb-14" />
 
         <div ref={timelineRef} className="relative">
           {/* The spine grows just ahead of reading. */}
@@ -339,7 +339,7 @@ export function ProfileIdentityChapter({ content }: { content: LibraryProfileCon
   return (
     <Chapter id="profile-identity" className="bg-[#faf8f8] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <SectionHeading index={5} eyebrow={content.meta.title} heading={identity.heading} subheading={identity.subheading} className="mb-14" />
+        <SectionHeading index={5} heading={identity.heading} subheading={identity.subheading} className="mb-14" />
 
         <div className="grid gap-8 lg:grid-cols-12">
           <motion.div
