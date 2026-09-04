@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '@/i18n/useI18n';
-import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
+import { resolveVideo, videoSourceKey, youTubeEmbedUrl } from '@/lib/video';
 
 type VideoModalProps = {
   isOpen: boolean;
@@ -25,13 +25,13 @@ type VideoPlayerProps = {
 };
 
 function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: VideoPlayerProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const source = resolveVideo({ videoFile, videoId });
   const youtubeId = source?.kind === 'youtube' ? source.id : videoId;
-
-  useEffect(() => {
-    setIsLoaded(false);
-  }, [videoFile, videoId]);
+  // Same rule as the hero background: the spinner tracks the rendered source, so a CMS
+  // hydration that leaves the source unchanged cannot hide a frame that already loaded.
+  const sourceKey = videoSourceKey(source) || `youtube:${youtubeId}`;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoaded = loadedKey === sourceKey;
 
   if (source?.kind === 'file') {
     return (
@@ -76,6 +76,7 @@ function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: V
       )}
 
       <iframe
+        key={sourceKey}
         src={youTubeEmbedUrl(youtubeId, {
           autoplay: 1,
           playsinline: 1,
@@ -91,7 +92,7 @@ function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: V
         loading="eager"
         tabIndex={isLoaded ? 0 : -1}
         referrerPolicy="strict-origin-when-cross-origin"
-        onLoad={() => setIsLoaded(true)}
+        onLoad={() => setLoadedKey(sourceKey)}
       />
     </div>
   );

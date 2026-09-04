@@ -239,6 +239,8 @@ const shared = {
   logoArTr: '/media/waqf-owais-logo-ar-tr.png',
   videoId: 'LMK-Sv__71w',
   mainImage: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
+  /** Homepage hero poster. Must match the dashboard home row in every locale so nothing else can paint first. */
+  heroPoster: '/media/hero-poster.jpg',
   socialLinks: {
     facebook: 'https://www.facebook.com/veysvakfi',
     twitter: 'https://x.com/veysvakfi',
@@ -345,7 +347,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       secondaryButton: 'ساهم الآن',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
-      posterImage: shared.mainImage,
+      posterImage: shared.heroPoster,
     },
     about: {
       eyebrow: 'عن المؤسسة',
@@ -613,7 +615,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       secondaryButton: 'Şimdi Katkı Sun',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
-      posterImage: shared.mainImage,
+      posterImage: shared.heroPoster,
     },
     about: {
       eyebrow: 'Kurum Hakkında',
@@ -880,7 +882,7 @@ export const localizedContent: Record<Locale, SiteContent> = {
       secondaryButton: 'Contribute Now',
       secondaryUrl: shared.routes.heroButton,
       videoId: shared.videoId,
-      posterImage: shared.mainImage,
+      posterImage: shared.heroPoster,
     },
     about: {
       eyebrow: 'About the Institution',

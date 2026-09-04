@@ -6,7 +6,7 @@ import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
 import { useI18n } from '@/i18n/useI18n';
-import { resolveVideo, youTubeEmbedUrl } from '@/lib/video';
+import { resolveVideo, videoSourceKey, youTubeEmbedUrl } from '@/lib/video';
 
 type HeroBackgroundVideoProps = {
   videoId: string;
@@ -15,18 +15,22 @@ type HeroBackgroundVideoProps = {
 };
 
 function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const source = resolveVideo({ videoFile, videoId });
-
-  useEffect(() => {
-    setIsLoaded(false);
-  }, [videoFile, videoId]);
+  // Visibility follows what is rendered, not the raw fields. CMS hydration can turn
+  // `videoFile` from undefined into "" without changing the source; resetting on the raw
+  // fields would hide a frame that already loaded, and its load event never fires again.
+  const sourceKey = videoSourceKey(source);
+  // The key of the source whose load event fired; a different source starts hidden again.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoaded = loadedKey === sourceKey;
+  const markLoaded = () => setLoadedKey(sourceKey);
 
   if (!source) return null;
 
   if (source.kind === 'file') {
     return (
       <video
+        key={sourceKey}
         src={source.src}
         title={title}
         className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -34,13 +38,14 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
         muted
         loop
         playsInline
-        onLoadedData={() => setIsLoaded(true)}
+        onLoadedData={markLoaded}
       />
     );
   }
 
   return (
     <iframe
+      key={sourceKey}
       src={youTubeEmbedUrl(source.id, {
         autoplay: 1,
         mute: 1,
@@ -59,7 +64,7 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
       allow="autoplay; encrypted-media; picture-in-picture"
       loading="eager"
       referrerPolicy="strict-origin-when-cross-origin"
-      onLoad={() => setIsLoaded(true)}
+      onLoad={markLoaded}
     />
   );
 }

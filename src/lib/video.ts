@@ -54,6 +54,15 @@ export function resolveVideo(fields: VideoFields | null | undefined): VideoSourc
   return null;
 }
 
+/**
+ * Identity of what a player renders. Two field sets that resolve to the same key
+ * (e.g. videoFile undefined vs "" with the same YouTube ID) keep the same element playing.
+ */
+export function videoSourceKey(source: VideoSource): string {
+  if (!source) return '';
+  return source.kind === 'file' ? `file:${source.src}` : `youtube:${source.id}`;
+}
+
 /** Poster frame YouTube generates for a video, used when none was uploaded. */
 export function youTubePoster(id: string): string {
   return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
