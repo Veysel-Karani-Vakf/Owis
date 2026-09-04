@@ -15,6 +15,32 @@ export const PAYMENT_LIMITS = {
   presets: [100, 250, 500, 1000, 2500],
 } as const;
 
+/**
+ * İş Bankası est3Dgate endpoints, for reference only — the live value always
+ * comes from PAYMENT_GATE_URL so an env change is the whole go-live switch.
+ *   test:       https://entegrasyon.asseco-see.com.tr/fim/est3Dgate
+ *   production: https://sanalpos.isbank.com.tr/fim/est3Dgate
+ */
+
+/**
+ * Placeholder values kept in .env files while the bank credentials are still
+ * pending. Mock mode ignores them (its built-in defaults apply); test and
+ * production refuse to start with them so a half-configured deployment fails
+ * loudly instead of posting a donor's card to a bogus gate.
+ */
+const PLACEHOLDER_VALUES = new Set(['TEST_CLIENT_ID', 'TEST_STORE_KEY', 'TEST_GATEWAY_URL']);
+
+function isPlaceholder(value: string): boolean {
+  return PLACEHOLDER_VALUES.has(value.toUpperCase()) || /^<.*>$/.test(value);
+}
+
+/** Env value, or undefined when unset, blank or still a placeholder. */
+function configuredValue(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  if (!value || isPlaceholder(value)) return undefined;
+  return value;
+}
+
 export function paymentMode(): PaymentMode {
   const raw = (process.env.PAYMENT_MODE ?? 'mock').trim().toLowerCase();
   if (raw === 'test' || raw === 'production') return raw;
@@ -22,37 +48,66 @@ export function paymentMode(): PaymentMode {
 }
 
 /**
- * Merchant id at the bank. The mock gateway ships with a placeholder so the
- * flow works out of the box; test/production require the real value.
+ * Merchant id (clientid) at the bank. Mock mode ships with a built-in value
+ * so the flow works out of the box; test/production require the real one.
  */
 export function paymentClientId(): string {
-  const value = process.env.PAYMENT_CLIENT_ID?.trim();
+  const value = configuredValue('PAYMENT_CLIENT_ID');
+  if (paymentMode() === 'mock') return value ?? 'VKV-MOCK-CLIENT';
   if (value) return value;
-  if (paymentMode() === 'mock') return 'VKV-MOCK-CLIENT';
-  throw new Error('PAYMENT_CLIENT_ID is required outside mock mode.');
+  throw new Error('PAYMENT_CLIENT_ID must hold the merchant id from İş Bank outside mock mode.');
 }
 
 /**
- * NestPay store key used to sign/verify gateway hashes. Server-side only —
- * never expose it through a VITE_-prefixed variable.
+ * NestPay store key (the "3D Secure key" set in the bank's merchant panel),
+ * used to sign/verify gateway hashes. Server-side only — never expose it
+ * through a VITE_-prefixed variable.
  */
 export function paymentStoreKey(): string {
-  const value = process.env.PAYMENT_STORE_KEY?.trim();
+  const value = configuredValue('PAYMENT_STORE_KEY');
+  if (paymentMode() === 'mock') return value ?? 'VKV_MOCK_STORE_KEY_2026';
   if (value) return value;
-  if (paymentMode() === 'mock') return 'VKV_MOCK_STORE_KEY_2026';
-  throw new Error('PAYMENT_STORE_KEY is required outside mock mode.');
+  throw new Error('PAYMENT_STORE_KEY must hold the store key from İş Bank outside mock mode.');
 }
 
 /**
  * Where the card form posts to. Mock mode points back at our own simulated
- * gateway; test/production point at the bank (e.g. the Asseco/Payten test
- * gate, then https://sanalpos.isbank.com.tr/fim/est3Dgate).
+ * gateway; test/production post to the bank's est3Dgate (absolute https).
  */
 export function paymentGateUrl(origin: string): string {
   if (paymentMode() === 'mock') return `${origin}/api/payments/mock-gate`;
-  const value = process.env.PAYMENT_GATE_URL?.trim();
-  if (value) return value;
-  throw new Error('PAYMENT_GATE_URL is required outside mock mode.');
+  const value = configuredValue('PAYMENT_GATE_URL');
+  if (!value) {
+    throw new Error('PAYMENT_GATE_URL must hold the bank\'s est3Dgate URL outside mock mode.');
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error('PAYMENT_GATE_URL is not an absolute URL.');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error('PAYMENT_GATE_URL must use https.');
+  }
+  return value;
+}
+
+/**
+ * True when every bank credential is present and non-placeholder — i.e. the
+ * deployment could run in test/production. Exposes readiness only, never the
+ * values.
+ */
+export function bankCredentialsConfigured(): boolean {
+  const gate = configuredValue('PAYMENT_GATE_URL');
+  let gateOk = false;
+  if (gate) {
+    try {
+      gateOk = new URL(gate).protocol === 'https:';
+    } catch {
+      gateOk = false;
+    }
+  }
+  return Boolean(configuredValue('PAYMENT_CLIENT_ID') && configuredValue('PAYMENT_STORE_KEY') && gateOk);
 }
 
 /**

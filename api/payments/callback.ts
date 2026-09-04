@@ -1,7 +1,7 @@
 import { finalizePayment, getPaymentByOid } from '../_lib/db';
 import { paymentClientId, paymentStoreKey, siteOrigin } from '../_lib/env';
 import { readFormBody, redirect303, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { formatGateAmount, isPaidCallback, verifyVer3Hash } from '../_lib/nestpay';
+import { isPaidCallback, matchVer3Hash } from '../_lib/nestpay';
 
 /** Gateway params worth keeping on the row; never card data. */
 const RAW_RESPONSE_KEYS = [
@@ -16,9 +16,17 @@ const RAW_RESPONSE_KEYS = [
   'AuthCode',
   'TransId',
   'ErrMsg',
+  'mdErrorMsg',
+  'HostRefNum',
   'maskedCreditCard',
   'MaskedPan',
+  'storetype',
+  'eci',
+  'txstatus',
   'EXTRA.TRXDATE',
+  'EXTRA.CARDBRAND',
+  'EXTRA.CARDISSUER',
+  'EXTRA.HOSTMSG',
   'hashAlgorithm',
 ];
 
@@ -40,12 +48,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   try {
     const params = await readFormBody(req);
 
-    if (!verifyVer3Hash(params, paymentStoreKey())) {
+    const oid = params.oid ?? '';
+    const hashMatch = matchVer3Hash(params, paymentStoreKey());
+    if (!hashMatch) {
+      // Diagnostics for a go-live mismatch: field NAMES only, never values.
+      console.error('payments/callback: hash mismatch', {
+        oid,
+        hashAlgorithm: params.hashAlgorithm ?? null,
+        encoding: params.encoding ?? null,
+        fields: Object.keys(params).sort(),
+      });
       redirect303(res, resultUrl('error=verify'));
       return;
     }
+    if (hashMatch.ordering !== 'natural' || hashMatch.encoding !== 'utf8') {
+      console.warn('payments/callback: hash matched a fallback variant', hashMatch);
+    }
 
-    const oid = params.oid ?? '';
     const payment = oid ? await getPaymentByOid(oid) : null;
     if (!payment) {
       redirect303(res, resultUrl('error=unknown'));
@@ -60,7 +79,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     // The hash proves the gate signed it; these prove it matches OUR order.
     const clientMatches = (params.clientid ?? '') === paymentClientId();
-    const amountMatches = (params.amount ?? '') === formatGateAmount(Number(payment.amount));
+    // Real gates may echo the amount as "250", "250.0" or "250.00": compare
+    // numerically (to the cent) rather than by exact string.
+    const returnedAmount = Number((params.amount ?? '').replace(',', '.'));
+    const amountMatches =
+      Number.isFinite(returnedAmount) &&
+      Math.round(returnedAmount * 100) === Math.round(Number(payment.amount) * 100);
     if (!clientMatches || !amountMatches) {
       redirect303(res, resultUrl('error=verify'));
       return;
@@ -77,7 +101,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       procReturnCode: params.ProcReturnCode ?? null,
       authCode: params.AuthCode || null,
       transId: params.TransId || null,
-      errorMessage: params.ErrMsg || null,
+      // A 3-D Secure failure often leaves ErrMsg empty and explains itself in mdErrorMsg.
+      errorMessage: params.ErrMsg || params.mdErrorMsg || null,
       maskedPan: params.maskedCreditCard || params.MaskedPan || null,
       rawResponse,
     });

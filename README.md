@@ -129,13 +129,29 @@ Server env (Vercel project settings — never `VITE_`-prefixed):
 | Variable | mock (default) | bank test / production |
 | --- | --- | --- |
 | `PAYMENT_MODE` | `mock` | `test` / `production` |
-| `PAYMENT_CLIENT_ID` | optional | merchant id from İş Bank |
-| `PAYMENT_STORE_KEY` | optional | store key from İş Bank |
-| `PAYMENT_GATE_URL` | ignored (uses mock-gate) | the bank's est3Dgate URL |
+| `PAYMENT_CLIENT_ID` | placeholder `TEST_CLIENT_ID` (ignored) | merchant id (clientid) from İş Bank |
+| `PAYMENT_STORE_KEY` | placeholder `TEST_STORE_KEY` (ignored) | store key ("3D Secure key") set in the İş Bank merchant panel |
+| `PAYMENT_GATE_URL` | placeholder `TEST_GATEWAY_URL` (ignored) | test `https://entegrasyon.asseco-see.com.tr/fim/est3Dgate`, production `https://sanalpos.isbank.com.tr/fim/est3Dgate` |
+| `PUBLIC_SITE_URL` | optional | optional; pins okUrl/failUrl to the canonical domain |
 | `SUPABASE_SERVICE_ROLE_KEY` | required | required |
 
 Going live is an env change only; `mock-gate` returns 404 outside mock mode,
 and `donation_payments.gateway_mode` keeps mock rows distinguishable forever.
+The `TEST_*` placeholders are safe to leave in place: mock mode falls back to
+its built-in values, and test/production refuse to start (500 on
+`/api/payments/create`) while any of them is still a placeholder, so a
+half-configured deployment can never post a card to a bogus gate.
+
+Protocol notes (İş Bankası NestPay/EST, `3d_pay`, hash `ver3`): field set
+`clientid, storetype, islemtipi=Auth, amount, currency, oid, okUrl, failUrl,
+lang, rnd, taksit, refreshtime, hashAlgorithm, pan, Ecom_Payment_Card_ExpDate_*,
+cv2` (+ `cardType` 1/2 for Visa/MasterCard); hash = base64(SHA-512) over all
+fields except `hash`/`encoding`/`countdown`, sorted like PHP `natcasesort`,
+escaped, joined with `|`, store key last. The callback verifier also accepts
+the lower-case ordering and Latin-5 byte variants and logs which one matched
+(`api/_lib/nestpay.ts`). Go-live checklist: merchant account enabled for USD
+(currency 840), store key set in the bank panel, the three env vars set in
+Vercel, then `PAYMENT_MODE=test` first with the bank's test cards.
 
 Mock test cards (any Luhn-valid number also works): `4508 0345 0803 4509`
 interactive approve/decline, `4000 0000 0000 0002` fails 3-D Secure,
