@@ -41,9 +41,10 @@ export function ProfileHeroChapter({ content, breadcrumbs }: HeroProps) {
       className="relative flex min-h-[calc(100svh-64px)] flex-col overflow-hidden bg-dark-950 pt-28 md:min-h-[calc(100svh-88px)] md:pt-36"
     >
       <motion.div
+        key={hero.image}
         initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: shouldReduceMotion ? 0 : 0.1, duration: shouldReduceMotion ? 0.01 : 0.9, ease: smoothEase }}
+        transition={{ delay: 0, duration: shouldReduceMotion ? 0.01 : 0.6, ease: smoothEase }}
         className="absolute inset-0"
       >
         <img
@@ -51,6 +52,7 @@ export function ProfileHeroChapter({ content, breadcrumbs }: HeroProps) {
           alt=""
           className="profile-kenburns h-full w-full object-cover"
           loading="eager"
+          fetchPriority="high"
         />
       </motion.div>
       {/* Homepage-hero overlay, deepened in the middle band because the copy sits centered. */}
@@ -213,7 +215,7 @@ export function ProfileCtaChapter({ content }: { content: LibraryProfileContent 
         <WordReveal
           text={cta.title}
           stagger={0.09}
-          className="max-w-3xl text-balance font-brand text-3xl font-bold leading-tight text-white md:text-5xl"
+          className="max-w-3xl text-balance font-brand text-3xl/[1.6] font-bold text-white md:text-5xl/[1.6]"
         />
         <motion.p
           initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}

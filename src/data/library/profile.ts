@@ -112,7 +112,7 @@ export type LibraryProfileContent = {
     subheading: string;
     share: {
       heading: string;
-      what: Step;
+      what: { text: string };
       note: string;
     };
     /** The asset in pictures: the revenue apartments. */
@@ -212,7 +212,7 @@ export type LibraryProfileContent = {
 
 /** Photographs shared by every language — the same event is the same picture. */
 const photos = {
-  hero: '/library/profile/photos/sphere-4.jpg',
+  hero: '/library/profile/photos/hero-owais-monument.jpg',
   cta: '/library/profile/photos/inst-4.jpg',
   identity: '/library/yemeni-figures/owais-al-qarni.jpeg',
   tree: '/library/profile/blessed-tree-olive.jpg',
@@ -359,7 +359,6 @@ const ar: LibraryProfileContent = {
     share: {
       heading: 'السهم الوقفي',
       what: {
-        title: 'ما هو؟',
         text: 'وحدة مساهمة تُجمع مع غيرها لتكوين أصل وقفي مشترك يُحفظ ويُستثمر.',
       },
       note: 'يمكن أن تساهم عن نفسك أو والديك أو من تحب، عبر القنوات الرسمية للوقف.',
@@ -693,7 +692,6 @@ const en: LibraryProfileContent = {
     share: {
       heading: 'The Waqf Share',
       what: {
-        title: 'What is it?',
         text: 'A contribution unit pooled with others to form a shared endowment asset that is preserved and invested.',
       },
       note: 'You can contribute for yourself, your parents, or someone you love — through the waqf’s official channels.',
@@ -1027,7 +1025,6 @@ const tr: LibraryProfileContent = {
     share: {
       heading: 'Vakıf Payı',
       what: {
-        title: 'Nedir?',
         text: 'Korunan ve yatırılan ortak bir vakıf varlığı oluşturmak için diğerleriyle birleştirilen katkı birimi.',
       },
       note: 'Kendiniz, anne-babanız veya sevdiğiniz biri adına, vakfın resmi kanallarından katkıda bulunabilirsiniz.',

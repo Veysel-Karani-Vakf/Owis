@@ -1969,7 +1969,7 @@ export const SITE_PAGES: SitePageDef[] = [
         fields: [
           ...profileHeadingFields('creation'),
           { path: 'creation.share.heading', label: L('عنوان السهم الوقفي', 'Vakıf hissesi başlığı', 'Waqf share heading'), type: 'text' },
-          ...profileCard('creation.share.what', L('ما هو', 'Nedir', 'What it is')),
+          { path: 'creation.share.what.text', label: L('نص السهم الوقفي', 'Vakıf hissesi metni', 'Waqf share text'), type: 'textarea' },
           { path: 'creation.share.note', label: L('ملاحظة السهم', 'Hisse notu', 'Share note'), type: 'textarea' },
           profilePhotos('creation.photos', L('صور الشقق الوقفية', 'Vakıf dairelerinin fotoğrafları', 'Waqf apartment photos'), 4),
           { path: 'creation.formsHeading', label: L('عنوان صور إيجاد الوقف', 'Katkı biçimleri başlığı', 'Forms-of-contribution heading'), type: 'text' },

@@ -121,7 +121,7 @@ export function ProfileProblemChapter({ content }: { content: LibraryProfileCont
         <p className="mb-3 text-sm font-bold tracking-wide text-gold-400">{problem.heading}</p>
         <WordReveal
           text={problem.subheading}
-          className="max-w-4xl text-balance font-brand text-3xl font-bold leading-tight text-white md:text-5xl"
+          className="max-w-4xl text-balance font-brand text-3xl/[1.6] font-bold text-white md:text-5xl/[1.6]"
         />
 
         <div className="mt-12 grid gap-5 md:grid-cols-3 lg:grid-cols-12">

@@ -322,9 +322,7 @@ export function ProfileCreationChapter({ content }: { content: LibraryProfileCon
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
             <Check className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h3 className="mt-4 font-brand text-xl font-bold">
-            {creation.share.heading} — {creation.share.what.title}
-          </h3>
+          <h3 className="mt-4 font-brand text-xl font-bold">{creation.share.heading}</h3>
           <p className="mt-2 leading-relaxed text-white/85">{creation.share.what.text}</p>
         </motion.div>
         <p className="mt-5 text-sm font-bold text-dark-500">{creation.share.note}</p>
@@ -541,15 +539,13 @@ export function ProfileGovernanceChapter({ content }: { content: LibraryProfileC
               <div
                 key={step.title}
                 style={{ '--profile-delay': `${index * 150}ms` } as React.CSSProperties}
-                className={`profile-ignite rounded-[20px] p-5 ${
-                  index === 2 ? 'bg-primary-600 shadow-[0_16px_40px_rgba(218,8,18,0.28)]' : 'bg-white ring-1 ring-primary-100'
-                }`}
+                className="profile-ignite rounded-[20px] bg-white p-5 ring-1 ring-primary-100"
               >
-                <span className={`font-brand text-sm font-bold ${index === 2 ? 'text-[#ffc8ce]' : 'text-primary-600'}`}>
+                <span className="font-brand text-sm font-bold text-primary-600">
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <h4 className={`mt-2 font-bold ${index === 2 ? 'text-white' : 'text-dark-900'}`}>{step.title}</h4>
-                <p className={`mt-1.5 text-sm leading-relaxed ${index === 2 ? 'text-white/85' : 'text-dark-500'}`}>{step.text}</p>
+                <h4 className="mt-2 font-bold text-dark-900">{step.title}</h4>
+                <p className="mt-1.5 text-sm leading-relaxed text-dark-500">{step.text}</p>
               </div>
             ))}
           </div>
