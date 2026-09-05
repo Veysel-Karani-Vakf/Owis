@@ -1,4 +1,4 @@
-import { CheckCircle2, FlaskConical, Loader2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FlaskConical, Loader2, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageSeo from '@/components/internal/PageSeo';
@@ -16,7 +16,18 @@ function formatAmount(amount: number, locale: string, currency: string): string 
   }).format(amount);
 }
 
-type ViewState = 'loading' | 'success' | 'failure' | 'not-found';
+type ViewState = 'loading' | 'success' | 'failure' | 'unverified' | 'not-found';
+
+/**
+ * error=verify / error=server come AFTER the bank answered, so the card may
+ * already be charged: those (and a row still pending) get the "unverified"
+ * screen, never the "nothing was charged" one.
+ */
+function viewForFlowError(flowError: string | null, oid: string): ViewState {
+  if (flowError === 'verify' || flowError === 'server') return 'unverified';
+  if (flowError === 'unknown' || !oid) return 'not-found';
+  return 'failure';
+}
 
 const primaryButtonClass =
   'btn-border-run inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600';
@@ -30,12 +41,12 @@ export default function DonateResultPage() {
   const oid = searchParams.get('oid') ?? '';
   const flowError = searchParams.get('error');
 
-  const [view, setView] = useState<ViewState>(flowError || !oid ? 'failure' : 'loading');
+  const [view, setView] = useState<ViewState>(flowError || !oid ? viewForFlowError(flowError, oid) : 'loading');
   const [payment, setPayment] = useState<PaymentStatus | null>(null);
 
   useEffect(() => {
     if (!oid || flowError) {
-      setView(flowError === 'unknown' || !oid ? 'not-found' : 'failure');
+      setView(viewForFlowError(flowError, oid));
       return;
     }
     let cancelled = false;
@@ -48,14 +59,15 @@ export default function DonateResultPage() {
         return;
       }
       // A pending row means the callback update is still settling; retry a
-      // couple of times, then admit we could not verify it.
+      // couple of times, then admit we could not verify it (the row exists,
+      // so "not found" would be wrong and "nothing charged" unsafe).
       if (loaded.status === 'pending') {
         if (attempt < 2) {
           setTimeout(() => {
             if (!cancelled) void load(attempt + 1);
           }, 1200);
         } else {
-          setView('not-found');
+          setView('unverified');
         }
         return;
       }
@@ -150,6 +162,30 @@ export default function DonateResultPage() {
                     </Link>
                     <Link to={contributeContactRoute} className={secondaryButtonClass}>
                       {content.failure.contact}
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {view === 'unverified' && (
+                <div>
+                  <AlertTriangle className="mx-auto h-14 w-14 text-amber-500" aria-hidden="true" />
+                  <h1 className="mt-5 text-2xl font-bold text-dark-950 md:text-3xl">{content.unverified.title}</h1>
+                  <p className="mt-3 text-base leading-relaxed text-dark-600">{content.unverified.description}</p>
+                  {oid && (
+                    <p className="mx-auto mt-5 w-fit rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
+                      {content.unverified.referenceLabel}:{' '}
+                      <span dir="ltr" className="font-mono">
+                        {oid}
+                      </span>
+                    </p>
+                  )}
+                  <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                    <Link to={contributeContactRoute} className={primaryButtonClass}>
+                      {content.failure.contact}
+                    </Link>
+                    <Link to={donateRoute} className={secondaryButtonClass}>
+                      {content.backToDonate}
                     </Link>
                   </div>
                 </div>

@@ -1,8 +1,7 @@
-import { AlertTriangle, FlaskConical, HandHeart, Loader2 } from 'lucide-react';
+import { AlertTriangle, FlaskConical, HandHeart, Loader2, Lock } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
-import CardFields, { type CardFieldValues } from '@/components/donate/CardFields';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { donateRoute } from '@/data/donate';
@@ -13,9 +12,7 @@ import {
   createPayment,
   DEFAULT_PAYMENT_CONFIG,
   DonationPaymentError,
-  expiryInFuture,
   fetchPaymentConfig,
-  luhnValid,
   submitToGate,
   type PaymentConfig,
   type PaymentErrorCode,
@@ -27,10 +24,13 @@ const inputClass =
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
 
 function formatAmount(amount: number, locale: string, currency: string): string {
+  // Presets stay "$250"; a custom 19.99 must read "$19.99", never "$20".
+  const digits = Number.isInteger(amount) ? 0 : 2;
   return new Intl.NumberFormat(localeTags[locale] ?? 'en-US', {
     style: 'currency',
     currency,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   }).format(amount);
 }
 
@@ -38,9 +38,6 @@ type FieldErrors = {
   amount?: string;
   name?: string;
   email?: string;
-  number?: string;
-  expiry?: string;
-  cvv?: string;
   consent?: string;
 };
 
@@ -55,13 +52,14 @@ export default function DonateCheckoutPage() {
     [donatePage.opportunities, slug],
   );
 
-  const [config, setConfig] = useState<PaymentConfig>(DEFAULT_PAYMENT_CONFIG);
+  // null until /api/payments/config answers: limits fall back to the defaults
+  // meanwhile, and the test-mode notice stays hidden (production-safe).
+  const [config, setConfig] = useState<PaymentConfig | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
-  const [card, setCard] = useState<CardFieldValues>({ number: '', expiry: '', cvv: '' });
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -77,6 +75,8 @@ export default function DonateCheckoutPage() {
     };
   }, []);
 
+  const limits = config ?? DEFAULT_PAYMENT_CONFIG;
+
   if (!opportunity || !opportunity.available) {
     return <Navigate to={donateRoute} replace />;
   }
@@ -91,12 +91,6 @@ export default function DonateCheckoutPage() {
         return content.errors.name;
       case 'invalid-email':
         return content.errors.email;
-      case 'invalid-card':
-        return content.errors.card;
-      case 'invalid-expiry':
-        return content.errors.expiry;
-      case 'invalid-cvv':
-        return content.errors.cvv;
       case 'unavailable':
         return content.errors.unavailable;
       case 'network':
@@ -112,11 +106,13 @@ export default function DonateCheckoutPage() {
 
     const nextErrors: FieldErrors = {};
     const amount = amountValue ?? NaN;
+    // Whole cents only, with a tolerance: 19.99 * 100 is not exactly 1999 in floating point.
+    const cents = Math.round(amount * 100);
     if (
       !Number.isFinite(amount) ||
-      amount < config.minAmount ||
-      amount > config.maxAmount ||
-      Math.round(amount * 100) !== amount * 100
+      Math.abs(amount * 100 - cents) > 1e-6 ||
+      cents < limits.minAmount * 100 ||
+      cents > limits.maxAmount * 100
     ) {
       nextErrors.amount = content.errors.amount;
     }
@@ -125,11 +121,6 @@ export default function DonateCheckoutPage() {
     const email = donorEmail.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = content.errors.email;
 
-    const pan = card.number.replace(/\D/g, '');
-    if (!luhnValid(pan)) nextErrors.number = content.errors.card;
-    const [expMonth = '', expYear = ''] = card.expiry.split('/');
-    if (!expiryInFuture(expMonth, expYear)) nextErrors.expiry = content.errors.expiry;
-    if (!/^\d{3,4}$/.test(card.cvv)) nextErrors.cvv = content.errors.cvv;
     if (!consent) nextErrors.consent = content.errors.consent;
 
     setErrors(nextErrors);
@@ -141,12 +132,11 @@ export default function DonateCheckoutPage() {
       const result = await createPayment({
         slug: opportunity.id,
         titleSnapshot: opportunity.title,
-        amount,
+        amount: cents / 100,
         locale,
         donor: { name, email, phone: donorPhone.trim() },
-        card: { pan, expMonth, expYear, cv2: card.cvv },
       });
-      // Full-page handover to the (mock) bank; no state survives on purpose.
+      // Full-page handover to the bank's hosted card page; no state survives.
       submitToGate(result.gateUrl, result.fields);
     } catch (error) {
       const code = error instanceof DonationPaymentError ? error.code : 'server-error';
@@ -155,7 +145,9 @@ export default function DonateCheckoutPage() {
     }
   };
 
-  const showTestBanner = config.mode !== 'production';
+  // Only once the server has answered: a live deployment must never flash
+  // "no real charge is made" at a donor who is about to be charged.
+  const showTestBanner = config !== null && config.mode !== 'production';
 
   return (
     <>
@@ -212,7 +204,7 @@ export default function DonateCheckoutPage() {
                   </div>
                 </div>
 
-                {config.mode === 'mock' && (
+                {config?.mode === 'mock' && (
                   <div id="cms-checkout-test-cards" className="mt-6 rounded-[22px] border border-primary-100 bg-white p-5 text-start shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
                     <p className="text-sm font-black text-dark-900">{content.testCards.heading}</p>
                     <p className="mt-2 text-sm leading-relaxed text-dark-600">{content.testCards.description}</p>
@@ -252,7 +244,7 @@ export default function DonateCheckoutPage() {
                   <div>
                     <h2 className="text-xl font-bold text-dark-950">{content.amount.heading}</h2>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {config.presets.map((preset) => {
+                      {limits.presets.map((preset) => {
                         const active = customAmount.trim() === '' && selectedPreset === preset;
                         return (
                           <button
@@ -269,7 +261,7 @@ export default function DonateCheckoutPage() {
                                 : 'border-primary-100 bg-white text-dark-800 hover:border-primary-300 hover:text-primary-700'
                             }`}
                           >
-                            {formatAmount(preset, locale, config.currency)}
+                            {formatAmount(preset, locale, limits.currency)}
                           </button>
                         );
                       })}
@@ -283,8 +275,8 @@ export default function DonateCheckoutPage() {
                         name="custom-amount"
                         type="number"
                         inputMode="decimal"
-                        min={config.minAmount}
-                        max={config.maxAmount}
+                        min={limits.minAmount}
+                        max={limits.maxAmount}
                         step="0.01"
                         placeholder={content.amount.customPlaceholder}
                         value={customAmount}
@@ -373,14 +365,11 @@ export default function DonateCheckoutPage() {
 
                   <div>
                     <h2 className="text-xl font-bold text-dark-950">{content.card.heading}</h2>
-                    <div className="mt-4">
-                      <CardFields
-                        values={card}
-                        errors={errors}
-                        labels={content.card}
-                        disabled={submitting}
-                        onChange={(field, value) => setCard((previous) => ({ ...previous, [field]: value }))}
-                      />
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary-100 bg-primary-50/55 p-4">
+                      <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary-700" aria-hidden="true" />
+                      <p className="text-sm font-semibold leading-relaxed text-dark-700">
+                        {content.card.bankHandoverNote}
+                      </p>
                     </div>
                   </div>
 
@@ -422,7 +411,7 @@ export default function DonateCheckoutPage() {
                       )}
                       {submitting ? content.submitProcessing : content.submitIdle}
                       {amountValue && Number.isFinite(amountValue) && amountValue > 0
-                        ? ` — ${formatAmount(amountValue, locale, config.currency)}`
+                        ? ` — ${formatAmount(amountValue, locale, limits.currency)}`
                         : ''}
                     </button>
                     <p className="mt-3 text-xs font-semibold leading-relaxed text-dark-500">{content.redirectNote}</p>

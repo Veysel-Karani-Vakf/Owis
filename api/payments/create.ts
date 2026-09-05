@@ -1,15 +1,12 @@
 import { createPayment, getOpportunityBySlug, type PaymentLocale } from '../_lib/db';
 import { PAYMENT_LIMITS, paymentClientId, paymentGateUrl, paymentStoreKey, siteOrigin } from '../_lib/env';
 import { methodNotAllowed, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { buildGateRequestFields, expiryInFuture, luhnValid, newOrderId } from '../_lib/nestpay';
+import { buildGateRequestFields, newOrderId } from '../_lib/nestpay';
 
 type CreateErrorCode =
   | 'invalid-amount'
   | 'invalid-name'
   | 'invalid-email'
-  | 'invalid-card'
-  | 'invalid-expiry'
-  | 'invalid-cvv'
   | 'unavailable'
   | 'server-error';
 
@@ -32,7 +29,8 @@ const LOCALES: PaymentLocale[] = ['ar', 'tr', 'en'];
 /**
  * Validates the checkout submission, records a pending payment and returns
  * the signed field set the browser must form-POST to the 3D gate.
- * Card data passes through in memory only: it is neither persisted nor logged.
+ * No card data is accepted here: the donor enters the card on the bank's own
+ * hosted page (3d_pay_hosting), so a PAN never reaches this server at all.
  */
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method !== 'POST') {
@@ -42,7 +40,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
   const body = await readJsonBody(req);
   const donor = asRecord(body.donor);
-  const card = asRecord(body.card);
 
   const slug = asString(body.slug).trim().slice(0, 120);
   const titleSnapshot = asString(body.titleSnapshot).trim().slice(0, 200);
@@ -51,16 +48,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     ? (rawLocale as PaymentLocale)
     : 'en';
 
-  const amount = typeof body.amount === 'number' ? body.amount : Number(asString(body.amount));
+  const rawAmount = typeof body.amount === 'number' ? body.amount : Number(asString(body.amount));
+  // Whole cents only, compared with a tolerance: 19.99 * 100 is not exactly
+  // 1999 in floating point, and such amounts must not be rejected.
+  const cents = Math.round(rawAmount * 100);
   if (
-    !Number.isFinite(amount) ||
-    amount < PAYMENT_LIMITS.minAmount ||
-    amount > PAYMENT_LIMITS.maxAmount ||
-    Math.round(amount * 100) !== amount * 100
+    !Number.isFinite(rawAmount) ||
+    Math.abs(rawAmount * 100 - cents) > 1e-6 ||
+    cents < PAYMENT_LIMITS.minAmount * 100 ||
+    cents > PAYMENT_LIMITS.maxAmount * 100
   ) {
     fail(res, 400, 'invalid-amount');
     return;
   }
+  const amount = cents / 100;
 
   const donorName = asString(donor.name).trim();
   if (donorName.length < 2 || donorName.length > 120) {
@@ -73,23 +74,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
   const donorPhone = asString(donor.phone).trim().slice(0, 40);
-
-  const pan = asString(card.pan).replace(/\D/g, '');
-  if (!luhnValid(pan)) {
-    fail(res, 400, 'invalid-card');
-    return;
-  }
-  const expMonth = asString(card.expMonth).padStart(2, '0');
-  const expYear = asString(card.expYear);
-  if (!expiryInFuture(expMonth, expYear)) {
-    fail(res, 400, 'invalid-expiry');
-    return;
-  }
-  const cv2 = asString(card.cv2);
-  if (!/^\d{3,4}$/.test(cv2)) {
-    fail(res, 400, 'invalid-cvv');
-    return;
-  }
 
   try {
     // Prefer the live catalogue row (title in the donor's locale, current
@@ -132,12 +116,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       okUrl: callbackUrl,
       failUrl: callbackUrl,
       lang: locale === 'tr' ? 'tr' : 'en',
-      card: { pan, expMonth, expYear, cv2 },
     });
 
     sendJson(res, 200, { ok: true, oid, gateUrl: paymentGateUrl(origin), fields });
   } catch (error) {
-    // Never log the request body here: it contains card data.
     console.error('payments/create failed:', error instanceof Error ? error.message : 'unknown');
     fail(res, 500, 'server-error');
   }

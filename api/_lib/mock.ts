@@ -20,6 +20,7 @@ const STRINGS: Record<
     title: string;
     banner: string;
     verifying: string;
+    payTitle: string;
     amountLabel: string;
     orderLabel: string;
     cardLabel: string;
@@ -29,12 +30,24 @@ const STRINGS: Record<
     redirecting: string;
     continueButton: string;
     errorTitle: string;
+    cardNumberLabel: string;
+    cardHolderLabel: string;
+    expiryLabel: string;
+    cvvLabel: string;
+    payButton: string;
+    cancelButton: string;
+    secureNote: string;
+    cardInvalid: string;
+    expiryInvalid: string;
+    cvvInvalid: string;
+    testCardsHint: string;
   }
 > = {
   tr: {
     title: '3-D Secure Doğrulama — TEST',
     banner: 'TEST ORTAMI — Gerçek bir ödeme alınmaz',
     verifying: 'Kart doğrulama simülasyonu',
+    payTitle: 'Güvenli Ödeme — Sanal POS',
     amountLabel: 'Tutar',
     orderLabel: 'Sipariş No',
     cardLabel: 'Kart',
@@ -44,11 +57,23 @@ const STRINGS: Record<
     redirecting: 'Bankadan siteye geri yönlendiriliyorsunuz…',
     continueButton: 'Devam Et',
     errorTitle: 'İşlem gerçekleştirilemedi',
+    cardNumberLabel: 'Kart Numarası',
+    cardHolderLabel: 'Kart Üzerindeki İsim',
+    expiryLabel: 'Son Kullanma (AA/YY)',
+    cvvLabel: 'CVV',
+    payButton: 'Ödemeyi Tamamla',
+    cancelButton: 'Vazgeç',
+    secureNote: 'Kart bilgileriniz banka sayfasında girilir, üye işyerine iletilmez.',
+    cardInvalid: 'Kart numarası geçersiz.',
+    expiryInvalid: 'Son kullanma tarihi geçersiz.',
+    cvvInvalid: 'CVV geçersiz.',
+    testCardsHint: 'Test kartları: 4508 0345 0803 4509 (onay) · 4000 0000 0000 0002 (3-D hatası) · 4242 4242 4208 0069 (red)',
   },
   en: {
     title: '3-D Secure Verification — TEST',
     banner: 'TEST ENVIRONMENT — No real charge is made',
     verifying: 'Card verification simulation',
+    payTitle: 'Secure Payment — Virtual POS',
     amountLabel: 'Amount',
     orderLabel: 'Order ID',
     cardLabel: 'Card',
@@ -58,6 +83,17 @@ const STRINGS: Record<
     redirecting: 'Redirecting you back from the bank to the site…',
     continueButton: 'Continue',
     errorTitle: 'The transaction could not be processed',
+    cardNumberLabel: 'Card Number',
+    cardHolderLabel: 'Name on Card',
+    expiryLabel: 'Expiry (MM/YY)',
+    cvvLabel: 'CVV',
+    payButton: 'Complete Payment',
+    cancelButton: 'Cancel',
+    secureNote: 'Your card details are entered on the bank page and are never sent to the merchant.',
+    cardInvalid: 'The card number is invalid.',
+    expiryInvalid: 'The expiry date is invalid.',
+    cvvInvalid: 'The CVV is invalid.',
+    testCardsHint: 'Test cards: 4508 0345 0803 4509 (approve) · 4000 0000 0000 0002 (3-D failure) · 4242 4242 4208 0069 (decline)',
   },
 };
 
@@ -71,7 +107,7 @@ function hiddenInputs(fields: Record<string, string>): string {
     .join('\n        ');
 }
 
-function pageShell(lang: MockLang, body: string): string {
+function pageShell(lang: MockLang, body: string, heading?: string): string {
   const t = STRINGS[lang];
   return `<!doctype html>
 <html lang="${lang}">
@@ -83,7 +119,7 @@ function pageShell(lang: MockLang, body: string): string {
 <style>
   body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f1f3f7; color: #1b2430; }
   .banner { background: #b45309; color: #fff; text-align: center; font-weight: 700; padding: 10px 16px; letter-spacing: .02em; }
-  .wrap { max-width: 430px; margin: 40px auto; padding: 0 16px; }
+  .wrap { max-width: 460px; margin: 40px auto; padding: 0 16px; }
   .card { background: #fff; border-radius: 14px; box-shadow: 0 14px 40px rgba(15, 30, 60, .12); overflow: hidden; }
   .head { background: #10316b; color: #fff; padding: 18px 22px; font-weight: 700; }
   .body { padding: 22px; }
@@ -96,13 +132,20 @@ function pageShell(lang: MockLang, body: string): string {
   .decline { background: #b91c1c; color: #fff; }
   .plain { background: #10316b; color: #fff; }
   .note { margin-top: 16px; font-size: 12px; color: #8a94a6; text-align: center; }
+  label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: #33415c; }
+  input[type=text] { width: 100%; box-sizing: border-box; border: 1px solid #cfd7e6; border-radius: 10px; padding: 12px 14px; font-size: 15px; font-family: inherit; color: #1b2430; }
+  input[type=text]:focus { outline: 0; border-color: #10316b; box-shadow: 0 0 0 3px rgba(16, 49, 107, .12); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .err { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fee2e2; color: #991b1b; font-size: 13px; font-weight: 600; }
+  .hint { margin-top: 14px; font-size: 12px; line-height: 1.6; color: #64748b; }
+  .secure { margin-top: 14px; font-size: 12px; line-height: 1.6; color: #15803d; font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="banner">${escapeHtml(t.banner)}</div>
 <div class="wrap">
   <div class="card">
-    <div class="head">${escapeHtml(t.verifying)}</div>
+    <div class="head">${escapeHtml(heading ?? t.verifying)}</div>
     <div class="body">
 ${body}
     </div>
@@ -111,6 +154,86 @@ ${body}
 </div>
 </body>
 </html>`;
+}
+
+/** Which validation message the hosted card form shows above the fields. */
+export type CardEntryError = 'cardInvalid' | 'expiryInvalid' | 'cvvInvalid';
+
+/**
+ * The bank's own card-entry page (3d_pay_hosting): the donor lands here from
+ * our checkout with only the signed order fields, and types the PAN on this
+ * page — i.e. on the bank's domain, never on ours. The signed order fields
+ * ride along as hidden inputs so the posted card can be re-validated against
+ * the same order.
+ */
+export function cardEntryPage(input: {
+  lang: MockLang;
+  amountLabelValue: string;
+  oid: string;
+  actionUrl: string;
+  cancelUrl: string;
+  orderFields: Record<string, string>;
+  cancelFields: Record<string, string>;
+  values?: { pan?: string; holder?: string; expiry?: string; cvv?: string };
+  error?: CardEntryError;
+}): string {
+  const t = STRINGS[input.lang];
+  const values = input.values ?? {};
+  const errorMessage = input.error ? t[input.error] : '';
+  const body = `
+      <div class="row"><span>${escapeHtml(t.amountLabel)}</span><b>${escapeHtml(input.amountLabelValue)}</b></div>
+      <div class="row"><span>${escapeHtml(t.orderLabel)}</span><b>${escapeHtml(input.oid)}</b></div>
+      ${errorMessage ? `<p class="err">${escapeHtml(errorMessage)}</p>` : ''}
+      <form method="post" action="${escapeHtml(input.actionUrl)}">
+      ${hiddenInputs(input.orderFields)}
+        <label for="pan">${escapeHtml(t.cardNumberLabel)}</label>
+        <input id="pan" name="pan" type="text" inputmode="numeric" autocomplete="cc-number"
+               maxlength="23" placeholder="0000 0000 0000 0000" required value="${escapeHtml(values.pan ?? '')}">
+        <label for="holder">${escapeHtml(t.cardHolderLabel)}</label>
+        <input id="holder" name="cardHolderName" type="text" autocomplete="cc-name" maxlength="60" value="${escapeHtml(values.holder ?? '')}">
+        <div class="pair">
+          <div>
+            <label for="expiry">${escapeHtml(t.expiryLabel)}</label>
+            <input id="expiry" name="expiry" type="text" inputmode="numeric" autocomplete="cc-exp"
+                   maxlength="5" placeholder="MM/YY" required value="${escapeHtml(values.expiry ?? '')}">
+          </div>
+          <div>
+            <label for="cv2">${escapeHtml(t.cvvLabel)}</label>
+            <input id="cv2" name="cv2" type="text" inputmode="numeric" autocomplete="cc-csc"
+                   maxlength="4" placeholder="123" required value="${escapeHtml(values.cvv ?? '')}">
+          </div>
+        </div>
+        <div class="actions" style="margin-top:18px">
+          <button type="submit" class="approve" style="width:100%">${escapeHtml(t.payButton)}</button>
+        </div>
+      </form>
+      <form method="post" action="${escapeHtml(input.cancelUrl)}">
+      ${hiddenInputs(input.cancelFields)}
+        <div class="actions" style="margin-top:10px">
+          <button type="submit" class="decline" style="width:100%">${escapeHtml(t.cancelButton)}</button>
+        </div>
+      </form>
+      <p class="secure">${escapeHtml(t.secureNote)}</p>
+      <p class="hint">${escapeHtml(t.testCardsHint)}</p>
+      <script>
+        (function () {
+          var pan = document.getElementById('pan');
+          var exp = document.getElementById('expiry');
+          var cvv = document.getElementById('cv2');
+          pan.addEventListener('input', function () {
+            var d = pan.value.replace(/\\D/g, '').slice(0, 19);
+            pan.value = d.replace(/(\\d{4})(?=\\d)/g, '$1 ');
+          });
+          exp.addEventListener('input', function () {
+            var d = exp.value.replace(/\\D/g, '').slice(0, 4);
+            exp.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+          });
+          cvv.addEventListener('input', function () {
+            cvv.value = cvv.value.replace(/\\D/g, '').slice(0, 4);
+          });
+        })();
+      </script>`;
+  return pageShell(input.lang, body, t.payTitle);
 }
 
 export function challengePage(input: {

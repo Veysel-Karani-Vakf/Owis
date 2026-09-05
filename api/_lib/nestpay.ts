@@ -1,10 +1,12 @@
 // NestPay (Payten/Asseco EST) protocol helpers — the İş Bankası virtual POS
 // (est3Dgate) speaks this protocol. Everything gateway-specific lives in this
-// one file. Field names and hashing follow the bank's ver3 "3D_PAY" model as
+// one file. Field names and hashing follow the bank's ver3 "3D_PAY_HOSTING"
+// model (card entered on the bank's own page) as
 // implemented by the official Payten PHP sample: parameters sorted with
 // PHP's natcasesort, values escaped and joined with '|', the store key
 // appended last, SHA-512, base64.
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { TextDecoder } from 'node:util';
 
 /** ver3 hashing ignores these parameter names (case-insensitive). */
 const HASH_EXCLUDED = new Set(['hash', 'encoding', 'countdown']);
@@ -69,7 +71,8 @@ export function lowerCaseCompare(a: string, b: string): number {
 }
 
 export type Ver3Ordering = 'natural' | 'lowercase';
-export type Ver3Encoding = 'utf8' | 'latin5';
+/** 'binary' = the values already hold one char per byte (raw form bytes). */
+export type Ver3Encoding = 'utf8' | 'latin5' | 'binary';
 export type Ver3Options = { ordering?: Ver3Ordering; encoding?: Ver3Encoding };
 
 // ---------------------------------------------------------------------------
@@ -106,7 +109,43 @@ export function latin5Bytes(value: string): Buffer {
 }
 
 function plaintextBytes(plaintext: string, encoding: Ver3Encoding): Buffer {
-  return encoding === 'latin5' ? latin5Bytes(plaintext) : Buffer.from(plaintext, 'utf8');
+  if (encoding === 'latin5') return latin5Bytes(plaintext);
+  // 'binary': the string already holds one char per byte (see readFormBodyBinary).
+  if (encoding === 'binary') return Buffer.from(plaintext, 'latin1');
+  return Buffer.from(plaintext, 'utf8');
+}
+
+/** Latin-5 byte → Unicode for the six slots ISO-8859-9 reassigns. */
+const LATIN5_TO_UNICODE: Record<number, number> = {
+  0xd0: 0x011e, // Ğ
+  0xdd: 0x0130, // İ
+  0xde: 0x015e, // Ş
+  0xf0: 0x011f, // ğ
+  0xfd: 0x0131, // ı
+  0xfe: 0x015f, // ş
+};
+
+/**
+ * Text of a gateway value delivered as raw bytes: UTF-8 when the bytes are
+ * valid UTF-8, otherwise ISO-8859-9 (Turkish letters in ErrMsg, card issuer…).
+ */
+export function decodeGateBytes(bytes: Buffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    let text = '';
+    for (const byte of bytes) text += String.fromCharCode(LATIN5_TO_UNICODE[byte] ?? byte);
+    return text;
+  }
+}
+
+/** Readable copy of a byte-for-byte ("binary" string) parameter set. */
+export function decodeGateParams(binary: Record<string, string>): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(binary)) {
+    params[decodeGateBytes(Buffer.from(key, 'latin1'))] = decodeGateBytes(Buffer.from(value, 'latin1'));
+  }
+  return params;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,10 +175,11 @@ export function computeVer3Hash(
   storeKey: string,
   options: Ver3Options = {},
 ): string {
-  const plaintext = ver3Plaintext(params, storeKey, options);
-  return createHash('sha512')
-    .update(plaintextBytes(plaintext, options.encoding ?? 'utf8'))
-    .digest('base64');
+  const encoding = options.encoding ?? 'utf8';
+  // Binary mode compares bytes, so the key joins as its UTF-8 bytes too.
+  const key = encoding === 'binary' ? Buffer.from(storeKey, 'utf8').toString('latin1') : storeKey;
+  const plaintext = ver3Plaintext(params, key, options);
+  return createHash('sha512').update(plaintextBytes(plaintext, encoding)).digest('base64');
 }
 
 export type Ver3Match = { ordering: Ver3Ordering; encoding: Ver3Encoding };
@@ -157,13 +197,26 @@ export const VER3_VERIFY_VARIANTS: readonly Ver3Match[] = [
   { ordering: 'lowercase', encoding: 'latin5' },
 ];
 
+/**
+ * Verification over the exact bytes the gate posted (values as one char per
+ * byte): reproduces the bank's hash whether it ran in ISO-8859-9 or UTF-8.
+ */
+export const VER3_BINARY_VARIANTS: readonly Ver3Match[] = [
+  { ordering: 'natural', encoding: 'binary' },
+  { ordering: 'lowercase', encoding: 'binary' },
+];
+
 /** Which variant (if any) reproduces the hash/HASH field of a gateway request or callback. */
-export function matchVer3Hash(params: Record<string, string>, storeKey: string): Ver3Match | null {
+export function matchVer3Hash(
+  params: Record<string, string>,
+  storeKey: string,
+  variants: readonly Ver3Match[] = VER3_VERIFY_VARIANTS,
+): Ver3Match | null {
   const hashKey = Object.keys(params).find((key) => key.toLowerCase() === 'hash');
   const provided = (hashKey ? params[hashKey] : '').trim();
   if (!provided) return null;
   const providedBuffer = Buffer.from(provided, 'utf8');
-  for (const variant of VER3_VERIFY_VARIANTS) {
+  for (const variant of variants) {
     const expected = Buffer.from(computeVer3Hash(params, storeKey, variant), 'utf8');
     if (expected.length === providedBuffer.length && timingSafeEqual(expected, providedBuffer)) {
       return variant;
@@ -191,18 +244,6 @@ export function newOrderId(): string {
   return randomBytes(16).toString('hex');
 }
 
-/**
- * NestPay `cardType`: 1 = Visa, 2 = MasterCard. Omitted for other brands
- * (Troy, Amex): the gate resolves those from the BIN itself.
- */
-export function nestpayCardType(pan: string): string | null {
-  if (/^4/.test(pan)) return '1';
-  if (/^5[1-5]/.test(pan)) return '2';
-  const prefix4 = Number(pan.slice(0, 4));
-  if (prefix4 >= 2221 && prefix4 <= 2720) return '2';
-  return null;
-}
-
 export type GateRequestInput = {
   clientId: string;
   storeKey: string;
@@ -215,20 +256,24 @@ export type GateRequestInput = {
   failUrl: string;
   /** Gateway UI language; NestPay understands 'tr' and 'en'. */
   lang: 'tr' | 'en';
-  card: { pan: string; expMonth: string; expYear: string; cv2: string };
 };
 
 /**
- * The signed field set the browser form-POSTs to the 3D gate (3d_pay model:
- * card on our page, 3-D Secure challenge at the bank, authorization by the
- * bank, signed outcome posted to okUrl/failUrl). Field names are the Turkish
- * EST set: `islemtipi` (transaction type), `taksit` (instalments, empty =
- * none), 2-digit expiry year.
+ * The signed field set the browser form-POSTs to the 3D gate.
+ *
+ * Model: `3d_pay_hosting` — the donor never types a card number on our site.
+ * We post only the order (amount, currency, oid, return URLs, signature); the
+ * bank renders its own card form on its own domain, runs the 3-D Secure
+ * challenge, authorizes, and posts the signed outcome back to okUrl/failUrl.
+ * That keeps card data entirely off our servers and out of our PCI scope.
+ *
+ * Field names are the Turkish EST set: `islemtipi` (transaction type),
+ * `taksit` (instalments, empty = none).
  */
 export function buildGateRequestFields(input: GateRequestInput): Record<string, string> {
   const fields: Record<string, string> = {
     clientid: input.clientId,
-    storetype: '3d_pay',
+    storetype: '3d_pay_hosting',
     islemtipi: 'Auth',
     amount: formatGateAmount(input.amount),
     currency: input.currencyCode,
@@ -240,13 +285,10 @@ export function buildGateRequestFields(input: GateRequestInput): Record<string, 
     taksit: '',
     refreshtime: '5',
     hashAlgorithm: 'ver3',
-    pan: input.card.pan,
-    Ecom_Payment_Card_ExpDate_Month: input.card.expMonth,
-    Ecom_Payment_Card_ExpDate_Year: input.card.expYear,
-    cv2: input.card.cv2,
+    // Hash-excluded by the protocol; asks the gate to answer in UTF-8 (its
+    // default is ISO-8859-9). The callback verifier copes with either anyway.
+    encoding: 'UTF-8',
   };
-  const cardType = nestpayCardType(input.card.pan);
-  if (cardType) fields.cardType = cardType;
   fields.hash = computeVer3Hash(fields, input.storeKey);
   return fields;
 }
@@ -280,7 +322,7 @@ export function buildGateCallbackFields(input: GateCallbackInput): Record<string
     amount: input.amount,
     currency: input.currencyCode,
     rnd: randomBytes(12).toString('hex'),
-    storetype: '3d_pay',
+    storetype: '3d_pay_hosting',
     mdStatus: input.mdStatus,
     mdErrorMsg: input.mdStatus === '0' ? input.errMsg ?? '' : '',
     ProcReturnCode: input.procReturnCode,

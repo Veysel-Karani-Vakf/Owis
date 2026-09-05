@@ -1282,7 +1282,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'checkout-form',
         label: L('أقسام نموذج الدفع', 'Ödeme formu bölümleri', 'Payment form sections'),
-        description: L('عناوين وحقول: ملخص المساهمة، المبلغ، بيانات المساهم، بيانات البطاقة', 'Özet, tutar, katkı sahibi ve kart bölümlerinin başlıkları ve alanları', 'Headings and fields of the summary, amount, contributor and card sections'),
+        description: L('عناوين وحقول: ملخص المساهمة، المبلغ، بيانات المساهم، والدفع عبر البنك', 'Özet, tutar, katkı sahibi ve banka ödemesi bölümlerinin başlıkları ve alanları', 'Headings and fields of the summary, amount, contributor and bank payment sections'),
         icon: LayoutGrid,
         anchor: '#cms-checkout-form',
         fields: [
@@ -1297,11 +1297,8 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'checkout.donor.emailLabel', label: L('حقل البريد', 'E-posta alanı', 'Email field'), type: 'text' },
           { path: 'checkout.donor.phoneLabel', label: L('حقل الهاتف', 'Telefon alanı', 'Phone field'), type: 'text' },
           { path: 'checkout.donor.optionalSuffix', label: L('لاحقة "(اختياري)"', '"(isteğe bağlı)" eki', '"(optional)" suffix'), type: 'text' },
-          { path: 'checkout.card.heading', label: L('عنوان "بيانات البطاقة"', 'Kart başlığı', 'Card heading'), type: 'text' },
-          { path: 'checkout.card.numberLabel', label: L('حقل رقم البطاقة', 'Kart numarası alanı', 'Card number field'), type: 'text' },
-          { path: 'checkout.card.expiryLabel', label: L('حقل تاريخ الانتهاء', 'Son kullanma alanı', 'Expiry field'), type: 'text' },
-          { path: 'checkout.card.cvvLabel', label: L('حقل رمز الأمان', 'CVV alanı', 'CVV field'), type: 'text' },
-          { path: 'checkout.card.secureNote', label: L('ملاحظة أمان البطاقة', 'Kart güvenlik notu', 'Card security note'), type: 'textarea' },
+          { path: 'checkout.card.heading', label: L('عنوان قسم الدفع عبر البنك', 'Banka ödemesi başlığı', 'Bank payment heading'), type: 'text' },
+          { path: 'checkout.card.bankHandoverNote', label: L('نص التحويل إلى صفحة البنك', 'Banka sayfasına yönlendirme metni', 'Bank handover note'), type: 'textarea' },
         ],
       },
       {
@@ -1319,7 +1316,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'checkout-test-cards',
         label: L('صندوق بطاقات الاختبار', 'Test kartları kutusu', 'Test cards box'),
-        description: L('يظهر فقط في الوضع التجريبي', 'Yalnızca test modunda görünür', 'Shown only in test mode'),
+        description: L('يظهر فقط في الوضع التجريبي؛ تُدخل الأرقام في صفحة البنك', 'Yalnızca test modunda görünür; numaralar banka sayfasına girilir', 'Shown only in test mode; the numbers are entered on the bank page'),
         icon: CreditCard,
         anchor: '#cms-checkout-test-cards',
         fields: [
@@ -1339,9 +1336,6 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'checkout.errors.amount', label: L('خطأ المبلغ', 'Tutar hatası', 'Amount error'), type: 'text' },
           { path: 'checkout.errors.name', label: L('خطأ الاسم', 'Ad hatası', 'Name error'), type: 'text' },
           { path: 'checkout.errors.email', label: L('خطأ البريد', 'E-posta hatası', 'Email error'), type: 'text' },
-          { path: 'checkout.errors.card', label: L('خطأ رقم البطاقة', 'Kart numarası hatası', 'Card number error'), type: 'text' },
-          { path: 'checkout.errors.expiry', label: L('خطأ تاريخ الانتهاء', 'Son kullanma hatası', 'Expiry error'), type: 'text' },
-          { path: 'checkout.errors.cvv', label: L('خطأ رمز الأمان', 'CVV hatası', 'CVV error'), type: 'text' },
           { path: 'checkout.errors.consent', label: L('خطأ الموافقة', 'Onay hatası', 'Consent error'), type: 'text' },
           { path: 'checkout.errors.unavailable', label: L('الفرصة غير متاحة', 'Fırsat kapalı', 'Opportunity unavailable'), type: 'text' },
           { path: 'checkout.errors.network', label: L('خطأ الاتصال', 'Bağlantı hatası', 'Network error'), type: 'text' },
@@ -1375,6 +1369,9 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'result.failure.reasonLabel', label: L('عنوان "السبب"', 'Neden etiketi', 'Reason label'), type: 'text' },
           { path: 'result.failure.retry', label: L('زر إعادة المحاولة', 'Tekrar dene butonu', 'Retry button'), type: 'text' },
           { path: 'result.failure.contact', label: L('زر التواصل', 'İletişim butonu', 'Contact button'), type: 'text' },
+          { path: 'result.unverified.title', label: L('عنوان "تعذّر تأكيد النتيجة"', 'Doğrulanamadı başlığı', 'Unverified title'), type: 'text' },
+          { path: 'result.unverified.description', label: L('وصف "تعذّر تأكيد النتيجة"', 'Doğrulanamadı açıklaması', 'Unverified description'), type: 'textarea' },
+          { path: 'result.unverified.referenceLabel', label: L('عنوان "رقم المرجع"', 'Referans etiketi', 'Reference label'), type: 'text' },
           { path: 'result.notFound.title', label: L('عنوان "لم نجد العملية"', 'Bulunamadı başlığı', 'Not-found title'), type: 'text' },
           { path: 'result.notFound.description', label: L('وصف "لم نجد العملية"', 'Bulunamadı açıklaması', 'Not-found description'), type: 'textarea' },
           { path: 'result.backToDonate', label: L('رابط العودة لفرص المساهمة', 'Fırsatlara dön bağlantısı', 'Back-to-donate link'), type: 'text' },

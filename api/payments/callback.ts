@@ -1,7 +1,7 @@
 import { finalizePayment, getPaymentByOid } from '../_lib/db';
 import { paymentClientId, paymentStoreKey, siteOrigin } from '../_lib/env';
-import { readFormBody, redirect303, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { isPaidCallback, matchVer3Hash } from '../_lib/nestpay';
+import { readFormBody, readFormBodyBinary, redirect303, type ApiRequest, type ApiResponse } from '../_lib/http';
+import { decodeGateParams, isPaidCallback, matchVer3Hash, VER3_BINARY_VARIANTS } from '../_lib/nestpay';
 
 /** Gateway params worth keeping on the row; never card data. */
 const RAW_RESPONSE_KEYS = [
@@ -38,6 +38,10 @@ const RAW_RESPONSE_KEYS = [
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const origin = siteOrigin(req);
   const resultUrl = (query: string) => `${origin}/donate/result?${query}`;
+  // Error redirects carry the order id so the donor can quote a reference:
+  // the bank may already have charged when verification or persistence fails.
+  let oid = '';
+  const withOid = (query: string) => (/^[0-9a-f]{32}$/i.test(oid) ? `${query}&oid=${oid}` : query);
 
   // Banks POST the 3-D result; anything else goes back to the donate page.
   if (req.method !== 'POST') {
@@ -46,22 +50,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   }
 
   try {
-    const params = await readFormBody(req);
+    // Verify over the exact bytes the bank posted (its charset is ISO-8859-9
+    // unless told otherwise); the platform-parsed body is the fallback.
+    const binary = await readFormBodyBinary(req);
+    const params = binary ? decodeGateParams(binary) : await readFormBody(req);
 
-    const oid = params.oid ?? '';
-    const hashMatch = matchVer3Hash(params, paymentStoreKey());
+    oid = params.oid ?? '';
+    const storeKey = paymentStoreKey();
+    const hashMatch =
+      (binary && matchVer3Hash(binary, storeKey, VER3_BINARY_VARIANTS)) || matchVer3Hash(params, storeKey);
     if (!hashMatch) {
       // Diagnostics for a go-live mismatch: field NAMES only, never values.
       console.error('payments/callback: hash mismatch', {
         oid,
         hashAlgorithm: params.hashAlgorithm ?? null,
         encoding: params.encoding ?? null,
+        rawBytes: binary !== null,
         fields: Object.keys(params).sort(),
       });
-      redirect303(res, resultUrl('error=verify'));
+      redirect303(res, resultUrl(withOid('error=verify')));
       return;
     }
-    if (hashMatch.ordering !== 'natural' || hashMatch.encoding !== 'utf8') {
+    if (hashMatch.ordering !== 'natural' || hashMatch.encoding === 'latin5') {
       console.warn('payments/callback: hash matched a fallback variant', hashMatch);
     }
 
@@ -86,7 +96,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       Number.isFinite(returnedAmount) &&
       Math.round(returnedAmount * 100) === Math.round(Number(payment.amount) * 100);
     if (!clientMatches || !amountMatches) {
-      redirect303(res, resultUrl('error=verify'));
+      console.error('payments/callback: order mismatch', { oid, clientMatches, amountMatches });
+      redirect303(res, resultUrl(withOid('error=verify')));
       return;
     }
 
@@ -109,7 +120,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     redirect303(res, resultUrl(`oid=${encodeURIComponent(oid)}`));
   } catch (error) {
-    console.error('payments/callback failed:', error instanceof Error ? error.message : 'unknown');
-    redirect303(res, resultUrl('error=server'));
+    console.error('payments/callback failed:', { oid, error: error instanceof Error ? error.message : 'unknown' });
+    redirect303(res, resultUrl(withOid('error=server')));
   }
 }

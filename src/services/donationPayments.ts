@@ -23,9 +23,6 @@ export type PaymentErrorCode =
   | 'invalid-amount'
   | 'invalid-name'
   | 'invalid-email'
-  | 'invalid-card'
-  | 'invalid-expiry'
-  | 'invalid-cvv'
   | 'unavailable'
   | 'server-error'
   | 'network';
@@ -40,13 +37,13 @@ export class DonationPaymentError extends Error {
   }
 }
 
+/** No card fields: the donor enters the card on the bank's own page. */
 export type CreatePaymentInput = {
   slug: string;
   titleSnapshot: string;
   amount: number;
   locale: Locale;
   donor: { name: string; email: string; phone: string };
-  card: { pan: string; expMonth: string; expYear: string; cv2: string };
 };
 
 export type CreatePaymentResult = {
@@ -106,8 +103,10 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
 }
 
 /**
- * Hands the browser over to the 3-D gate: builds a hidden form with the
- * signed fields and posts it (full page navigation, like the real bank flow).
+ * Hands the browser over to the bank: builds a hidden form with the signed
+ * order fields and posts it as a full page navigation. From here on the donor
+ * is on the bank's domain — the card number, expiry and CVV are typed there,
+ * on the bank's own hosted page, and never touch this site.
  */
 export function submitToGate(gateUrl: string, fields: Record<string, string>): void {
   const form = document.createElement('form');
@@ -134,31 +133,4 @@ export async function fetchPaymentStatus(oid: string): Promise<PaymentStatus | n
   } catch {
     return null;
   }
-}
-
-export function luhnValid(pan: string): boolean {
-  if (!/^\d{13,19}$/.test(pan)) return false;
-  let sum = 0;
-  let double = false;
-  for (let i = pan.length - 1; i >= 0; i -= 1) {
-    let digit = pan.charCodeAt(i) - 48;
-    if (double) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    double = !double;
-  }
-  return sum % 10 === 0;
-}
-
-/** True when MM/YY is this month or later. */
-export function expiryInFuture(expMonth: string, expYear: string): boolean {
-  const month = Number(expMonth);
-  const year = Number(expYear);
-  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
-  if (!Number.isInteger(year) || year < 0 || year > 99) return false;
-  const now = new Date();
-  const fullYear = 2000 + year;
-  return fullYear > now.getFullYear() || (fullYear === now.getFullYear() && month >= now.getMonth() + 1);
 }

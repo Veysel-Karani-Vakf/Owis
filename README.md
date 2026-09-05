@@ -105,9 +105,11 @@ as "use the built-in list" — a page of IBANs must never render empty).
 ## Payments (test mode)
 
 The donate flow charges cards through the site's own gateway, built to speak
-the İş Bankası NestPay (Payten/Asseco EST) protocol in the `3d_pay` model:
+the İş Bankası NestPay (Payten/Asseco EST) protocol in the `3d_pay_hosting`
+model (the card is typed on the bank's own page; no card data reaches this site):
 
-1. `/donate/checkout/:slug` collects amount (TRY), donor and card details.
+1. `/donate/checkout/:slug` collects the amount (USD) and donor details; the
+   card is entered on the bank's hosted page.
 2. `POST /api/payments/create` validates, inserts a `pending` row in
    `donation_payments` and returns the ver3-SHA512-signed field set.
 3. The browser form-POSTs those fields to the 3D gate. In **mock** mode that is
@@ -120,7 +122,7 @@ the İş Bankası NestPay (Payten/Asseco EST) protocol in the `3d_pay` model:
 5. The result page reads `GET /api/payments/status?oid=…` (the random 128-bit
    oid is the bearer token; there is no public listing).
 
-Everything protocol-specific (field names, ver3 hash, expiry-year quirks) lives
+Everything protocol-specific (field names, ver3 hash, callback charset) lives
 in `api/_lib/nestpay.ts` — correct it there against the bank's integration
 guide when real credentials arrive.
 
@@ -142,16 +144,18 @@ its built-in values, and test/production refuse to start (500 on
 `/api/payments/create`) while any of them is still a placeholder, so a
 half-configured deployment can never post a card to a bogus gate.
 
-Protocol notes (İş Bankası NestPay/EST, `3d_pay`, hash `ver3`): field set
-`clientid, storetype, islemtipi=Auth, amount, currency, oid, okUrl, failUrl,
-lang, rnd, taksit, refreshtime, hashAlgorithm, pan, Ecom_Payment_Card_ExpDate_*,
-cv2` (+ `cardType` 1/2 for Visa/MasterCard); hash = base64(SHA-512) over all
-fields except `hash`/`encoding`/`countdown`, sorted like PHP `natcasesort`,
-escaped, joined with `|`, store key last. The callback verifier also accepts
-the lower-case ordering and Latin-5 byte variants and logs which one matched
-(`api/_lib/nestpay.ts`). Go-live checklist: merchant account enabled for USD
-(currency 840), store key set in the bank panel, the three env vars set in
-Vercel, then `PAYMENT_MODE=test` first with the bank's test cards.
+Protocol notes (İş Bankası NestPay/EST, `3d_pay_hosting`, hash `ver3`): field
+set `clientid, storetype, islemtipi=Auth, amount, currency, oid, okUrl,
+failUrl, lang, rnd, taksit, refreshtime, hashAlgorithm, encoding=UTF-8`; hash =
+base64(SHA-512) over all fields except `hash`/`encoding`/`countdown`, sorted
+like PHP `natcasesort`, escaped, joined with `|`, store key last. The callback
+is verified over the exact bytes the bank posted (`readFormBodyBinary`), so it
+holds whether the gate answers in ISO-8859-9 or UTF-8; the string-based
+fallbacks (lower-case ordering, Latin-5) remain and log which one matched
+(`api/_lib/nestpay.ts`). Go-live checklist: the bank confirms the merchant is
+enabled for the **3D_PAY_HOSTING** model and for USD (currency 840), store key
+set in the bank panel, the three env vars set in Vercel, then
+`PAYMENT_MODE=test` first with the bank's test cards.
 
 Mock test cards (any Luhn-valid number also works): `4508 0345 0803 4509`
 interactive approve/decline, `4000 0000 0000 0002` fails 3-D Secure,
@@ -161,3 +165,10 @@ Local dev: `npm run dev:full` (vercel dev, one-time `vercel login` + `vercel
 link`) serves the SPA and `api/` together; plain `npm run dev` proxies `/api`
 to port 3000. Payments show up read-only in the dashboard at `/admin/payments`
 (RLS: no anon access; server writes with the service-role key only).
+
+`api/package.json` pins the functions to CommonJS. The root `package.json` is
+`"type": "module"`, and Vercel compiles `api/**/*.ts` with TypeScript's
+`NodeNext`, which would otherwise emit ESM with the extensionless `../_lib/*`
+imports and crash every function at load (`ERR_MODULE_NOT_FOUND`, surfaced as
+`FUNCTION_INVOCATION_FAILED`). Keep that file, or add `.js` to every relative
+import in `api/`, whenever the API layout changes.
