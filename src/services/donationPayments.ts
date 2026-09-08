@@ -103,16 +103,19 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
 }
 
 /**
- * Hands the browser over to the bank: builds a hidden form with the signed
- * order fields and posts it as a full page navigation. From here on the donor
- * is on the bank's domain — the card number, expiry and CVV are typed there,
- * on the bank's own hosted page, and never touch this site.
+ * Hands the browser over to İş Bankası using a full-page POST.
+ * Card number, expiry and CVV are entered only on the bank's hosted page.
  */
 export function submitToGate(gateUrl: string, fields: Record<string, string>): void {
   const form = document.createElement('form');
+
   form.method = 'POST';
   form.action = gateUrl;
+  form.target = '_self';
+  form.enctype = 'application/x-www-form-urlencoded';
+  form.acceptCharset = 'UTF-8';
   form.style.display = 'none';
+
   for (const [name, value] of Object.entries(fields)) {
     const input = document.createElement('input');
     input.type = 'hidden';
@@ -120,6 +123,7 @@ export function submitToGate(gateUrl: string, fields: Record<string, string>): v
     input.value = value;
     form.appendChild(input);
   }
+
   document.body.appendChild(form);
   form.submit();
 }
