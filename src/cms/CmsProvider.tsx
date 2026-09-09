@@ -30,8 +30,9 @@ function postToParent(message: PreviewMessage) {
  * Hydrates published content on boot and, inside the dashboard's preview frame,
  * accepts unsaved drafts over postMessage.
  *
- * Children render immediately against the static defaults so the first paint is
- * never blocked on the network; hydration swaps content in when it lands.
+ * Children render immediately; content with static defaults uses them for the
+ * first paint, while database-only content can show its own loading state.
+ * Hydration swaps the published snapshot in when it lands.
  */
 export function CmsProvider({ children }: { children: ReactNode }) {
   const preview = isPreviewFrame();

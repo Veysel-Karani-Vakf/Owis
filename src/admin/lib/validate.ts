@@ -42,7 +42,7 @@ const REQUIRED = { ar: 'هذا الحقل مطلوب', tr: 'Bu alan zorunludur',
  * answer with a constraint error.
  */
 export function validateRecord(
-  resource: Pick<ResourceDef, 'fields'>,
+  resource: Pick<ResourceDef, 'fields' | 'validate'>,
   values: Record<string, unknown>,
   locale: Locale,
 ): Record<string, string> {
@@ -51,5 +51,5 @@ export function validateRecord(
     if (!field.required) continue;
     if (isEmpty(field, values[field.key])) errors[field.key] = REQUIRED[locale];
   }
-  return errors;
+  return { ...errors, ...(resource.validate?.(values, locale) ?? {}) };
 }

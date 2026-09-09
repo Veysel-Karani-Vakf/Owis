@@ -22,6 +22,7 @@ const requiredTables = [
   'donation_payments',
   'partners',
   'stat_indicators',
+  'bank_accounts',
   'site_pages',
   'participate_submissions',
   'newsletter_subscribers',
@@ -60,7 +61,13 @@ async function withClient(fn) {
 
 async function migrate() {
   const dir = join(root, 'supabase', 'migrations');
-  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const available = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const requested = process.argv.slice(3);
+  const unknown = requested.filter((file) => !available.includes(file));
+  if (unknown.length) {
+    throw new Error(`Unknown migration file(s): ${unknown.join(', ')}`);
+  }
+  const files = requested.length ? available.filter((file) => requested.includes(file)) : available;
   await withClient(async (client) => {
     for (const file of files) {
       const sql = readFileSync(join(dir, file), 'utf8');

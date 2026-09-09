@@ -234,13 +234,9 @@ type BankLike = {
   accounts: { currency: string; iban: string; accountNumber?: string }[];
 };
 
-export function cmsBankAccounts<T extends BankLike>(fallback: T[]): T[] {
+export function cmsBankAccounts<T extends BankLike = BankLike>(): T[] {
   const rows = cmsRows('bank_accounts');
-  // Unlike other lists, an empty result also falls back: rendering the page
-  // with zero bank accounts (table missing, not yet seeded) would read as "the
-  // waqf has no accounts", which is worse than showing the built-in list. A
-  // single bank can still be hidden with its publish toggle.
-  if (!rows || rows.length === 0) return fallback;
+  if (!rows) return [];
 
   return rows.map((row) => {
     const accounts = Array.isArray(row.accounts) ? row.accounts : [];

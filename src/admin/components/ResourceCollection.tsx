@@ -15,6 +15,8 @@ import { filledLocales } from '../lib/validate';
 import { translateDbError } from '../lib/errors';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
+import { hydrateCms } from '@/cms/hydrate';
+import { setPublished } from '@/cms/store';
 
 type Row = Record<string, unknown>;
 
@@ -138,6 +140,7 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
       await Promise.all(
         changed.map((row) => updateRow(resource.table, String(row.id), { sort_order: position.get(String(row.id)) })),
       );
+      void hydrateCms().then(setPublished).catch(() => undefined);
     } catch (e) {
       setRows(previous);
       toast.error(translateDbError(e, locale));
@@ -149,6 +152,7 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, is_published: next } : r)));
     try {
       await updateRow(resource.table, String(row.id), { is_published: next });
+      void hydrateCms().then(setPublished).catch(() => undefined);
       toast.success(next ? s.published : s.draft);
     } catch (e) {
       setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, is_published: !next } : r)));
@@ -163,6 +167,7 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, [visibility.column]: next } : r)));
     try {
       await updateRow(resource.table, String(row.id), { [visibility.column]: next });
+      void hydrateCms().then(setPublished).catch(() => undefined);
       toast.success((next ? visibility.onLabel : visibility.offLabel)[locale]);
     } catch (e) {
       setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, [visibility.column]: !next } : r)));
@@ -182,6 +187,7 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
     try {
       await deleteRow(resource.table, String(row.id));
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      void hydrateCms().then(setPublished).catch(() => undefined);
       toast.success(s.deletedToast);
     } catch (e) {
       toast.error(translateDbError(e, locale));

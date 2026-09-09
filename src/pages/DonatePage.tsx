@@ -1,109 +1,90 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, HandHeart, Loader2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import SpotlightCard from '@/components/effects/SpotlightCard';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
-import { getDonateContent, type DonationOpportunity } from '@/data/donate';
+import {
+  donateCheckoutRoute,
+  getDonateContent,
+  type DonationOpportunity,
+} from '@/data/donate';
 import { useDonateContent } from '@/hooks/useCmsContent';
 import { useRevealMotion } from '@/hooks/useResponsiveMotion';
-import type { Locale } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
-import {
-  createDirectPayment,
-  DonationPaymentError,
-  submitToGate,
-} from '@/services/donationPayments';
 
-function directPaymentError(locale: Locale, error: unknown): string {
-  const network = error instanceof DonationPaymentError && error.code === 'network';
+function parseOpportunityAmount(price: string): number | null {
+  const cleaned = price.replace(/[^\d.,-]/g, '').trim();
+  if (!cleaned) return null;
 
-  if (locale === 'ar') {
-    return network
-      ? 'تعذر الاتصال بخدمة الدفع. تحقق من اتصالك وحاول مرة أخرى.'
-      : 'تعذر فتح صفحة البنك الآن. حاول مرة أخرى.';
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  let normalized = cleaned;
+
+  // Support both 1,000.50 and 1.000,50 in case a CMS value is localized.
+  if (lastComma > lastDot) {
+    normalized = cleaned.replace(/\./g, '').replace(',', '.');
+  } else {
+    normalized = cleaned.replace(/,/g, '');
   }
-  if (locale === 'tr') {
-    return network
-      ? 'Ödeme servisine bağlanılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
-      : 'Banka ödeme sayfası şu anda açılamadı. Lütfen tekrar deneyin.';
-  }
-  return network
-    ? 'Could not reach the payment service. Check your connection and try again.'
-    : 'Could not open the bank payment page. Please try again.';
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const cents = Math.round(amount * 100);
+  if (Math.abs(amount * 100 - cents) > 1e-6) return null;
+
+  return cents / 100;
 }
 
-function DirectContributionButton({
+function checkoutHref(opportunity: DonationOpportunity): string {
+  const route = donateCheckoutRoute(opportunity.id);
+  const amount = parseOpportunityAmount(opportunity.price);
+
+  if (amount === null) return route;
+
+  return `${route}?amount=${encodeURIComponent(String(amount))}`;
+}
+
+function ContributionLink({
   opportunity,
   labels,
   isRtl,
-  locale,
   featured = false,
 }: {
   opportunity: DonationOpportunity;
   labels: ReturnType<typeof getDonateContent>['labels'];
   isRtl: boolean;
-  locale: Locale;
   featured?: boolean;
 }) {
-  const [submitting, setSubmitting] = useState(false);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
-
-  const handleClick = async () => {
-    if (submitting) return;
-
-    setSubmitting(true);
-    try {
-      const result = await createDirectPayment({
-        slug: opportunity.id,
-        locale,
-      });
-
-      submitToGate(result.gateUrl, result.fields);
-    } catch (error) {
-      console.error('Direct contribution failed:', error);
-      setSubmitting(false);
-      window.alert(directPaymentError(locale, error));
-    }
-  };
 
   const sizeClasses = featured
     ? 'min-h-12 px-8 py-3 text-base'
     : 'min-h-11 w-full px-5 py-2.5 text-sm';
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={submitting}
-      aria-busy={submitting}
+    <Link
+      to={checkoutHref(opportunity)}
       aria-label={`${labels.contribute}: ${opportunity.title}`}
-      className={`btn-border-run group/link inline-flex items-center justify-center gap-2 rounded-full bg-primary-600 font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-wait disabled:opacity-70 ${sizeClasses}`}
+      className={`btn-border-run group/link inline-flex items-center justify-center gap-2 rounded-full bg-primary-600 font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${sizeClasses}`}
     >
-      {submitting ? (
-        <Loader2
-          className={featured ? 'h-5 w-5 animate-spin' : 'h-4 w-4 animate-spin'}
-          aria-hidden="true"
-        />
-      ) : (
-        <HandHeart
-          className={featured ? 'h-5 w-5' : 'h-4 w-4'}
-          aria-hidden="true"
-        />
-      )}
+      <HandHeart
+        className={featured ? 'h-5 w-5' : 'h-4 w-4'}
+        aria-hidden="true"
+      />
 
       {labels.contribute}
 
-      {!submitting && (
-        <ArrowIcon
-          className={`${featured ? 'h-5 w-5' : 'h-4 w-4'} transition-transform motion-reduce:transition-none motion-reduce:group-hover/link:translate-x-0 ${
-            isRtl ? 'group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'
-          }`}
-          aria-hidden="true"
-        />
-      )}
-    </button>
+      <ArrowIcon
+        className={`${featured ? 'h-5 w-5' : 'h-4 w-4'} transition-transform motion-reduce:transition-none motion-reduce:group-hover/link:translate-x-0 ${
+          isRtl ? 'group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'
+        }`}
+        aria-hidden="true"
+      />
+    </Link>
   );
 }
 
@@ -111,13 +92,11 @@ function DonationCard({
   opportunity,
   labels,
   isRtl,
-  locale,
   index,
 }: {
   opportunity: DonationOpportunity;
   labels: ReturnType<typeof getDonateContent>['labels'];
   isRtl: boolean;
-  locale: Locale;
   index: number;
 }) {
   const shouldReduceMotion = useReducedMotion();
@@ -182,11 +161,10 @@ function DonationCard({
 
           <div className="mt-auto pt-5">
             {opportunity.available ? (
-              <DirectContributionButton
+              <ContributionLink
                 opportunity={opportunity}
                 labels={labels}
                 isRtl={isRtl}
-                locale={locale}
               />
             ) : (
               <button
@@ -209,12 +187,10 @@ function FeaturedDonationCard({
   opportunity,
   labels,
   isRtl,
-  locale,
 }: {
   opportunity: DonationOpportunity;
   labels: ReturnType<typeof getDonateContent>['labels'];
   isRtl: boolean;
-  locale: Locale;
 }) {
   const shouldReduceMotion = useReducedMotion();
   const revealMotion = useRevealMotion({
@@ -283,11 +259,10 @@ function FeaturedDonationCard({
 
             <div className="mt-8">
               {opportunity.available ? (
-                <DirectContributionButton
+                <ContributionLink
                   opportunity={opportunity}
                   labels={labels}
                   isRtl={isRtl}
-                  locale={locale}
                   featured
                 />
               ) : (
@@ -420,7 +395,6 @@ export default function DonatePage() {
                   opportunity={page.opportunities[0]}
                   labels={page.labels}
                   isRtl={isRtl}
-                  locale={locale}
                 />
 
                 {page.opportunities.length > 1 && (
@@ -431,7 +405,6 @@ export default function DonatePage() {
                         opportunity={opportunity}
                         labels={page.labels}
                         isRtl={isRtl}
-                        locale={locale}
                         index={index}
                       />
                     ))}

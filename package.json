@@ -17,6 +17,7 @@
     "admin:login-check": "node scripts/admin.mjs login-check",
     "db:migrate": "node scripts/db.mjs migrate",
     "db:check": "node scripts/db.mjs check",
+    "test:bank-accounts": "node scripts/check-bank-accounts.mjs",
     "cms:seed": "node scripts/seed-content.mjs"
   },
   "dependencies": {

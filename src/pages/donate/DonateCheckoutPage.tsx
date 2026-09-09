@@ -1,8 +1,7 @@
-import { AlertTriangle, FlaskConical, HandHeart, Loader2, Lock } from 'lucide-react';
+import { AlertTriangle, FlaskConical, HandHeart, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
-import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import { donateRoute } from '@/data/donate';
 import { getDonateCheckoutContent } from '@/data/donateCheckout';
@@ -19,7 +18,7 @@ import {
 } from '@/services/donationPayments';
 
 const inputClass =
-  'min-h-12 w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-start text-sm font-medium text-dark-900 shadow-sm outline-none transition-colors placeholder:text-dark-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-100';
+  'min-h-10 w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-start text-sm font-medium text-dark-900 shadow-sm outline-none transition-colors placeholder:text-dark-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-100';
 
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
 
@@ -34,6 +33,19 @@ function formatAmount(amount: number, locale: string, currency: string): string 
   }).format(amount);
 }
 
+function normalizeIncomingAmount(value: string | null): string {
+  if (!value) return '';
+
+  const normalized = value.trim().replace(',', '.');
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount <= 0) return '';
+
+  const cents = Math.round(amount * 100);
+  if (Math.abs(amount * 100 - cents) > 1e-6) return '';
+
+  return String(cents / 100);
+}
+
 type FieldErrors = {
   amount?: string;
   name?: string;
@@ -43,6 +55,7 @@ type FieldErrors = {
 
 export default function DonateCheckoutPage() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
   const { locale } = useI18n();
   const donatePage = useDonateContent(locale);
   const content = getDonateCheckoutContent(locale);
@@ -55,8 +68,9 @@ export default function DonateCheckoutPage() {
   // null until /api/payments/config answers: limits fall back to the defaults
   // meanwhile, and the test-mode notice stays hidden (production-safe).
   const [config, setConfig] = useState<PaymentConfig | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
-  const [customAmount, setCustomAmount] = useState('');
+  const [customAmount, setCustomAmount] = useState(() =>
+    normalizeIncomingAmount(searchParams.get('amount')),
+  );
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
@@ -81,7 +95,9 @@ export default function DonateCheckoutPage() {
     return <Navigate to={donateRoute} replace />;
   }
 
-  const amountValue = customAmount.trim() !== '' ? Number(customAmount) : selectedPreset;
+  // The field is now the single source of truth for the amount. This keeps
+  // transferred amounts, preset buttons, manual edits and the bank request in sync.
+  const amountValue = customAmount.trim() !== '' ? Number(customAmount) : null;
 
   const errorMessage = (code: PaymentErrorCode): string => {
     switch (code) {
@@ -152,40 +168,45 @@ export default function DonateCheckoutPage() {
   return (
     <>
       <PageSeo title={content.seo.title} description={content.seo.description} />
-      <main className="bg-white">
-        <PageHero
+      <main className="min-h-screen bg-[#faf8f8]">
+        {/* Compact hero: enough dark background for the floating header, without
+            consuming almost half of the viewport like the regular PageHero. */}
+        <section
           id="cms-checkout-hero"
-          title={content.hero.title}
-          description={content.hero.description}
-          image={opportunity.image}
-          imageAlt={opportunity.imageAlt}
-          breadcrumbs={[
-            { label: content.breadcrumbs.home, href: '/' },
-            { label: content.breadcrumbs.donate, href: donateRoute },
-            { label: opportunity.title },
-          ]}
-        />
+          className="relative isolate overflow-hidden bg-dark-950 pt-24 md:pt-28"
+        >
+          <img
+            src={opportunity.image}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-950/90 via-dark-950/78 to-dark-950/68" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_22%_45%,rgba(218,8,18,0.24),transparent_34%)]" />
 
-        <section className="bg-[#faf8f8] py-16 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 md:px-8 lg:grid-cols-[0.9fr_1.1fr]">
-            <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
+          <div className="mx-auto flex min-h-[148px] max-w-7xl items-end px-4 pb-5 md:min-h-[164px] md:px-8 md:pb-6">
+            <div className="max-w-3xl text-start">
+              <p className="text-xs font-bold text-white/70">{content.breadcrumbs.donate}</p>
+              <h1 className="mt-1 text-2xl font-black leading-tight text-white md:text-3xl">
+                {content.hero.title}
+              </h1>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#faf8f8] py-4 md:py-5 lg:py-6">
+          <div className="mx-auto grid max-w-7xl gap-4 px-4 md:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+            <FadeContent
+              blur={false}
+              duration={520}
+              initialOpacity={0}
+              yOffset={10}
+              threshold={0.1}
+              once
+            >
               <div className="text-start">
-                {showTestBanner && (
-                  <div
-                    id="cms-checkout-banner"
-                    role="status"
-                    className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-start"
-                  >
-                    <FlaskConical className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-black text-amber-800">{content.testBanner.title}</p>
-                      <p className="mt-1 text-sm leading-relaxed text-amber-700">{content.testBanner.description}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="overflow-hidden rounded-[22px] border border-primary-100 bg-white shadow-[0_16px_42px_rgba(40,12,18,0.07)]">
-                  <div className="relative aspect-[16/9] overflow-hidden bg-primary-50">
+                <div className="overflow-hidden rounded-[20px] border border-primary-100 bg-white shadow-[0_14px_38px_rgba(40,12,18,0.07)]">
+                  <div className="relative h-40 overflow-hidden bg-primary-50 sm:h-44 lg:h-[205px]">
                     <img
                       src={opportunity.image}
                       alt={opportunity.imageAlt}
@@ -193,69 +214,111 @@ export default function DonateCheckoutPage() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <div className="p-6">
-                    <p className="text-xs font-bold text-primary-700">{content.summary.heading}</p>
-                    <h2 className="mt-2 text-2xl font-bold leading-tight text-dark-950">{opportunity.title}</h2>
-                    <p className="mt-3 text-sm leading-relaxed text-dark-600">{opportunity.description}</p>
-                    <div className="mt-5 rounded-2xl border border-primary-100 bg-primary-50/55 p-4">
+                  <div className="p-4 md:p-5">
+                    <p className="text-[11px] font-bold text-primary-700">{content.summary.heading}</p>
+                    <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="text-xl font-bold leading-tight text-dark-950 md:text-2xl">
+                          {opportunity.title}
+                        </h2>
+                        <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-dark-600">
+                          {opportunity.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-primary-100 bg-primary-50/55 px-4 py-2.5">
                       <p className="text-xs font-bold text-primary-700">{content.summary.publishedValue}</p>
-                      <p className="mt-1 text-xl font-black text-dark-950">{opportunity.price}</p>
+                      <p className="text-xl font-black text-dark-950">{opportunity.price}</p>
                     </div>
                   </div>
                 </div>
 
                 {config?.mode === 'mock' && (
-                  <div id="cms-checkout-test-cards" className="mt-6 rounded-[22px] border border-primary-100 bg-white p-5 text-start shadow-[0_14px_36px_rgba(40,12,18,0.06)]">
-                    <p className="text-sm font-black text-dark-900">{content.testCards.heading}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-dark-600">{content.testCards.description}</p>
-                    <ul className="mt-3 space-y-2 text-sm text-dark-600">
-                      <li className="flex flex-wrap items-center gap-2">
-                        <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-xs text-primary-800">
-                          4508 0345 0803 4509
-                        </code>
-                        {content.testCards.approveLabel}
-                      </li>
-                      <li className="flex flex-wrap items-center gap-2">
-                        <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-xs text-primary-800">
-                          4000 0000 0000 0002
-                        </code>
-                        {content.testCards.fail3dsLabel}
-                      </li>
-                      <li className="flex flex-wrap items-center gap-2">
-                        <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-xs text-primary-800">
-                          4242 4242 4208 0069
-                        </code>
-                        {content.testCards.declineLabel}
-                      </li>
-                    </ul>
-                  </div>
+                  <details
+                    id="cms-checkout-test-cards"
+                    className="mt-3 rounded-xl border border-primary-100 bg-white px-4 py-3 text-start shadow-[0_10px_28px_rgba(40,12,18,0.05)]"
+                  >
+                    <summary className="cursor-pointer text-sm font-black text-dark-900">
+                      {content.testCards.heading}
+                    </summary>
+                    <div className="mt-3">
+                      <p className="text-xs leading-relaxed text-dark-600">
+                        {content.testCards.description}
+                      </p>
+                      <ul className="mt-3 grid gap-2 text-xs text-dark-600 sm:grid-cols-3 lg:grid-cols-1">
+                        <li className="flex flex-wrap items-center gap-2">
+                          <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-[11px] text-primary-800">
+                            4508 0345 0803 4509
+                          </code>
+                          {content.testCards.approveLabel}
+                        </li>
+                        <li className="flex flex-wrap items-center gap-2">
+                          <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-[11px] text-primary-800">
+                            4000 0000 0000 0002
+                          </code>
+                          {content.testCards.fail3dsLabel}
+                        </li>
+                        <li className="flex flex-wrap items-center gap-2">
+                          <code dir="ltr" className="rounded bg-primary-50 px-2 py-1 font-mono text-[11px] text-primary-800">
+                            4242 4242 4208 0069
+                          </code>
+                          {content.testCards.declineLabel}
+                        </li>
+                      </ul>
+                    </div>
+                  </details>
                 )}
               </div>
             </FadeContent>
 
-            <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
+            <FadeContent
+              blur={false}
+              duration={520}
+              initialOpacity={0}
+              yOffset={10}
+              threshold={0.1}
+              once
+            >
               <form
                 id="cms-checkout-form"
                 onSubmit={handleSubmit}
                 noValidate
-                className="rounded-[22px] border border-primary-100 bg-white p-6 text-start shadow-[0_18px_48px_rgba(40,12,18,0.06)] md:p-8"
+                className="rounded-[20px] border border-primary-100 bg-white p-4 text-start shadow-[0_16px_42px_rgba(40,12,18,0.06)] md:p-5"
               >
-                <fieldset disabled={submitting} className="grid gap-8">
+                <fieldset disabled={submitting} className="grid gap-4">
+                  {showTestBanner && (
+                    <div
+                      id="cms-checkout-banner"
+                      role="status"
+                      className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-start"
+                    >
+                      <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+                      <p className="text-xs leading-relaxed text-amber-800">
+                        <span className="font-black">{content.testBanner.title}</span>{' '}
+                        {content.testBanner.description}
+                      </p>
+                    </div>
+                  )}
+
                   <div>
-                    <h2 className="text-xl font-bold text-dark-950">{content.amount.heading}</h2>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <h2 className="text-lg font-bold text-dark-950">{content.amount.heading}</h2>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                       {limits.presets.map((preset) => {
-                        const active = customAmount.trim() === '' && selectedPreset === preset;
+                        const active =
+                          customAmount.trim() !== '' && Number(customAmount) === preset;
                         return (
                           <button
                             key={preset}
                             type="button"
                             onClick={() => {
-                              setSelectedPreset(preset);
-                              setCustomAmount('');
+                              setCustomAmount(String(preset));
+                              setErrors((current) => ({
+                                ...current,
+                                amount: undefined,
+                              }));
                             }}
                             aria-pressed={active}
-                            className={`btn-border-run min-h-11 rounded-full border px-5 py-2 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 ${
+                            className={`btn-border-run min-h-9 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
                               active
                                 ? 'border-primary-600 bg-primary-600 text-white'
                                 : 'border-primary-100 bg-white text-dark-800 hover:border-primary-300 hover:text-primary-700'
@@ -266,8 +329,9 @@ export default function DonateCheckoutPage() {
                         );
                       })}
                     </div>
-                    <div className="mt-4">
-                      <label htmlFor="custom-amount" className="mb-2 block text-sm font-bold text-dark-800">
+
+                    <div className="mt-3">
+                      <label htmlFor="custom-amount" className="mb-1.5 block text-xs font-bold text-dark-800">
                         {content.amount.customLabel}
                       </label>
                       <input
@@ -282,23 +346,33 @@ export default function DonateCheckoutPage() {
                         value={customAmount}
                         aria-invalid={Boolean(errors.amount)}
                         aria-describedby={errors.amount ? 'amount-error' : undefined}
-                        onChange={(event) => setCustomAmount(event.target.value)}
+                        onChange={(event) => {
+                          setCustomAmount(event.target.value);
+                          if (errors.amount) {
+                            setErrors((current) => ({
+                              ...current,
+                              amount: undefined,
+                            }));
+                          }
+                        }}
                         className={inputClass}
                       />
                       {errors.amount && (
-                        <p id="amount-error" className="mt-2 text-xs font-semibold text-primary-700">
+                        <p id="amount-error" className="mt-1.5 text-xs font-semibold text-primary-700">
                           {errors.amount}
                         </p>
                       )}
-                      <p className="mt-2 text-xs font-semibold text-dark-500">{content.amount.currencyNote}</p>
+                      <p className="mt-1.5 text-[11px] font-semibold text-dark-500">
+                        {content.amount.currencyNote}
+                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-xl font-bold text-dark-950">{content.donor.heading}</h2>
-                    <div className="mt-4 grid gap-4">
+                  <div className="border-t border-primary-100 pt-4">
+                    <h2 className="text-lg font-bold text-dark-950">{content.donor.heading}</h2>
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
                       <div>
-                        <label htmlFor="donor-name" className="mb-2 block text-sm font-bold text-dark-800">
+                        <label htmlFor="donor-name" className="mb-1.5 block text-xs font-bold text-dark-800">
                           {content.donor.nameLabel}
                         </label>
                         <input
@@ -314,95 +388,87 @@ export default function DonateCheckoutPage() {
                           className={inputClass}
                         />
                         {errors.name && (
-                          <p id="donor-name-error" className="mt-2 text-xs font-semibold text-primary-700">
+                          <p id="donor-name-error" className="mt-1.5 text-xs font-semibold text-primary-700">
                             {errors.name}
                           </p>
                         )}
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <label htmlFor="donor-email" className="mb-2 block text-sm font-bold text-dark-800">
-                            {content.donor.emailLabel}{' '}
-                            <span className="font-semibold text-dark-400">{content.donor.optionalSuffix}</span>
-                          </label>
-                          <input
-                            id="donor-email"
-                            name="donor-email"
-                            type="email"
-                            autoComplete="email"
-                            dir="ltr"
-                            value={donorEmail}
-                            aria-invalid={Boolean(errors.email)}
-                            aria-describedby={errors.email ? 'donor-email-error' : undefined}
-                            onChange={(event) => setDonorEmail(event.target.value)}
-                            className={inputClass}
-                          />
-                          {errors.email && (
-                            <p id="donor-email-error" className="mt-2 text-xs font-semibold text-primary-700">
-                              {errors.email}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label htmlFor="donor-phone" className="mb-2 block text-sm font-bold text-dark-800">
-                            {content.donor.phoneLabel}{' '}
-                            <span className="font-semibold text-dark-400">{content.donor.optionalSuffix}</span>
-                          </label>
-                          <input
-                            id="donor-phone"
-                            name="donor-phone"
-                            type="tel"
-                            autoComplete="tel"
-                            dir="ltr"
-                            value={donorPhone}
-                            onChange={(event) => setDonorPhone(event.target.value)}
-                            className={inputClass}
-                          />
-                        </div>
+
+                      <div>
+                        <label htmlFor="donor-email" className="mb-1.5 block text-xs font-bold text-dark-800">
+                          {content.donor.emailLabel}{' '}
+                          <span className="font-semibold text-dark-400">{content.donor.optionalSuffix}</span>
+                        </label>
+                        <input
+                          id="donor-email"
+                          name="donor-email"
+                          type="email"
+                          autoComplete="email"
+                          dir="ltr"
+                          value={donorEmail}
+                          aria-invalid={Boolean(errors.email)}
+                          aria-describedby={errors.email ? 'donor-email-error' : undefined}
+                          onChange={(event) => setDonorEmail(event.target.value)}
+                          className={inputClass}
+                        />
+                        {errors.email && (
+                          <p id="donor-email-error" className="mt-1.5 text-xs font-semibold text-primary-700">
+                            {errors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="donor-phone" className="mb-1.5 block text-xs font-bold text-dark-800">
+                          {content.donor.phoneLabel}{' '}
+                          <span className="font-semibold text-dark-400">{content.donor.optionalSuffix}</span>
+                        </label>
+                        <input
+                          id="donor-phone"
+                          name="donor-phone"
+                          type="tel"
+                          autoComplete="tel"
+                          dir="ltr"
+                          value={donorPhone}
+                          onChange={(event) => setDonorPhone(event.target.value)}
+                          className={inputClass}
+                        />
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-xl font-bold text-dark-950">{content.card.heading}</h2>
-                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary-100 bg-primary-50/55 p-4">
-                      <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary-700" aria-hidden="true" />
-                      <p className="text-sm font-semibold leading-relaxed text-dark-700">
-                        {content.card.bankHandoverNote}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-dark-700">
+                  {/* The long bank handover warning was intentionally removed.
+                      The card number is still entered only on the bank's hosted page. */}
+                  <div className="border-t border-primary-100 pt-4">
+                    <label className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-primary-50/45 px-3 py-2.5 text-xs leading-relaxed text-dark-700">
                       <input
                         type="checkbox"
                         checked={consent}
                         aria-invalid={Boolean(errors.consent)}
                         onChange={(event) => setConsent(event.target.checked)}
-                        className="mt-1 h-4 w-4 shrink-0 accent-primary-600"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-primary-600"
                       />
                       {content.consentLabel}
                     </label>
                     {errors.consent && (
-                      <p className="mt-2 text-xs font-semibold text-primary-700">{errors.consent}</p>
+                      <p className="mt-1.5 text-xs font-semibold text-primary-700">{errors.consent}</p>
                     )}
                   </div>
 
                   {submitError && (
                     <div
                       role="alert"
-                      className="flex items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50 p-4"
+                      className="flex items-start gap-2.5 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5"
                     >
-                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-primary-700" aria-hidden="true" />
-                      <p className="text-sm font-semibold leading-relaxed text-primary-800">{submitError}</p>
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary-700" aria-hidden="true" />
+                      <p className="text-xs font-semibold leading-relaxed text-primary-800">{submitError}</p>
                     </div>
                   )}
 
                   <div>
                     <button
                       type="submit"
-                      className="btn-border-run inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="btn-border-run inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {submitting ? (
                         <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
@@ -414,7 +480,9 @@ export default function DonateCheckoutPage() {
                         ? ` — ${formatAmount(amountValue, locale, limits.currency)}`
                         : ''}
                     </button>
-                    <p className="mt-3 text-xs font-semibold leading-relaxed text-dark-500">{content.redirectNote}</p>
+                    <p className="mt-1.5 text-center text-[11px] font-semibold leading-relaxed text-dark-500">
+                      {content.redirectNote}
+                    </p>
                   </div>
                 </fieldset>
               </form>

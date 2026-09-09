@@ -76,16 +76,13 @@ stays at `/admin/r/:key/:id`.
   `components/PageContentEditor.tsx` (one page's texts: drafts, save, live
   preview) and `components/ResourceCollection.tsx` (one record list).
 * Validation & errors: `lib/validate.ts`, `lib/errors.ts` (Postgres → human text).
-* Restore (`/admin/restore`, `lib/seed.ts`): **fill** adds only what is missing
-  (never touches existing rows/pages); **reset** replaces everything with the
-  built-in copy and requires a typed confirmation.
 * Adding a new editable thing:
   1. column → `supabase/migrations/000N_*.sql` (additive, re-runnable) + `src/lib/types.ts`;
   2. adapter → `src/cms/adapters.ts`; static default → `src/data/*`;
   3. admin field → `resources.ts` (records) or `pageSchema.ts` (site pages;
      also register the key in `pageDefaults.ts` → `pageSource`);
   4. put it in a hub → `lib/siteMap.ts` (`SITE_AREAS`);
-  5. seed → `lib/seed.ts`; render it in the component.
+  5. render it in the component.
 
 ## Migrations
 
@@ -97,10 +94,15 @@ Attachments uploaded before 0005 still sit in the public `media/submissions/`
 folder — move or delete them from the media library if they are sensitive.
 `0006_donation_payments.sql` (payments table + catalogue URL/image data fix)
 is applied on the production project (Aug 2026).
-`0008_bank_accounts.sql` creates the `bank_accounts` table behind `/bank-accounts`
-and the admin's "Banks & accounts" list; until it is applied the site simply
-renders the built-in bank list (`cmsBankAccounts` also treats an *empty* table
-as "use the built-in list" — a page of IBANs must never render empty).
+`0008_bank_accounts.sql` creates the `bank_accounts` table behind `/bank-accounts`;
+`0009_bank_accounts_seed_and_validation.sql` moves the original six banks into
+that table, adds validation and limits public reads to published rows. The table
+is the only runtime source for both the admin's "Banks & accounts" list and the
+public page. To apply only these migrations to an existing project, run:
+
+```bash
+node scripts/db.mjs migrate 0008_bank_accounts.sql 0009_bank_accounts_seed_and_validation.sql
+```
 
 ## Payments (test mode)
 

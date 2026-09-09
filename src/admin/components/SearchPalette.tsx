@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, FileText, Inbox, Images, LayoutTemplate, Mail, Search, X } from 'lucide-react';
+import { CornerDownLeft, Inbox, Images, LayoutTemplate, Mail, Search, X } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { useTopmostEscape } from '../hooks/useTopmostEscape';
@@ -140,7 +140,6 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
       { id: 'tool:submissions', kind: 'tool', title: s.sections.submissions, to: '/admin/submissions', icon: Inbox },
       { id: 'tool:subscribers', kind: 'tool', title: s.sections.subscribers, to: '/admin/subscribers', icon: Mail },
       { id: 'tool:media', kind: 'tool', title: s.mediaLibrary, to: '/admin/media', icon: Images },
-      { id: 'tool:restore', kind: 'tool', title: s.restoreContent, to: '/admin/restore', icon: FileText },
     );
     return hits;
   }, [locale, s]);

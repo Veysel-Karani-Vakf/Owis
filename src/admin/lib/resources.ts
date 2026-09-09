@@ -688,6 +688,7 @@ export const RESOURCES: FullResourceDef[] = [
         key: 'accounts',
         label: L('الحسابات حسب العملة', 'Para birimine göre hesaplar', 'Accounts by currency'),
         type: 'repeater',
+        required: true,
         itemTitleField: 'currency',
         itemFields: [
           {
@@ -733,6 +734,53 @@ export const RESOURCES: FullResourceDef[] = [
       fPublished,
       fSort,
     ],
+    validate: (values, locale) => {
+      const message = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
+      const errors: Record<string, string> = {};
+      const swift = typeof values.swift === 'string' ? values.swift.trim() : '';
+      if (swift && !/^[A-Z0-9]{8,11}$/i.test(swift)) {
+        errors.swift = message(
+          'يجب أن يتكون رمز SWIFT من 8 إلى 11 حرفاً أو رقماً.',
+          'SWIFT kodu 8 ile 11 harf veya rakamdan oluşmalıdır.',
+          'The SWIFT code must contain 8 to 11 letters or digits.',
+        );
+      }
+
+      const accounts = Array.isArray(values.accounts) ? values.accounts : [];
+      const currencies = new Set<string>();
+      for (const account of accounts) {
+        if (!account || typeof account !== 'object') {
+          errors.accounts = message('بيانات أحد الحسابات غير صالحة.', 'Hesap bilgilerinden biri geçersiz.', 'One account entry is invalid.');
+          break;
+        }
+        const item = account as Record<string, unknown>;
+        const currency = typeof item.currency === 'string' ? item.currency.trim().toUpperCase() : '';
+        const iban = typeof item.iban === 'string' ? item.iban.replace(/\s+/g, '').toUpperCase() : '';
+        if (!['TRY', 'USD', 'EUR', 'SAR'].includes(currency)) {
+          errors.accounts = message('اختر عملة لكل حساب.', 'Her hesap için bir para birimi seçin.', 'Choose a currency for every account.');
+          break;
+        }
+        if (!/^[A-Z]{2}[A-Z0-9]{13,32}$/.test(iban)) {
+          errors.accounts = message(
+            'أدخل رقم IBAN صالحاً لكل حساب (15–34 حرفاً أو رقماً، بدءاً برمز الدولة).',
+            'Her hesap için ülke koduyla başlayan geçerli bir IBAN girin (15–34 harf/rakam).',
+            'Enter a valid IBAN for every account (15–34 letters/digits, starting with a country code).',
+          );
+          break;
+        }
+        if (currencies.has(currency)) {
+          errors.accounts = message('لا تكرر العملة داخل البنك نفسه.', 'Aynı bankada para birimini tekrarlamayın.', 'Do not repeat a currency within the same bank.');
+          break;
+        }
+        currencies.add(currency);
+      }
+
+      const color = typeof values.brand_color === 'string' ? values.brand_color.trim() : '';
+      if (color && !/^#[0-9a-f]{6}$/i.test(color)) {
+        errors.brand_color = message('استخدم لوناً بصيغة ‎#RRGGBB.', 'Rengi #RRGGBB biçiminde girin.', 'Use a colour in #RRGGBB format.');
+      }
+      return errors;
+    },
   },
   // PARTNERS -----------------------------------------------------------------
   {

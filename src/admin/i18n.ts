@@ -87,7 +87,6 @@ export type AdminStrings = {
   navTools: string;
   sitePages: string;
   mediaLibrary: string;
-  restoreContent: string;
   searchEverything: string;
   searchHint: string;
   noSearchResults: string;
@@ -186,7 +185,6 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     navTools: 'الأدوات',
     sitePages: 'نصوص الصفحات وصورها',
     mediaLibrary: 'مكتبة الوسائط',
-    restoreContent: 'استعادة المحتوى الأصلي',
     searchEverything: 'ابحث عن أي شيء تريد تعديله…',
     searchHint: 'اكتب اسم صفحة أو قسم أو عنوان مادة',
     noSearchResults: 'لا نتائج',
@@ -302,7 +300,6 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     navTools: 'Araçlar',
     sitePages: 'Sayfa metinleri ve görselleri',
     mediaLibrary: 'Medya kütüphanesi',
-    restoreContent: 'Özgün içeriği geri yükle',
     searchEverything: 'Düzenlemek istediğiniz şeyi arayın…',
     searchHint: 'Sayfa, bölüm veya kayıt başlığı yazın',
     noSearchResults: 'Sonuç yok',
@@ -418,7 +415,6 @@ export const adminStrings: Record<Locale, AdminStrings> = {
     navTools: 'Tools',
     sitePages: 'Page texts & images',
     mediaLibrary: 'Media library',
-    restoreContent: 'Restore original content',
     searchEverything: 'Search for anything you want to change…',
     searchHint: 'Type a page, section or item title',
     noSearchResults: 'No results',

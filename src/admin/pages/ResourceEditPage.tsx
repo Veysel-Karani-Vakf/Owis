@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Save, Trash2, ExternalLink, Eye } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { supabase } from '@/lib/supabase';
-import { getCms, type CmsSnapshot } from '@/cms/store';
+import { getCms, setPublished, type CmsSnapshot } from '@/cms/store';
+import { hydrateCms } from '@/cms/hydrate';
 import type { Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
@@ -280,6 +281,7 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
       setBaseline(JSON.stringify(saved));
       setLastSavedAt(typeof saved.updated_at === 'string' ? saved.updated_at : new Date().toISOString());
       setFieldErrors({});
+      void hydrateCms().then(setPublished).catch(() => undefined);
       toast.success(s.savedToast);
       if (isNew) setRedirectTo(`/admin/r/${resource.key}/${saved.id}`);
       return true;
@@ -319,6 +321,7 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
       // The record is gone; nothing left to protect from the blocker, so mark
       // the form clean and let the redirect effect leave once that lands.
       setBaseline(JSON.stringify(values));
+      void hydrateCms().then(setPublished).catch(() => undefined);
       toast.success(s.deletedToast);
       setRedirectTo(`/admin/r/${resource.key}`);
     } catch (e) {

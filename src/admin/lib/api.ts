@@ -1,11 +1,28 @@
 import { supabase } from '@/lib/supabase';
 import type { Locale, Localized } from '@/lib/types';
 
-function handleSupabaseError(action: string, table: string, error: { message: string }) {
+type SupabaseError = {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+};
+
+function handleSupabaseError(action: string, table: string, error: SupabaseError) {
   if (import.meta.env.DEV) {
-    console.error(`[admin] ${action} failed for ${table}:`, error.message);
+    console.error(`[admin] ${action} failed for ${table}:`, error);
   }
-  throw new Error('admin-api-error');
+
+  // Keep the server's useful diagnostic. `translateDbError` turns known
+  // PostgREST/Postgres failures into editor-friendly localized messages, while
+  // support can still see the code/details for anything unexpected.
+  const details = [
+    error.message,
+    error.code ? `code: ${error.code}` : '',
+    error.details,
+    error.hint ? `hint: ${error.hint}` : '',
+  ].filter(Boolean);
+  throw new Error(details.join(' — '));
 }
 
 /** Pick the best available localized string for display. */

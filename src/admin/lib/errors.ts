@@ -30,6 +30,11 @@ const MESSAGES = {
     'Could not reach the server. Check your connection and try again.',
   ),
   tooLarge: L('الملف أكبر من الحد المسموح.', 'Dosya izin verilen boyuttan büyük.', 'The file is larger than allowed.'),
+  missingSchema: L(
+    'بنية قاعدة البيانات غير مكتملة. طبّق آخر ترحيلات قاعدة البيانات ثم أعد المحاولة.',
+    'Veritabanı şeması eksik. En son veritabanı geçişlerini uygulayıp tekrar deneyin.',
+    'The database schema is incomplete. Apply the latest database migrations and try again.',
+  ),
   generic: L('تعذر الحفظ.', 'Kaydedilemedi.', 'Could not save.'),
 };
 
@@ -58,6 +63,14 @@ export function translateDbError(error: unknown, locale: Locale): string {
   }
   if (text.includes('payload too large') || text.includes('exceeded the maximum allowed size')) {
     return MESSAGES.tooLarge[locale];
+  }
+  if (
+    text.includes('pgrst205') ||
+    text.includes('42p01') ||
+    text.includes('could not find the table') ||
+    (text.includes('relation') && text.includes('does not exist'))
+  ) {
+    return `${MESSAGES.missingSchema[locale]} (${raw})`;
   }
   return `${MESSAGES.generic[locale]} (${raw})`;
 }

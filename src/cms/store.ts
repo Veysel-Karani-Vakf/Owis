@@ -103,7 +103,9 @@ export function subscribeCms(listener: () => void): () => void {
 
 /**
  * Rows for a table, or `null` when the table was never loaded (offline or a
- * failed fetch), which the adapters read as "use the static defaults".
+ * failed fetch), which most adapters read as "use the static defaults". Data
+ * with no safe static fallback, such as bank accounts, uses this distinction
+ * to show a loading or connection-error state.
  *
  * A table that loaded with zero published rows returns `[]`: an editor who
  * unpublishes everything in a list means it to be empty, not to fall back to

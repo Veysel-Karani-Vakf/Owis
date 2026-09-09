@@ -9,7 +9,6 @@ import {
   LayoutTemplate,
   Link2,
   ListChecks,
-  RotateCcw,
   Search,
   Video,
   type LucideIcon,
@@ -191,24 +190,6 @@ const SECTIONS: Section[] = [
       ],
     ),
     link: { to: '/admin/submissions', label: L('افتح الرسائل', 'Mesajları aç', 'Open messages') },
-  },
-  {
-    icon: RotateCcw,
-    title: L('استعادة المحتوى الأصلي', 'Özgün içeriği geri yükleme', 'Restoring the original content'),
-    body: P(
-      [
-        'الموقع يحمل نسخة أصلية من كل محتواه. "إضافة ما ينقص فقط" تضيف هذه النسخة حيث لا يوجد شيء دون المساس بتعديلاتك — آمنة دائماً.',
-        '"استبدال كل المحتوى" يمسح كل تعديلاتك وإضافاتك ويعيد النسخة الأصلية. لا تستخدمه إلا إن كنت متأكداً؛ النظام يطلب كتابة كلمة تأكيد.',
-      ],
-      [
-        'Site, tüm içeriğinin özgün bir kopyasını taşır. "Yalnızca eksikleri ekle" bu kopyayı boş yerlere ekler, düzenlemelerinize dokunmaz — her zaman güvenlidir.',
-        '"Tüm içeriği değiştir" tüm düzenlemelerinizi ve eklediklerinizi siler ve özgün kopyayı geri getirir. Emin olmadıkça kullanmayın; sistem bir onay kelimesi ister.',
-      ],
-      [
-        'The site carries an original copy of all its content. "Add only what is missing" fills empty places from that copy without touching your edits — always safe.',
-        '"Replace all content" wipes every edit and addition and brings back the original. Use it only when you are sure; the system asks you to type a confirmation word.',
-      ],
-    ),
   },
   {
     icon: Keyboard,

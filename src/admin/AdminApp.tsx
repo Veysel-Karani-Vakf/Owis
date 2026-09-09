@@ -15,7 +15,6 @@ import PaymentsPage from './pages/PaymentsPage';
 import ContentManagementPage from './pages/ContentManagementPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
 import AssistantAiPage from './pages/AssistantAiPage';
-import SeedPage from './pages/SeedPage';
 import HelpPage from './pages/HelpPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -155,15 +154,6 @@ function AdminRoutes() {
         }
       />
       <Route path="pages" element={<Navigate to="/admin/content" replace />} />
-      <Route path="seed" element={<Navigate to="/admin/restore" replace />} />
-      <Route
-        path="restore"
-        element={
-          <Protected>
-            <SeedPage />
-          </Protected>
-        }
-      />
       <Route
         path="help"
         element={

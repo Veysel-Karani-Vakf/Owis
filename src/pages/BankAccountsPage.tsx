@@ -14,6 +14,7 @@ import {
 } from '@/data/bankAccounts';
 import { contributeContactRoute } from '@/data/donate';
 import { useI18n } from '@/i18n/useI18n';
+import { cmsRows, isCmsSettled } from '@/cms/store';
 
 const revealEase = [0.22, 1, 0.36, 1] as const;
 
@@ -379,6 +380,9 @@ function BankCard({
 export default function BankAccountsPage() {
   const { locale, isRtl } = useI18n();
   const page = getBankAccountsContent(locale);
+  const bankRows = cmsRows('bank_accounts');
+  const banksLoading = bankRows === null && !isCmsSettled();
+  const banksError = bankRows === null && isCmsSettled();
   const { copiedKey, copy } = useCopy();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
@@ -457,9 +461,31 @@ export default function BankAccountsPage() {
 
         <section className="bg-[#faf8f8] py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            {/* Quick jump to a bank */}
-            <nav aria-label={page.hero.title} className="mb-10 flex flex-wrap justify-center gap-2 md:mb-14">
-              {(page.banks ?? []).map((bank) => (
+            {banksLoading ? (
+              <p role="status" className="py-16 text-center text-sm font-semibold text-dark-500">
+                {locale === 'ar' ? 'جارٍ تحميل الحسابات البنكية…' : locale === 'tr' ? 'Banka hesapları yükleniyor…' : 'Loading bank accounts…'}
+              </p>
+            ) : banksError ? (
+              <p role="alert" className="mx-auto max-w-2xl rounded-2xl border border-red-100 bg-red-50 p-5 text-center text-sm font-semibold text-red-700">
+                {locale === 'ar'
+                  ? 'تعذر تحميل الحسابات البنكية حالياً. يرجى المحاولة مرة أخرى لاحقاً.'
+                  : locale === 'tr'
+                    ? 'Banka hesapları şu anda yüklenemiyor. Lütfen daha sonra tekrar deneyin.'
+                    : 'Bank accounts cannot be loaded right now. Please try again later.'}
+              </p>
+            ) : page.banks.length === 0 ? (
+              <p className="mx-auto max-w-2xl rounded-2xl border border-primary-100 bg-white p-5 text-center text-sm font-semibold text-dark-600">
+                {locale === 'ar'
+                  ? 'لا توجد حسابات بنكية منشورة حالياً.'
+                  : locale === 'tr'
+                    ? 'Şu anda yayımlanmış banka hesabı bulunmuyor.'
+                    : 'There are no published bank accounts right now.'}
+              </p>
+            ) : (
+              <>
+                {/* Quick jump and cards share the exact same ordered rows. */}
+                <nav aria-label={page.hero.title} className="mb-10 flex flex-wrap justify-center gap-2 md:mb-14">
+                  {page.banks.map((bank) => (
                 <a
                   key={bank.id}
                   href={`#${bank.id}`}
@@ -469,14 +495,16 @@ export default function BankAccountsPage() {
                 >
                   <BankLogo bank={bank} className="h-6 max-w-[130px]" />
                 </a>
-              ))}
-            </nav>
+                  ))}
+                </nav>
 
-            <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-              {(page.banks ?? []).map((bank, index) => (
-                <BankCard key={bank.id} bank={bank} content={page} index={index} copiedKey={copiedKey} copy={copy} />
-              ))}
-            </ul>
+                <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
+                  {page.banks.map((bank, index) => (
+                    <BankCard key={bank.id} bank={bank} content={page} index={index} copiedKey={copiedKey} copy={copy} />
+                  ))}
+                </ul>
+              </>
+            )}
 
             <div className="mt-14 flex flex-col items-center justify-between gap-4 rounded-[22px] border border-primary-100 bg-white p-6 text-center shadow-[0_14px_36px_rgba(40,12,18,0.06)] sm:flex-row sm:text-start">
               <p className="text-base font-bold text-dark-950">{page.labels.contactPrompt}</p>

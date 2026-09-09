@@ -75,6 +75,8 @@ export type ResourceDef = {
   newDefaults?: Record<string, unknown>;
   /** Public route of one record, for "open on site" links; `:slug` is replaced. */
   publicRoute?: string;
+  /** Additional record-specific validation beyond required top-level fields. */
+  validate?: (values: Record<string, unknown>, locale: Locale) => Record<string, string>;
 };
 
 /** Returns the empty/default value for a field type (used when creating records). */

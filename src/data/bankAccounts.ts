@@ -70,97 +70,8 @@ export type BankAccountsPageContent = {
 
 export const accountHolder = 'VEYSEL KARANİ TÜRK YEMENİ SAİD VAKFI';
 
-// All IBANs verified against the ISO 7064 mod-97 checksum before publishing.
-export const banks: Bank[] = [
-  {
-    id: 'vakifbank',
-    name: 'VakıfBank',
-    monogram: 'VB',
-    logo: '/media/banks/vakifbank.svg',
-    brandColor: '#f7c600',
-    branch: 'Taksim / İstanbul Şubesi – 0005',
-    swift: 'TVBATR2A',
-    accounts: [
-      { currency: 'TRY', iban: 'TR140001500158007305877312', accountNumber: '00158007305877312' },
-      { currency: 'USD', iban: 'TR360001500158048016524134', accountNumber: '00158048016524134' },
-      { currency: 'EUR', iban: 'TR950001500158048016524139', accountNumber: '00158048016524139' },
-    ],
-  },
-  {
-    id: 'albaraka',
-    name: 'Albaraka Türk',
-    monogram: 'AB',
-    logo: '/media/banks/albaraka.svg',
-    brandColor: '#e8552f',
-    branch: 'Yıldıztepe Bağcılar Şubesi',
-    swift: 'BTFHTRIS',
-    accountNumber: '7740936',
-    accounts: [
-      { currency: 'TRY', iban: 'TR790020300007740936000001' },
-      { currency: 'USD', iban: 'TR520020300007740936000002' },
-      { currency: 'EUR', iban: 'TR250020300007740936000003' },
-    ],
-  },
-  {
-    id: 'kuveyt-turk',
-    name: 'Kuveyt Türk',
-    monogram: 'KT',
-    logo: '/media/banks/kuveyt-turk.svg',
-    brandColor: '#0a7a5c',
-    branch: 'Şirinevler Şubesi',
-    swift: 'KTEFTRISXXX',
-    accountNumber: '94823084',
-    accounts: [
-      { currency: 'TRY', iban: 'TR020020500009482308400001' },
-      { currency: 'USD', iban: 'TR180020500009482308400101' },
-      { currency: 'EUR', iban: 'TR880020500009482308400102' },
-    ],
-  },
-  {
-    id: 'vakif-katilim',
-    name: 'Vakıf Katılım',
-    monogram: 'VK',
-    logo: '/media/banks/vakif-katilim.svg',
-    brandColor: '#c2258a',
-    branch: 'Gaziosmanpaşa Şubesi',
-    swift: 'VAKFTRIS',
-    accounts: [
-      { currency: 'TRY', iban: 'TR500021000000023703800001' },
-      { currency: 'USD', iban: 'TR660021000000023703800101' },
-      { currency: 'EUR', iban: 'TR390021000000023703800102' },
-    ],
-  },
-  {
-    id: 'is-bankasi',
-    name: 'Türkiye İş Bankası',
-    monogram: 'İŞ',
-    logo: '/media/banks/is-bankasi.svg',
-    brandColor: '#1c4e9c',
-    branch: 'Nişantaşı Şubesi',
-    swift: 'ISBKTRISXXX',
-    accounts: [
-      { currency: 'TRY', iban: 'TR710006400000110401777290' },
-      { currency: 'USD', iban: 'TR950006400000210403637410' },
-      { currency: 'EUR', iban: 'TR870006400000210403688867' },
-      { currency: 'SAR', iban: 'TR450006400000210403639959' },
-    ],
-  },
-  {
-    id: 'ziraat-katilim',
-    name: 'Ziraat Katılım',
-    monogram: 'ZK',
-    logo: '/media/banks/ziraat-katilim.svg',
-    brandColor: '#b3121b',
-    branch: 'Güneşli Şubesi / İstanbul',
-    accountNumber: '1355957',
-    accounts: [
-      { currency: 'TRY', iban: 'TR620020900001355957000001' },
-      { currency: 'USD', iban: 'TR350020900001355957000002' },
-      { currency: 'EUR', iban: 'TR080020900001355957000003' },
-      { currency: 'SAR', iban: 'TR780020900001355957000004' },
-    ],
-  },
-];
+/** @deprecated Bank records live in Supabase. Kept empty for legacy seed-module compatibility. */
+export const banks: Bank[] = [];
 
 const breadcrumbHome: Record<Locale, string> = { ar: 'الرئيسية', tr: 'Ana Sayfa', en: 'Home' };
 
@@ -202,7 +113,7 @@ export const localizedBankAccountsContent: Record<Locale, BankAccountsPageConten
       contactCta: 'تواصل معنا',
     },
     accountHolder,
-    banks,
+    banks: [],
   },
   tr: {
     seo: {
@@ -241,7 +152,7 @@ export const localizedBankAccountsContent: Record<Locale, BankAccountsPageConten
       contactCta: 'Bize ulaşın',
     },
     accountHolder,
-    banks,
+    banks: [],
   },
   en: {
     seo: {
@@ -280,7 +191,7 @@ export const localizedBankAccountsContent: Record<Locale, BankAccountsPageConten
       contactCta: 'Contact us',
     },
     accountHolder,
-    banks,
+    banks: [],
   },
 };
 
@@ -292,5 +203,5 @@ export function getBankAccountsContent(locale: Locale): BankAccountsPageContent 
   // Texts come from the `bank-accounts-page` site page; the banks themselves
   // from the `bank_accounts` table (one shared list — IBANs have no language).
   const content = cmsPageContent('bank-accounts-page', locale, localizedBankAccountsContent[locale]);
-  return { ...content, banks: cmsBankAccounts(banks) };
+  return { ...content, banks: cmsBankAccounts<Bank>() };
 }
