@@ -285,6 +285,17 @@ export default function Footer() {
             {t('footer.yearSuffix')}
           </p>
         </div>
+
+        <div className="mt-5 text-center" dir="ltr">
+          <a
+            href="https://articode.com.tr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-white/40 transition-colors hover:text-primary-400"
+          >
+            Design by ArtiCode
+          </a>
+        </div>
       </div>
     </footer>
   );
