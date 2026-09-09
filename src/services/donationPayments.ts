@@ -10,7 +10,6 @@ export type PaymentConfig = {
   presets: number[];
 };
 
-/** Used until /api/payments/config answers (and when it is unreachable). */
 export const DEFAULT_PAYMENT_CONFIG: PaymentConfig = {
   mode: 'mock',
   currency: 'USD',
@@ -37,13 +36,17 @@ export class DonationPaymentError extends Error {
   }
 }
 
-/** No card fields: the donor enters the card on the bank's own page. */
 export type CreatePaymentInput = {
   slug: string;
   titleSnapshot: string;
   amount: number;
   locale: Locale;
   donor: { name: string; email: string; phone: string };
+};
+
+export type CreateDirectPaymentInput = {
+  slug: string;
+  locale: Locale;
 };
 
 export type CreatePaymentResult = {
@@ -77,6 +80,21 @@ export async function fetchPaymentConfig(): Promise<PaymentConfig | null> {
   }
 }
 
+async function readCreatePaymentResponse(response: Response): Promise<CreatePaymentResult> {
+  let data: { ok?: boolean; error?: PaymentErrorCode } & Partial<CreatePaymentResult> = {};
+  try {
+    data = await response.json();
+  } catch {
+    throw new DonationPaymentError('network');
+  }
+
+  if (!response.ok || !data.ok || !data.gateUrl || !data.fields || !data.oid) {
+    throw new DonationPaymentError(data.error ?? 'server-error');
+  }
+
+  return { oid: data.oid, gateUrl: data.gateUrl, fields: data.fields };
+}
+
 export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
   let response: Response;
   try {
@@ -89,23 +107,31 @@ export async function createPayment(input: CreatePaymentInput): Promise<CreatePa
     throw new DonationPaymentError('network');
   }
 
-  let data: { ok?: boolean; error?: PaymentErrorCode } & Partial<CreatePaymentResult> = {};
+  return readCreatePaymentResponse(response);
+}
+
+/**
+ * Direct store payment.
+ * Only the opportunity slug is sent. The amount is resolved by the server
+ * from Supabase, so changing browser-side HTML cannot change the bank amount.
+ */
+export async function createDirectPayment(
+  input: CreateDirectPaymentInput,
+): Promise<CreatePaymentResult> {
+  let response: Response;
   try {
-    data = await response.json();
+    response = await fetch('/api/payments/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
   } catch {
     throw new DonationPaymentError('network');
   }
 
-  if (!response.ok || !data.ok || !data.gateUrl || !data.fields || !data.oid) {
-    throw new DonationPaymentError(data.error ?? 'server-error');
-  }
-  return { oid: data.oid, gateUrl: data.gateUrl, fields: data.fields };
+  return readCreatePaymentResponse(response);
 }
 
-/**
- * Hands the browser over to İş Bankası using a full-page POST.
- * Card number, expiry and CVV are entered only on the bank's hosted page.
- */
 export function submitToGate(gateUrl: string, fields: Record<string, string>): void {
   const form = document.createElement('form');
 

@@ -27,7 +27,6 @@ export type PaymentRow = {
 
 let client: SupabaseClient | null = null;
 
-/** Service-role client: bypasses RLS; exists only inside the functions. */
 export function serviceClient(): SupabaseClient {
   if (!client) {
     client = createClient(supabaseUrl(), supabaseServiceRoleKey(), {
@@ -39,16 +38,47 @@ export function serviceClient(): SupabaseClient {
 
 type LocalizedText = Partial<Record<PaymentLocale, string>> | null;
 
-/** Same fallback order the site uses for CMS jsonb text. */
 function localizedText(value: LocalizedText, locale: PaymentLocale): string {
   if (!value) return '';
   return value[locale] || value.ar || value.en || value.tr || '';
+}
+
+function parseOpportunityAmount(displayPrice: string): number | null {
+  const raw = displayPrice.trim().replace(/[^\d.,-]/g, '');
+  if (!raw) return null;
+
+  const lastDot = raw.lastIndexOf('.');
+  const lastComma = raw.lastIndexOf(',');
+  let normalized = raw;
+
+  if (lastDot >= 0 && lastComma >= 0) {
+    if (lastDot > lastComma) {
+      normalized = raw.replace(/,/g, '');
+    } else {
+      normalized = raw.replace(/\./g, '').replace(',', '.');
+    }
+  } else if (lastComma >= 0) {
+    const decimals = raw.length - lastComma - 1;
+    normalized = decimals === 2 ? raw.replace(',', '.') : raw.replace(/,/g, '');
+  } else if (lastDot >= 0) {
+    const decimals = raw.length - lastDot - 1;
+    normalized = decimals === 2 ? raw : raw.replace(/\./g, '');
+  }
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const cents = Math.round(amount * 100);
+  if (Math.abs(amount * 100 - cents) > 1e-6) return null;
+
+  return cents / 100;
 }
 
 export type OpportunityLookup = {
   slug: string;
   title: string;
   available: boolean;
+  amount: number | null;
 };
 
 export async function getOpportunityBySlug(
@@ -57,14 +87,19 @@ export async function getOpportunityBySlug(
 ): Promise<OpportunityLookup | null> {
   const { data, error } = await serviceClient()
     .from('donation_opportunities')
-    .select('slug,title,available,is_published')
+    .select('slug,title,price,available,is_published')
     .eq('slug', slug)
     .maybeSingle();
+
   if (error || !data) return null;
+
+  const displayPrice = localizedText(data.price as LocalizedText, locale);
+
   return {
     slug: data.slug,
     title: localizedText(data.title as LocalizedText, locale),
     available: Boolean(data.available) && data.is_published !== false,
+    amount: parseOpportunityAmount(displayPrice),
   };
 }
 
@@ -118,10 +153,6 @@ export type PaymentFinalization = {
   rawResponse: Record<string, string>;
 };
 
-/**
- * Applies the gateway outcome. Guarded by status='pending' so a replayed
- * callback can never rewrite a finished payment.
- */
 export async function finalizePayment(oid: string, outcome: PaymentFinalization): Promise<void> {
   const { error } = await serviceClient()
     .from('donation_payments')

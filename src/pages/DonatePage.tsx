@@ -1,7 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, HandHeart } from 'lucide-react';
-import { useMemo } from 'react';
+import { ArrowLeft, ArrowRight, HandHeart, Loader2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import FadeContent from '@/components/effects/FadeContent';
 import SpotlightCard from '@/components/effects/SpotlightCard';
 import PageHero from '@/components/internal/PageHero';
@@ -9,17 +8,116 @@ import PageSeo from '@/components/internal/PageSeo';
 import { getDonateContent, type DonationOpportunity } from '@/data/donate';
 import { useDonateContent } from '@/hooks/useCmsContent';
 import { useRevealMotion } from '@/hooks/useResponsiveMotion';
+import type { Locale } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
+import {
+  createDirectPayment,
+  DonationPaymentError,
+  submitToGate,
+} from '@/services/donationPayments';
+
+function directPaymentError(locale: Locale, error: unknown): string {
+  const network = error instanceof DonationPaymentError && error.code === 'network';
+
+  if (locale === 'ar') {
+    return network
+      ? 'تعذر الاتصال بخدمة الدفع. تحقق من اتصالك وحاول مرة أخرى.'
+      : 'تعذر فتح صفحة البنك الآن. حاول مرة أخرى.';
+  }
+  if (locale === 'tr') {
+    return network
+      ? 'Ödeme servisine bağlanılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
+      : 'Banka ödeme sayfası şu anda açılamadı. Lütfen tekrar deneyin.';
+  }
+  return network
+    ? 'Could not reach the payment service. Check your connection and try again.'
+    : 'Could not open the bank payment page. Please try again.';
+}
+
+function DirectContributionButton({
+  opportunity,
+  labels,
+  isRtl,
+  locale,
+  featured = false,
+}: {
+  opportunity: DonationOpportunity;
+  labels: ReturnType<typeof getDonateContent>['labels'];
+  isRtl: boolean;
+  locale: Locale;
+  featured?: boolean;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+
+  const handleClick = async () => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    try {
+      const result = await createDirectPayment({
+        slug: opportunity.id,
+        locale,
+      });
+
+      submitToGate(result.gateUrl, result.fields);
+    } catch (error) {
+      console.error('Direct contribution failed:', error);
+      setSubmitting(false);
+      window.alert(directPaymentError(locale, error));
+    }
+  };
+
+  const sizeClasses = featured
+    ? 'min-h-12 px-8 py-3 text-base'
+    : 'min-h-11 w-full px-5 py-2.5 text-sm';
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={submitting}
+      aria-busy={submitting}
+      aria-label={`${labels.contribute}: ${opportunity.title}`}
+      className={`btn-border-run group/link inline-flex items-center justify-center gap-2 rounded-full bg-primary-600 font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 disabled:cursor-wait disabled:opacity-70 ${sizeClasses}`}
+    >
+      {submitting ? (
+        <Loader2
+          className={featured ? 'h-5 w-5 animate-spin' : 'h-4 w-4 animate-spin'}
+          aria-hidden="true"
+        />
+      ) : (
+        <HandHeart
+          className={featured ? 'h-5 w-5' : 'h-4 w-4'}
+          aria-hidden="true"
+        />
+      )}
+
+      {labels.contribute}
+
+      {!submitting && (
+        <ArrowIcon
+          className={`${featured ? 'h-5 w-5' : 'h-4 w-4'} transition-transform motion-reduce:transition-none motion-reduce:group-hover/link:translate-x-0 ${
+            isRtl ? 'group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'
+          }`}
+          aria-hidden="true"
+        />
+      )}
+    </button>
+  );
+}
 
 function DonationCard({
   opportunity,
   labels,
   isRtl,
+  locale,
   index,
 }: {
   opportunity: DonationOpportunity;
   labels: ReturnType<typeof getDonateContent>['labels'];
   isRtl: boolean;
+  locale: Locale;
   index: number;
 }) {
   const shouldReduceMotion = useReducedMotion();
@@ -32,7 +130,6 @@ function DonationCard({
     mobileY: 12,
     mobileDuration: 0.44,
   });
-  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   return (
     <motion.article id={opportunity.id} {...revealMotion} className="h-full">
@@ -84,21 +181,13 @@ function DonationCard({
           </p>
 
           <div className="mt-auto pt-5">
-            {opportunity.available && opportunity.url ? (
-              <Link
-                to={opportunity.url}
-                aria-label={`${labels.contribute}: ${opportunity.title}`}
-                className="btn-border-run group/link inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-              >
-                <HandHeart className="h-4 w-4" aria-hidden="true" />
-                {labels.contribute}
-                <ArrowIcon
-                  className={`h-4 w-4 transition-transform motion-reduce:transition-none motion-reduce:group-hover/link:translate-x-0 ${
-                    isRtl ? 'group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'
-                  }`}
-                  aria-hidden="true"
-                />
-              </Link>
+            {opportunity.available ? (
+              <DirectContributionButton
+                opportunity={opportunity}
+                labels={labels}
+                isRtl={isRtl}
+                locale={locale}
+              />
             ) : (
               <button
                 type="button"
@@ -120,10 +209,12 @@ function FeaturedDonationCard({
   opportunity,
   labels,
   isRtl,
+  locale,
 }: {
   opportunity: DonationOpportunity;
   labels: ReturnType<typeof getDonateContent>['labels'];
   isRtl: boolean;
+  locale: Locale;
 }) {
   const shouldReduceMotion = useReducedMotion();
   const revealMotion = useRevealMotion({
@@ -134,7 +225,6 @@ function FeaturedDonationCard({
     mobileY: 14,
     mobileDuration: 0.46,
   });
-  const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   return (
     <motion.article id={opportunity.id} {...revealMotion}>
@@ -171,7 +261,9 @@ function FeaturedDonationCard({
           <div className="relative">
             <div className="flex items-center gap-2">
               <span className="h-px w-8 bg-primary-200" />
-              <span className="text-sm font-semibold text-primary-700">{labels.featured}</span>
+              <span className="text-sm font-semibold text-primary-700">
+                {labels.featured}
+              </span>
             </div>
             <h2 className="mt-3 text-2xl font-bold leading-tight text-dark-950 md:text-3xl">
               {opportunity.title}
@@ -181,26 +273,23 @@ function FeaturedDonationCard({
             </p>
 
             <div className="mt-6 flex w-fit flex-wrap items-baseline gap-x-3 gap-y-1 rounded-2xl border border-primary-100 bg-primary-50/60 px-5 py-3.5">
-              <span className="text-xs font-semibold text-primary-700">{labels.contributionValue}</span>
-              <span className="text-3xl font-black leading-none text-dark-950">{opportunity.price}</span>
+              <span className="text-xs font-semibold text-primary-700">
+                {labels.contributionValue}
+              </span>
+              <span className="text-3xl font-black leading-none text-dark-950">
+                {opportunity.price}
+              </span>
             </div>
 
             <div className="mt-8">
-              {opportunity.available && opportunity.url ? (
-                <Link
-                  to={opportunity.url}
-                  aria-label={`${labels.contribute}: ${opportunity.title}`}
-                  className="btn-border-run group/link inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary-600 px-8 py-3 text-base font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600"
-                >
-                  <HandHeart className="h-5 w-5" aria-hidden="true" />
-                  {labels.contribute}
-                  <ArrowIcon
-                    className={`h-5 w-5 transition-transform motion-reduce:transition-none motion-reduce:group-hover/link:translate-x-0 ${
-                      isRtl ? 'group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'
-                    }`}
-                    aria-hidden="true"
-                  />
-                </Link>
+              {opportunity.available ? (
+                <DirectContributionButton
+                  opportunity={opportunity}
+                  labels={labels}
+                  isRtl={isRtl}
+                  locale={locale}
+                  featured
+                />
               ) : (
                 <button
                   type="button"
@@ -235,7 +324,7 @@ export default function DonatePage() {
         '@type': 'ListItem',
         position: index + 1,
         name: opportunity.title,
-        url: `${origin}${opportunity.available && opportunity.url ? opportunity.url : `/donate#${opportunity.id}`}`,
+        url: `${origin}/donate#${opportunity.id}`,
       })),
     };
   }, [page.hero.description, page.hero.title, page.opportunities]);
@@ -261,10 +350,19 @@ export default function DonatePage() {
 
         <section id="cms-donate-intro" className="bg-white py-16 md:py-24">
           <div className="mx-auto max-w-5xl px-4 text-center md:px-8">
-            <FadeContent blur={false} duration={650} initialOpacity={0} yOffset={16} threshold={0.18} once>
+            <FadeContent
+              blur={false}
+              duration={650}
+              initialOpacity={0}
+              yOffset={16}
+              threshold={0.18}
+              once
+            >
               <div className="mb-4 flex items-center justify-center gap-2">
                 <span className="h-px w-8 bg-primary-200" />
-                <span className="text-sm font-semibold text-primary-700">{page.intro.eyebrow}</span>
+                <span className="text-sm font-semibold text-primary-700">
+                  {page.intro.eyebrow}
+                </span>
                 <span className="h-px w-8 bg-primary-200" />
               </div>
               <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
@@ -279,21 +377,35 @@ export default function DonatePage() {
           </div>
         </section>
 
-        <section id="cms-donate-grid" className="relative overflow-hidden bg-[#faf8f8] py-16 md:py-24">
+        <section
+          id="cms-donate-grid"
+          className="relative overflow-hidden bg-[#faf8f8] py-16 md:py-24"
+        >
           <div aria-hidden="true" className="pattern-bg absolute inset-0 opacity-35" />
           <div className="relative mx-auto max-w-7xl px-4 md:px-8">
-            <FadeContent blur={false} duration={620} initialOpacity={0} yOffset={14} threshold={0.18} once>
+            <FadeContent
+              blur={false}
+              duration={620}
+              initialOpacity={0}
+              yOffset={14}
+              threshold={0.18}
+              once
+            >
               <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <span className="h-px w-8 bg-primary-200" />
-                  <span className="text-sm font-semibold text-primary-700">{page.grid.eyebrow}</span>
+                  <span className="text-sm font-semibold text-primary-700">
+                    {page.grid.eyebrow}
+                  </span>
                   <span className="h-px w-8 bg-primary-200" />
                 </div>
                 <h2 className="text-3xl font-bold leading-tight text-dark-950 md:text-4xl">
                   {page.grid.title}
                 </h2>
                 {page.grid.description && (
-                  <p className="mt-4 text-base leading-relaxed text-dark-600 md:text-lg">{page.grid.description}</p>
+                  <p className="mt-4 text-base leading-relaxed text-dark-600 md:text-lg">
+                    {page.grid.description}
+                  </p>
                 )}
               </div>
             </FadeContent>
@@ -308,6 +420,7 @@ export default function DonatePage() {
                   opportunity={page.opportunities[0]}
                   labels={page.labels}
                   isRtl={isRtl}
+                  locale={locale}
                 />
 
                 {page.opportunities.length > 1 && (
@@ -318,6 +431,7 @@ export default function DonatePage() {
                         opportunity={opportunity}
                         labels={page.labels}
                         isRtl={isRtl}
+                        locale={locale}
                         index={index}
                       />
                     ))}
