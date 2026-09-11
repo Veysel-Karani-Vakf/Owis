@@ -266,7 +266,7 @@ export const SITE_AREAS: SiteArea[] = [
   {
     key: 'donate',
     icon: HandHeart,
-    label: L('المساهمة', 'Bağış', 'Donate'),
+    label: L('المتجر', 'Mağaza', 'Store'),
     description: L(
       'فرص المساهمة، نصوص صفحة المساهمة، وصفحتا الدفع والنتيجة',
       'Bağış fırsatları, bağış sayfası metinleri ve ödeme/sonuç sayfaları',

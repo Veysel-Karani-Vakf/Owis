@@ -1,11 +1,13 @@
 import { createPayment, getOpportunityBySlug, type PaymentLocale } from '../_lib/db';
 import {
+  PAYMENT_GATEWAY_CURRENCY,
   PAYMENT_LIMITS,
   paymentClientId,
   paymentGateUrl,
   paymentStoreKey,
   siteOrigin,
 } from '../_lib/env';
+import { convertUsdToTry, getIsbankUsdBuyingRate } from '../_lib/isbankFx';
 import {
   methodNotAllowed,
   readJsonBody,
@@ -38,7 +40,8 @@ function anonymousDonorName(locale: PaymentLocale): string {
  *
  * SECURITY:
  * The browser NEVER sends the contribution amount here.
- * The official amount is loaded from Supabase by slug.
+ * The official USD amount is loaded from Supabase by slug, then converted on
+ * the server to TRY using İş Bankası USD Banka Alış.
  */
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method !== 'POST') {
@@ -66,21 +69,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const amount = opportunity.amount;
+    const originalAmount = opportunity.amount;
     if (
-      amount === null ||
-      !Number.isFinite(amount) ||
-      amount < PAYMENT_LIMITS.minAmount ||
-      amount > PAYMENT_LIMITS.maxAmount
+      originalAmount === null ||
+      !Number.isFinite(originalAmount) ||
+      originalAmount < PAYMENT_LIMITS.minAmount ||
+      originalAmount > PAYMENT_LIMITS.maxAmount
     ) {
       console.error('payments/direct: invalid official opportunity amount', {
         slug,
-        amount,
+        amount: originalAmount,
       });
       fail(res, 400, 'invalid-amount');
       return;
     }
 
+    const quote = await getIsbankUsdBuyingRate();
+    const chargedAmount = convertUsdToTry(originalAmount, quote.rate);
     const oid = newOrderId();
 
     await createPayment({
@@ -91,8 +96,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       donorEmail: null,
       donorPhone: null,
       locale,
-      amount,
-      currency: PAYMENT_LIMITS.currency,
+      amount: chargedAmount,
+      currency: PAYMENT_GATEWAY_CURRENCY.currency,
+      originalAmount,
+      originalCurrency: PAYMENT_LIMITS.currency,
+      fxRate: quote.rate,
+      fxSource: quote.source,
+      fxQuotedAt: quote.fetchedAt,
     });
 
     const origin = siteOrigin(req);
@@ -102,8 +112,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       clientId: paymentClientId(),
       storeKey: paymentStoreKey(),
       oid,
-      amount,
-      currencyCode: PAYMENT_LIMITS.currencyCode,
+      amount: chargedAmount,
+      currencyCode: PAYMENT_GATEWAY_CURRENCY.currencyCode,
       okUrl: callbackUrl,
       failUrl: callbackUrl,
       lang: locale === 'tr' ? 'tr' : 'en',

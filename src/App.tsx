@@ -76,6 +76,7 @@ function App() {
           <Route path="/library/success-stories" element={<LibraryCollectionPage collection="success-stories" />} />
           <Route path="/library/success-stories/:slug" element={<LibraryTextPage type="success-stories" />} />
           <Route path="/library/gallery" element={<LibraryGalleryPage />} />
+          <Route path="/donate-now" element={<Navigate to="/donate" replace />} />
           <Route path="/donate" element={<DonatePage />} />
           <Route path="/donate/checkout/:slug" element={<DonateCheckoutPage />} />
           <Route path="/donate/result" element={<DonateResultPage />} />

@@ -32,17 +32,17 @@ const SECTIONS: Section[] = [
     title: L('كيف تنتظم لوحة التحكم؟', 'Panel nasıl düzenlenir?', 'How is the dashboard organised?'),
     body: P(
       [
-        'القائمة الجانبية فيها بند لكل صفحة من صفحات الموقع، بنفس ترتيب الموقع: الصفحة الرئيسية، عن الوقف، المشاريع، البرامج، الأخبار، المكتبة، شارك معنا، المساهمة، الحسابات البنكية، وإعدادات الموقع.',
+        'القائمة الجانبية فيها بند لكل صفحة من صفحات الموقع، بنفس ترتيب الموقع: الصفحة الرئيسية، عن الوقف، المشاريع، البرامج، الأخبار، المكتبة، شارك معنا، المتجر، الحسابات البنكية، وإعدادات الموقع.',
         'افتح بند أي صفحة تجد كل ما يخصها في تبويبات: قوائمها (المشاريع مثلاً) في تبويب، ونصوصها وصورها في تبويب آخر — لا تحتاج البحث في مكان ثانٍ.',
         'تحت عنوان كل قسم سطر يقول أين يظهر على الموقع بالضبط.',
       ],
       [
-        'Kenar çubuğunda, sitenin her sayfası için sitenin kendi sırasıyla bir madde vardır: ana sayfa, hakkında, projeler, programlar, haberler, kütüphane, katılım, bağış, banka hesapları ve site ayarları.',
+        'Kenar çubuğunda, sitenin her sayfası için sitenin kendi sırasıyla bir madde vardır: ana sayfa, hakkında, projeler, programlar, haberler, kütüphane, katılım, mağaza, banka hesapları ve site ayarları.',
         'Bir sayfanın maddesini açın; ona ait her şey sekmeler hâlindedir: listeleri (örneğin projeler) bir sekmede, metin ve görselleri başka bir sekmede — başka yerde aramanız gerekmez.',
         'Her bölüm başlığının altındaki satır, sitede tam olarak nerede göründüğünü söyler.',
       ],
       [
-        'The sidebar has one item for every page of the site, in the site’s own order: home, about, projects, programs, news, library, participate, donate, bank accounts and site settings.',
+        'The sidebar has one item for every page of the site, in the site’s own order: home, about, projects, programs, news, library, participate, store, bank accounts and site settings.',
         'Open a page’s item and everything about it sits in tabs: its lists (projects, say) in one tab, its texts and images in another — nothing to hunt down elsewhere.',
         'The line under every section title says exactly where it appears on the site.',
       ],

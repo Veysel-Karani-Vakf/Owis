@@ -3,9 +3,9 @@ import type { IncomingMessage } from 'node:http';
 export type PaymentMode = 'mock' | 'test' | 'production';
 
 /**
- * Payment limits and presets served to the checkout page. Amounts are US
- * Dollars; the virtual POS charges in USD (ISO 4217 code 840). The minimum
- * stays at 1 so the $1 opportunities (waqf gift, Mother Yemen) are payable.
+ * Storefront limits and presets. Donation opportunities and custom amounts are
+ * expressed in US Dollars. Before the bank form is created, the server converts
+ * the selected USD amount to TRY using İş Bankası USD "Banka Alış".
  */
 export const PAYMENT_LIMITS = {
   currency: 'USD',
@@ -13,6 +13,12 @@ export const PAYMENT_LIMITS = {
   minAmount: 1,
   maxAmount: 500_000,
   presets: [100, 250, 500, 1000, 2500],
+} as const;
+
+/** Currency actually sent to the İş Bankası NestPay gateway. */
+export const PAYMENT_GATEWAY_CURRENCY = {
+  currency: 'TRY',
+  currencyCode: '949',
 } as const;
 
 /**

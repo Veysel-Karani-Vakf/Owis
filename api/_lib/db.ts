@@ -14,6 +14,11 @@ export type PaymentRow = {
   locale: string | null;
   amount: number;
   currency: string;
+  original_amount: number | null;
+  original_currency: string | null;
+  fx_rate: number | null;
+  fx_source: string | null;
+  fx_quoted_at: string | null;
   status: 'pending' | 'paid' | 'failed';
   gateway_mode: PaymentMode;
   md_status: string | null;
@@ -113,6 +118,11 @@ export type NewPayment = {
   locale: string;
   amount: number;
   currency: string;
+  originalAmount?: number | null;
+  originalCurrency?: string | null;
+  fxRate?: number | null;
+  fxSource?: string | null;
+  fxQuotedAt?: string | null;
 };
 
 export async function createPayment(payment: NewPayment): Promise<void> {
@@ -126,6 +136,11 @@ export async function createPayment(payment: NewPayment): Promise<void> {
     locale: payment.locale,
     amount: payment.amount,
     currency: payment.currency,
+    original_amount: payment.originalAmount ?? null,
+    original_currency: payment.originalCurrency ?? null,
+    fx_rate: payment.fxRate ?? null,
+    fx_source: payment.fxSource ?? null,
+    fx_quoted_at: payment.fxQuotedAt ?? null,
     status: 'pending',
     gateway_mode: paymentMode(),
   });

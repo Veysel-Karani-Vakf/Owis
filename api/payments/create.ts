@@ -1,5 +1,13 @@
 import { createPayment, getOpportunityBySlug, type PaymentLocale } from '../_lib/db';
-import { PAYMENT_LIMITS, paymentClientId, paymentGateUrl, paymentStoreKey, siteOrigin } from '../_lib/env';
+import {
+  PAYMENT_GATEWAY_CURRENCY,
+  PAYMENT_LIMITS,
+  paymentClientId,
+  paymentGateUrl,
+  paymentStoreKey,
+  siteOrigin,
+} from '../_lib/env';
+import { convertUsdToTry, getIsbankUsdBuyingRate } from '../_lib/isbankFx';
 import { methodNotAllowed, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
 import { buildGateRequestFields, newOrderId } from '../_lib/nestpay';
 
@@ -27,8 +35,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 const LOCALES: PaymentLocale[] = ['ar', 'tr', 'en'];
 
 /**
- * Validates the checkout submission, records a pending payment and returns
- * the signed field set the browser must form-POST to the 3D gate.
+ * Validates the checkout submission, converts the selected USD donation to TRY
+ * using İş Bankası USD Banka Alış, records a pending payment and returns the
+ * signed field set the browser must form-POST to the 3D gate.
  * No card data is accepted here: the donor enters the card on the bank's own
  * hosted page (3d_pay_hosting), so a PAN never reaches this server at all.
  */
@@ -61,7 +70,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     fail(res, 400, 'invalid-amount');
     return;
   }
-  const amount = cents / 100;
+  const originalAmount = cents / 100;
 
   const donorName = asString(donor.name).trim();
   if (donorName.length < 2 || donorName.length > 120) {
@@ -92,6 +101,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
 
+    const quote = await getIsbankUsdBuyingRate();
+    const chargedAmount = convertUsdToTry(originalAmount, quote.rate);
+
     const oid = newOrderId();
     await createPayment({
       oid,
@@ -101,8 +113,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       donorEmail: donorEmail || null,
       donorPhone: donorPhone || null,
       locale,
-      amount,
-      currency: PAYMENT_LIMITS.currency,
+      amount: chargedAmount,
+      currency: PAYMENT_GATEWAY_CURRENCY.currency,
+      originalAmount,
+      originalCurrency: PAYMENT_LIMITS.currency,
+      fxRate: quote.rate,
+      fxSource: quote.source,
+      fxQuotedAt: quote.fetchedAt,
     });
 
     const origin = siteOrigin(req);
@@ -111,8 +128,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       clientId: paymentClientId(),
       storeKey: paymentStoreKey(),
       oid,
-      amount,
-      currencyCode: PAYMENT_LIMITS.currencyCode,
+      amount: chargedAmount,
+      currencyCode: PAYMENT_GATEWAY_CURRENCY.currencyCode,
       okUrl: callbackUrl,
       failUrl: callbackUrl,
       lang: locale === 'tr' ? 'tr' : 'en',
