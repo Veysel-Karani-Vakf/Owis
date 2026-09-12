@@ -1356,6 +1356,11 @@ export const SITE_PAGES: SitePageDef[] = [
           { path: 'result.success.referenceLabel', label: L('عنوان "رقم التفويض"', 'Onay kodu etiketi', 'Auth code label'), type: 'text' },
           { path: 'result.success.opportunityLabel', label: L('عنوان "فرصة المساهمة"', 'Fırsat etiketi', 'Opportunity label'), type: 'text' },
           { path: 'result.success.donorLabel', label: L('عنوان "اسم المساهم"', 'Katkı sahibi etiketi', 'Contributor label'), type: 'text' },
+          { path: 'result.success.whatsappButton', label: L('نص زر واتساب', 'WhatsApp düğmesi', 'WhatsApp button'), type: 'text' },
+          { path: 'result.success.whatsappMessageIntro', label: L('مقدمة رسالة واتساب', 'WhatsApp mesajı girişi', 'WhatsApp message intro'), type: 'textarea' },
+          { path: 'result.success.whatsappDonationLabel', label: L('عنوان نوع التبرع في الرسالة', 'Mesajdaki bağış türü etiketi', 'Donation type label in message'), type: 'text' },
+          { path: 'result.success.whatsappReferenceLabel', label: L('عنوان رقم العملية في الرسالة', 'Mesajdaki işlem numarası etiketi', 'Transaction label in message'), type: 'text' },
+          { path: 'result.success.whatsappUnknownDonation', label: L('نوع التبرع الاحتياطي', 'Varsayılan bağış türü', 'Fallback donation type'), type: 'text' },
         ],
       },
       {

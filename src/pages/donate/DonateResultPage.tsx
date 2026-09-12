@@ -1,9 +1,10 @@
-import { AlertTriangle, CheckCircle2, FlaskConical, Loader2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FlaskConical, Loader2, MessageCircle, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageSeo from '@/components/internal/PageSeo';
 import { contributeContactRoute, donateCheckoutRoute, donateRoute } from '@/data/donate';
 import { getDonateResultContent } from '@/data/donateCheckout';
+import { getParticipatePage } from '@/data/participate';
 import { useI18n } from '@/i18n/useI18n';
 import { fetchPaymentStatus, type PaymentStatus } from '@/services/donationPayments';
 
@@ -14,6 +15,11 @@ function formatAmount(amount: number, locale: string, currency: string): string 
     style: 'currency',
     currency: currency || 'USD',
   }).format(amount);
+}
+
+function whatsappUrl(contactHref: string, message: string): string {
+  const base = contactHref.split('?')[0];
+  return `${base}?text=${encodeURIComponent(message)}`;
 }
 
 type ViewState = 'loading' | 'success' | 'failure' | 'unverified' | 'not-found';
@@ -37,6 +43,9 @@ const secondaryButtonClass =
 export default function DonateResultPage() {
   const { locale } = useI18n();
   const content = getDonateResultContent(locale);
+  const waqfWhatsapp = getParticipatePage(locale, 'contact').contact?.directLinks.find(
+    (link) => link.kind === 'whatsapp',
+  )?.href;
   const [searchParams] = useSearchParams();
   const oid = searchParams.get('oid') ?? '';
   const flowError = searchParams.get('error');
@@ -82,6 +91,18 @@ export default function DonateResultPage() {
   }, [oid, flowError]);
 
   const retryRoute = payment?.opportunitySlug ? donateCheckoutRoute(payment.opportunitySlug) : donateRoute;
+  const successWhatsappUrl = payment && waqfWhatsapp
+    ? whatsappUrl(
+        waqfWhatsapp,
+        [
+          content.success.whatsappMessageIntro,
+          `${content.success.whatsappDonationLabel}: ${payment.opportunityTitle || content.success.whatsappUnknownDonation}`,
+          `${content.success.amountLabel}: ${formatAmount(payment.amount, locale, payment.currency)}`,
+          `${content.success.donorLabel}: ${payment.donorName}`,
+          `${content.success.whatsappReferenceLabel}: ${payment.authCode || payment.oid}`,
+        ].join('\n'),
+      )
+    : null;
 
   return (
     <>
@@ -134,6 +155,18 @@ export default function DonateResultPage() {
                       </div>
                     )}
                   </dl>
+
+                  {successWhatsappUrl && (
+                    <a
+                      href={successWhatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#1eaf55] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1eaf55]"
+                    >
+                      <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                      {content.success.whatsappButton}
+                    </a>
+                  )}
 
                   <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                     <Link to={donateRoute} className={primaryButtonClass}>

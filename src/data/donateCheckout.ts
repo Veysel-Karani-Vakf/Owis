@@ -58,6 +58,11 @@ export type DonateResultContent = {
     referenceLabel: string;
     opportunityLabel: string;
     donorLabel: string;
+    whatsappButton: string;
+    whatsappMessageIntro: string;
+    whatsappDonationLabel: string;
+    whatsappReferenceLabel: string;
+    whatsappUnknownDonation: string;
   };
   failure: {
     title: string;
@@ -260,6 +265,11 @@ export const localizedDonateResult: Record<Locale, DonateResultContent> = {
       referenceLabel: 'رقم التفويض',
       opportunityLabel: 'فرصة المساهمة',
       donorLabel: 'اسم المساهم',
+      whatsappButton: 'إرسال تفاصيل المساهمة عبر واتساب',
+      whatsappMessageIntro: 'السلام عليكم، تم بحمد الله إتمام مساهمتي عبر موقع وقف أويس القرني.',
+      whatsappDonationLabel: 'السهم / نوع التبرع',
+      whatsappReferenceLabel: 'رقم العملية',
+      whatsappUnknownDonation: 'مساهمة عامة',
     },
     failure: {
       title: 'لم تكتمل عملية الدفع',
@@ -295,6 +305,11 @@ export const localizedDonateResult: Record<Locale, DonateResultContent> = {
       referenceLabel: 'Onay Kodu',
       opportunityLabel: 'Katki firsati',
       donorLabel: 'Katki Sahibi',
+      whatsappButton: 'Katki bilgilerini WhatsApp ile gonder',
+      whatsappMessageIntro: 'Merhaba, Veysel Karani Vakfi web sitesi uzerinden katkımi basariyla tamamladim.',
+      whatsappDonationLabel: 'Hisse / bagis turu',
+      whatsappReferenceLabel: 'Islem numarasi',
+      whatsappUnknownDonation: 'Genel katki',
     },
     failure: {
       title: 'Odeme tamamlanamadi',
@@ -330,6 +345,11 @@ export const localizedDonateResult: Record<Locale, DonateResultContent> = {
       referenceLabel: 'Auth code',
       opportunityLabel: 'Opportunity',
       donorLabel: 'Contributor',
+      whatsappButton: 'Send contribution details via WhatsApp',
+      whatsappMessageIntro: 'Hello, I have successfully completed my contribution through the Veysel Karani Waqf website.',
+      whatsappDonationLabel: 'Share / donation type',
+      whatsappReferenceLabel: 'Transaction number',
+      whatsappUnknownDonation: 'General contribution',
     },
     failure: {
       title: 'The payment was not completed',
