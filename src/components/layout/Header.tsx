@@ -178,7 +178,7 @@ export default function Header() {
         }`}
       >
         <div
-          className={`pointer-events-auto mx-auto flex h-16 w-full max-w-[1712px] items-center justify-between rounded-[18px] border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 sm:px-5 md:h-20 md:rounded-[22px] md:px-7 ${
+          className={`pointer-events-auto mx-auto flex h-16 w-full max-w-[1712px] items-center justify-between rounded-[18px] border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 rtl:flex-row-reverse sm:px-5 md:h-20 md:rounded-[22px] md:px-7 ${
             scrolled
               ? 'border-white/55 bg-white/[0.60] shadow-[0_12px_32px_rgba(20,0,4,0.14)] backdrop-blur-lg'
               : 'border-transparent bg-transparent shadow-none backdrop-blur-none'
