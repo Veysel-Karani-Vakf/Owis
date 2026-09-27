@@ -18,7 +18,8 @@
     "db:migrate": "node scripts/db.mjs migrate",
     "db:check": "node scripts/db.mjs check",
     "test:bank-accounts": "node scripts/check-bank-accounts.mjs",
-    "cms:seed": "node scripts/seed-content.mjs"
+    "test:program-admin": "node scripts/check-program-admin.mjs",
+    "cms:sync-programs": "node scripts/sync-program-content.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

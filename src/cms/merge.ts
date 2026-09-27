@@ -60,12 +60,18 @@ export function locList(
   locale: Locale,
   fallback: string[] = [],
 ): string[] {
-  if (!value || typeof value !== 'object') return fallback;
+  if (!value || typeof value !== 'object' || Object.keys(value).length === 0) return fallback;
   const direct = value[locale];
   if (Array.isArray(direct) && direct.length) return direct;
   for (const alt of LOCALES) {
     const candidate = value[alt];
     if (Array.isArray(candidate) && candidate.length) return candidate;
+  }
+  // At least one stored array, even an empty one, means the editor deliberately
+  // saved this field. Do not resurrect the bundled default after "remove all".
+  for (const option of LOCALES) {
+    const candidate = value[option];
+    if (Array.isArray(candidate)) return [];
   }
   return fallback;
 }

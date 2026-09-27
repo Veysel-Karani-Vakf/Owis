@@ -54,3 +54,20 @@ export function normalizePageData(data: unknown): PageData {
   }
   return out;
 }
+
+/**
+ * Adds newly introduced schema paths without replacing saved text or an array
+ * an editor intentionally emptied. Site-page fields are nested objects, so a
+ * recursive merge keeps existing sections intact while materialising additions.
+ */
+export function fillMissingPageData(current: unknown, fallback: unknown): unknown {
+  if (current === null || current === undefined) return fallback;
+  if (Array.isArray(current) || Array.isArray(fallback)) return current;
+  if (!isPlainObject(current) || !isPlainObject(fallback)) return current;
+
+  const complete: PageData = { ...current };
+  for (const [key, value] of Object.entries(fallback)) {
+    complete[key] = fillMissingPageData(current[key], value);
+  }
+  return complete;
+}

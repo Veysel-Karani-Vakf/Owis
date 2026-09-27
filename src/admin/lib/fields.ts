@@ -51,6 +51,8 @@ export type FieldDef = {
   dimensionsFor?: { width: string; height: string };
   /** tucked into the collapsed "advanced" block instead of the main form */
   advanced?: boolean;
+  /** Record-aware visibility, used by layouts whose fields differ substantially. */
+  showWhen?: (values: Record<string, unknown>) => boolean;
 };
 
 export type ResourceDef = {

@@ -17,6 +17,7 @@ import { useToast } from './Toast';
 import { useConfirm } from './ConfirmDialog';
 import { hydrateCms } from '@/cms/hydrate';
 import { setPublished } from '@/cms/store';
+import { ensureProgramRows } from '../lib/programProvisioning';
 
 type Row = Record<string, unknown>;
 
@@ -78,16 +79,22 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
     let active = true;
     setLoading(true);
     setError(null);
-    listRows(resource.table, {
-      sort: resource.defaultSort,
-      filterColumn: resource.filter && filterValue ? resource.filter.column : undefined,
-      filterValue: filterValue || undefined,
-    })
-      .then((data) => {
-        if (active) setRows(data);
-      })
-      .catch((e) => active && setError(translateDbError(e, locale)))
-      .finally(() => active && setLoading(false));
+    const load = async () => {
+      try {
+        const loaded = await listRows(resource.table, {
+          sort: resource.defaultSort,
+          filterColumn: resource.filter && filterValue ? resource.filter.column : undefined,
+          filterValue: filterValue || undefined,
+        });
+        const complete = resource.table === 'programs' ? await ensureProgramRows(loaded) : loaded;
+        if (active) setRows(complete);
+      } catch (e) {
+        if (active) setError(translateDbError(e, locale));
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void load();
     return () => {
       active = false;
     };

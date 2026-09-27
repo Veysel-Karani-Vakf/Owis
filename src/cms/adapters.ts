@@ -98,6 +98,12 @@ export function cmsPrograms(locale: Locale, fallback: Program[]): Program[] {
 
   return rows.map((row) => {
     const base = defaults.get(row.slug);
+    // Production carried the pre-redesign capacity-building row after this
+    // route became the volunteer unit. Until an editor saves/materializes the
+    // new row, never mix those institutional sections into the volunteer page.
+    if (row.slug === 'capacity-building' && !row.layout && !row.volunteer && base) {
+      return { ...base, layout: 'volunteer' } as Program;
+    }
     const volunteer = localizedObject<Program['volunteer']>(row.volunteer, locale, base?.volunteer);
     return {
       id: row.slug,

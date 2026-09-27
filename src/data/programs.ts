@@ -3,15 +3,19 @@ import { participateRoutes } from '@/data/participate';
 import type { Locale } from '@/i18n/content';
 import type { ProgramLayout } from '@/lib/types';
 import { cmsPageContent, cmsPrograms } from '@/cms/adapters';
-import yemenPioneersHero from '@/assets/programs/yemen-pioneers-hero.jpeg';
-import capacityHadramoutCoastImage from '@/assets/programs/capacity-hadramout-coast.jpeg';
-import capacityHadramoutValleyImage from '@/assets/programs/capacity-hadramout-valley.jpeg';
-import capacityMaribImage from '@/assets/programs/capacity-marib.jpeg';
-import capacityTaizImage from '@/assets/programs/capacity-taiz.jpeg';
-import institutionalDevelopmentImage from '@/assets/programs/institutional-development.jpg';
-import volunteerHeroImage from '@/assets/participate/participate-hero.jpg';
-import awarenessOwaisPlatformImage from '@/assets/programs/awareness-owais-platform.jpg';
-import volunteerUnitLogo from '@/assets/programs/volunteer-unit-logo.png';
+
+// Public, stable URLs can safely be persisted by the dashboard. Imported Vite
+// asset URLs become build hashes (or `/src/assets/...` in development), which
+// previously left saved program images broken after deployment.
+const yemenPioneersHero = '/programs/yemen-pioneers-hero.jpeg';
+const capacityHadramoutCoastImage = '/programs/capacity-hadramout-coast.jpeg';
+const capacityHadramoutValleyImage = '/programs/capacity-hadramout-valley.jpeg';
+const capacityMaribImage = '/programs/capacity-marib.jpeg';
+const capacityTaizImage = '/programs/capacity-taiz.jpeg';
+const institutionalDevelopmentImage = '/programs/institutional-development.jpg';
+const volunteerHeroImage = '/programs/participate-hero.jpg';
+const awarenessOwaisPlatformImage = '/programs/awareness-owais-platform.jpg';
+const volunteerUnitLogo = '/programs/volunteer-unit-logo.png';
 
 export const programRoutes = {
   yemenPioneers: '/programs/yemen-pioneers',

@@ -7,6 +7,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+scripts/backups/
 dist
 dist-ssr
 .bolt/

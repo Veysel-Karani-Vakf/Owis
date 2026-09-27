@@ -1,7 +1,7 @@
 // Collapses stored jsonb into a single locale's view.
 
 import { LOCALES, type Locale } from '@/lib/types';
-import { isPlainObject } from './merge';
+import { deepMerge, isPlainObject } from './merge';
 
 const LOCALE_KEYS = new Set<string>(LOCALES);
 
@@ -91,7 +91,9 @@ export function localizedObject<T>(value: unknown, locale: Locale, fallback: T):
   if (value === null || value === undefined) return fallback;
   const result = deepLocalize<unknown>(value, locale);
   if (!isPlainObject(result) || Object.keys(result).length === 0) return fallback;
-  return result as T;
+  // Groups such as the volunteer page contain nested copy blocks. An editor
+  // changing one field must not make the untouched blocks disappear.
+  return deepMerge(fallback, result);
 }
 
 /**

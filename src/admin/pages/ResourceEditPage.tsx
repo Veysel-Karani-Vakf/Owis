@@ -16,6 +16,7 @@ import { getRow, insertRow, updateRow, deleteRow, countRows, pickLocalized } fro
 import { validateRecord, filledLocales } from '../lib/validate';
 import { translateDbError } from '../lib/errors';
 import { slugFromTitle } from '../lib/slug';
+import { programRecordForEditor } from '../lib/programDefaults';
 import { FormEngine } from '../components/FormEngine';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -164,8 +165,9 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
     getRow(resource.table, id)
       .then((row) => {
         if (!active) return;
-        setValues(row);
-        setBaseline(JSON.stringify(row));
+        const editableRow = resource.table === 'programs' ? programRecordForEditor(row) : row;
+        setValues(editableRow);
+        setBaseline(JSON.stringify(editableRow));
         setLastSavedAt(typeof row.updated_at === 'string' ? row.updated_at : null);
       })
       .catch((e) => active && setError(translateDbError(e, localeRef.current)))

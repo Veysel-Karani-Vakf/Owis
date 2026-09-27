@@ -65,8 +65,9 @@ export function FormEngine({
   const { locale } = useI18n();
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const main = fields.filter((field) => !field.advanced);
-  const advanced = fields.filter((field) => field.advanced);
+  const visibleFields = fields.filter((field) => field.showWhen?.(values) ?? true);
+  const main = visibleFields.filter((field) => !field.advanced);
+  const advanced = visibleFields.filter((field) => field.advanced);
 
   // An error hidden inside the collapsed block would be invisible.
   const advancedHasError = advanced.some((field) => errors?.[field.key]);

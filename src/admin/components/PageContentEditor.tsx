@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/i18n/useI18n';
-import type { Locale } from '@/lib/types';
+import { LOCALES, type Locale } from '@/lib/types';
 import { hydrateCms } from '@/cms/hydrate';
 import { setPublished } from '@/cms/store';
 import type { CmsSnapshot } from '@/cms/store';
@@ -33,7 +33,7 @@ import { translateDbError } from '../lib/errors';
 import { getPageDef, type PageFieldDef, type PageSectionDef } from '../lib/pageSchema';
 import { buildPageValue } from '../lib/pageDefaults';
 import { getAtPath, setAtPath } from '../lib/paths';
-import { normalizePageData } from '../lib/pageData';
+import { fillMissingPageData, normalizePageData } from '../lib/pageData';
 import type { AreaTone } from '../lib/siteMap';
 import { PageFieldControl, FieldLabel, contentDir } from './PageFields';
 import LivePreview from './LivePreview';
@@ -199,24 +199,63 @@ export default function PageContentEditor({
 
   useEffect(() => {
     let active = true;
-    supabase
-      .from('site_pages')
-      .select('key, data')
-      .then(({ data, error: loadError }) => {
-        if (!active) return;
-        if (loadError) setError(translateDbError(loadError, uiLocale));
+    const load = async () => {
+      const { data, error: loadError } = await supabase.from('site_pages').select('key, data');
+      if (!active) return;
+      if (loadError) {
+        setError(translateDbError(loadError, uiLocale));
+        setLoading(false);
+        return;
+      }
+
+      let rows = data ?? [];
+      // A page definition in the dashboard is also its seed definition. Create
+      // a missing row and materialise any newly added locale/field paths before
+      // rendering, while preserving saved strings and intentionally empty lists.
+      if (page && pageKey === 'programs-page') {
+        const storedRow = rows.find((row) => row.key === pageKey);
+        const storedData = normalizePageData(storedRow?.data);
+        const completeData = { ...storedData };
+        for (const locale of LOCALES) {
+          completeData[locale] = fillMissingPageData(
+            storedData[locale],
+            buildPageValue(pageKey, locale, 'static'),
+          );
+        }
+
+        const needsWrite = !storedRow || JSON.stringify(completeData) !== JSON.stringify(storedData);
+        if (needsWrite) {
+          const seed = { key: pageKey, label: page.label, data: completeData };
+          const { data: created, error: createError } = await supabase
+            .from('site_pages')
+            .upsert(seed, { onConflict: 'key' })
+            .select('key, data')
+            .single();
+          if (!active) return;
+          if (createError) {
+            setError(translateDbError(createError, uiLocale));
+            setLoading(false);
+            return;
+          }
+          rows = [...rows.filter((row) => row.key !== pageKey), created ?? seed];
+        }
+      }
+
+      if (active) {
         const next: RawPages = {};
-        for (const row of data ?? []) {
+        for (const row of rows) {
           const record = row as { key: string; data: Record<string, unknown> | null };
           if (record.data) next[record.key] = normalizePageData(record.data);
         }
         setRawPages(next);
         setLoading(false);
-      });
+      }
+    };
+    void load();
     return () => {
       active = false;
     };
-  }, [uiLocale]);
+  }, [uiLocale, page, pageKey]);
 
   // Forms open pre-filled with what the site currently renders. A draft left in
   // localStorage by an earlier session is offered back rather than applied.

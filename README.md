@@ -84,6 +84,34 @@ stays at `/admin/r/:key/:id`.
   4. put it in a hub → `lib/siteMap.ts` (`SITE_AREAS`);
   5. render it in the component.
 
+### Program-page synchronization
+
+The program editor is layout-aware: volunteer, institutional-development and
+community-awareness records show only the fields their public layout renders.
+The program area is self-provisioning for authenticated admins:
+
+- opening the program list inserts any missing built-in program row;
+- a legacy row without `layout` is completed once from the current page
+  defaults while preserving its non-empty saved values;
+- opening `programs-page` creates the row, missing languages, and newly added
+  field paths before the form is shown;
+- after that one-time completion, intentionally cleared lists remain empty.
+
+The three redesigned program rows can be synchronized together after deploying
+the matching code and the stable files in `public/programs/`:
+
+```bash
+npm run cms:sync-programs             # read-only difference report
+npm run cms:sync-programs -- --apply  # local backup + one transactional update
+npm run test:program-admin            # adapter/editor contract checks
+```
+
+The explicit sync command also inserts rows that are absent; it no longer
+requires them to have been seeded beforehand. Backups made by the apply command are written to the ignored
+`scripts/backups/` directory. The command touches only `capacity-building`,
+`institutional-development`, `community-awareness`, and the `programs-page`
+labels row.
+
 ## Migrations
 
 `supabase/migrations/` — run in order with `node scripts/db.mjs migrate`.

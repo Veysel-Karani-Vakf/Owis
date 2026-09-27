@@ -88,6 +88,8 @@ export type PageFieldDef = {
   full?: boolean;
   /** Tucked into a collapsed "more settings" block instead of the main grid. */
   advanced?: boolean;
+  /** Visible for reference but protected from accidental changes. */
+  readOnly?: boolean;
   placeholder?: string;
   /** `number` fields: accept fractions even when the key is one the record forms treat as an integer. */
   decimal?: boolean;

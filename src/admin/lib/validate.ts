@@ -48,6 +48,7 @@ export function validateRecord(
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const field of resource.fields) {
+    if (field.showWhen && !field.showWhen(values)) continue;
     if (!field.required) continue;
     if (isEmpty(field, values[field.key])) errors[field.key] = REQUIRED[locale];
   }

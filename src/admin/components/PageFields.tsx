@@ -485,18 +485,24 @@ export function RepeaterInput({
         <label className="mb-1 block">
           <FieldLabel field={itemField} compact />
         </label>
-        <PageFieldControl
-          field={itemField}
-          dir={dir}
-          value={itemField.path ? getAtPath(item, itemField.path) : item}
-          onChange={(next) =>
-            update(
-              index,
-              itemField.path ? setAtPath(item, itemField.path, next) : (next as Record<string, unknown>),
-            )
-          }
-          onDimensions={dimensionsFor(itemField, index)}
-        />
+        {itemField.readOnly ? (
+          <div dir="ltr" className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 font-mono text-sm text-slate-600">
+            {String(itemField.path ? getAtPath(item, itemField.path) ?? '—' : '—')}
+          </div>
+        ) : (
+          <PageFieldControl
+            field={itemField}
+            dir={dir}
+            value={itemField.path ? getAtPath(item, itemField.path) : item}
+            onChange={(next) =>
+              update(
+                index,
+                itemField.path ? setAtPath(item, itemField.path, next) : (next as Record<string, unknown>),
+              )
+            }
+            onDimensions={dimensionsFor(itemField, index)}
+          />
+        )}
         {itemField.help && <p className="mt-1 text-xs text-slate-400">{itemField.help[locale]}</p>}
       </div>
     );

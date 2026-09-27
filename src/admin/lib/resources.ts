@@ -119,6 +119,23 @@ const programLayoutOptions: SelectOption[] = [
   { value: 'awareness', label: L('تخطيط منصة أويس (التوعية)', 'Farkındalık düzeni', 'Owais platform (awareness) layout') },
 ];
 
+type ProgramEditorLayout = 'generic' | 'pioneers' | 'volunteer' | 'institutional' | 'awareness';
+
+function programEditorLayout(values: Record<string, unknown>): ProgramEditorLayout {
+  if (programLayoutOptions.some((option) => option.value && option.value === values.layout)) {
+    return values.layout as ProgramEditorLayout;
+  }
+  if (values.slug === 'yemen-pioneers') return 'pioneers';
+  if (values.slug === 'capacity-building') return 'volunteer';
+  if (values.slug === 'institutional-development') return 'institutional';
+  if (values.slug === 'community-awareness') return 'awareness';
+  return 'generic';
+}
+
+const forProgramLayouts = (...layouts: ProgramEditorLayout[]): Partial<FieldDef> => ({
+  showWhen: (values) => layouts.includes(programEditorLayout(values)),
+});
+
 // Item shapes for the repeating groups stored as jsonb on content rows. -------
 const F = {
   title: { path: 'title', label: L('العنوان', 'Başlık', 'Title'), type: 'text' },
@@ -161,7 +178,12 @@ const sectionItem: PageFieldDef[] = [
     label: L('معرّف القسم', 'Bölüm kimliği', 'Section id'),
     type: 'text',
     advanced: true,
-    help: L('لروابط القفز داخل الصفحة', 'Sayfa içi bağlantılar için', 'For in-page jump links'),
+    readOnly: true,
+    help: L(
+      'ثابت لأن تصميم الصفحة يستخدمه لتحديد مكان القسم',
+      'Sayfa düzeni bölümü bu kimlikle bulduğu için sabittir',
+      'Fixed because the page layout uses it to place this section',
+    ),
   },
 ];
 
@@ -483,27 +505,29 @@ export const RESOURCES: FullResourceDef[] = [
       { key: 'highlights', label: L('أبرز الملامح (شريط متحرك)', 'Öne çıkanlar (kayan şerit)', 'Highlights (moving strip)'), type: 'localizedParagraphs', help: L('كل سطر عبارة قصيرة', 'Her satır kısa bir ifade', 'One short phrase per paragraph') },
       repeater('sections', L('أقسام النص', 'Metin bölümleri', 'Text sections'), sectionItem, 'title', {
         help: L('القسم الأول هو النظرة العامة: فقرته الأولى المقدمة والباقي اقتباس', 'İlk bölüm genel bakıştır', 'The first section is the overview: its first paragraph is the lead, the rest a quote'),
+        ...forProgramLayouts('generic', 'pioneers', 'volunteer', 'institutional'),
       }),
-      { key: 'goals', label: L('الأهداف', 'Hedefler', 'Goals'), type: 'localizedParagraphs' },
-      { key: 'components', label: L('المكوّنات', 'Bileşenler', 'Components'), type: 'localizedParagraphs' },
-      repeater('journey', L('المسار (خطوات)', 'Yolculuk (adımlar)', 'Journey (steps)'), titledItem),
-      repeater('pillars', L('الركائز', 'Sütunlar', 'Pillars'), pillarItem),
-      repeater('audiences', L('الفئات المستهدفة', 'Hedef kitleler', 'Audiences'), titledItem),
-      repeater('themes', L('المحاور', 'Temalar', 'Themes'), titledItem),
+      { key: 'goals', label: L('الأهداف', 'Hedefler', 'Goals'), type: 'localizedParagraphs', ...forProgramLayouts('generic', 'pioneers', 'volunteer') },
+      { key: 'components', label: L('المكوّنات', 'Bileşenler', 'Components'), type: 'localizedParagraphs', ...forProgramLayouts('generic') },
+      repeater('journey', L('المسار (خطوات)', 'Yolculuk (adımlar)', 'Journey (steps)'), titledItem, 'title', forProgramLayouts('generic', 'pioneers', 'volunteer')),
+      repeater('pillars', L('الركائز', 'Sütunlar', 'Pillars'), pillarItem, 'title', forProgramLayouts('generic', 'pioneers', 'volunteer')),
+      repeater('audiences', L('الفئات المستهدفة', 'Hedef kitleler', 'Audiences'), titledItem, 'title', forProgramLayouts('institutional')),
+      repeater('themes', L('المحاور', 'Temalar', 'Themes'), titledItem, 'title', forProgramLayouts('awareness')),
       repeater('statistics', L('الإحصائيات', 'İstatistikler', 'Statistics'), programStatItem, 'label', {
         help: L('أرقام رواد اليمن تُدار من "الإحصائيات" في القائمة', 'Yemen öncüleri rakamları "İstatistikler"den yönetilir', 'Yemen pioneers figures are managed under "Statistics" in the menu'),
+        ...forProgramLayouts('generic', 'pioneers', 'institutional'),
       }),
-      repeater('videos', L('الفيديوهات', 'Videolar', 'Videos'), programVideoItem),
-      repeater('image_gallery', L('معرض الصور', 'Görsel galeri', 'Image gallery'), galleryItem, 'alt'),
+      repeater('videos', L('الفيديوهات', 'Videolar', 'Videos'), programVideoItem, 'title', forProgramLayouts('generic', 'pioneers', 'institutional')),
+      repeater('image_gallery', L('معرض الصور', 'Görsel galeri', 'Image gallery'), galleryItem, 'alt', forProgramLayouts('generic', 'pioneers', 'institutional')),
       repeater('initiatives', L('المبادرات', 'Girişimler', 'Initiatives'), initiativeItem),
-      repeater('media_products', L('المنتجات المعرفية (منصة أويس)', 'Bilgi ürünleri (Owais platformu)', 'Media formats (Owais platform)'), mediaProductItem),
-      group('spotlight', L('فعالية مميزة (منصة أويس)', 'Öne çıkan etkinlik', 'Featured event (Owais platform)'), spotlightGroup),
-      group('volunteer', L('نصوص الوحدة التطوعية', 'Gönüllü birimi metinleri', 'Volunteer unit copy'), volunteerGroup),
+      repeater('media_products', L('المنتجات المعرفية (منصة أويس)', 'Bilgi ürünleri (Owais platformu)', 'Media formats (Owais platform)'), mediaProductItem, 'title', forProgramLayouts('awareness')),
+      group('spotlight', L('فعالية مميزة (منصة أويس)', 'Öne çıkan etkinlik', 'Featured event (Owais platform)'), spotlightGroup, forProgramLayouts('awareness')),
+      group('volunteer', L('نصوص الوحدة التطوعية', 'Gönüllü birimi metinleri', 'Volunteer unit copy'), volunteerGroup, forProgramLayouts('volunteer')),
       group('cta', L('الدعوة للمساهمة (أسفل الصفحة)', 'Katkı çağrısı', 'Call to action (page bottom)'), ctaGroup),
-      { key: 'media_note', label: L('ملاحظة الوسائط', 'Medya notu', 'Media note'), type: 'localizedTextarea' },
+      { key: 'media_note', label: L('ملاحظة الوسائط', 'Medya notu', 'Media note'), type: 'localizedTextarea', ...forProgramLayouts('generic', 'pioneers', 'institutional') },
       group('seo', L('الظهور في محركات البحث', 'Arama motorları', 'Search engines'), seoGroup, { advanced: true }),
-      repeater('cities', L('المدن', 'Şehirler', 'Cities'), cityItem, 'name', { advanced: true }),
-      group('phase', L('المرحلة الحالية', 'Mevcut aşama', 'Current phase'), phaseGroup, { advanced: true }),
+      repeater('cities', L('المدن', 'Şehirler', 'Cities'), cityItem, 'name', { ...forProgramLayouts('generic', 'institutional') }),
+      group('phase', L('المرحلة الحالية', 'Mevcut aşama', 'Current phase'), phaseGroup, forProgramLayouts('institutional')),
       { key: 'images', label: L('صور إضافية', 'Ek görseller', 'Extra images'), type: 'stringList', advanced: true, help: unusedHelp },
       fPublished,
       fSort,
