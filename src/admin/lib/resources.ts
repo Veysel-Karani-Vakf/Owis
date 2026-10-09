@@ -9,6 +9,7 @@ import {
   Handshake,
   BarChart3,
   Landmark,
+  Award,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -102,6 +103,13 @@ const docCollectionOptions: SelectOption[] = [
 const statGroupOptions: SelectOption[] = [
   { value: 'statistics', label: L('إحصائيات الوقف (الصفحة الرئيسية)', 'Vakıf istatistikleri (ana sayfa)', 'Waqf statistics (home page)') },
   { value: 'yemen-pioneers', label: L('أرقام رواد اليمن', 'Yemen öncüleri rakamları', 'Yemen pioneers figures') },
+];
+
+const cohortOptions: SelectOption[] = [
+  { value: 'cohort-1', label: L('الدفعة الأولى 2019م', '1. Dönem (2019)', 'Cohort 1 (2019)') },
+  { value: 'cohort-2', label: L('الدفعة الثانية 2021م', '2. Dönem (2021)', 'Cohort 2 (2021)') },
+  { value: 'cohort-3', label: L('الدفعة الثالثة 2022م', '3. Dönem (2022)', 'Cohort 3 (2022)') },
+  { value: 'cohort-4', label: L('الدفعة الرابعة 2024م', '4. Dönem (2024)', 'Cohort 4 (2024)') },
 ];
 
 const languageOptions: SelectOption[] = [
@@ -530,6 +538,151 @@ export const RESOURCES: FullResourceDef[] = [
       group('phase', L('المرحلة الحالية', 'Mevcut aşama', 'Current phase'), phaseGroup, forProgramLayouts('institutional')),
       { key: 'images', label: L('صور إضافية', 'Ek görseller', 'Extra images'), type: 'stringList', advanced: true, help: unusedHelp },
       fPublished,
+      fSort,
+    ],
+  },
+  // PIONEERS -----------------------------------------------------------------
+  {
+    key: 'pioneers',
+    table: 'pioneers',
+    section: 'content',
+    labelKey: 'pioneers',
+    description: L(
+      'سير وبطاقات رواد اليمن في صفحة /programs/yemen-pioneers/pioneers',
+      '/programs/yemen-pioneers/pioneers sayfasındaki Yemen Öncüleri biyografileri ve kartları',
+      'Yemen Pioneers biographies and cards on /programs/yemen-pioneers/pioneers',
+    ),
+    icon: Award,
+    titleField: 'name',
+    publicRoute: '/programs/yemen-pioneers/pioneers/:slug',
+    defaultSort: { column: 'sort_order', ascending: true },
+    filter: { column: 'cohort_id', options: cohortOptions },
+    visibility: {
+      column: 'is_published',
+      onLabel: L('ظاهر في الموقع', 'Sitede yayında', 'Shown on site'),
+      offLabel: L('مخفي من الموقع', 'Sitede gizli', 'Hidden from site'),
+    },
+    newDefaults: {
+      cohort_id: 'cohort-1',
+      image_position: 'center 20%',
+      is_published: true,
+    },
+    fields: [
+      { key: 'name', label: L('الاسم الكامل', 'Ad Soyad', 'Full Name'), type: 'localized', required: true },
+      {
+        key: 'slug',
+        label: L('رابط صفحة الرائد', 'Sayfa bağlantısı', 'Pioneer link'),
+        type: 'slug',
+        slugPrefix: '/programs/yemen-pioneers/pioneers/',
+        required: true,
+      },
+      {
+        key: 'cohort_id',
+        label: L('الدفعة الأكاديمية', 'Akademik Dönem', 'Academic Cohort'),
+        type: 'select',
+        options: cohortOptions,
+        required: true,
+      },
+      {
+        key: 'role',
+        label: L('الصفة / اللقب', 'Unvan / Sıfat', 'Role / Title'),
+        type: 'localized',
+        required: true,
+        help: L(
+          'مثال: مبتعث رواد اليمن — مهندس حاسوب',
+          'Örnek: Yemen Öncüleri Bursiyeri — Bilgisayar Mühendisi',
+          'e.g. Yemen Pioneers Fellow — Computer Engineer',
+        ),
+      },
+      { key: 'image', label: L('الصورة الشخصية', 'Profil fotoğrafı', 'Portrait image'), type: 'image' },
+      {
+        key: 'image_position',
+        label: L('موضع الصورة', 'Görsel konumu', 'Image position'),
+        type: 'text',
+        placeholder: 'center 20%',
+        advanced: true,
+        help: L(
+          'لتوسيط الوجه داخل الإطار، مثل: center 20% أو center 30%',
+          'Yüzü çerçeveye ortalamak için, örn. center 20%',
+          'To center the face inside the portrait, e.g. center 20%',
+        ),
+      },
+      {
+        key: 'origin',
+        label: L('المحافظة / الإقليم', 'Şehir / Bölge', 'Origin / Governorate'),
+        type: 'localized',
+        help: L('مثال: عدن، حضرموت، تعز، صنعاء', 'Örnek: Aden, Hadramut, Taiz', 'e.g. Aden, Hadhramaut, Taiz'),
+      },
+      {
+        key: 'city',
+        label: L('مدينة الدراسة', 'Eğitim şehri', 'Study city'),
+        type: 'localized',
+        help: L('مثال: كونيا، سكاريا، إسطنبول', 'Örnek: Konya, Sakarya, İstanbul', 'e.g. Konya, Sakarya, Istanbul'),
+      },
+      {
+        key: 'university',
+        label: L('الجامعة', 'Üniversite', 'University'),
+        type: 'localized',
+        help: L('مثال: جامعة سلجوق، جامعة كونيا التقنية', 'Örnek: Selçuk Üniversitesi', 'e.g. Selçuk University'),
+      },
+      {
+        key: 'degree',
+        label: L('الدرجة العلمية', 'Akademik derece', 'Degree'),
+        type: 'localized',
+        help: L('مثال: بكالوريوس، ماجستير، دكتوراه', 'Örnek: Lisans, Yüksek Lisans, Doktora', 'e.g. Bachelor, Master, PhD'),
+      },
+      {
+        key: 'major',
+        label: L('التخصص الأكاديمي', 'Bölüm / Uzmanlık', 'Major / Field of study'),
+        type: 'localized',
+        help: L('مثال: هندسة برمجيات، علوم سياسية', 'Örnek: Yazılım Mühendisliği', 'e.g. Software Engineering'),
+      },
+      {
+        key: 'short_intro',
+        label: L('نبذة تعريفية سريعة', 'Kısa tanıtım', 'Short intro'),
+        type: 'localizedTextarea',
+        help: L('تظهر في بطاقة الرائد بالمعرض ونتائج البحث', 'Öncü kartında ve aramalarda görünür', 'Shown on the pioneer card in the gallery'),
+      },
+      {
+        key: 'full_bio',
+        label: L('السيرة الذاتية المفصلة', 'Detaylı biyografi', 'Full biography'),
+        type: 'localizedParagraphs',
+        help: L('الفقرات التعريفية الكاملة في صفحة الرائد', 'Öncünün sayfasındaki tam tanıtım metni', 'Full paragraphs in the pioneer bio page'),
+      },
+      {
+        key: 'education',
+        label: L('المسار العلمي والتعليمي', 'Eğitim geçmişi', 'Education'),
+        type: 'localizedParagraphs',
+        help: L('كل سطر مؤهل أو دبلوم أو شهادة', 'Her satır bir eğitim veya sertifika', 'One degree or certificate per line'),
+      },
+      {
+        key: 'career',
+        label: L('المسيرة المهنية والعملية', 'Kariyer ve iş deneyimi', 'Career & Experience'),
+        type: 'localizedParagraphs',
+        help: L('المحطات والخبرات العملية والمشاريع', 'İş deneyimleri ve projeler', 'Career positions and projects'),
+      },
+      {
+        key: 'achievements',
+        label: L('أبرز الإنجازات والأوسمة', 'Başarılar ve ödüller', 'Key Achievements'),
+        type: 'localizedParagraphs',
+        help: L('الجوائز وشهادات التميز والإنجازات البارزة', 'Ödüller, takdir belgeleri ve başarılar', 'Awards, honors, and notable achievements'),
+      },
+      {
+        key: 'program_contribution',
+        label: L('المساهمة في برنامج رواد اليمن', 'Yemen Öncüleri katkıları', 'Program Contribution'),
+        type: 'localizedParagraphs',
+        help: L('أدوار الرائد ومبادراته في مؤتمرات وملتقيات الوقف', 'Vakıf konferanslarındaki rolleri ve katkıları', 'Contributions to the Waqf and pioneers program'),
+      },
+      {
+        key: 'is_published',
+        label: L('ظاهر في الموقع', 'Sitede yayında', 'Shown on site'),
+        type: 'boolean',
+        help: L(
+          'ألغِ التحديد لإخفاء هذا الرائد من الموقع ومعرض الرواد دون حذفه',
+          'Öncüyü silmeden siteden ve galeriden gizlemek için işareti kaldırın',
+          'Untick to hide this pioneer from the site and gallery without deleting',
+        ),
+      },
       fSort,
     ],
   },

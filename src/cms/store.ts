@@ -11,7 +11,11 @@ import type {
   LibraryArticleRow,
   LibraryDocumentRow,
   NewsRow,
+  OrgMembershipRow,
+  OrgPersonRow,
+  OrgSectionRow,
   PartnerRow,
+  PioneerRow,
   ProgramRow,
   ProjectRow,
   StatRow,
@@ -21,6 +25,7 @@ export type CmsTables = {
   news: NewsRow[];
   projects: ProjectRow[];
   programs: ProgramRow[];
+  pioneers: PioneerRow[];
   library_articles: LibraryArticleRow[];
   library_documents: LibraryDocumentRow[];
   gallery_images: GalleryImageRow[];
@@ -28,6 +33,9 @@ export type CmsTables = {
   partners: PartnerRow[];
   stat_indicators: StatRow[];
   bank_accounts: BankAccountRow[];
+  org_sections: OrgSectionRow[];
+  org_people: OrgPersonRow[];
+  org_memberships: OrgMembershipRow[];
 };
 
 export type CmsPages = Record<string, Record<string, unknown>>;

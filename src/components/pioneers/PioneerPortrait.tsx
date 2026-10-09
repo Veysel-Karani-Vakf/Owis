@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type PioneerPortraitProps = {
   name: string;
@@ -28,7 +28,11 @@ export default function PioneerPortrait({
 }: PioneerPortraitProps) {
   const [imageFailed, setImageFailed] = useState(false);
 
-  if (!hasPortrait || imageFailed) {
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
+  if (!hasPortrait || !image || imageFailed) {
     return (
       <div
         role="img"

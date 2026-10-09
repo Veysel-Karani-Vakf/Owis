@@ -12,6 +12,7 @@ import {
   Scale,
   FolderKanban,
   GraduationCap,
+  Award,
   Newspaper,
   BookOpen,
   Clapperboard,
@@ -19,6 +20,7 @@ import {
   HandHeart,
   Banknote,
   Settings2,
+  Network,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -38,6 +40,11 @@ export type AreaPart =
       /** `RESOURCES` key listed by this tab. */
       resourceKey: string;
       /** Tab name; defaults to the resource's own name. */
+      label?: Record<Locale, string>;
+    }
+  | {
+      type: 'structure';
+      /** Tab name; defaults to Structure Management. */
       label?: Record<Locale, string>;
     };
 
@@ -121,6 +128,30 @@ export const SITE_AREAS: SiteArea[] = [
     ],
   },
   {
+    key: 'administrative-structure',
+    icon: Network,
+    label: L('الهيكل الإداري', 'İdari Yapı', 'Administrative Structure'),
+    description: L(
+      'صفحة الهيكل الإداري وشجرة المسؤولين والقيادة',
+      'İdari yapı sayfası ve liderlik şeması',
+      'The administrative structure page and leadership organization chart',
+    ),
+    route: '/about/structure',
+    tone: {
+      soft: 'bg-rose-100 text-rose-700',
+      solid: 'bg-rose-600 text-white',
+      bar: 'bg-rose-500',
+      hover: 'hover:border-rose-300',
+    },
+    parts: [
+      {
+        type: 'structure',
+        label: L('إدارة الهيكل الإداري', 'İdari Yapı Yönetimi', 'Structure Management'),
+      },
+      { type: 'content', pageKey: 'administrative-structure', label: pageTexts },
+    ],
+  },
+  {
     key: 'governance',
     icon: Scale,
     label: L('الحوكمة والسياسات', 'Yönetişim', 'Governance'),
@@ -182,7 +213,7 @@ export const SITE_AREAS: SiteArea[] = [
   },
   {
     key: 'pioneers',
-    icon: GraduationCap,
+    icon: Award,
     label: L('رواد اليمن (الرواد)', 'Yemen Öncüleri (Öncüler)', 'Yemen Pioneers (Pioneers)'),
     description: L(
       'معرض وبطاقات وسير رواد اليمن التفاعلي',
@@ -197,7 +228,8 @@ export const SITE_AREAS: SiteArea[] = [
       hover: 'hover:border-amber-300',
     },
     parts: [
-      { type: 'content', pageKey: 'programs-page', label: L('نصوص ومعرض الرواد', 'Öncüler galerisi metinleri', 'Pioneers gallery texts') },
+      { type: 'collection', resourceKey: 'pioneers', label: L('قائمة الرواد', 'Öncüler listesi', 'Pioneers list') },
+      { type: 'content', pageKey: 'pioneers-page', label: L('إعدادات ونصوص الصفحة', 'Sayfa ayarları ve metinleri', 'Page settings & texts') },
     ],
   },
   {
@@ -353,7 +385,9 @@ export function getArea(key: string | undefined): SiteArea | undefined {
 
 /** URL segment of a hub tab. */
 export function partKey(part: AreaPart): string {
-  return part.type === 'content' ? part.pageKey : part.resourceKey;
+  if (part.type === 'content') return part.pageKey;
+  if (part.type === 'structure') return 'structure';
+  return part.resourceKey;
 }
 
 export function areaForPage(pageKey: string): { area: SiteArea; part: AreaPart } | undefined {

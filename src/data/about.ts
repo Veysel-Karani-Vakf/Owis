@@ -1,14 +1,63 @@
-import { cmsPageContent } from '@/cms/adapters';
+import { cmsPageContent, cmsStructure } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 
 export const aboutRoutes = {
   waqf: '/about/waqf',
+  structure: '/about/structure',
   governance: '/about/governance',
 } as const;
 
 export type AboutNavItem = {
   label: string;
   href: string;
+};
+
+export type AdministrativeMember = {
+  id: string;
+  name: string;
+  position: string;
+  level: 1 | 2 | 3;
+  order: number;
+  image?: string;
+  imagePosition?: string;
+  shortDescription: string;
+  biography?: string;
+  published?: boolean;
+};
+
+export type OrganizationalSection = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  layoutType: 'chart' | 'cards';
+  order: number;
+  published?: boolean;
+  members: AdministrativeMember[];
+};
+
+export type AdministrativeStructurePageContent = {
+  seo: {
+    title: string;
+    description: string;
+    canonical: string;
+  };
+  hero: {
+    title: string;
+    description: string;
+    image: string;
+    imageAlt?: string;
+  };
+  breadcrumbs: BreadcrumbItem[];
+  intro: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    description: string;
+  };
+  members: AdministrativeMember[];
+  sections: OrganizationalSection[];
+  published?: boolean;
 };
 
 export type BreadcrumbItem = {
@@ -133,18 +182,21 @@ export type AboutPagesContent = {
   nav: AboutNavItem[];
   waqf: WaqfPageContent;
   governance: GovernancePageContent;
+  structure: AdministrativeStructurePageContent;
 };
 
 const assets = {
   waqfHero:
     '/media/1024x576-3bbcc5a7.jpeg',
   governanceHero: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
+  structureHero: '/media/135a7765-scaled-1-1024x683-97228b97.jpg',
   president:
     '/media/1024x576-3bbcc5a7.jpeg',
   profileFileAr: 'https://drive.google.com/file/d/191M9qTsUhtp9Shstf4xJbEYC-iSzXpmD/view?usp=sharing',
   profileFileEn: 'https://drive.google.com/file/d/19VislWASMpd284pQYi4yffnn4AZeMepS/view?usp=sharing',
   profileFileTr: 'https://drive.google.com/file/d/1nRlkSmZHcVKgCucV9UHoCEPYdgJYd-Z6/view?usp=sharing',
   waqfSource: '/about/waqf',
+  structureSource: '/about/structure',
   governanceSource: '/about/governance',
   videoSource: 'https://www.youtube.com/watch?v=dvDQGL8IWX8',
   videoSourceEn: 'https://www.youtube.com/watch?v=STmMVySqqtg',
@@ -695,10 +747,314 @@ const trPolicies = translatePolicyTitles({
   },
 });
 
+const arMembers: AdministrativeMember[] = [
+  {
+    id: 'president',
+    name: 'أ/ صلاح باتيس',
+    position: 'الرئيس',
+    level: 1,
+    order: 1,
+    image: assets.president,
+    shortDescription: 'الإشراف العام على الوقف ومجلس الإدارة وتوجيه السياسات الاستراتيجية لتحقيق أهداف الوقف التنموية.',
+    biography: 'رئيس وقف أويس القرني، ورائد العمل التنموي والوقفي، يقود المبادرات الاستراتيجية لبناء أكبر وقف تشاركي نوعي لنهضة اليمن وتوثيق الشراكات المحلية والإقليمية والدولية.',
+    published: true,
+  },
+  {
+    id: 'executive-director',
+    name: 'أ/ صلاح الدين القياضي',
+    position: 'المدير التنفيذي',
+    level: 2,
+    order: 2,
+    image: '',
+    shortDescription: 'إدارة العمليات اليومية وتنسيق عمل الإدارات التنفيذية ومتابعة تنفيذ خطط وبرامج الوقف.',
+    biography: 'المدير التنفيذي لوقف أويس القرني، يتولى إدارة الجهاز التنفيذي والإشراف المباشر على سير المشروعات والبرامج وتطوير الأداء المؤسسي وضمان تحقيق المستهدفات.',
+    published: true,
+  },
+  {
+    id: 'programs-manager',
+    name: 'أ/ أيمن رياض',
+    position: 'مسؤول البرامج',
+    level: 3,
+    order: 3,
+    image: '',
+    shortDescription: 'تخطيط وإدارة البرامج والمشاريع التنموية والتعليمية للوقف والإشراف على متابعتها وتقييمها.',
+    biography: 'مسؤول إدارة البرامج في وقف أويس القرني، يشرف على تصميم وتنفيذ البرامج النوعية ومسارات النهوض الحضاري ومتابعة جودة التنفيذ وتقييم الأثر التنموي.',
+    published: true,
+  },
+  {
+    id: 'media-manager',
+    name: 'إدارة الإعلام والاتصال',
+    position: 'مسؤول الإعلام',
+    level: 3,
+    order: 4,
+    image: '',
+    shortDescription: 'إدارة الهوية الإعلامية والاتصال المؤسسي والنشر الرقمي والتواصل مع الشركاء والجمهور.',
+    biography: 'مسؤول وحدة الإعلام والاتصال المؤسسي، يشرف على التغطيات الإعلامية، صناعة المحتوى، وإدارة المنصات الرقمية وتوثيق مسيرة الوقف وبرامجه ومبادراته.',
+    published: true,
+  },
+  {
+    id: 'finance-manager',
+    name: 'أ/ شعيب الصليحي',
+    position: 'المسؤول المالي',
+    level: 3,
+    order: 5,
+    image: '',
+    shortDescription: 'إدارة الشؤون المالية والمحاسبية والموازنات وضمان تطبيق معايير الامتثال والرقابة المالية.',
+    biography: 'المسؤول المالي لوقف أويس القرني، يدير المنظومة المالية والمحاسبية، إعداد الموازنات، وتطبيق السياسات المالية الرصينة ومعايير الحوكمة والنزاهة والشفافية.',
+    published: true,
+  },
+];
+
+const enMembers: AdministrativeMember[] = [
+  {
+    id: 'president',
+    name: 'Salah Batiss',
+    position: 'President',
+    level: 1,
+    order: 1,
+    image: assets.president,
+    shortDescription: 'General supervision of the foundation and strategic leadership to achieve sustainable development goals.',
+    biography: 'President of Veysel Karani Waqf, leading strategic initiatives to establish a premier participatory endowment for Yemen advancement and strengthening institutional partnerships.',
+    published: true,
+  },
+  {
+    id: 'executive-director',
+    name: 'Salahuddin Al-Qayadi',
+    position: 'Executive Director',
+    level: 2,
+    order: 2,
+    image: '',
+    shortDescription: 'Managing daily operations, coordinating executive departments, and overseeing the execution of foundation programs.',
+    biography: 'Executive Director of Veysel Karani Waqf, leading executive administration, operational workflows, and strategic program delivery across all departments.',
+    published: true,
+  },
+  {
+    id: 'programs-manager',
+    name: 'Ayman Riad',
+    position: 'Programs Manager',
+    level: 3,
+    order: 3,
+    image: '',
+    shortDescription: 'Planning and managing developmental and educational programs, overseeing project execution and impact evaluation.',
+    biography: 'Head of Programs at Veysel Karani Waqf, overseeing program design, educational tracks, implementation quality, and developmental impact assessment.',
+    published: true,
+  },
+  {
+    id: 'media-manager',
+    name: 'Media & Communications Department',
+    position: 'Media Manager',
+    level: 3,
+    order: 4,
+    image: '',
+    shortDescription: 'Managing media identity, corporate communications, digital publishing, and public relations.',
+    biography: 'Leading corporate communications, media coverage, content creation, digital platforms, and documenting foundation milestones.',
+    published: true,
+  },
+  {
+    id: 'finance-manager',
+    name: 'Shoaib Al-Sulaihi',
+    position: 'Finance Manager',
+    level: 3,
+    order: 5,
+    image: '',
+    shortDescription: 'Managing financial and accounting affairs, budgets, and ensuring compliance and financial governance standards.',
+    biography: 'Finance Manager at Veysel Karani Waqf, managing accounting operations, financial reporting, budgeting, and governance standards.',
+    published: true,
+  },
+];
+
+const trMembers: AdministrativeMember[] = [
+  {
+    id: 'president',
+    name: 'Salah Batiss',
+    position: 'Başkan',
+    level: 1,
+    order: 1,
+    image: assets.president,
+    shortDescription: 'Vakfın genel gözetimi, yönetim kurulu liderliği ve stratejik hedeflerin gerçekleştirilmesi.',
+    biography: 'Veysel Karani Vakfı Başkanı, Yemen kalkınması için katılımcı vakıf girişimlerine ve kurumsal ortaklıklara liderlik etmektedir.',
+    published: true,
+  },
+  {
+    id: 'executive-director',
+    name: 'Salahuddin Al-Qayadi',
+    position: 'Genel Müdür',
+    level: 2,
+    order: 2,
+    image: '',
+    shortDescription: 'Günlük operasyonların yönetimi, departmanlar arası koordinasyon ve vakıf planlarının uygulanması.',
+    biography: 'Veysel Karani Vakfı İcra Direktörü, idari yapıyı ve proje uygulamalarını yöneterek kurumsal hedeflerin gerçekleştirilmesini sağlar.',
+    published: true,
+  },
+  {
+    id: 'programs-manager',
+    name: 'Ayman Riad',
+    position: 'Program Yöneticisi',
+    level: 3,
+    order: 3,
+    image: '',
+    shortDescription: 'Kalkınma ve eğitim programlarının planlanması, projelerin uygulanması ve etki değerlendirmesi.',
+    biography: 'Veysel Karani Vakfı Program Yöneticisi, nitelikli projelerin tasarımını, uygulanmasını ve etki değerlendirmesini yönetir.',
+    published: true,
+  },
+  {
+    id: 'media-manager',
+    name: 'Medya ve İletişim Birimi',
+    position: 'Medya Yöneticisi',
+    level: 3,
+    order: 4,
+    image: '',
+    shortDescription: 'Medya kimliği, kurumsal iletişim, dijital yayıncılık ve halkla ilişkilerin yönetimi.',
+    biography: 'Kurumsal iletişim, medya yayınları, dijital platformlar ve vakıf faaliyetlerinin belgelenmesini yönetir.',
+    published: true,
+  },
+  {
+    id: 'finance-manager',
+    name: 'Shoaib Al-Sulaihi',
+    position: 'Mali İşler Yöneticisi',
+    level: 3,
+    order: 5,
+    image: '',
+    shortDescription: 'Mali ve muhasebe işlerinin yönetimi, bütçeleme ve finansal uyum standartlarının sağlanması.',
+    biography: 'Veysel Karani Vakfı Mali İşler Yöneticisi, finansal operasyonları, bütçe yönetimini ve şeffaflık standartlarını yürütür.',
+    published: true,
+  },
+];
+
+const arSections: OrganizationalSection[] = [
+  {
+    id: 'administrative-body',
+    slug: 'administrative-body',
+    title: 'الهيئة الإدارية',
+    description: 'الهيكل التنفيذي المسؤول عن إدارة وتسيير أعمال الوقف اليومية وتنسيق عمل الإدارات ومتابعة تنفيذ خططه وبرامجه ومبادراته التنموية.',
+    layoutType: 'chart',
+    order: 1,
+    published: true,
+    members: arMembers,
+  },
+  {
+    id: 'board-of-trustees',
+    slug: 'board-of-trustees',
+    title: 'هيئة المتولين',
+    description: 'الهيئة العليا المعنية برعاية الوقف وحمايته والتأكد من استدامة موارده وتنميتها وتحقيق مقاصده وأهدافه التنموية الكبرى.',
+    layoutType: 'cards',
+    order: 2,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'board-of-directors',
+    slug: 'board-of-directors',
+    title: 'مجلس الإدارة',
+    description: 'المجلس المكلف برسم السياسات العامة والإشراف على التوجهات الاستراتيجية والخطط التنفيذية للوقف وحوكمة أعماله المؤسسية.',
+    layoutType: 'cards',
+    order: 3,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'investment-body',
+    slug: 'investment-body',
+    title: 'هيئة الاستثمار',
+    description: 'الهيئة التخصصية المعنية بتنمية واستثمار أصول وأموال الوقف لضمان عوائد مالية مستدامة تدعم برامج ومسارات النهوض الحضاري.',
+    layoutType: 'cards',
+    order: 4,
+    published: true,
+    members: [],
+  },
+];
+
+const enSections: OrganizationalSection[] = [
+  {
+    id: 'administrative-body',
+    slug: 'administrative-body',
+    title: 'Administrative Body',
+    description: 'The executive body responsible for managing daily foundation operations, coordinating executive departments, and implementing strategic development programs.',
+    layoutType: 'chart',
+    order: 1,
+    published: true,
+    members: enMembers,
+  },
+  {
+    id: 'board-of-trustees',
+    slug: 'board-of-trustees',
+    title: 'Board of Trustees',
+    description: 'The supreme supervisory body dedicated to safeguarding waqf assets, asset sustainability, and fulfilling its core developmental purposes.',
+    layoutType: 'cards',
+    order: 2,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'board-of-directors',
+    slug: 'board-of-directors',
+    title: 'Board of Directors',
+    description: 'The board tasked with formulating general policies, overseeing strategic directions, executive plans, and corporate governance.',
+    layoutType: 'cards',
+    order: 3,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'investment-body',
+    slug: 'investment-body',
+    title: 'Investment Body',
+    description: 'The specialized body managing investments and endowment asset growth to generate sustainable financial returns.',
+    layoutType: 'cards',
+    order: 4,
+    published: true,
+    members: [],
+  },
+];
+
+const trSections: OrganizationalSection[] = [
+  {
+    id: 'administrative-body',
+    slug: 'administrative-body',
+    title: 'İdari Heyet',
+    description: 'Vakfın günlük operasyonlarını yönetmekten, departmanlar arası koordinasyonu sağlamaktan ve stratejik planları uygulamaktan sorumlu icra yapısı.',
+    layoutType: 'chart',
+    order: 1,
+    published: true,
+    members: trMembers,
+  },
+  {
+    id: 'board-of-trustees',
+    slug: 'board-of-trustees',
+    title: 'Mütevelli Heyeti',
+    description: 'Vakfın korunması, varlıklarının gözetilmesi, kaynaklarının sürdürülebilirliği ve hedeflerinin gerçekleştirilmesini güvence altına alan üst heyet.',
+    layoutType: 'cards',
+    order: 2,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'board-of-directors',
+    slug: 'board-of-directors',
+    title: 'Yönetim Kurulu',
+    description: 'Genel politikaları belirlemek, stratejik yönelimleri ve vakfın icra planlarını denetlemekle görevli yönetim kurulu.',
+    layoutType: 'cards',
+    order: 3,
+    published: true,
+    members: [],
+  },
+  {
+    id: 'investment-body',
+    slug: 'investment-body',
+    title: 'Yatırım Heyeti',
+    description: 'Vakıf varlıklarını ve yatırımlarını büyüterek kalkınma programlarına sürdürülebilir gelir sağlamaktan sorumlu uzman heyet.',
+    layoutType: 'cards',
+    order: 4,
+    published: true,
+    members: [],
+  },
+];
+
 export const aboutPages: Record<Locale, AboutPagesContent> = {
   ar: {
     nav: [
-      { label: 'وقف أويس', href: aboutRoutes.waqf },
+      { label: 'نبذة عن الوقف', href: aboutRoutes.waqf },
+      { label: 'الهيكل الإداري', href: aboutRoutes.structure },
       { label: 'نظام الحوكمة', href: aboutRoutes.governance },
     ],
     waqf: {
@@ -855,10 +1211,37 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       },
       policies: arPolicies,
     },
+    structure: {
+      seo: {
+        title: 'الهيكل الإداري | وقف أويس القرني',
+        description: 'تعرّف على الهيكل الإداري لوقف أويس القرني، والكوادر المسؤولة عن إدارة أعمال الوقف وتنفيذ برامجه وتحقيق أهدافه.',
+        canonical: assets.structureSource,
+      },
+      hero: {
+        title: 'الهيكل الإداري',
+        description: 'القيادة والإدارة في وقف أويس القرني',
+        image: assets.structureHero,
+        imageAlt: 'الهيكل الإداري لوقف أويس القرني',
+      },
+      breadcrumbs: [
+        { label: 'الرئيسية', href: '/' },
+        { label: 'عن الوقف' },
+        { label: 'الهيكل الإداري' },
+      ],
+      intro: {
+        eyebrow: 'الهيكل التنظيمي',
+        title: 'الهيكل الإداري',
+        subtitle: 'القيادة والإدارة في وقف أويس القرني',
+        description: 'تعرّف على الهيكل الإداري لوقف أويس القرني، والكوادر المسؤولة عن إدارة أعمال الوقف وتنفيذ برامجه وتحقيق أهدافه.',
+      },
+      members: arMembers,
+      sections: arSections,
+    },
   },
   en: {
     nav: [
-      { label: 'Veysel Karani Waqf', href: aboutRoutes.waqf },
+      { label: 'About the Foundation', href: aboutRoutes.waqf },
+      { label: 'Administrative Structure', href: aboutRoutes.structure },
       { label: 'Governance System', href: aboutRoutes.governance },
     ],
     waqf: {
@@ -995,10 +1378,37 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       },
       policies: enPolicies,
     },
+    structure: {
+      seo: {
+        title: 'Administrative Structure | Veysel Karani Waqf',
+        description: 'Discover the administrative structure of Veysel Karani Waqf and the leadership team managing foundation operations and programs.',
+        canonical: assets.structureSource,
+      },
+      hero: {
+        title: 'Administrative Structure',
+        description: 'Leadership and Management at Veysel Karani Waqf',
+        image: assets.structureHero,
+        imageAlt: 'Administrative Structure of Veysel Karani Waqf',
+      },
+      breadcrumbs: [
+        { label: 'Home', href: '/' },
+        { label: 'About' },
+        { label: 'Administrative Structure' },
+      ],
+      intro: {
+        eyebrow: 'Organizational Chart',
+        title: 'Administrative Structure',
+        subtitle: 'Leadership and Management at Veysel Karani Waqf',
+        description: 'Discover the administrative structure of Veysel Karani Waqf and the leadership team responsible for managing foundation operations, executing programs, and achieving its goals.',
+      },
+      members: enMembers,
+      sections: enSections,
+    },
   },
   tr: {
     nav: [
-      { label: 'Veysel Karani Vakfı', href: aboutRoutes.waqf },
+      { label: 'Vakıf Hakkında', href: aboutRoutes.waqf },
+      { label: 'İdari Yapı', href: aboutRoutes.structure },
       { label: 'Yönetişim Sistemi', href: aboutRoutes.governance },
     ],
     waqf: {
@@ -1135,15 +1545,48 @@ export const aboutPages: Record<Locale, AboutPagesContent> = {
       },
       policies: trPolicies,
     },
+    structure: {
+      seo: {
+        title: 'İdari Yapı | Veysel Karani Vakfı',
+        description: 'Veysel Karani Vakfının idari yapısını, faaliyetlerini yöneten ve hedeflerini gerçekleştiren kadrosunu tanıyın.',
+        canonical: assets.structureSource,
+      },
+      hero: {
+        title: 'İdari Yapı',
+        description: 'Veysel Karani Vakfı Liderlik ve Yönetimi',
+        image: assets.structureHero,
+        imageAlt: 'Veysel Karani Vakfı İdari Yapı',
+      },
+      breadcrumbs: [
+        { label: 'Ana Sayfa', href: '/' },
+        { label: 'Vakıf Hakkında' },
+        { label: 'İdari Yapı' },
+      ],
+      intro: {
+        eyebrow: 'Organizasyon Şeması',
+        title: 'İdari Yapı',
+        subtitle: 'Veysel Karani Vakfı Liderlik ve Yönetimi',
+        description: 'Veysel Karani Vakfı\'nın idari yapısını, vakıf faaliyetlerini yöneten, programlarını uygulayan ve hedeflerini gerçekleştiren kadrosunu tanıyın.',
+      },
+      members: trMembers,
+      sections: trSections,
+    },
   },
 };
 
 export function getAboutContent(locale: Locale): AboutPagesContent {
   const base = aboutPages[locale] ?? aboutPages.ar;
+  const structure = cmsStructure(locale, base.structure);
+  const rawNav = cmsPageContent('about-nav', locale, base.nav);
+  const nav = structure.published === false
+    ? rawNav.filter((item) => item.href !== aboutRoutes.structure)
+    : rawNav;
+
   return {
     ...base,
-    nav: cmsPageContent('about-nav', locale, base.nav),
+    nav,
     waqf: cmsPageContent('about-waqf', locale, base.waqf),
     governance: cmsPageContent('governance', locale, base.governance),
+    structure,
   };
 }

@@ -11,6 +11,7 @@ import { lazy, Suspense } from 'react';
 const AdminApp = lazy(() => import('@/admin/AdminApp'));
 import HomePage from '@/pages/HomePage';
 import WaqfAboutPage from '@/pages/WaqfAboutPage';
+import AdministrativeStructurePage from '@/pages/AdministrativeStructurePage';
 import GovernancePage from '@/pages/GovernancePage';
 import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
@@ -58,6 +59,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about/waqf" element={<WaqfAboutPage />} />
+          <Route path="/about/structure" element={<AdministrativeStructurePage />} />
+          <Route path="/about/administrative-structure" element={<Navigate to="/about/structure" replace />} />
           <Route path="/about/governance" element={<GovernancePage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:slug" element={<ProjectDetailPage />} />

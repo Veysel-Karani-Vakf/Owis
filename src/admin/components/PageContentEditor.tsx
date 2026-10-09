@@ -212,7 +212,7 @@ export default function PageContentEditor({
       // A page definition in the dashboard is also its seed definition. Create
       // a missing row and materialise any newly added locale/field paths before
       // rendering, while preserving saved strings and intentionally empty lists.
-      if (page && pageKey === 'programs-page') {
+      if (page && (pageKey === 'programs-page' || pageKey === 'pioneers-page')) {
         const storedRow = rows.find((row) => row.key === pageKey);
         const storedData = normalizePageData(storedRow?.data);
         const completeData = { ...storedData };

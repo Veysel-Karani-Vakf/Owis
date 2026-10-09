@@ -156,11 +156,16 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
 
   const togglePublished = async (row: Row) => {
     const next = !row.is_published;
+    const isCustomVisibility = resource.visibility?.column === 'is_published';
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, is_published: next } : r)));
     try {
       await updateRow(resource.table, String(row.id), { is_published: next });
       void hydrateCms().then(setPublished).catch(() => undefined);
-      toast.success(next ? s.published : s.draft);
+      if (isCustomVisibility && resource.visibility) {
+        toast.success((next ? resource.visibility.onLabel : resource.visibility.offLabel)[locale]);
+      } else {
+        toast.success(next ? s.published : s.draft);
+      }
     } catch (e) {
       setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, is_published: !next } : r)));
       toast.error(translateDbError(e, locale));
@@ -340,20 +345,42 @@ export default function ResourceCollection({ resource }: { resource: FullResourc
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => togglePublished(row)}
-                            title={row.is_published ? s.unpublish : s.publish}
-                            className={
-                              'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium transition hover:ring-2 hover:ring-offset-1 ' +
-                              (row.is_published
-                                ? 'bg-emerald-100 text-emerald-700 hover:ring-emerald-200'
-                                : 'bg-amber-100 text-amber-700 hover:ring-amber-200')
-                            }
-                          >
-                            {row.is_published ? s.published : s.draft}
-                          </button>
-                          {resource.visibility && (
+                          {resource.visibility?.column === 'is_published' ? (
+                            <button
+                              type="button"
+                              onClick={() => togglePublished(row)}
+                              title={
+                                (row.is_published
+                                  ? resource.visibility.offLabel
+                                  : resource.visibility.onLabel)[locale]
+                              }
+                              className={
+                                'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium transition hover:ring-2 hover:ring-offset-1 ' +
+                                (row.is_published
+                                  ? 'bg-emerald-100 text-emerald-700 hover:ring-emerald-200'
+                                  : 'bg-slate-200 text-slate-600 hover:ring-slate-300')
+                              }
+                            >
+                              {(row.is_published
+                                ? resource.visibility.onLabel
+                                : resource.visibility.offLabel)[locale]}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => togglePublished(row)}
+                              title={row.is_published ? s.unpublish : s.publish}
+                              className={
+                                'inline-block rounded-full px-2.5 py-0.5 text-xs font-medium transition hover:ring-2 hover:ring-offset-1 ' +
+                                (row.is_published
+                                  ? 'bg-emerald-100 text-emerald-700 hover:ring-emerald-200'
+                                  : 'bg-amber-100 text-amber-700 hover:ring-amber-200')
+                              }
+                            >
+                              {row.is_published ? s.published : s.draft}
+                            </button>
+                          )}
+                          {resource.visibility && resource.visibility.column !== 'is_published' && (
                             <button
                               type="button"
                               onClick={() => toggleVisibility(row)}

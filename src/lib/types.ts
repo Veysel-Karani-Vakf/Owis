@@ -193,6 +193,27 @@ export type StatRow = BaseRow & {
   icon: string | null;
 };
 
+export type PioneerRow = BaseRow & {
+  slug: string;
+  cohort_id: string;
+  name: Localized;
+  short_name: Localized;
+  role: Localized;
+  image: string | null;
+  image_position: string | null;
+  origin: Localized;
+  city: Localized;
+  university: Localized;
+  degree: Localized;
+  major: Localized;
+  short_intro: Localized;
+  full_bio: LocalizedList;
+  education: LocalizedList;
+  career: LocalizedList;
+  achievements: LocalizedList;
+  program_contribution: LocalizedList;
+};
+
 export type SitePageRow = {
   key: string;
   label: Localized;
@@ -215,4 +236,32 @@ export type SubscriberRow = {
   email: string;
   locale: string | null;
   created_at: string;
+};
+
+export type OrgSectionRow = BaseRow & {
+  slug: string;
+  title: Localized;
+  description: Localized;
+  layout_type: 'chart' | 'cards';
+};
+
+export type OrgPersonRow = {
+  id: string;
+  slug: string;
+  name: Localized;
+  short_name: Localized;
+  image: string | null;
+  image_position: string | null;
+  short_bio: Localized;
+  full_bio: Localized;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrgMembershipRow = BaseRow & {
+  section_id: string;
+  person_id: string;
+  role_title: Localized;
+  level: number;
+  parent_id: string | null;
 };

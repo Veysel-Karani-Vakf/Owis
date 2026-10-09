@@ -26,6 +26,10 @@ const requiredTables = [
   'site_pages',
   'participate_submissions',
   'newsletter_subscribers',
+  'pioneers',
+  'org_sections',
+  'org_people',
+  'org_memberships',
 ];
 
 const connectionString =

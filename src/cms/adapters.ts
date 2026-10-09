@@ -19,6 +19,7 @@ import type {
   LibraryTextCollectionSlug,
   LibraryTextItem,
 } from '@/data/library';
+import type { Pioneer, Cohort } from '@/data/pioneers';
 
 import { cmsPage, cmsRows } from './store';
 import { deepMerge, locList, locText, scalar } from './merge';
@@ -383,6 +384,157 @@ export function cmsGallery(
     width: row.width ?? 0,
     height: row.height ?? 0,
   }));
+}
+
+export function cmsPioneers(
+  locale: Locale,
+  fallback: Pioneer[],
+  cohorts: Cohort[],
+): Pioneer[] {
+  const rows = cmsRows('pioneers');
+  if (!rows) return fallback;
+  const defaults = bySlug(fallback);
+  const cohortNameMap = new Map(cohorts.map((c) => [c.id, c.title]));
+
+  const fromCms = rows
+    .filter((row) => row.is_published)
+    .map((row) => {
+      const base = defaults.get(row.slug);
+      const name = locText(row.name, locale, base?.name ?? '');
+      const shortName = locText(row.short_name, locale, base?.shortName ?? name);
+      const role = locText(row.role, locale, base?.role ?? '');
+      const origin = locText(row.origin, locale, base?.origin ?? '');
+      const city = locText(row.city, locale, base?.city ?? '');
+      const university = locText(row.university, locale, base?.university ?? '');
+      const degree = locText(row.degree, locale, base?.degree ?? '');
+      const major = locText(row.major, locale, base?.major ?? '');
+      const shortIntro = locText(row.short_intro, locale, base?.shortIntro ?? '');
+      const fullBio = locList(row.full_bio, locale, base?.fullBio ?? (shortIntro ? [shortIntro] : []));
+      const education = locList(row.education, locale, base?.education ?? []);
+      const career = locList(row.career, locale, base?.career ?? []);
+      const achievements = locList(row.achievements, locale, base?.achievements ?? []);
+      const programContribution = locList(row.program_contribution, locale, base?.programContribution ?? []);
+
+      const rowImage = typeof row.image === 'string' ? row.image.trim() : '';
+      const isPlaceholder = !rowImage || rowImage.includes('yemen-pioneers-hero');
+      const baseImage = base?.image && !base.image.includes('yemen-pioneers-hero') ? base.image : '';
+      const realPortrait = !isPlaceholder ? rowImage : baseImage;
+      const hasPortrait = Boolean(realPortrait);
+
+      return {
+        id: `pioneer-${row.slug}`,
+        slug: row.slug,
+        cohortId: row.cohort_id || base?.cohortId || 'cohort-1',
+        cohortName: cohortNameMap.get(row.cohort_id) || base?.cohortName || row.cohort_id,
+        name,
+        shortName,
+        displayName: base?.displayName,
+        role,
+        image: realPortrait || '/programs/yemen-pioneers-hero.jpeg',
+        hasPortrait,
+        imagePosition: scalar(row.image_position, base?.imagePosition ?? 'center 20%'),
+        origin,
+        city,
+        university,
+        degree,
+        major,
+        shortIntro: shortIntro || (fullBio[0] ?? ''),
+        fullBio: fullBio.length ? fullBio : shortIntro ? [shortIntro] : [],
+        education,
+        career,
+        achievements,
+        programContribution,
+        order: row.sort_order ?? base?.order ?? 0,
+        isPublished: row.is_published,
+      };
+    });
+
+  const cmsSlugs = new Set(rows.map((r) => r.slug));
+  const remainingFallbacks = fallback.filter((p) => !cmsSlugs.has(p.slug));
+
+  return [...fromCms, ...remainingFallbacks];
+}
+
+// ORGANIZATIONAL STRUCTURE --------------------------------------------------
+export function cmsStructure(
+  locale: Locale,
+  fallback: import('@/data/about').AdministrativeStructurePageContent,
+): import('@/data/about').AdministrativeStructurePageContent {
+  const page = cmsPageContent('administrative-structure', locale, fallback);
+  const rawPage = cmsPage('administrative-structure');
+  const rawData = rawPage?.data as Record<string, any> | undefined;
+  const isPagePublished =
+    (page as any)?.is_published ??
+    (page as any)?.published ??
+    rawData?.is_published ??
+    rawData?.published ??
+    (rawData?.[locale] as any)?.is_published ??
+    (rawData?.[locale] as any)?.published ??
+    true;
+
+  const sectionRows = cmsRows('org_sections');
+  const peopleRows = cmsRows('org_people');
+  const membershipRows = cmsRows('org_memberships');
+
+  if (!sectionRows || !membershipRows || !peopleRows) {
+    return {
+      ...page,
+      published: isPagePublished !== false,
+    };
+  }
+
+  const peopleMap = new Map(peopleRows.map((p) => [p.id, p]));
+  const peopleBySlug = new Map(peopleRows.map((p) => [p.slug, p]));
+
+  const sections: import('@/data/about').OrganizationalSection[] = sectionRows
+    .map((secRow) => {
+      const secMemberships = membershipRows
+        .filter((m) => m.section_id === secRow.id)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+      const members: import('@/data/about').AdministrativeMember[] = secMemberships.map((m) => {
+        const person = peopleMap.get(m.person_id) ?? peopleBySlug.get(m.person_id);
+        const name = locText(person?.name, locale, '');
+        const position = locText(m.role_title, locale, '');
+        const shortBio = locText(person?.short_bio, locale, '');
+        const fullBio = locText(person?.full_bio, locale, '');
+
+        return {
+          id: m.id,
+          name,
+          position,
+          level: (m.level >= 1 && m.level <= 3 ? m.level : 3) as 1 | 2 | 3,
+          order: m.sort_order ?? 0,
+          image: person?.image || undefined,
+          imagePosition: person?.image_position || undefined,
+          shortDescription: shortBio,
+          biography: fullBio,
+          published: m.is_published,
+        };
+      });
+
+      return {
+        id: secRow.id,
+        slug: secRow.slug,
+        title: locText(secRow.title, locale, ''),
+        description: locText(secRow.description, locale, ''),
+        layoutType: (secRow.layout_type === 'chart' ? 'chart' : 'cards') as 'chart' | 'cards',
+        order: secRow.sort_order ?? 0,
+        published: secRow.is_published,
+        members,
+      };
+    })
+    .sort((a, b) => a.order - b.order);
+
+  const adminSection = sections.find((s) => s.slug === 'administrative-body') ?? sections[0];
+  const members = adminSection?.members ?? page.members;
+
+  return {
+    ...page,
+    published: isPagePublished !== false,
+    sections,
+    members,
+  };
 }
 
 /** Re-exported for callers that localize ad-hoc jsonb (e.g. the preview). */

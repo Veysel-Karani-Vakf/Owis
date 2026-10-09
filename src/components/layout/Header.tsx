@@ -270,7 +270,7 @@ export default function Header() {
                           exit={{ opacity: 0, y: -6 }}
                           transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                           style={{ insetInlineStart: 0 }}
-                          className="absolute top-full z-[180] mt-2 w-[230px] rounded-2xl border border-white/10 bg-dark-950/95 p-2 text-white shadow-[0_18px_45px_rgba(0,0,0,0.24)] backdrop-blur-md"
+                          className="absolute top-full z-[180] mt-2 w-[245px] sm:w-[250px] rounded-2xl border border-white/10 bg-dark-950/95 p-2 text-white shadow-[0_18px_45px_rgba(0,0,0,0.24)] backdrop-blur-md"
                           onMouseEnter={clearAboutCloseTimer}
                           onMouseLeave={scheduleAboutClose}
                         >

@@ -1,5 +1,5 @@
 import type { Locale } from '@/i18n/content';
-import { cmsRows } from '@/cms/store';
+import { cmsPageContent, cmsPioneers } from '@/cms/adapters';
 import {
   pioneerPortraitBySlug,
   pioneersRoster,
@@ -42,6 +42,7 @@ export type Pioneer = {
 };
 
 export type PioneersPageContent = {
+  visible?: boolean;
   seo: {
     title: string;
     description: string;
@@ -96,8 +97,9 @@ export type PioneersPageContent = {
   pioneers: Pioneer[];
 };
 
-const defaultPioneersData: Record<Locale, PioneersPageContent> = {
+export const defaultPioneersData: Record<Locale, PioneersPageContent> = {
   ar: {
+    visible: true,
     seo: {
       title: 'رواد اليمن | وقف أويس القرني',
       description: 'تعرّف على دفعات ونماذج التميز والإبداع من مبتعثي وخريجي برنامج رواد اليمن، وبناة النهضة الحضارية للوطن.',
@@ -1054,6 +1056,7 @@ const defaultPioneersData: Record<Locale, PioneersPageContent> = {
     ],
   },
   tr: {
+    visible: true,
     seo: {
       title: 'Yemen Öncüleri | Veysel Karani Vakfı',
       description: 'Veysel Karani Vakfı Yemen Öncüleri Programı bursiyer kafileleri, mezunları ve geleceğin lider adaylarıyla tanışın.',
@@ -1826,6 +1829,7 @@ const defaultPioneersData: Record<Locale, PioneersPageContent> = {
     ],
   },
   en: {
+    visible: true,
     seo: {
       title: 'Yemen Pioneers | Veysel Karani Waqf',
       description: 'Discover the academic cohorts, fellows, and future leaders of the Yemen Pioneers Program at Veysel Karani Waqf.',
@@ -2713,12 +2717,18 @@ function withCompleteRoster(base: PioneersPageContent, locale: Locale): Pioneers
 
 export function getPioneersContent(locale: Locale): PioneersPageContent {
   const base = withCompleteRoster(defaultPioneersData[locale], locale);
-  const cmsPioneersRows = cmsRows('library_articles');
-  if (!cmsPioneersRows) return base;
-  return base;
+  const page = cmsPageContent('pioneers-page', locale, base);
+  const pioneers = cmsPioneers(locale, page.pioneers, page.cohorts);
+  return { ...page, pioneers };
+}
+
+export function isPioneersPageVisible(locale: Locale = 'ar'): boolean {
+  const content = getPioneersContent(locale);
+  return content.visible !== false;
 }
 
 export function getPioneerBySlug(locale: Locale, slug: string): Pioneer | undefined {
   const content = getPioneersContent(locale);
   return content.pioneers.find((p) => p.slug === slug);
 }
+

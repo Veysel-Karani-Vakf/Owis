@@ -14,6 +14,7 @@ import { getResource } from '../lib/resources';
 import { getArea, hubPath, partKey, type AreaPart, type InboxKey, type SiteArea } from '../lib/siteMap';
 import PageContentEditor from '../components/PageContentEditor';
 import ResourceCollection from '../components/ResourceCollection';
+import OrgStructureManager from '../components/OrgStructureManager';
 
 const INBOX_META: Record<InboxKey, { to: string; icon: LucideIcon }> = {
   submissions: { to: '/admin/submissions', icon: Inbox },
@@ -56,6 +57,7 @@ export default function SitePageHub() {
   const partLabel = (part: AreaPart): string => {
     if (part.label) return part.label[uiLocale];
     if (part.type === 'content') return strings.pageTexts;
+    if (part.type === 'structure') return label('إدارة الهيكل الإداري', 'İdari Yapı Yönetimi', 'Structure Management');
     const resource = getResource(part.resourceKey);
     return (resource && strings.sections[resource.labelKey]) ?? part.resourceKey;
   };
@@ -137,6 +139,8 @@ export default function SitePageHub() {
           allowNavigationWithin={`/admin/site/${area.key}`}
           tone={area.tone}
         />
+      ) : activePart.type === 'structure' ? (
+        <OrgStructureManager tone={area.tone} />
       ) : (
         <CollectionTab area={area} part={activePart} />
       )}

@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { ArrowLeft, ArrowRight, Award, BookOpen, GraduationCap, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneersAccordionGallery from '@/components/pioneers/PioneersAccordionGallery';
@@ -7,8 +8,13 @@ import { getPioneersContent } from '@/data/pioneers';
 import { useI18n } from '@/i18n/useI18n';
 
 export default function PioneersGalleryPage() {
-  const { locale, isRtl } = useI18n();
-  const content = getPioneersContent(locale);
+  const { locale, isRtl, contentVersion } = useI18n();
+  const content = useMemo(() => getPioneersContent(locale), [locale, contentVersion]);
+
+  if (content.visible === false) {
+    return <Navigate to="/programs/yemen-pioneers" replace />;
+  }
+
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
   const breadcrumbItems = [

@@ -3,6 +3,7 @@ import { participateRoutes } from '@/data/participate';
 import type { Locale } from '@/i18n/content';
 import type { ProgramLayout } from '@/lib/types';
 import { cmsPageContent, cmsPrograms } from '@/cms/adapters';
+import { isPioneersPageVisible } from '@/data/pioneers';
 
 // Public, stable URLs can safely be persisted by the dashboard. Imported Vite
 // asset URLs become build hashes (or `/src/assets/...` in development), which
@@ -2494,22 +2495,28 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
 export function getProgramsContent(locale: Locale): ProgramsPageContent {
   const base = localizedPrograms[locale];
   const page = cmsPageContent('programs-page', locale, base);
+  const showPioneers = isPioneersPageVisible(locale);
 
   // Preserve navigation submenus (children) from base if CMS data lacks them,
-  // guaranteeing that submenus (such as "فكرة البرنامج" and "الرواد") always appear.
+  // guaranteeing that submenus (such as "فكرة البرنامج" and "الرواد") always appear,
+  // while respecting the pioneers page visibility toggle.
   const nav = (page.nav || base.nav).map((item) => {
     const baseItem = base.nav.find(
       (b) =>
         b.href.replace(/\/$/, '') === item.href.replace(/\/$/, '') ||
         b.label.trim() === item.label.trim()
     );
-    if ((!item.children || item.children.length === 0) && baseItem?.children) {
-      return {
-        ...item,
-        children: baseItem.children,
-      };
+    let children = item.children && item.children.length > 0 ? item.children : baseItem?.children;
+    if (children && !showPioneers) {
+      children = children.filter((c) => !c.href.includes('/programs/yemen-pioneers/pioneers'));
+      if (children.length <= 1) {
+        children = undefined;
+      }
     }
-    return item;
+    return {
+      ...item,
+      children,
+    };
   });
 
   return {

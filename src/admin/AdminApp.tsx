@@ -154,6 +154,7 @@ function AdminRoutes() {
         }
       />
       <Route path="pages" element={<Navigate to="/admin/content" replace />} />
+      <Route path="structure" element={<Navigate to="/admin/site/administrative-structure/structure" replace />} />
       <Route
         path="help"
         element={

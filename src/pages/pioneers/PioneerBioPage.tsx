@@ -22,12 +22,19 @@ import { useI18n } from '@/i18n/useI18n';
 
 export default function PioneerBioPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { locale, isRtl } = useI18n();
-  const content = getPioneersContent(locale);
-  const pioneer = useMemo(() => getPioneerBySlug(locale, slug || ''), [locale, slug]);
+  const { locale, isRtl, contentVersion } = useI18n();
+  const content = useMemo(() => getPioneersContent(locale), [locale, contentVersion]);
+  const pioneer = useMemo(
+    () => content.pioneers.find((p) => p.slug === slug),
+    [content, slug],
+  );
 
   const PrevIcon = isRtl ? ChevronRight : ChevronLeft;
   const NextIcon = isRtl ? ChevronLeft : ChevronRight;
+
+  if (content.visible === false) {
+    return <Navigate to="/programs/yemen-pioneers" replace />;
+  }
 
   if (!pioneer) {
     return <Navigate to="/programs/yemen-pioneers/pioneers" replace />;

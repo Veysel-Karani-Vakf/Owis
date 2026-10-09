@@ -46,6 +46,7 @@ import {
   AlertTriangle,
   Banknote,
   Clapperboard,
+  Eye,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -976,6 +977,84 @@ export const SITE_PAGES: SitePageDef[] = [
     ],
   },
 
+  // PIONEERS PAGE -------------------------------------------------------------
+  {
+    key: 'pioneers-page',
+    group: 'main',
+    label: L('صفحة رواد اليمن', 'Yemen Öncüleri sayfası', 'Yemen Pioneers page'),
+    description: L(
+      'إعدادات ظهور ونصوص معرض وسير رواد اليمن (/programs/yemen-pioneers/pioneers)',
+      'Yemen Öncüleri galerisi ve biyografileri görünürlük ve metin ayarları (/programs/yemen-pioneers/pioneers)',
+      'Visibility settings and copy for Yemen Pioneers gallery and biographies (/programs/yemen-pioneers/pioneers)',
+    ),
+    icon: Award,
+    route: '/programs/yemen-pioneers/pioneers',
+    sections: [
+      {
+        key: 'visibility',
+        label: L('حالة الظهور', 'Görünürlük durumu', 'Visibility status'),
+        description: L(
+          'التحكم في ظهور أو إخفاء صفحة الرواد بالكامل من الموقع',
+          'Öncüler sayfasını sitede göster veya gizle',
+          'Control whether the Pioneers page is visible on the site',
+        ),
+        icon: SlidersHorizontal,
+        anchor: 'header',
+        fields: [
+          {
+            path: 'visible',
+            label: L('إظهار صفحة الرواد في الموقع', 'Öncüler sayfasını sitede göster', 'Show Pioneers page on site'),
+            type: 'boolean',
+            help: L(
+              'عند تفعيل الخيار تظهر صفحة الرواد في الموقع والقائمة المنسدلة. عند إيقافه، يُخفى الرابط ويُعاد توجيه الزوار إلى صفحة فكرة البرنامج تلقائياً.',
+              'Etkinleştirildiğinde sayfa sitede ve menüde görünür. Kapatıldığında menüden gizlenir ve ziyaretçiler program sayfasına yönlendirilir.',
+              'When enabled, the page appears in navigation. When disabled, links are hidden and visitors are redirected to the program page.',
+            ),
+          },
+        ],
+      },
+      {
+        key: 'header',
+        label: L('ترويسة الصفحة', 'Sayfa başlığı', 'Page header'),
+        description: L('العناوين والأوصاف في أعلى صفحة الرواد', 'Öncüler sayfasının üst başlık ve açıklamaları', 'Headings and descriptions at the top of the pioneers page'),
+        icon: Type,
+        anchor: 'header',
+        fields: [
+          { path: 'header.eyebrow', label: L('السطر التمهيدي (Eyebrow)', 'Üst satır', 'Eyebrow'), type: 'text' },
+          { path: 'header.title', label: L('عنوان الصفحة الرئيسي', 'Ana başlık', 'Main title'), type: 'text' },
+          { path: 'header.description', label: L('الوصف التعريفي', 'Açıklama', 'Description'), type: 'textarea' },
+          { path: 'header.viewProgramConcept', label: L('نص زر "فكرة البرنامج"', 'Program fikri buton metni', 'Program concept button label'), type: 'text' },
+        ],
+      },
+      {
+        key: 'seo',
+        label: L('محركات البحث (SEO)', 'Arama motorları (SEO)', 'Search engines (SEO)'),
+        description: L('عنوان ووصف الصفحة في نتائج البحث', 'Arama sonuçlarındaki başlık ve açıklama', 'Title and description in search results'),
+        icon: Search,
+        fields: seoFields('seo'),
+      },
+      {
+        key: 'labels',
+        label: L('نصوص المعرض والسير', 'Galeri ve biyografi etiketleri', 'Gallery & bio labels'),
+        description: L('عناوين البطاقات وأزرار التصفح', 'Kart başlıkları ve gezinme butonları', 'Card labels and navigation buttons'),
+        icon: Type,
+        anchor: 'main',
+        fields: [
+          { path: 'cohortsSection.selectCohortLabel', label: L('تسمية اختيار الدفعة', 'Dönem seçimi etiketi', 'Select cohort label'), type: 'text' },
+          { path: 'cohortsSection.pioneersCountLabel', label: L('تسمية عدد الرواد', 'Öncü sayısı etiketi', 'Pioneers count label'), type: 'text' },
+          { path: 'gallery.viewBiography', label: L('زر عرض السيرة الذاتية', 'Biyografiyi gör butonu', 'View bio button'), type: 'text' },
+          { path: 'gallery.roleLabel', label: L('تسمية الصفة / التخصص', 'Unvan / Uzmanlık etiketi', 'Role label'), type: 'text' },
+          { path: 'bioPage.backToGallery', label: L('زر العودة للمعرض', 'Galeriye dön butonu', 'Back to gallery button'), type: 'text' },
+          { path: 'bioPage.overviewTitle', label: L('عنوان نبذة وسيرة الرائد', 'Biyografi başlığı', 'Overview title'), type: 'text' },
+          { path: 'bioPage.educationTitle', label: L('عنوان المسار العلمي', 'Eğitim geçmişi başlığı', 'Education title'), type: 'text' },
+          { path: 'bioPage.careerTitle', label: L('عنوان المسيرة المهنية', 'Kariyer başlığı', 'Career title'), type: 'text' },
+          { path: 'bioPage.achievementsTitle', label: L('عنوان أبرز الإنجازات', 'Başarılar başlığı', 'Achievements title'), type: 'text' },
+          { path: 'bioPage.programContributionTitle', label: L('عنوان المساهمة في البرنامج', 'Program katkısı başlığı', 'Program contribution title'), type: 'text' },
+        ],
+      },
+    ],
+  },
+
   // ABOUT: WAQF --------------------------------------------------------------
   {
     key: 'about-waqf',
@@ -1178,6 +1257,85 @@ export const SITE_PAGES: SitePageDef[] = [
     ],
   },
 
+  // ADMINISTRATIVE STRUCTURE -------------------------------------------------
+  {
+    key: 'administrative-structure',
+    group: 'about',
+    label: L('الهيكل الإداري', 'İdari Yapı', 'Administrative Structure'),
+    description: L(
+      'صفحة /about/structure وقائمة أعضاء الهيكل التنظيمي',
+      '/about/structure sayfası ve organizasyon şeması üyeleri',
+      'The /about/structure page and organizational chart members',
+    ),
+    icon: Users,
+    route: '/about/structure',
+    sections: [
+      { key: 'seo', label: L('محركات البحث', 'SEO', 'Search engines'), icon: Search, fields: seoFields() },
+      { key: 'hero', label: L('الواجهة', 'Hero', 'Hero'), icon: ImageIcon, anchor: '#cms-structure-hero', fields: heroFields() },
+      {
+        key: 'intro',
+        label: L('المقدمة', 'Giriş', 'Intro'),
+        icon: Info,
+        anchor: '#cms-structure-intro',
+        fields: [
+          ...eyebrowTitleDescription('intro'),
+          { path: 'intro.subtitle', label: L('العنوان الفرعي', 'Alt başlık', 'Subtitle'), type: 'text' },
+        ],
+      },
+      {
+        key: 'settings',
+        label: L('إعدادات الظهور والنشر', 'Yayın ve Görünürlük', 'Publishing & Visibility'),
+        icon: Eye,
+        fields: [
+          {
+            path: 'is_published',
+            label: L('إتاحة الصفحة للزوار على الموقع', 'Sayfa sitede ziyaretçilere açık mı', 'Page visible to public visitors'),
+            type: 'boolean',
+            help: L(
+              'عند التعطيل، تصبح الصفحة مخفية عن الزوار وتُعرض رسالة صيانة مؤقتة مع إخفاء الرابط من القوائم',
+              'Devre dışı bırakıldığında sayfa ziyaretçilerden gizlenir ve bakım mesajı gösterilir',
+              'When disabled, the page is hidden from visitors and displays a maintenance message',
+            ),
+          },
+        ],
+      },
+      {
+        key: 'members',
+        label: L('أعضاء الهيكل الإداري', 'İdari Kadro Üyeleri', 'Structure Members'),
+        anchor: '#cms-structure-chart',
+        description: L(
+          'أعضاء الهيكل التنظيمي: الرئيس، المدير التنفيذي، ومسؤولو الإدارات',
+          'Organizasyon şeması üyeleri: Başkan, Genel Müdür ve Birim Yöneticileri',
+          'Organizational chart members: President, Executive Director, and Department Managers',
+        ),
+        icon: Users,
+        fields: [
+          {
+            path: 'members',
+            label: L('قائمة الأعضاء', 'Üye listesi', 'Member list'),
+            type: 'repeater',
+            itemTitleField: 'name',
+            itemFields: [
+              { path: 'name', label: L('الاسم الكامل', 'Ad Soyad', 'Full name'), type: 'text' },
+              { path: 'position', label: L('المنصب / الصفة', 'Pozisyon / Görev', 'Position / Role'), type: 'text' },
+              {
+                path: 'level',
+                label: L('المستوى الإداري (1, 2, 3)', 'Kademe (1, 2, 3)', 'Level (1, 2, 3)'),
+                type: 'number',
+                help: L('1: الرئيس، 2: المدير التنفيذي، 3: مسؤولو الإدارات', '1: Başkan, 2: Genel Müdür, 3: Birim Yöneticileri', '1: President, 2: Exec Director, 3: Dept Managers'),
+              },
+              { path: 'order', label: L('الترتيب', 'Sıralama', 'Order'), type: 'number' },
+              { path: 'image', label: L('صورة العضو', 'Profil görseli', 'Profile photo'), type: 'image' },
+              { path: 'shortDescription', label: L('وصف المسؤولية والمهمة', 'Kısa görev tanımı', 'Short role description'), type: 'textarea' },
+              { path: 'biography', label: L('السيرة التعريفية (اختياري)', 'Biyografi (isteğe bağlı)', 'Biography (optional)'), type: 'textarea' },
+              { path: 'published', label: L('منشور', 'Yayında', 'Published'), type: 'boolean' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
   // ABOUT NAV ----------------------------------------------------------------
   {
     key: 'about-nav',
@@ -1190,7 +1348,7 @@ export const SITE_PAGES: SitePageDef[] = [
       {
         key: 'nav',
         label: L('روابط القائمة', 'Menü bağlantıları', 'Menu links'),
-        description: L('الوجهات المتاحة: /about/waqf و /about/governance', 'Kullanılabilir hedefler: /about/waqf ve /about/governance', 'Available destinations: /about/waqf and /about/governance'),
+        description: L('الوجهات المتاحة: /about/waqf و /about/structure و /about/governance', 'Kullanılabilir hedefler: /about/waqf, /about/structure ve /about/governance', 'Available destinations: /about/waqf, /about/structure and /about/governance'),
         icon: ListTree,
         fields: [
           {

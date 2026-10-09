@@ -146,6 +146,7 @@ export default function DashboardPage() {
   const [subscribers, setSubscribers] = useState<number | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [recent, setRecent] = useState<RecentEdit[]>([]);
+  const [orgSectionCount, setOrgSectionCount] = useState<number | null>(null);
 
   const label = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
 
@@ -157,6 +158,7 @@ export default function DashboardPage() {
   const partLabel = (part: AreaPart): string => {
     if (part.label) return part.label[locale];
     if (part.type === 'content') return strings.pageTexts;
+    if (part.type === 'structure') return label('إدارة الهيكل الإداري', 'İdari Yapı Yönetimi', 'Structure Management');
     const resource = getResource(part.resourceKey);
     return (resource && strings.sections[resource.labelKey]) ?? part.resourceKey;
   };
@@ -181,6 +183,7 @@ export default function DashboardPage() {
 
     countWhere('participate_submissions', 'status', 'new').then((n) => active && setNewCount(n));
     countAll('newsletter_subscribers').then((n) => active && setSubscribers(n));
+    countWhere('org_sections', 'is_published', true).then((n) => active && setOrgSectionCount(n));
 
     listRows('participate_submissions', { sort: { column: 'created_at', ascending: false } })
       .then((rows) => active && setSubmissions((rows as SubmissionRow[]).slice(0, 6)))
@@ -285,7 +288,7 @@ export default function DashboardPage() {
             part.type === 'collection' ? [part.resourceKey] : [],
           );
           const itemCount =
-            countsByResource && collectionKeys.length > 0
+            area.parts.some((p) => p.type === 'structure') ? orgSectionCount : countsByResource && collectionKeys.length > 0
               ? collectionKeys.reduce((sum, key) => sum + (countsByResource[key] ?? 0), 0)
               : null;
           return (

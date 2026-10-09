@@ -11,6 +11,7 @@ const CONTENT_TABLES: TableName[] = [
   'news',
   'projects',
   'programs',
+  'pioneers',
   'library_articles',
   'library_documents',
   'gallery_images',
@@ -18,19 +19,36 @@ const CONTENT_TABLES: TableName[] = [
   'partners',
   'stat_indicators',
   'bank_accounts',
+  'org_sections',
+  'org_people',
+  'org_memberships',
 ];
 
 const SORT: Partial<Record<TableName, { column: string; ascending: boolean }>> = {
   news: { column: 'published_at', ascending: false },
+  org_people: { column: 'created_at', ascending: true },
 };
 
 async function fetchTable(table: TableName) {
   const sort = SORT[table] ?? { column: 'sort_order', ascending: true };
-  const { data, error } = await supabase
+  let query = supabase
     .from(table)
     .select('*')
-    .eq('is_published', true)
     .order(sort.column, { ascending: sort.ascending, nullsFirst: false });
+
+  // For pioneers and org tables, unpublished rows are fetched so the CMS adapter knows which
+  // slugs are in the database and explicitly marked hidden, preventing them
+  // from resurrecting from the static fallback data.
+  if (
+    table !== 'pioneers' &&
+    table !== 'org_people' &&
+    table !== 'org_sections' &&
+    table !== 'org_memberships'
+  ) {
+    query = query.eq('is_published', true);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(`${table}: ${error.message}`);
   return data ?? [];
 }

@@ -20,6 +20,7 @@ import { getLibraryContent, staticLibraryContent } from '@/data/library';
 import { getLibraryProfileContent, staticLibraryProfileContent } from '@/data/library/profile';
 import { getNewsLabels, newsLabels } from '@/data/news';
 import { getParticipateContent, staticParticipateContent } from '@/data/participate';
+import { defaultPioneersData, getPioneersContent } from '@/data/pioneers';
 import { getProgramsContent, localizedPrograms } from '@/data/programs';
 import { getProjectsContent, staticProjectsContent } from '@/data/projects';
 import { SITE_PAGES, getPageDef } from './pageSchema';
@@ -44,6 +45,8 @@ function pageSource(pageKey: string, locale: Locale, mode: PageSource): unknown 
       return live ? getProjectsContent(locale) : staticProjectsContent(locale);
     case 'programs-page':
       return live ? getProgramsContent(locale) : localizedPrograms[locale];
+    case 'pioneers-page':
+      return live ? getPioneersContent(locale) : defaultPioneersData[locale];
     case 'about-waqf':
       return live ? getAboutContent(locale).waqf : aboutPages[locale].waqf;
     case 'governance':
