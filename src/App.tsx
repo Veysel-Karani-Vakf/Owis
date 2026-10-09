@@ -15,6 +15,8 @@ import GovernancePage from '@/pages/GovernancePage';
 import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
 import ProgramPage from '@/pages/ProgramPage';
+import PioneersGalleryPage from '@/pages/pioneers/PioneersGalleryPage';
+import PioneerBioPage from '@/pages/pioneers/PioneerBioPage';
 import DonatePage from '@/pages/DonatePage';
 import DonateCheckoutPage from '@/pages/donate/DonateCheckoutPage';
 import DonateResultPage from '@/pages/donate/DonateResultPage';
@@ -59,6 +61,10 @@ function App() {
           <Route path="/about/governance" element={<GovernancePage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+          <Route path="/programs/yemen-pioneers/pioneers" element={<PioneersGalleryPage />} />
+          <Route path="/programs/yemen-pioneers/pioneers/:slug" element={<PioneerBioPage />} />
+          <Route path="/pioneers" element={<PioneersGalleryPage />} />
+          <Route path="/pioneers/:slug" element={<PioneerBioPage />} />
           <Route path="/programs/:slug" element={<ProgramPage />} />
           <Route path="/news" element={<NewsIndexPage />} />
           <Route path="/news/:slug" element={<NewsArticlePage />} />

@@ -23,7 +23,14 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
   const programNavItems = getProgramsContent(locale).nav;
   const location = useLocation();
   const [aboutOpen, setAboutOpen] = useState(location.pathname.startsWith('/about/'));
-  const [programsOpen, setProgramsOpen] = useState(location.pathname.startsWith('/programs/'));
+  const [programsOpen, setProgramsOpen] = useState(
+    location.pathname.startsWith('/programs/') || location.pathname.startsWith('/pioneers')
+  );
+  const [mobileProgramSubOpen, setMobileProgramSubOpen] = useState<string | null>(
+    location.pathname.startsWith('/programs/yemen-pioneers') || location.pathname.startsWith('/pioneers')
+      ? '/programs/yemen-pioneers'
+      : null
+  );
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -202,7 +209,78 @@ export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
                     >
                       <div className="mt-1 grid gap-1 ps-5">
                         {programNavItems.map((item) => {
-                          const itemActive = location.pathname === item.href;
+                          const hasChildren = Boolean(item.children && item.children.length > 0);
+                          const isSubOpen = mobileProgramSubOpen === item.href;
+                          const isChildActive = Boolean(item.children?.some((child) => location.pathname === child.href));
+                          const itemActive = location.pathname === item.href || isChildActive;
+
+                          if (hasChildren && item.children) {
+                            return (
+                              <div key={item.href} className="flex flex-col gap-1">
+                                <button
+                                  type="button"
+                                  aria-expanded={isSubOpen}
+                                  onClick={() =>
+                                    setMobileProgramSubOpen((prev) => (prev === item.href ? null : item.href))
+                                  }
+                                  className={`btn-border-run btn-border-run--light flex min-h-12 w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                                    itemActive
+                                      ? 'btn-border-run--on bg-primary-600/35 text-white'
+                                      : 'bg-white/5 text-white/80 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    {itemActive && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-gold-300" />
+                                    )}
+                                    <span>{item.label}</span>
+                                  </span>
+                                  <ChevronDown
+                                    className={`h-4 w-4 shrink-0 text-white/70 transition-transform ${
+                                      isSubOpen ? 'rotate-180' : ''
+                                    }`}
+                                    aria-hidden="true"
+                                  />
+                                </button>
+
+                                <AnimatePresence initial={false}>
+                                  {isSubOpen && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                      className="overflow-hidden ps-2"
+                                    >
+                                      <div className="my-1 grid gap-1 border-s border-white/20 ps-3">
+                                        {item.children.map((child) => {
+                                          const childActive = location.pathname === child.href;
+                                          return (
+                                            <a
+                                              key={child.href}
+                                              href={child.href}
+                                              aria-current={childActive ? 'page' : undefined}
+                                              onClick={(event) => {
+                                                event.preventDefault();
+                                                onNavClick(child.href);
+                                              }}
+                                              className={`btn-border-run btn-border-run--light flex min-h-11 items-center rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 ${
+                                                childActive
+                                                  ? 'btn-border-run--on bg-white font-semibold text-primary-700'
+                                                  : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                                              }`}
+                                            >
+                                              {child.label}
+                                            </a>
+                                          );
+                                        })}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          }
 
                           return (
                             <a

@@ -222,8 +222,14 @@ export type Program = {
   mediaNote?: string;
 };
 
+export type ProgramNavItem = {
+  label: string;
+  href: string;
+  children?: { label: string; href: string }[];
+};
+
 export type ProgramsPageContent = {
-  nav: { label: string; href: string }[];
+  nav: ProgramNavItem[];
   labels: {
     home: string;
     programs: string;
@@ -416,7 +422,14 @@ const makeYemenVideos = (locale: Locale): ProgramVideo[] =>
 export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
   ar: {
     nav: [
-      { label: 'برنامج رواد اليمن', href: programRoutes.yemenPioneers },
+      {
+        label: 'برنامج رواد اليمن',
+        href: programRoutes.yemenPioneers,
+        children: [
+          { label: 'فكرة البرنامج', href: programRoutes.yemenPioneers },
+          { label: 'الرواد', href: '/programs/yemen-pioneers/pioneers' },
+        ],
+      },
       { label: 'بناء القدرات', href: programRoutes.capacityBuilding },
       { label: 'التطوير المؤسسي', href: programRoutes.institutionalDevelopment },
       { label: 'التوعية المجتمعية', href: programRoutes.communityAwareness },
@@ -1099,10 +1112,17 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
   },
   tr: {
     nav: [
-      { label: 'Yemen Onculeri Programi', href: programRoutes.yemenPioneers },
-      { label: 'Kapasite Gelistirme', href: programRoutes.capacityBuilding },
-      { label: 'Kurumsal Gelisim', href: programRoutes.institutionalDevelopment },
-      { label: 'Toplumsal Farkindalik', href: programRoutes.communityAwareness },
+      {
+        label: 'Yemen Öncüleri Programı',
+        href: programRoutes.yemenPioneers,
+        children: [
+          { label: 'Program Fikri', href: programRoutes.yemenPioneers },
+          { label: 'Öncüler', href: '/programs/yemen-pioneers/pioneers' },
+        ],
+      },
+      { label: 'Kapasite Geliştirme', href: programRoutes.capacityBuilding },
+      { label: 'Kurumsal Gelişim', href: programRoutes.institutionalDevelopment },
+      { label: 'Toplumsal Farkındalık', href: programRoutes.communityAwareness },
     ],
     labels: {
       home: 'Ana Sayfa',
@@ -1781,7 +1801,14 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
   },
   en: {
     nav: [
-      { label: 'Yemen Pioneers Program', href: programRoutes.yemenPioneers },
+      {
+        label: 'Yemen Pioneers Program',
+        href: programRoutes.yemenPioneers,
+        children: [
+          { label: 'Program Concept', href: programRoutes.yemenPioneers },
+          { label: 'Pioneers', href: '/programs/yemen-pioneers/pioneers' },
+        ],
+      },
       { label: 'Capacity Building', href: programRoutes.capacityBuilding },
       { label: 'Institutional Development', href: programRoutes.institutionalDevelopment },
       { label: 'Community Awareness', href: programRoutes.communityAwareness },
@@ -2466,8 +2493,28 @@ export const localizedPrograms: Record<Locale, ProgramsPageContent> = {
 
 export function getProgramsContent(locale: Locale): ProgramsPageContent {
   const base = localizedPrograms[locale];
+  const page = cmsPageContent('programs-page', locale, base);
+
+  // Preserve navigation submenus (children) from base if CMS data lacks them,
+  // guaranteeing that submenus (such as "فكرة البرنامج" and "الرواد") always appear.
+  const nav = (page.nav || base.nav).map((item) => {
+    const baseItem = base.nav.find(
+      (b) =>
+        b.href.replace(/\/$/, '') === item.href.replace(/\/$/, '') ||
+        b.label.trim() === item.label.trim()
+    );
+    if ((!item.children || item.children.length === 0) && baseItem?.children) {
+      return {
+        ...item,
+        children: baseItem.children,
+      };
+    }
+    return item;
+  });
+
   return {
-    ...cmsPageContent('programs-page', locale, base),
+    ...page,
+    nav,
     programs: cmsPrograms(locale, base.programs),
   };
 }

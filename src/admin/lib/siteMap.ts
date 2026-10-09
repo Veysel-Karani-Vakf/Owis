@@ -181,6 +181,26 @@ export const SITE_AREAS: SiteArea[] = [
     ],
   },
   {
+    key: 'pioneers',
+    icon: GraduationCap,
+    label: L('رواد اليمن (الرواد)', 'Yemen Öncüleri (Öncüler)', 'Yemen Pioneers (Pioneers)'),
+    description: L(
+      'معرض وبطاقات وسير رواد اليمن التفاعلي',
+      'Yemen Öncüleri interaktif galerisi ve biyografileri',
+      'Interactive Yemen Pioneers gallery and biographies',
+    ),
+    route: '/programs/yemen-pioneers/pioneers',
+    tone: {
+      soft: 'bg-amber-100 text-amber-700',
+      solid: 'bg-amber-600 text-white',
+      bar: 'bg-amber-500',
+      hover: 'hover:border-amber-300',
+    },
+    parts: [
+      { type: 'content', pageKey: 'programs-page', label: L('نصوص ومعرض الرواد', 'Öncüler galerisi metinleri', 'Pioneers gallery texts') },
+    ],
+  },
+  {
     key: 'news',
     icon: Newspaper,
     label: L('الأخبار', 'Haberler', 'News'),

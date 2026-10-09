@@ -1,4 +1,4 @@
-import { ExternalLink, Facebook, Globe, Instagram, MessageCircle, Share2, Youtube } from 'lucide-react';
+import { ExternalLink, Facebook, Globe, Instagram, MessageCircle, Share2, Youtube, type LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { SVGProps } from 'react';
 import type { ParticipateContactLink, ParticipateLabels } from '@/data/participate';
@@ -28,7 +28,7 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 type BrandStyle = {
-  Icon: typeof Globe;
+  Icon: LucideIcon | React.ComponentType<React.SVGProps<SVGSVGElement>>;
   /** Icon chip: solid brand color, white glyph. */
   chip: string;
   /** Card surface: brand-tinted border, wash, and hover border. */

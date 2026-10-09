@@ -37,7 +37,8 @@ export default function Header() {
   const aboutCloseTimerRef = useRef<number | null>(null);
   const programsCloseTimerRef = useRef<number | null>(null);
   const isAboutRoute = location.pathname.startsWith('/about/');
-  const isProgramsRoute = location.pathname.startsWith('/programs/');
+  const isProgramsRoute = location.pathname.startsWith('/programs/') || location.pathname.startsWith('/pioneers');
+  const [programSubmenuOpen, setProgramSubmenuOpen] = useState<string | null>(null);
 
   const clearAboutCloseTimer = () => {
     if (aboutCloseTimerRef.current) {
@@ -383,7 +384,89 @@ export default function Header() {
                           onMouseLeave={scheduleProgramsClose}
                         >
                           {programNavItems.map((item, index) => {
-                            const active = location.pathname === item.href;
+                            const hasChildren = Boolean(item.children && item.children.length > 0);
+                            const isSubOpen = programSubmenuOpen === item.href;
+                            const isChildActive = Boolean(item.children?.some((child) => location.pathname === child.href));
+                            const active = location.pathname === item.href || isChildActive;
+
+                            if (hasChildren && item.children) {
+                              return (
+                                <div key={item.href} className="flex flex-col">
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    aria-haspopup="true"
+                                    aria-expanded={isSubOpen}
+                                    onClick={() => {
+                                      clearProgramsCloseTimer();
+                                      setProgramSubmenuOpen((prev) => (prev === item.href ? null : item.href));
+                                    }}
+                                    onMouseEnter={() => {
+                                      clearProgramsCloseTimer();
+                                      setProgramSubmenuOpen(item.href);
+                                    }}
+                                    className={`btn-border-run btn-border-run--light relative flex min-h-11 w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                                      active
+                                        ? 'btn-border-run--on bg-primary-600/35 text-white'
+                                        : 'text-white/80 hover:bg-primary-600/20 hover:text-white'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {active && (
+                                        <span className="h-1.5 w-1.5 rounded-full bg-gold-300" />
+                                      )}
+                                      <span className={active ? '' : 'ps-1'}>{item.label}</span>
+                                    </div>
+                                    <ChevronDown
+                                      className={`h-4 w-4 text-white/70 transition-transform duration-200 ${
+                                        isSubOpen ? 'rotate-180' : ''
+                                      }`}
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+
+                                  <AnimatePresence initial={false}>
+                                    {isSubOpen && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0, y: -4 }}
+                                        animate={{ height: 'auto', opacity: 1, y: 0 }}
+                                        exit={{ height: 0, opacity: 0, y: -4 }}
+                                        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                                        className="overflow-hidden ps-2 pe-1 py-1"
+                                      >
+                                        <div className="my-0.5 flex flex-col gap-1 border-s border-white/20 ps-2.5">
+                                          {item.children.map((child) => {
+                                            const childActive = location.pathname === child.href;
+                                            return (
+                                              <Link
+                                                key={child.href}
+                                                role="menuitem"
+                                                aria-current={childActive ? 'page' : undefined}
+                                                to={child.href}
+                                                onClick={() => {
+                                                  setProgramsOpen(false);
+                                                  setProgramSubmenuOpen(null);
+                                                }}
+                                                className={`relative flex min-h-9 items-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                                                  childActive
+                                                    ? 'bg-primary-600 text-white shadow-sm'
+                                                    : 'text-white/75 hover:bg-white/10 hover:text-white'
+                                                }`}
+                                              >
+                                                {childActive && (
+                                                  <span className="me-1.5 h-1 w-1 rounded-full bg-gold-300" />
+                                                )}
+                                                <span>{child.label}</span>
+                                              </Link>
+                                            );
+                                          })}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              );
+                            }
 
                             return (
                               <Link
@@ -394,7 +477,10 @@ export default function Header() {
                                 role="menuitem"
                                 aria-current={active ? 'page' : undefined}
                                 to={item.href}
-                                onClick={() => setProgramsOpen(false)}
+                                onClick={() => {
+                                  setProgramsOpen(false);
+                                  setProgramSubmenuOpen(null);
+                                }}
                                 onKeyDown={(event) => {
                                   if (event.key === 'ArrowDown') {
                                     event.preventDefault();

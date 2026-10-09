@@ -11,7 +11,7 @@ export default function News() {
   const reduceMotion = Boolean(useReducedMotion());
   const cardHover = reduceMotion
     ? undefined
-    : { y: -5, transition: { type: 'spring', stiffness: 320, damping: 24 } };
+    : { y: -5, transition: { type: 'spring' as const, stiffness: 320, damping: 24 } };
   const newsContent = content.news;
   const labels = getNewsLabels(locale);
   // The editor sets how many articles show; the featured one always leads.

@@ -694,7 +694,7 @@ function localizeTextItem<T extends CatalogTextItem>(
     image: item.image,
     imageAlt: item.imageAlt,
     content: item.content,
-    pdfUrl: 'pdfUrl' in item ? item.pdfUrl : null,
+    pdfUrl: 'pdfUrl' in item ? (item.pdfUrl as string | null) : null,
   };
 }
 
