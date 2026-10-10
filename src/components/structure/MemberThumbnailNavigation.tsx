@@ -13,6 +13,47 @@ type MemberThumbnailNavigationProps = {
   autoplayIntervalMs?: number;
 };
 
+/**
+ * Normalizes verbose role titles into concise labels (e.g. "رئيس اللجنة", "عضو", "رئيس الفريق")
+ * so neither the top thumbnail strip nor the role badge displays repetitive full sentences.
+ */
+export function getCompactRoleLabel(rawPosition: string): string {
+  const cleaned = (rawPosition || '')
+    .trim()
+    .replace(/\s+في\s+(وقف أويس القرني|شركة أركان الدولية).*$/u, '')
+    .replace(/\s+at\s+(Veysel Karani Waqf|Arkan International).*$/i, '')
+    .replace(/^(Veysel Karani Vakfı|Arkan Uluslararası Şirketi)\s+/i, '')
+    .trim();
+
+  if (!cleaned) return '';
+
+  // Arabic normalization
+  if (/^رئيس لجنة الرقابة/u.test(cleaned)) return 'رئيس لجنة الرقابة';
+  if (/^رئيس لجنة/u.test(cleaned)) return 'رئيس اللجنة';
+  if (/^رئيس فريق/u.test(cleaned)) return 'رئيس الفريق';
+  if (/^رئيس هيئة/u.test(cleaned)) return 'رئيس الهيئة';
+  if (/^رئيس مجلس/u.test(cleaned)) return 'رئيس المجلس';
+  if (/^نائب رئيس/u.test(cleaned)) return 'نائب الرئيس';
+  if (/^عضو\s+(لجنة|فريق|هيئة|مجلس)/u.test(cleaned)) return 'عضو';
+
+  // English normalization
+  if (/^(Head|Chair|Chairman) of (the )?Oversight/i.test(cleaned)) return 'Oversight Committee Head';
+  if (/^(Head|Chair|Chairman) of (the )?.*Committee/i.test(cleaned)) return 'Committee Head';
+  if (/^(Head|Chair|Lead) of (the )?.*Team/i.test(cleaned)) return 'Team Head';
+  if (/^(Head|Chair|Chairman) of (the )?.*Board/i.test(cleaned)) return 'Board Chair';
+  if (/^Member of (the )?/i.test(cleaned)) return 'Member';
+
+  // Turkish normalization
+  if (/Denetim.*Komitesi Başkanı$/i.test(cleaned)) return 'Denetim Komitesi Başkanı';
+  if (/Komitesi Başkanı$/i.test(cleaned)) return 'Komite Başkanı';
+  if (/Ekibi Başkanı$/i.test(cleaned)) return 'Ekip Başkanı';
+  if (/Heyeti Başkanı$/i.test(cleaned)) return 'Heyet Başkanı';
+  if (/Kurulu Başkanı$/i.test(cleaned)) return 'Kurul Başkanı';
+  if (/(Komitesi|Ekibi|Heyeti|Kurulu) Üyesi$/i.test(cleaned)) return 'Üye';
+
+  return cleaned;
+}
+
 function ThumbnailAvatar({
   member,
   isActive,
@@ -138,6 +179,7 @@ export default function MemberThumbnailNavigation({
           <div className="mx-auto flex w-full items-start justify-start md:justify-center gap-3 sm:gap-5 md:gap-6 lg:gap-8">
             {members.map((member, index) => {
               const isActive = member.id === activeMemberId;
+              const compactRole = getCompactRoleLabel(member.position);
 
               return (
                 <button
@@ -149,8 +191,8 @@ export default function MemberThumbnailNavigation({
                   onClick={() => onSelectMember(member, index)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
                   aria-current={isActive ? 'true' : undefined}
-                  aria-label={`${member.name} — ${member.position}`}
-                  title={`${member.name} — ${member.position}`}
+                  aria-label={`${member.name} — ${compactRole}`}
+                  title={`${member.name} — ${compactRole}`}
                   className="group relative flex w-[104px] sm:w-[120px] md:w-auto md:min-w-[108px] md:max-w-[150px] shrink-0 md:shrink flex-col items-center text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 rounded-xl cursor-pointer select-none px-1.5 py-0.5"
                 >
                   {/* Fixed-height avatar stage so active scaling never shifts layout */}
@@ -174,7 +216,7 @@ export default function MemberThumbnailNavigation({
                         : 'font-medium text-dark-600 group-hover:text-dark-950'
                     }`}
                   >
-                    {member.position}
+                    {compactRole}
                   </span>
 
                   {/* Animated Active Selection Bar with 5s Autoplay Progress */}

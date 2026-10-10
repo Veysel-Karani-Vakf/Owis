@@ -407,6 +407,11 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
   // --------------------------------------------------------------------------
   const handleOpenAddMember = (sectionId: string) => {
     const secMembers = memberships.filter((m) => m.section_id === sectionId);
+    const sec = sectionsMap.get(sectionId);
+    const secAr = sec?.title?.ar?.trim() || '';
+    const secTr = sec?.title?.tr?.trim() || '';
+    const secEn = sec?.title?.en?.trim() || '';
+
     setIsExistingPersonMode(false);
     setSelectedExistingPersonId('');
     setMemberForm({
@@ -416,7 +421,11 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
       shortName: emptyLocalized(),
       image: '',
       imagePosition: 'center 20%',
-      roleTitle: emptyLocalized(),
+      roleTitle: {
+        ar: secAr ? `عضو ${secAr}` : '',
+        tr: secTr ? `${secTr} Üyesi` : '',
+        en: secEn ? `Member of ${secEn}` : '',
+      },
       level: 3,
       parentId: null,
       shortBio: emptyLocalized(),
@@ -695,26 +704,6 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
     }
   };
 
-  const levelBadge = (lvl: number) => {
-    switch (lvl) {
-      case 1:
-        return {
-          label: L('المستوى الأول (رئاسة / قيادة عليا)', '1. Kademe (Başkan)', 'Level 1 (Leadership)'),
-          color: 'bg-primary-50 text-primary-700 border-primary-200',
-        };
-      case 2:
-        return {
-          label: L('المستوى الثاني (إدارة تنفيذية)', '2. Kademe (Genel Müdür)', 'Level 2 (Executive)'),
-          color: 'bg-amber-50 text-amber-700 border-amber-200',
-        };
-      default:
-        return {
-          label: L('المستوى الثالث (أعضاء / إدارات)', '3. Kademe (Üyeler)', 'Level 3 (Members/Depts)'),
-          color: 'bg-slate-50 text-slate-700 border-slate-200',
-        };
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8">
@@ -737,9 +726,9 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
             {L(
-              'التحكم الكامل في كافة هيئات ومجالس الوقف (الهيئة الإدارية، هيئة المتولين، مجلس الإدارة، هيئة الاستثمار)، وإضافة وتعديل وترتيب الأعضاء والتسلسل الهرمي.',
-              'Vakfın tüm heyet ve kurullarını yönetin, yeni heyetler ve üyeler ekleyin, hiyerarşiyi ve sıralamayı kod değiştirmeden düzenleyin.',
-              'Full control over all foundation bodies and boards, adding, editing, and reordering members and hierarchy without code changes.',
+              'التحكم في تبويبات الهيئات التنظيمية، وشريط الصور المصغّرة مع الصفة في الأعلى، والبطاقة التعريفية المدمجة لكل عضو (الصورة الكاملة + الاسم + الصفة + سطر تعريفي مختصر).',
+              'Üstteki heyet sekmelerini, küçük fotoğraf ve görev şeridini ve her üyenin özet tanıtım kartını yönetin.',
+              'Manage organizational section tabs, the top thumbnail & role bar, and each member’s compact profile card.',
             )}
           </p>
         </div>
@@ -883,21 +872,6 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                         {section.title?.[locale] || section.slug}
                       </h3>
 
-                      {/* Layout badge */}
-                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                        {section.layout_type === 'chart' ? (
-                          <>
-                            <Network className="h-3 w-3 text-primary-600" />
-                            <span>{L('مخطط شجري هرمي', 'Şema Hiyerarşik', 'Hierarchical Chart')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <LayoutGrid className="h-3 w-3 text-slate-500" />
-                            <span>{L('بطاقات أعضاء', 'Üye Kartları', 'Member Cards')}</span>
-                          </>
-                        )}
-                      </span>
-
                       {/* Visibility badge */}
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold border ${
@@ -998,9 +972,11 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                         <span>{L(`أعضاء ${section.title?.[locale] || section.slug}`, `${section.title?.[locale] || section.slug} Üyeleri`, `Members of ${section.title?.[locale] || section.slug}`)}</span>
                       </h4>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {section.layout_type === 'chart'
-                          ? L('تظهر هذه الهيئة بهيكل هرمي مترابط. يمكنك تحديد الرئيس والمدير التنفيذي ومسؤولي الإدارات والتسلسل الإداري.', 'Bu heyet hiyerarşik şema olarak görünür. Üst yönetici ve kademeleri belirleyebilirsiniz.', 'This body renders as a hierarchical chart. You can configure leadership and reporting lines.')
-                          : L('تظهر هذه الهيئة ببطاقات متوازية أنيقة بدون خطوط تبعية إدارية.', 'Bu heyet eşit üyelerden oluşan kartlar olarak görünür.', 'This body renders as clean member cards without hierarchical reporting lines.')}
+                        {L(
+                          'يظهر الأعضاء بالترتيب التالي في شريط الصور المصغّرة العلوي (الصورة + الصفة)، وعند الاختيار تُعرض بطاقة العضو الأفقية.',
+                          'Üyeler bu sırayla üstteki küçük fotoğraf ve görev şeridinde görünür, seçildiğinde yatay tanıtım kartı gösterilir.',
+                          'Members appear in this order in the top thumbnail & role strip, and open in the compact horizontal card when selected.',
+                        )}
                       </p>
                     </div>
 
@@ -1037,13 +1013,10 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                     <div className="space-y-3">
                       {sectionMembers.map((mem, mIdx) => {
                         const person = peopleMap.get(mem.person_id);
-                        const lvlInfo = levelBadge(mem.level);
-                        const parentMembership = mem.parent_id
-                          ? memberships.find((m) => m.id === mem.parent_id)
-                          : null;
-                        const parentPerson = parentMembership
-                          ? peopleMap.get(parentMembership.person_id)
-                          : null;
+                        const summaryText =
+                          person?.short_bio?.[locale]?.trim() ||
+                          person?.full_bio?.[locale]?.split(/\n+/)[0]?.trim() ||
+                          '';
 
                         return (
                           <div
@@ -1054,15 +1027,19 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                                 : 'border-slate-200 bg-slate-50/70 opacity-80'
                             }`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              {/* Member photo */}
-                              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-2xs">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              {/* Order number matching top thumbnail strip */}
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                                {mIdx + 1}
+                              </span>
+
+                              {/* Member photo (uncropped preview) */}
+                              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
                                 {person?.image ? (
                                   <img
                                     src={person.image}
                                     alt={person.name?.[locale] || ''}
-                                    className="h-full w-full object-cover"
-                                    style={{ objectPosition: person.image_position || 'center 20%' }}
+                                    className="max-h-full max-w-full h-auto w-auto object-contain"
                                   />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center text-slate-400">
@@ -1071,40 +1048,28 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                                 )}
                               </div>
 
-                              {/* Member Details */}
+                              {/* Member Details matching Compact Horizontal Card */}
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <h5 className="font-bold text-slate-900 text-sm truncate">
+                                  <h5 className="font-bold text-slate-900 text-sm sm:text-base truncate">
                                     {person?.name?.[locale] || person?.slug || '—'}
                                   </h5>
 
-                                  {/* Position pill */}
-                                  <span className="inline-block rounded-md bg-primary-50 px-2 py-0.5 text-xs font-bold text-primary-700 border border-primary-100">
+                                  {/* Position pill (shown in top thumbnail bar & card) */}
+                                  <span className="inline-block rounded-md bg-primary-50 px-2.5 py-0.5 text-xs font-bold text-primary-700 border border-primary-100">
                                     {mem.role_title?.[locale] || L('بدون صفة', 'Görevi Yok', 'No title')}
                                   </span>
 
-                                  {/* Level pill */}
-                                  <span
-                                    className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold border ${lvlInfo.color}`}
-                                  >
-                                    {lvlInfo.label}
-                                  </span>
-
-                                  {/* Parent indicator if hierarchical */}
-                                  {parentPerson && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 rounded-md px-2 py-0.5">
-                                      <FolderTree className="h-3 w-3 text-slate-400" />
-                                      <span>
-                                        {L('يتبع:', 'Bağlı:', 'Reports to:')}{' '}
-                                        {parentPerson.name?.[locale] || parentPerson.slug}
-                                      </span>
+                                  {!mem.is_published && (
+                                    <span className="inline-block rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200">
+                                      {L('مخفي', 'Gizli', 'Hidden')}
                                     </span>
                                   )}
                                 </div>
 
-                                {person?.short_bio?.[locale] && (
-                                  <p className="mt-0.5 text-xs text-slate-500 line-clamp-1 max-w-xl">
-                                    {person.short_bio[locale]}
+                                {summaryText && (
+                                  <p className="mt-1 text-xs text-slate-500 line-clamp-1 max-w-xl">
+                                    {summaryText}
                                   </p>
                                 )}
                               </div>
@@ -1233,7 +1198,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
               {/* Title per selected locale */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {L('عنوان الهيئة / المجلس', 'Heyet / Kurul Başlığı', 'Section Title')} ({formLocale.toUpperCase()}) *
+                  {L('عنوان الهيئة / المجلس (يظهر في شريط التبويبات العلوي)', 'Heyet / Kurul Başlığı (Üst Sekmelerde Görünür)', 'Section Title (Shown in Top Tabs)')} ({formLocale.toUpperCase()}) *
                 </label>
                 <input
                   type="text"
@@ -1259,7 +1224,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
               {/* Description per selected locale */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {L('الوصف ومسؤوليات الهيئة', 'Heyet Açıklaması ve Görevleri', 'Section Description')} ({formLocale.toUpperCase()})
+                  {L('وصف الهيئة (اختياري — يظهر عند عدم وجود أعضاء منشورين)', 'Heyet Açıklaması (İsteğe Bağlı)', 'Section Description (Optional)')} ({formLocale.toUpperCase()})
                 </label>
                 <textarea
                   rows={2}
@@ -1272,7 +1237,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                   }
                   placeholder={
                     formLocale === 'ar'
-                      ? 'نبذة تعريفية عن اختصاصات ومسؤوليات الهيئة...'
+                      ? 'نبذة مختصرة عن اختصاصات الهيئة...'
                       : formLocale === 'tr'
                       ? 'Heyetin görev ve yetkileri hakkında kısa açıklama...'
                       : 'Brief description of section responsibilities...'
@@ -1295,54 +1260,8 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
-                  {L('يُستخدم لربط الهيكل والتسلسل في النظام. يمكن تركه فارغاً للتوليد التلقائي.', 'Sistemde bağlantı için kullanılır. Otomatik oluşturma için boş bırakabilirsiniz.', 'Used for unique identification. Leave empty to auto-generate.')}
+                  {L('يُستخدم للروابط المباشرة للتبويب. يمكن تركه فارغاً للتوليد التلقائي.', 'Sekme bağlantıları için kullanılır. Otomatik oluşturma için boş bırakabilirsiniz.', 'Used for direct tab links. Leave empty to auto-generate.')}
                 </p>
-              </div>
-
-              {/* Layout Type Selection */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {L('نمط عرض الهيئة', 'Görünüm Düzeni', 'Display Layout Type')} *
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    onClick={() => setSectionForm({ ...sectionForm, layout_type: 'chart' })}
-                    className={`cursor-pointer rounded-xl border p-3 flex items-start gap-2.5 transition ${
-                      sectionForm.layout_type === 'chart'
-                        ? 'border-primary-600 bg-primary-50/50 text-primary-900 shadow-2xs'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                    }`}
-                  >
-                    <Network className="h-5 w-5 shrink-0 mt-0.5 text-primary-600" />
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm">
-                        {L('شجرة هيكل تنظيمي', 'Hiyerarşik Şema', 'Hierarchical Chart')}
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
-                        {L('مخطط هرمي مع خطوط ربط (مثل الهيئة الإدارية)', 'Bağlantı çizgileriyle liderlik şeması', 'Tree with connector lines')}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    onClick={() => setSectionForm({ ...sectionForm, layout_type: 'cards' })}
-                    className={`cursor-pointer rounded-xl border p-3 flex items-start gap-2.5 transition ${
-                      sectionForm.layout_type === 'cards'
-                        ? 'border-primary-600 bg-primary-50/50 text-primary-900 shadow-2xs'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                    }`}
-                  >
-                    <LayoutGrid className="h-5 w-5 shrink-0 mt-0.5 text-slate-600" />
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm">
-                        {L('بطاقات أعضاء', 'Üye Kartları', 'Member Cards')}
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
-                        {L('شبكة بطاقات أعضاء متوازية بدون خطوط هرمية', 'Çizgisiz bağımsız üye kartları', 'Clean card grid')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Publication toggle */}
@@ -1381,7 +1300,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
       )}
 
       {/* =========================================================================
-          MEMBER EDIT/CREATE MODAL
+          MEMBER EDIT/CREATE MODAL (MATCHING FRONTEND COMPACT CARD + TOP STRIP)
          ========================================================================= */}
       {memberModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
@@ -1450,238 +1369,191 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                     ))}
                   </select>
                   <p className="text-xs text-slate-500">
-                    {L('سيتم ربط هذا الشخص بالهيئة مع تحديد منصبه الخاص بهذه الهيئة دون تكرار ملفه الشخصي.', 'Bu kişi aynı profil ile bu heyete atanacaktır.', 'This person will be linked with their role in this body without duplicating their profile.')}
+                    {L('سيتم ربط هذا الشخص بالهيئة مع تحديد صفته الخاصة بهذه الهيئة دون تكرار ملفه الشخصي.', 'Bu kişi aynı profil ile bu heyete atanacaktır.', 'This person will be linked with their role in this body without duplicating their profile.')}
                   </p>
                 </div>
               )}
 
               {/* Language switcher tab for localized fields */}
-              {!isExistingPersonMode && (
-                <div className="flex gap-1 rounded-xl bg-slate-100 p-1 mb-2">
-                  {(['ar', 'tr', 'en'] as Locale[]).map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => setFormLocale(loc)}
-                      className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition ${
-                        formLocale === loc
-                          ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      {loc === 'ar' ? 'العربية' : loc === 'tr' ? 'Türkçe' : 'English'}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex gap-1 rounded-xl bg-slate-100 p-1 mb-2">
+                {(['ar', 'tr', 'en'] as Locale[]).map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setFormLocale(loc)}
+                    className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition ${
+                      formLocale === loc
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {loc === 'ar' ? 'العربية' : loc === 'tr' ? 'Türkçe' : 'English'}
+                  </button>
+                ))}
+              </div>
 
-              {/* Person Fields (Name, Photo, Bios) - only when NOT existing person mode */}
-              {!isExistingPersonMode && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {L('الاسم الكامل', 'Ad Soyad', 'Full Name')} ({formLocale.toUpperCase()}) *
-                      </label>
-                      <input
-                        type="text"
-                        required={formLocale === 'ar'}
-                        value={memberForm.name[formLocale]}
-                        onChange={(e) =>
-                          setMemberForm({
-                            ...memberForm,
-                            name: { ...memberForm.name, [formLocale]: e.target.value },
-                          })
-                        }
-                        placeholder={
-                          formLocale === 'ar'
-                            ? 'مثال: أ/ صلاح باتيس'
-                            : formLocale === 'tr'
-                            ? 'Örn: Salah Batiss'
-                            : 'e.g. Salah Batiss'
-                        }
-                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Short Name */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {L('الاسم المختصر للعرض', 'Kısa Ad', 'Short Name')} ({formLocale.toUpperCase()})
-                      </label>
-                      <input
-                        type="text"
-                        value={memberForm.shortName[formLocale]}
-                        onChange={(e) =>
-                          setMemberForm({
-                            ...memberForm,
-                            shortName: { ...memberForm.shortName, [formLocale]: e.target.value },
-                          })
-                        }
-                        placeholder="اختياري"
-                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Profile Photo with MediaPicker & Framing Position */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {L('الصورة الشخصية', 'Profil Görseli', 'Profile Photo')}
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
-                          {memberForm.image ? (
-                            <img
-                              src={memberForm.image}
-                              alt="preview"
-                              className="h-full w-full object-cover"
-                              style={{ objectPosition: memberForm.imagePosition }}
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-slate-400">
-                              <ImageIcon className="h-6 w-6" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 flex gap-2">
-                          <input
-                            type="text"
-                            value={memberForm.image}
-                            onChange={(e) => setMemberForm({ ...memberForm, image: e.target.value })}
-                            placeholder="/media/... أو رابط الصورة"
-                            dir="ltr"
-                            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600 focus:border-primary-500 focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setMediaPickerOpen(true)}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs shrink-0"
-                          >
-                            {L('اختيار / رفع صورة', 'Görsel Seç / Yükle', 'Pick / Upload Image')}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {L('محاذاة الوجه في الصورة', 'Görsel Hizalama', 'Portrait Framing')}
-                      </label>
-                      <select
-                        value={memberForm.imagePosition}
-                        onChange={(e) => setMemberForm({ ...memberForm, imagePosition: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:border-primary-500 focus:outline-none mt-1.5"
-                      >
-                        <option value="center 10%">{L('أعلى (10%)', 'Üst (10%)', 'Top (10%)')}</option>
-                        <option value="center 20%">{L('أعلى منتصف (20% - افتراضي)', 'Üst Orta (20%)', 'Upper Center (20%)')}</option>
-                        <option value="center 35%">{L('منتصف علوي (35%)', 'Orta Üst (35%)', 'Mid Upper (35%)')}</option>
-                        <option value="center 50%">{L('المنتصف (50%)', 'Merkez (50%)', 'Center (50%)')}</option>
-                      </select>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Membership details in THIS section */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {L('بيانات العضوية والمنصب في هذه الهيئة', 'Bu Heyetteki Görev ve Üyelik Bilgileri', 'Role & Membership in this Body')}
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Role Title / Position */}
+              {/* 1. Full Name & Role/Position (the two primary labels shown on the frontend) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {!isExistingPersonMode && (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('المنصب / الصفة في الهيئة', 'Heyetteki Görevi / Pozisyon', 'Role / Position')} ({formLocale.toUpperCase()}) *
+                      {L('الاسم الكامل (يظهر في البطاقة)', 'Ad Soyad (Kartta Görünür)', 'Full Name (Shown in Card)')} ({formLocale.toUpperCase()}) *
                     </label>
                     <input
                       type="text"
                       required={formLocale === 'ar'}
-                      value={memberForm.roleTitle[formLocale]}
+                      value={memberForm.name[formLocale]}
                       onChange={(e) =>
                         setMemberForm({
                           ...memberForm,
-                          roleTitle: { ...memberForm.roleTitle, [formLocale]: e.target.value },
+                          name: { ...memberForm.name, [formLocale]: e.target.value },
                         })
                       }
                       placeholder={
                         formLocale === 'ar'
-                          ? 'مثال: رئيس الهيئة، عضو مجلس، مسؤول البرامج'
+                          ? 'مثال: أ/ صلاح باتيس'
                           : formLocale === 'tr'
-                          ? 'Örn: Başkan, Üye, Genel Müdür'
-                          : 'e.g. Chairperson, Member, Director'
+                          ? 'Örn: Salah Batiss'
+                          : 'e.g. Salah Batiss'
                       }
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
                     />
                   </div>
+                )}
 
-                  {/* Level Selection */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('المستوى الإداري', 'Hiyerarşik Kademe', 'Hierarchy Level')} *
-                    </label>
-                    <select
-                      value={memberForm.level}
-                      onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          level: Number(e.target.value) as 1 | 2 | 3,
-                        })
-                      }
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                    >
-                      <option value={1}>{L('المستوى الأول (الرئيس / القيادة العليا)', '1. Kademe (Başkan / Üst Yönetim)', 'Level 1: President / Chairperson')}</option>
-                      <option value={2}>{L('المستوى الثاني (المدير التنفيذي / النائب)', '2. Kademe (Genel Müdür / İcra)', 'Level 2: Executive Director / Deputy')}</option>
-                      <option value={3}>{L('المستوى الثالث (أعضاء / مسؤولو الإدارات)', '3. Kademe (Birim Yöneticileri / Üyeler)', 'Level 3: Department Managers & Members')}</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Optional Hierarchy Parent */}
-                <div>
+                <div className={isExistingPersonMode ? 'sm:col-span-2' : ''}>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {L('المسؤول المباشر في التسلسل (اختياري)', 'Bağlı Olduğu Yönetici (İsteğe Bağlı)', 'Reporting Supervisor (Hierarchy)')}
+                    {L('الصفة / المنصب (يظهر في البطاقة تحت الاسم)', 'Görev / Pozisyon (Kartta İsmin Altında Görünür)', 'Role / Position (Shown in Card Below Name)')} ({formLocale.toUpperCase()}) *
                   </label>
-                  <select
-                    value={memberForm.parentId || ''}
+                  <input
+                    type="text"
+                    required={formLocale === 'ar'}
+                    value={memberForm.roleTitle[formLocale]}
                     onChange={(e) =>
                       setMemberForm({
                         ...memberForm,
-                        parentId: e.target.value || null,
+                        roleTitle: { ...memberForm.roleTitle, [formLocale]: e.target.value },
                       })
                     }
+                    placeholder={
+                      formLocale === 'ar'
+                        ? 'مثال: عضو هيئة المتولين، رئيس فريق الخبراء، المدير التنفيذي'
+                        : formLocale === 'tr'
+                        ? 'Örn: Mütevelli Heyeti Üyesi, Uzmanlar Ekibi Başkanı'
+                        : 'e.g. Member of the Board of Trustees, Head of Experts Team'
+                    }
                     className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                  >
-                    <option value="">{L('-- بدون مسؤول مباشر (على رأس الهيكل) --', '-- Yönetici Yok (En Üst Kademe) --', '-- No supervisor (top level) --')}</option>
-                    {memberships
-                      .filter(
-                        (m) =>
-                          m.section_id === memberForm.sectionId &&
-                          m.id !== memberForm.membershipId,
-                      )
-                      .map((m) => {
-                        const p = peopleMap.get(m.person_id);
-                        return (
-                          <option key={m.id} value={m.id}>
-                            {p?.name?.[locale] || p?.slug} ({m.role_title?.[locale] || `Lvl ${m.level}`})
-                          </option>
-                        );
-                      })}
-                  </select>
+                  />
+                  {(() => {
+                    const sec = sectionsMap.get(memberForm.sectionId);
+                    const secTitle = sec?.title?.[formLocale]?.trim();
+                    if (!secTitle) return null;
+                    const presets =
+                      formLocale === 'ar'
+                        ? [`عضو ${secTitle}`, `رئيس ${secTitle}`, `نائب رئيس ${secTitle}`]
+                        : formLocale === 'tr'
+                        ? [`${secTitle} Üyesi`, `${secTitle} Başkanı`, `${secTitle} Başkan Yardımcısı`]
+                        : [`Member of ${secTitle}`, `Head of ${secTitle}`, `Vice Chair of ${secTitle}`];
+                    return (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] text-slate-400">
+                          {L('اختيار سريع:', 'Hızlı seçim:', 'Quick presets:')}
+                        </span>
+                        {presets.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() =>
+                              setMemberForm({
+                                ...memberForm,
+                                roleTitle: { ...memberForm.roleTitle, [formLocale]: preset },
+                              })
+                            }
+                            className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-primary-50 hover:text-primary-700 transition"
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
-              {/* Bios - only when NOT existing person mode */}
+              {/* 2. Profile Photo & Concise 1-Line Summary - only when NOT existing person mode */}
               {!isExistingPersonMode && (
                 <>
-                  {/* Short Bio */}
+                  {/* Profile Photo (Uncropped matching frontend) */}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+                    <label className="block text-xs font-bold text-slate-700">
+                      {L('الصورة الشخصية (تُعرض كاملة بدون قصّ في البطاقة، وكصورة دائرية في الشريط العلوي)', 'Profil Görseli (Kartta Kırpılmadan Tam Görünür)', 'Profile Photo (Displayed Uncropped in Card & Circular in Top Strip)')}
+                    </label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      {/* Dual preview: Top circular avatar + Card uncropped portrait */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-primary-600 ring-offset-2 bg-white shadow-xs">
+                            {memberForm.image ? (
+                              <img
+                                src={memberForm.image}
+                                alt="top-thumb-preview"
+                                className="h-full w-full object-cover object-top"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
+                                <ImageIcon className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {L('الشريط العلوي', 'Üst Şerit', 'Top Bar')}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+                            {memberForm.image ? (
+                              <img
+                                src={memberForm.image}
+                                alt="card-portrait-preview"
+                                className="max-h-full max-w-full h-auto w-auto object-contain"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                <ImageIcon className="h-6 w-6" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {L('البطاقة (بدون قص)', 'Kart (Tam)', 'Card (Uncropped)')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          value={memberForm.image}
+                          onChange={(e) => setMemberForm({ ...memberForm, image: e.target.value })}
+                          placeholder="/media/... أو رابط الصورة"
+                          dir="ltr"
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 focus:border-primary-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setMediaPickerOpen(true)}
+                          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition shadow-2xs shrink-0"
+                        >
+                          {L('اختيار / رفع صورة', 'Görsel Seç / Yükle', 'Pick / Upload Image')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Single Concise Summary Line (shortBio) */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('نبذة مختصرة عن المهمة والمسؤولية', 'Kısa Görev Tanımı', 'Short Role Description')} ({formLocale.toUpperCase()})
+                      {L('سطر تعريفي مختصر (يظهر في البطاقة تحت الصفة — سطر أو سطران كحد أقصى)', 'Kısa Görev Özeti (Kartta Pozisyonun Altında 1-2 Satır Görünür)', 'Concise Summary Line (1-2 lines shown in card below role)')} ({formLocale.toUpperCase()})
                     </label>
                     <textarea
                       rows={2}
@@ -1694,35 +1566,10 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                       }
                       placeholder={
                         formLocale === 'ar'
-                          ? 'مقدمة تعريفية مختصرة تظهر في عرض الملف التعريفي للعضو...'
+                          ? 'مثال: إدارة الشؤون المالية والمحاسبية والموازنات وضمان تطبيق معايير الرقابة المالية.'
                           : formLocale === 'tr'
-                          ? 'Üye profil vitrininde ilk paragraf olarak görünür...'
-                          : 'Lead summary paragraph shown in the member showcase...'
-                      }
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Full Biography */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('السيرة التعريفية الكاملة', 'Tam Biyografi', 'Full Biography')} ({formLocale.toUpperCase()})
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={memberForm.fullBio[formLocale]}
-                      onChange={(e) =>
-                        setMemberForm({
-                          ...memberForm,
-                          fullBio: { ...memberForm.fullBio, [formLocale]: e.target.value },
-                        })
-                      }
-                      placeholder={
-                        formLocale === 'ar'
-                          ? 'السيرة التفصيلية والخبرات التي تظهر في ملف العضو المختار...'
-                          : formLocale === 'tr'
-                          ? 'Seçilen üyenin detaylı biyografi metni...'
-                          : 'Detailed biography text displayed in the featured member profile...'
+                          ? 'Örn: Vakfın mali işlerini, bütçe ve muhasebe süreçlerini yönetir.'
+                          : 'e.g. Oversees financial operations, budgeting, and compliance standards.'
                       }
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
                     />
