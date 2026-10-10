@@ -278,24 +278,15 @@ export default function FeaturedMemberSlider({
     }
   };
 
-  // Resolve biography paragraphs without duplicating identical text
-  const bioParagraphs = useMemo(() => {
-    if (!activeMember) return [];
-    const list: string[] = [];
-    const shortText = activeMember.shortDescription?.trim() || '';
-    const fullText = activeMember.biography?.trim() || '';
-
-    if (shortText) {
-      list.push(shortText);
-    }
-    if (fullText && fullText !== shortText) {
-      const splitFull = fullText
-        .split(/\n+/)
-        .map((p) => p.trim())
-        .filter((p) => p && p !== shortText);
-      list.push(...splitFull);
-    }
-    return list;
+  // Resolve a single concise 1-line summary (no long multi-paragraph biography)
+  const conciseSummary = useMemo(() => {
+    if (!activeMember) return '';
+    const shortText = activeMember.shortDescription?.trim();
+    if (shortText) return shortText;
+    const firstBioLine = activeMember.biography
+      ?.split(/\n+/)[0]
+      ?.trim();
+    return firstBioLine || '';
   }, [activeMember]);
 
   const prevLabel =
@@ -348,7 +339,19 @@ export default function FeaturedMemberSlider({
         onSelectSection={handleSelectSection}
       />
 
-      {/* 2. Main Editorial Leadership Showcase Stage */}
+      {/* 2. Top Member Thumbnail & Role Bar */}
+      {publishedMembers.length > 0 && activeMember && (
+        <MemberThumbnailNavigation
+          members={publishedMembers}
+          activeMemberId={activeMember.id}
+          onSelectMember={handleSelectMember}
+          onInteractionChange={setIsThumbInteracting}
+          autoplayPaused={isAutoplayPaused}
+          autoplayIntervalMs={AUTOPLAY_INTERVAL_MS}
+        />
+      )}
+
+      {/* 3. Compact Horizontal Card Showcase Stage */}
       <div
         id={activeSection ? `org-section-panel-${activeSection.slug}` : undefined}
         role="tabpanel"
@@ -356,9 +359,9 @@ export default function FeaturedMemberSlider({
         onMouseLeave={() => setIsStageHovered(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="relative isolate w-full bg-gradient-to-b from-[#f4f6f8] via-[#eef2f5] to-[#e7ecef]"
+        className="relative isolate w-full bg-gradient-to-b from-[#f4f6f8] via-[#eef2f5] to-[#e7ecef] py-6 sm:py-8 lg:py-10"
       >
-        {/* Subtle diagonal contour texture inspired by the Amber Aviation reference background */}
+        {/* Subtle diagonal contour texture */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-10 opacity-[0.35]"
@@ -368,17 +371,9 @@ export default function FeaturedMemberSlider({
           }}
         />
 
-        {/* Soft studio radial glow on the portrait side */}
-        <div
-          aria-hidden="true"
-          className={`pointer-events-none absolute inset-y-0 -z-10 w-full lg:w-2/3 ${
-            isRtl ? 'left-0' : 'right-0'
-          } bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.85)_0%,rgba(218,8,18,0.035)_45%,transparent_75%)]`}
-        />
-
         {publishedMembers.length === 0 || !activeMember ? (
           /* Empty Section State */
-          <div className="mx-auto max-w-3xl px-4 py-16 sm:py-24 text-center">
+          <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16 text-center">
             <div className="rounded-3xl border border-slate-200/80 bg-white/80 backdrop-blur-md p-8 sm:p-12 shadow-sm">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
                 <Users className="h-7 w-7" />
@@ -399,59 +394,59 @@ export default function FeaturedMemberSlider({
             </div>
           </div>
         ) : (
-          <>
-            {/* Featured Member Stage Container */}
-            <div className="relative mx-auto max-w-7xl px-4 pt-3 pb-4 sm:px-12 sm:pt-4 lg:px-20 lg:pt-4 lg:pb-0">
-              {/* Previous Member Arrow (Start edge: Right in RTL, Left in LTR) */}
-              {publishedMembers.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handlePrevMember}
-                  aria-label={prevLabel}
-                  title={prevLabel}
-                  className="group absolute start-2 sm:start-4 lg:start-6 top-[165px] sm:top-[195px] lg:top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/70 lg:bg-transparent text-dark-700 hover:bg-white hover:text-primary-600 shadow-sm lg:shadow-none ring-1 ring-slate-200/80 lg:ring-0 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 cursor-pointer"
+          <div className="relative mx-auto max-w-5xl px-4 sm:px-14 lg:px-16">
+            {/* Previous Member Arrow (Start edge: Right in RTL, Left in LTR) */}
+            {publishedMembers.length > 1 && (
+              <button
+                type="button"
+                onClick={handlePrevMember}
+                aria-label={prevLabel}
+                title={prevLabel}
+                className="group absolute start-2 sm:start-2 lg:start-1 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/95 text-dark-700 hover:bg-primary-600 hover:text-white shadow-md ring-1 ring-slate-200/90 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 cursor-pointer"
+              >
+                <span
+                  className={`transition-transform duration-200 ${
+                    isRtl
+                      ? 'group-hover:translate-x-0.5'
+                      : 'group-hover:-translate-x-0.5'
+                  }`}
                 >
-                  <span
-                    className={`transition-transform duration-200 ${
-                      isRtl
-                        ? 'group-hover:translate-x-1'
-                        : 'group-hover:-translate-x-1'
-                    }`}
-                  >
-                    <EditorialArrow direction={isRtl ? 'right' : 'left'} />
-                  </span>
-                </button>
-              )}
+                  <EditorialArrow direction={isRtl ? 'right' : 'left'} />
+                </span>
+              </button>
+            )}
 
-              {/* Next Member Arrow (End edge: Left in RTL, Right in LTR) */}
-              {publishedMembers.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handleNextMember}
-                  aria-label={nextLabel}
-                  title={nextLabel}
-                  className="group absolute end-2 sm:end-4 lg:end-6 top-[165px] sm:top-[195px] lg:top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/70 lg:bg-transparent text-dark-700 hover:bg-white hover:text-primary-600 shadow-sm lg:shadow-none ring-1 ring-slate-200/80 lg:ring-0 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 cursor-pointer"
+            {/* Next Member Arrow (End edge: Left in RTL, Right in LTR) */}
+            {publishedMembers.length > 1 && (
+              <button
+                type="button"
+                onClick={handleNextMember}
+                aria-label={nextLabel}
+                title={nextLabel}
+                className="group absolute end-2 sm:end-2 lg:end-1 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/95 text-dark-700 hover:bg-primary-600 hover:text-white shadow-md ring-1 ring-slate-200/90 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600 cursor-pointer"
+              >
+                <span
+                  className={`transition-transform duration-200 ${
+                    isRtl
+                      ? 'group-hover:-translate-x-0.5'
+                      : 'group-hover:translate-x-0.5'
+                  }`}
                 >
-                  <span
-                    className={`transition-transform duration-200 ${
-                      isRtl
-                        ? 'group-hover:-translate-x-1'
-                        : 'group-hover:translate-x-1'
-                    }`}
-                  >
-                    <EditorialArrow direction={isRtl ? 'left' : 'right'} />
-                  </span>
-                </button>
-              )}
+                  <EditorialArrow direction={isRtl ? 'left' : 'right'} />
+                </span>
+              </button>
+            )}
 
-              {/* Main Grid:
-                  Desktop (lg+):
-                  - Text Column is order-1 (58% width): Placed on RIGHT in Arabic RTL, LEFT in Turkish/English LTR.
-                  - Portrait Column is order-2 (42% width): Placed on LEFT in Arabic RTL, RIGHT in Turkish/English LTR.
-                  Mobile (< lg):
-                  - Portrait Column is order-1 (prominent at top).
-                  - Text Column is order-2 (readable details below portrait).
-              */}
+            {/* Compact Horizontal White Card */}
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-20px_rgba(15,23,42,0.10)] px-5 pt-5 pb-6 sm:px-8 sm:pt-6 sm:pb-6 lg:px-10 lg:py-6">
+              {/* Soft radial accent inside the card */}
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-y-0 -z-10 w-full lg:w-1/2 ${
+                  isRtl ? 'left-0' : 'right-0'
+                } bg-[radial-gradient(circle_at_50%_50%,rgba(218,8,18,0.04)_0%,transparent_70%)]`}
+              />
+
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={`${activeSection?.id || activeSection?.slug}-${activeMember.id}`}
@@ -469,151 +464,68 @@ export default function FeaturedMemberSlider({
                   transition={
                     shouldReduceMotion
                       ? { duration: 0.01 }
-                      : { duration: 0.4, ease: smoothEase }
+                      : { duration: 0.36, ease: smoothEase }
                   }
-                  className="grid grid-cols-1 lg:grid-cols-12 items-center lg:items-end gap-5 sm:gap-6 lg:gap-10"
+                  className="grid grid-cols-1 lg:grid-cols-12 items-center gap-5 sm:gap-6 lg:gap-8"
                 >
-                  {/* TEXT COLUMN (58% width on desktop -> 7 of 12 cols) */}
-                  <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col justify-center text-start lg:pb-6 lg:pt-2">
-                    {/* Editorial Breadcrumb & Section Context Line inside the text column (saves ~55px vertical space so portrait starts immediately under tabs) */}
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-dark-500">
-                      <div className="flex items-center gap-1.5">
-                        <Link
-                          to="/"
-                          aria-label={homeLabel}
-                          className="inline-flex items-center text-dark-700 hover:text-primary-600 transition-colors"
-                        >
-                          <Home className="h-3.5 w-3.5" />
-                        </Link>
-                        <BreadcrumbSeparator className="h-3 w-3 text-slate-400" />
-                        <span className="text-dark-500">{pageTitle}</span>
-                        {activeSection?.title && (
-                          <>
-                            <BreadcrumbSeparator className="h-3 w-3 text-slate-400" />
-                            <span className="font-semibold text-primary-700">
-                              {activeSection.title}
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Member counter pill */}
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-0.5 text-[11px] font-semibold text-dark-600 ring-1 ring-slate-200/80">
+                  {/* TEXT COLUMN (Right in RTL, Left in LTR) */}
+                  <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col items-center lg:items-start justify-center text-center lg:text-start">
+                    {/* Compact Section & Counter Pill */}
+                    <div className="mb-3 inline-flex flex-wrap items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-xs text-dark-500 ring-1 ring-slate-200/80">
+                      <Link
+                        to="/"
+                        aria-label={homeLabel}
+                        className="inline-flex items-center text-dark-600 hover:text-primary-600 transition-colors"
+                      >
+                        <Home className="h-3.5 w-3.5" />
+                      </Link>
+                      {activeSection?.title && (
+                        <>
+                          <BreadcrumbSeparator className="h-3 w-3 text-slate-400" />
+                          <span className="font-semibold text-primary-700">
+                            {activeSection.title}
+                          </span>
+                        </>
+                      )}
+                      <span className="text-slate-300">•</span>
+                      <span className="font-semibold text-dark-600">
                         <span className="text-primary-600 font-bold">
                           {String(activeMemberIndex + 1).padStart(2, '0')}
                         </span>
-                        <span className="text-slate-300">/</span>
+                        <span className="mx-0.5 text-slate-300">/</span>
                         <span>{String(publishedMembers.length).padStart(2, '0')}</span>
-                      </div>
+                      </span>
                     </div>
 
-                    {/* Optional Section Description Subtitle */}
-                    {activeSection?.description && (
-                      <motion.p
-                        initial={shouldReduceMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="mb-2.5 text-xs sm:text-[13px] leading-relaxed text-dark-400 max-w-xl line-clamp-2"
-                      >
-                        {activeSection.description}
-                      </motion.p>
-                    )}
-
-                    {/* Featured Member Full Name */}
-                    <motion.h2
-                      initial={
-                        shouldReduceMotion ? false : { opacity: 0, y: 10 }
-                      }
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: shouldReduceMotion ? 0.01 : 0.38,
-                        delay: shouldReduceMotion ? 0 : 0.03,
-                        ease: smoothEase,
-                      }}
-                      className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold text-dark-950 tracking-tight leading-[1.18] text-balance break-words"
-                    >
+                    {/* Member Full Name */}
+                    <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-dark-950 tracking-tight leading-snug text-balance break-words">
                       {activeMember.name}
-                    </motion.h2>
+                    </h2>
 
-                    {/* Featured Member Official Position */}
-                    <motion.p
-                      initial={
-                        shouldReduceMotion ? false : { opacity: 0, y: 8 }
-                      }
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: shouldReduceMotion ? 0.01 : 0.38,
-                        delay: shouldReduceMotion ? 0 : 0.08,
-                        ease: smoothEase,
-                      }}
-                      className="mt-2 sm:mt-2.5 text-base sm:text-lg md:text-[20px] font-normal text-dark-600 leading-snug"
-                    >
-                      {activeMember.position}
-                    </motion.p>
+                    {/* Official Position Badge */}
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary-50/90 px-3.5 py-1 text-sm sm:text-base font-semibold text-primary-700 ring-1 ring-primary-600/15">
+                      <span>{activeMember.position}</span>
+                    </div>
 
                     {/* Subtle brand accent rule */}
-                    <motion.div
-                      initial={
-                        shouldReduceMotion ? false : { scaleX: 0, opacity: 0 }
-                      }
-                      animate={{ scaleX: 1, opacity: 1 }}
-                      transition={{
-                        duration: shouldReduceMotion ? 0.01 : 0.36,
-                        delay: shouldReduceMotion ? 0 : 0.12,
-                        ease: smoothEase,
-                      }}
-                      style={{ transformOrigin: isRtl ? 'right' : 'left' }}
-                      className="mt-3.5 mb-4 h-[2px] w-14 bg-primary-600/80 rounded-full"
-                    />
+                    <div className="mt-3.5 mb-3 h-[2px] w-12 bg-primary-600/80 rounded-full" />
 
-                    {/* Biography & Introduction Paragraphs */}
-                    {bioParagraphs.length > 0 && (
-                      <motion.div
-                        initial={
-                          shouldReduceMotion ? false : { opacity: 0, y: 10 }
-                        }
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: shouldReduceMotion ? 0.01 : 0.4,
-                          delay: shouldReduceMotion ? 0 : 0.14,
-                          ease: smoothEase,
-                        }}
-                        className="space-y-2.5 max-w-2xl"
-                      >
-                        {bioParagraphs.map((paragraph, pIdx) => (
-                          <p
-                            key={pIdx}
-                            className={`text-sm sm:text-[15px] leading-[1.75] ${
-                              pIdx === 0 && bioParagraphs.length > 1
-                                ? 'text-dark-800 font-medium'
-                                : 'text-dark-600'
-                            }`}
-                          >
-                            {paragraph}
-                          </p>
-                        ))}
-                      </motion.div>
+                    {/* Single Concise Summary Line (clamped to max 2 lines) */}
+                    {conciseSummary && (
+                      <p className="text-sm sm:text-[15px] leading-relaxed text-dark-600 max-w-xl line-clamp-2">
+                        {conciseSummary}
+                      </p>
                     )}
                   </div>
 
-                  {/* PORTRAIT COLUMN (42% width on desktop -> 5 of 12 cols) */}
-                  <div className="order-1 lg:order-2 lg:col-span-5 flex items-end justify-center lg:-mb-3">
+                  {/* PORTRAIT COLUMN (Left in RTL, Right in LTR) */}
+                  <div className="order-1 lg:order-2 lg:col-span-5 flex items-end justify-center lg:-mb-4">
                     <FeaturedMemberPortrait member={activeMember} />
                   </div>
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            {/* 3. Horizontal Bottom Thumbnail Navigation Strip */}
-            <MemberThumbnailNavigation
-              members={publishedMembers}
-              activeMemberId={activeMember.id}
-              onSelectMember={handleSelectMember}
-              onInteractionChange={setIsThumbInteracting}
-              autoplayPaused={isAutoplayPaused}
-              autoplayIntervalMs={AUTOPLAY_INTERVAL_MS}
-            />
-          </>
+          </div>
         )}
       </div>
     </div>

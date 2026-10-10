@@ -48,7 +48,7 @@ export default function FeaturedMemberPortrait({ member }: FeaturedMemberPortrai
         className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[210px] w-[210px] sm:h-[260px] sm:w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary-500/10"
       />
 
-      {/* Portrait Frame with the exact same rounded arch and bottom editorial dissolve, sized to fit with bottom thumbnails in one viewport */}
+      {/* Portrait Frame sized for the compact horizontal card */}
       <motion.div
         initial={
           shouldReduceMotion
@@ -61,7 +61,7 @@ export default function FeaturedMemberPortrait({ member }: FeaturedMemberPortrai
             ? { duration: 0.01 }
             : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
         }
-        className="relative mx-auto w-full max-w-[310px] sm:max-w-[360px] lg:max-w-[410px] h-[310px] sm:h-[360px] lg:h-[clamp(330px,46vh,430px)] overflow-hidden rounded-t-[2.5rem] [mask-image:linear-gradient(to_bottom,black_76%,rgba(0,0,0,0.65)_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_76%,rgba(0,0,0,0.65)_90%,transparent_100%)]"
+        className="relative mx-auto w-full max-w-[260px] sm:max-w-[300px] lg:max-w-[320px] h-[250px] sm:h-[290px] lg:h-[315px] overflow-hidden rounded-t-[2.25rem] [mask-image:linear-gradient(to_bottom,black_78%,rgba(0,0,0,0.65)_92%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_78%,rgba(0,0,0,0.65)_92%,transparent_100%)]"
       >
         {hasValidImage ? (
           <div className="relative h-full w-full bg-gradient-to-b from-white/60 via-slate-100/40 to-transparent">

@@ -128,14 +128,14 @@ export default function MemberThumbnailNavigation({
       onBlurCapture={() => onInteractionChange?.(false)}
       onTouchStart={() => onInteractionChange?.(true)}
       onTouchEnd={() => onInteractionChange?.(false)}
-      className="relative z-20 w-full border-t border-white/80 bg-[#e6ebee]/85 backdrop-blur-md"
+      className="relative z-20 w-full border-b border-slate-200/85 bg-white/85 backdrop-blur-md shadow-[0_4px_20px_-12px_rgba(15,23,42,0.06)]"
     >
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
         <div
           ref={scrollRef}
           className="no-scrollbar flex items-start overflow-x-auto py-3 sm:py-3.5 px-2"
         >
-          <div className="mx-auto flex w-full items-start justify-start md:justify-center gap-3 sm:gap-4 md:gap-3 lg:gap-5">
+          <div className="mx-auto flex w-full items-start justify-start md:justify-center gap-3 sm:gap-5 md:gap-6 lg:gap-8">
             {members.map((member, index) => {
               const isActive = member.id === activeMemberId;
 
@@ -150,38 +150,28 @@ export default function MemberThumbnailNavigation({
                   onKeyDown={(e) => handleKeyDown(e, index)}
                   aria-current={isActive ? 'true' : undefined}
                   aria-label={`${member.name} — ${member.position}`}
-                  className="group relative flex w-[112px] sm:w-[126px] md:w-auto md:flex-1 md:min-w-[104px] md:max-w-[148px] shrink-0 md:shrink flex-col items-center text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 rounded-xl cursor-pointer select-none px-1"
+                  title={`${member.name} — ${member.position}`}
+                  className="group relative flex w-[104px] sm:w-[120px] md:w-auto md:min-w-[108px] md:max-w-[150px] shrink-0 md:shrink flex-col items-center text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-600 rounded-xl cursor-pointer select-none px-1.5 py-0.5"
                 >
                   {/* Fixed-height avatar stage so active scaling never shifts layout */}
-                  <div className="relative flex h-[66px] sm:h-[76px] w-full items-center justify-center">
+                  <div className="relative flex h-[60px] sm:h-[68px] w-full items-center justify-center">
                     <div
                       className={`relative overflow-hidden rounded-full transition-all duration-300 ease-out ${
                         isActive
-                          ? 'h-[62px] w-[62px] sm:h-[72px] sm:w-[72px] ring-[2.5px] ring-primary-600 ring-offset-[3px] ring-offset-[#e8ecef] shadow-[0_10px_22px_rgba(218,8,18,0.22)]'
-                          : 'h-[50px] w-[50px] sm:h-[58px] sm:w-[58px] ring-1 ring-slate-300/90 opacity-80 group-hover:opacity-100 group-hover:scale-105 group-hover:ring-primary-400 shadow-sm'
+                          ? 'h-[56px] w-[56px] sm:h-[64px] sm:w-[64px] ring-[2.5px] ring-primary-600 ring-offset-[3px] ring-offset-white shadow-[0_8px_20px_rgba(218,8,18,0.22)]'
+                          : 'h-[46px] w-[46px] sm:h-[52px] sm:w-[52px] ring-1 ring-slate-300/90 opacity-80 group-hover:opacity-100 group-hover:scale-105 group-hover:ring-primary-400 shadow-xs'
                       }`}
                     >
                       <ThumbnailAvatar member={member} isActive={isActive} />
                     </div>
                   </div>
 
-                  {/* Member Name */}
+                  {/* Member Official Position (Role) */}
                   <span
-                    className={`mt-1.5 line-clamp-1 sm:line-clamp-2 text-xs sm:text-[13px] leading-snug transition-colors duration-200 ${
+                    className={`mt-1.5 line-clamp-1 text-xs sm:text-[13px] leading-snug transition-colors duration-200 ${
                       isActive
-                        ? 'font-extrabold text-dark-950'
-                        : 'font-bold text-dark-800 group-hover:text-primary-600'
-                    }`}
-                  >
-                    {member.name}
-                  </span>
-
-                  {/* Member Official Position */}
-                  <span
-                    className={`mt-0.5 line-clamp-1 text-[11px] sm:text-xs leading-tight transition-colors duration-200 ${
-                      isActive
-                        ? 'font-semibold text-primary-700'
-                        : 'font-normal text-dark-500 group-hover:text-dark-700'
+                        ? 'font-bold text-primary-700'
+                        : 'font-medium text-dark-600 group-hover:text-dark-950'
                     }`}
                   >
                     {member.position}
