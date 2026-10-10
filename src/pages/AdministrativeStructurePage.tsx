@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ShieldCheck, Scale, FileText, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, ArrowRight, ShieldCheck, Scale, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
-import SectionHeading from '@/components/ui/SectionHeading';
-import OrgChartTree from '@/components/structure/OrgChartTree';
-import OrgSectionCards from '@/components/structure/OrgSectionCards';
+import FeaturedMemberSlider from '@/components/structure/FeaturedMemberSlider';
 import ParticipationCTA from '@/components/sections/ParticipationCTA';
 import { getAboutContent, aboutRoutes } from '@/data/about';
 import { useI18n } from '@/i18n/useI18n';
@@ -14,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { isPreviewFrame } from '@/cms/preview';
 
 export default function AdministrativeStructurePage() {
-  const { locale, isRtl, contentVersion } = useI18n();
+  const { locale, isRtl } = useI18n();
   const page = getAboutContent(locale).structure;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
@@ -120,7 +117,7 @@ export default function AdministrativeStructurePage() {
         </div>
       )}
 
-      <main className="min-h-screen bg-slate-50/60 pb-20">
+      <main className="min-h-screen bg-[#f4f6f8] pb-20">
         {/* Page Hero */}
         <PageHero
           id="cms-structure-hero"
@@ -131,87 +128,22 @@ export default function AdministrativeStructurePage() {
           breadcrumbs={page.breadcrumbs}
         />
 
-        {/* Introduction Section */}
-        <section id="cms-structure-intro" className="relative pt-16 pb-6 md:pt-20 md:pb-8">
-          <div className="mx-auto max-w-4xl px-4 text-center md:px-8">
-            <SectionHeading
-              eyebrow={page.intro.eyebrow}
-              title={page.intro.title}
-              description={page.intro.subtitle}
-              align="center"
-            />
-
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-6 text-base sm:text-lg leading-relaxed text-dark-600 max-w-3xl mx-auto"
-            >
-              {page.intro.description}
-            </motion.p>
+        {/* Editorial Leadership Showcase (Section Navigation + Featured Member Slider + Thumbnails) */}
+        <section id="cms-structure-chart" className="relative">
+          <div id="cms-structure-intro" className="sr-only">
+            <h2>{page.intro.title}</h2>
+            <p>{page.intro.description}</p>
           </div>
+
+          <FeaturedMemberSlider
+            sections={page.sections}
+            fallbackMembers={page.members}
+            pageTitle={page.hero.title}
+          />
         </section>
 
-        {/* Organizational Sections (All bodies rendered in configured order) */}
-        {page.sections && page.sections.length > 0 ? (
-          page.sections
-            .filter((section) => section.published !== false)
-            .sort((a, b) => a.order - b.order)
-            .map((section, index) => {
-              const isFirst = index === 0;
-              return (
-                <section
-                  key={section.id || section.slug}
-                  id={`cms-structure-${section.slug}`}
-                  className={`relative ${
-                    isFirst
-                      ? 'py-4 md:py-8'
-                      : 'pt-16 pb-8 md:pt-20 md:pb-12 border-t border-slate-200/80'
-                  }`}
-                >
-                  {isFirst ? (
-                    <div className="mx-auto max-w-4xl px-4 text-center md:px-8 mb-6">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1 text-xs font-bold text-primary-700 border border-primary-100 shadow-xs">
-                        <span>01</span>
-                        <span>•</span>
-                        <span>{section.title}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mx-auto max-w-4xl px-4 text-center md:px-8 mb-8 md:mb-12">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1 text-xs font-bold text-primary-700 border border-primary-100 mb-3 shadow-xs">
-                        <span>{String(index + 1).padStart(2, '0')}</span>
-                        <span>•</span>
-                        <span>{section.title}</span>
-                      </div>
-                      <h2 className="text-2xl sm:text-3xl font-bold text-dark-900 tracking-tight">
-                        {section.title}
-                      </h2>
-                      {section.description && (
-                        <p className="mt-3 text-base sm:text-lg leading-relaxed text-dark-600 max-w-3xl mx-auto">
-                          {section.description}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {section.layoutType === 'chart' ? (
-                    <OrgChartTree members={section.members} />
-                  ) : (
-                    <OrgSectionCards section={section} />
-                  )}
-                </section>
-              );
-            })
-        ) : (
-          <section id="cms-structure-chart" className="py-4 md:py-8">
-            <OrgChartTree members={page.members} />
-          </section>
-        )}
-
         {/* Governance & Institutional Integrity Card */}
-        <section className="mx-auto max-w-5xl px-4 py-10 md:px-8">
+        <section className="mx-auto max-w-6xl px-4 pt-14 pb-10 md:px-8">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-dark-950 via-dark-900 to-primary-950 p-6 sm:p-8 md:p-10 text-white shadow-xl">
             <div className="absolute -end-24 -top-24 h-64 w-64 rounded-full bg-primary-600/15 blur-3xl" />
             <div className="absolute -start-24 -bottom-24 h-64 w-64 rounded-full bg-gold-500/10 blur-3xl" />
@@ -250,4 +182,3 @@ export default function AdministrativeStructurePage() {
     </>
   );
 }
-

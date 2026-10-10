@@ -1525,44 +1525,62 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                     </div>
                   </div>
 
-                  {/* Profile Photo with MediaPicker */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('الصورة الشخصية', 'Profil Görseli', 'Profile Photo')}
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
-                        {memberForm.image ? (
-                          <img
-                            src={memberForm.image}
-                            alt="preview"
-                            className="h-full w-full object-cover"
-                            style={{ objectPosition: memberForm.imagePosition }}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-slate-400">
-                            <ImageIcon className="h-6 w-6" />
-                          </div>
-                        )}
-                      </div>
+                  {/* Profile Photo with MediaPicker & Framing Position */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        {L('الصورة الشخصية', 'Profil Görseli', 'Profile Photo')}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-2xs">
+                          {memberForm.image ? (
+                            <img
+                              src={memberForm.image}
+                              alt="preview"
+                              className="h-full w-full object-cover"
+                              style={{ objectPosition: memberForm.imagePosition }}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-slate-400">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="flex-1 flex gap-2">
-                        <input
-                          type="text"
-                          value={memberForm.image}
-                          onChange={(e) => setMemberForm({ ...memberForm, image: e.target.value })}
-                          placeholder="/media/... أو رابط الصورة"
-                          dir="ltr"
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600 focus:border-primary-500 focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setMediaPickerOpen(true)}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs shrink-0"
-                        >
-                          {L('اختيار / رفع صورة', 'Görsel Seç / Yükle', 'Pick / Upload Image')}
-                        </button>
+                        <div className="flex-1 flex gap-2">
+                          <input
+                            type="text"
+                            value={memberForm.image}
+                            onChange={(e) => setMemberForm({ ...memberForm, image: e.target.value })}
+                            placeholder="/media/... أو رابط الصورة"
+                            dir="ltr"
+                            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600 focus:border-primary-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setMediaPickerOpen(true)}
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs shrink-0"
+                          >
+                            {L('اختيار / رفع صورة', 'Görsel Seç / Yükle', 'Pick / Upload Image')}
+                          </button>
+                        </div>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        {L('محاذاة الوجه في الصورة', 'Görsel Hizalama', 'Portrait Framing')}
+                      </label>
+                      <select
+                        value={memberForm.imagePosition}
+                        onChange={(e) => setMemberForm({ ...memberForm, imagePosition: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:border-primary-500 focus:outline-none mt-1.5"
+                      >
+                        <option value="center 10%">{L('أعلى (10%)', 'Üst (10%)', 'Top (10%)')}</option>
+                        <option value="center 20%">{L('أعلى منتصف (20% - افتراضي)', 'Üst Orta (20%)', 'Upper Center (20%)')}</option>
+                        <option value="center 35%">{L('منتصف علوي (35%)', 'Orta Üst (35%)', 'Mid Upper (35%)')}</option>
+                        <option value="center 50%">{L('المنتصف (50%)', 'Merkez (50%)', 'Center (50%)')}</option>
+                      </select>
                     </div>
                   </div>
                 </>
@@ -1604,7 +1622,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                   {/* Level Selection */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {L('المستوى الإداري في الشجرة', 'Hiyerarşik Kademe', 'Hierarchy Level')} *
+                      {L('المستوى الإداري', 'Hiyerarşik Kademe', 'Hierarchy Level')} *
                     </label>
                     <select
                       value={memberForm.level}
@@ -1623,7 +1641,7 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                   </div>
                 </div>
 
-                {/* Optional Hierarchy Parent (only shown for hierarchical sections or if parent exists) */}
+                {/* Optional Hierarchy Parent */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     {L('المسؤول المباشر في التسلسل (اختياري)', 'Bağlı Olduğu Yönetici (İsteğe Bağlı)', 'Reporting Supervisor (Hierarchy)')}
@@ -1654,9 +1672,6 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                         );
                       })}
                   </select>
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    {L('في الشجرة التنظيمية، تخرج خطوط التبعية من هذا المسؤول المباشر إلى العضو.', 'Organizasyon şemasında bağlantı çizgisi bu yöneticiden gelir.', 'In chart layout, connector lines will flow from this supervisor.')}
-                  </p>
                 </div>
               </div>
 
@@ -1679,10 +1694,10 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                       }
                       placeholder={
                         formLocale === 'ar'
-                          ? 'تظهر في البطاقة التعريفية مباشرة...'
+                          ? 'مقدمة تعريفية مختصرة تظهر في عرض الملف التعريفي للعضو...'
                           : formLocale === 'tr'
-                          ? 'Kart üzerinde görünür...'
-                          : 'Shown on the profile card...'
+                          ? 'Üye profil vitrininde ilk paragraf olarak görünür...'
+                          : 'Lead summary paragraph shown in the member showcase...'
                       }
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
                     />
@@ -1704,10 +1719,10 @@ export default function OrgStructureManager({ tone }: OrgStructureManagerProps) 
                       }
                       placeholder={
                         formLocale === 'ar'
-                          ? 'تظهر عند النقر على "عرض السيرة" في النافذة المنبثقة...'
+                          ? 'السيرة التفصيلية والخبرات التي تظهر في ملف العضو المختار...'
                           : formLocale === 'tr'
-                          ? '"Profili Gör" tıklandığında açılan pencerede görünür...'
-                          : 'Shown in the modal when clicking "View Profile"...'
+                          ? 'Seçilen üyenin detaylı biyografi metni...'
+                          : 'Detailed biography text displayed in the featured member profile...'
                       }
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-500 focus:outline-none"
                     />

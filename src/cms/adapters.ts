@@ -495,6 +495,7 @@ export function cmsStructure(
       const members: import('@/data/about').AdministrativeMember[] = secMemberships.map((m) => {
         const person = peopleMap.get(m.person_id) ?? peopleBySlug.get(m.person_id);
         const name = locText(person?.name, locale, '');
+        const shortName = locText(person?.short_name, locale, '');
         const position = locText(m.role_title, locale, '');
         const shortBio = locText(person?.short_bio, locale, '');
         const fullBio = locText(person?.full_bio, locale, '');
@@ -502,6 +503,7 @@ export function cmsStructure(
         return {
           id: m.id,
           name,
+          shortName: shortName || undefined,
           position,
           level: (m.level >= 1 && m.level <= 3 ? m.level : 3) as 1 | 2 | 3,
           order: m.sort_order ?? 0,
