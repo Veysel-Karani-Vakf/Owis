@@ -77,7 +77,7 @@ export default function OrganizationSectionTabs({
             ref={scrollContainerRef}
             role="tablist"
             aria-label={navAriaLabel}
-            className="no-scrollbar flex items-center justify-start md:justify-center gap-2 sm:gap-6 md:gap-10 overflow-x-auto"
+            className="no-scrollbar flex items-center justify-start md:justify-center gap-1.5 sm:gap-3 md:gap-5 overflow-x-auto py-1.5"
           >
             {sections.map((section, index) => {
               const key = section.id || section.slug;
@@ -97,17 +97,30 @@ export default function OrganizationSectionTabs({
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => onSelectSection(section)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
-                  className={`group relative shrink-0 whitespace-nowrap px-3 sm:px-5 py-2.5 sm:py-3.5 text-sm sm:text-base md:text-[16px] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-600 cursor-pointer select-none ${
+                  className={`group relative shrink-0 whitespace-nowrap rounded-xl px-3.5 sm:px-5 py-2 sm:py-2.5 text-sm sm:text-base md:text-[16px] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary-600 cursor-pointer select-none ${
                     isActive
-                      ? 'font-bold text-dark-950'
-                      : 'font-medium text-dark-500 hover:text-dark-900'
+                      ? 'font-bold text-primary-700'
+                      : 'font-medium text-dark-500 hover:bg-white/50 hover:text-dark-900'
                   }`}
                 >
+                  {/* Animated pill background for active tab */}
+                  {isActive && (
+                    <motion.span
+                      layoutId="org-section-active-pill"
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0.01 }
+                          : { type: 'spring', stiffness: 380, damping: 32 }
+                      }
+                      className="absolute inset-0 z-0 rounded-xl bg-white shadow-[0_2px_12px_-3px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.06]"
+                    />
+                  )}
+
                   <span className="relative z-10 flex items-center gap-2">
                     <span>{section.title}</span>
                   </span>
 
-                  {/* Active bottom bar indicator matching reference screenshot */}
+                  {/* Active bottom bar indicator */}
                   {isActive ? (
                     <motion.div
                       layoutId="org-section-active-bar"
@@ -116,10 +129,10 @@ export default function OrganizationSectionTabs({
                           ? { duration: 0.01 }
                           : { type: 'spring', stiffness: 380, damping: 32 }
                       }
-                      className="absolute inset-x-0 -bottom-[1px] z-20 h-[3px] bg-primary-600"
+                      className="absolute inset-x-2.5 -bottom-[7px] z-20 h-[3px] rounded-t-full bg-primary-600"
                     />
                   ) : (
-                    <span className="absolute inset-x-3 -bottom-[1px] h-[2px] scale-x-0 bg-slate-400/50 transition-transform duration-200 group-hover:scale-x-100" />
+                    <span className="absolute inset-x-3 -bottom-[7px] h-[2px] scale-x-0 rounded-t-full bg-slate-400/50 transition-transform duration-200 group-hover:scale-x-100" />
                   )}
                 </button>
               );
