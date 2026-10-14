@@ -139,23 +139,38 @@ export default function PioneersAccordionGallery({
   const { isRtl, locale } = useI18n();
   const navigate = useNavigate();
 
-  // 1. Available cohorts fallback
-  const availableCohorts = useMemo(() => {
-    if (cohorts && cohorts.length > 0) return cohorts;
-    const map = new Map<string, Cohort>();
+  // Count pioneers in each cohort for badges and active filtering
+  const cohortCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
     pioneers.forEach((p) => {
-      if (p.cohortId && !map.has(p.cohortId)) {
-        map.set(p.cohortId, {
+      if (p.cohortId) {
+        counts[p.cohortId] = (counts[p.cohortId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [pioneers]);
+
+  // 1. Available cohorts: Only include cohorts that actually contain at least one published pioneer
+  const availableCohorts = useMemo(() => {
+    const cohortMap = new Map<string, Cohort>();
+    (cohorts || []).forEach((c) => {
+      cohortMap.set(c.id, c);
+    });
+
+    pioneers.forEach((p) => {
+      if (p.cohortId && !cohortMap.has(p.cohortId)) {
+        cohortMap.set(p.cohortId, {
           id: p.cohortId,
           title: p.cohortName || p.cohortId,
           shortTitle: p.cohortName || p.cohortId,
           year: '',
-          order: map.size + 1,
+          order: cohortMap.size + 1,
         });
       }
     });
-    return Array.from(map.values());
-  }, [cohorts, pioneers]);
+
+    return Array.from(cohortMap.values()).filter((c) => (cohortCounts[c.id] || 0) > 0);
+  }, [cohorts, pioneers, cohortCounts]);
 
   // 2. Selected cohort state
   const [selectedCohortId, setSelectedCohortId] = useState<string>(() => {
@@ -171,17 +186,6 @@ export default function PioneersAccordionGallery({
       setSelectedCohortId(availableCohorts[0].id);
     }
   }, [availableCohorts, selectedCohortId]);
-
-  // Count pioneers in each cohort for badges
-  const cohortCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    pioneers.forEach((p) => {
-      if (p.cohortId) {
-        counts[p.cohortId] = (counts[p.cohortId] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [pioneers]);
 
   // Filter all pioneers for the selected cohort
   const cohortPioneers = useMemo(() => {
@@ -292,6 +296,20 @@ export default function PioneersAccordionGallery({
   const maxRowLength = Math.max(...rows.map((r) => r.length), 4);
   const containerMaxWidth =
     maxRowLength <= 3 ? 'max-w-3xl' : maxRowLength === 4 ? 'max-w-4xl' : 'max-w-5xl';
+
+  if (pioneers.length === 0 || availableCohorts.length === 0) {
+    return (
+      <div className="w-full py-16 text-center">
+        <p role="status" className="text-base text-dark-500">
+          {locale === 'ar'
+            ? 'لا يوجد رواد منشورون حالياً.'
+            : locale === 'tr'
+              ? 'Şu anda yayımlanan öncü bulunmamaktadır.'
+              : 'There are currently no published pioneers.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -579,17 +597,19 @@ export default function PioneersAccordionGallery({
       </AnimatePresence>
 
       {/* 3. Subtle Cohort Statistics Summary Badge (No pagination) */}
-      <div className="mt-6 flex justify-center sm:mt-8">
-        <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/90 px-4 py-1.5 text-xs font-semibold text-dark-600 shadow-2xs">
-          <span>
-            {locale === 'ar'
-              ? `إجمالي رواد هذه الدفعة: ${cohortPioneers.length} رائد ورائدة`
-              : locale === 'tr'
-              ? `Bu dönem toplamı: ${cohortPioneers.length} Öncü`
-              : `Total Pioneers in this Cohort: ${cohortPioneers.length}`}
-          </span>
+      {cohortPioneers.length > 0 && (
+        <div className="mt-6 flex justify-center sm:mt-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/90 px-4 py-1.5 text-xs font-semibold text-dark-600 shadow-2xs">
+            <span>
+              {locale === 'ar'
+                ? `إجمالي رواد هذه الدفعة: ${cohortPioneers.length} رائد ورائدة`
+                : locale === 'tr'
+                ? `Bu dönem toplamı: ${cohortPioneers.length} Öncü`
+                : `Total Pioneers in this Cohort: ${cohortPioneers.length}`}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
