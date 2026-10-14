@@ -4,6 +4,8 @@ import { Link, Navigate } from 'react-router-dom';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneersAccordionGallery from '@/components/pioneers/PioneersAccordionGallery';
+import PioneersLoadStatus from '@/components/pioneers/PioneersLoadStatus';
+import { cmsRows } from '@/cms/store';
 import { getPioneersContent } from '@/data/pioneers';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -63,11 +65,15 @@ export default function PioneersGalleryPage() {
         {/* The Interactive Accordion Gallery Section */}
         <section className="py-8 md:py-10">
           <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-            <PioneersAccordionGallery
-              cohorts={content.cohorts}
-              pioneers={content.pioneers}
-              ctaLabel={content.gallery.viewBiography}
-            />
+            {cmsRows('pioneers') === null ? (
+              <PioneersLoadStatus />
+            ) : (
+              <PioneersAccordionGallery
+                cohorts={content.cohorts}
+                pioneers={content.pioneers}
+                ctaLabel={content.gallery.viewBiography}
+              />
+            )}
           </div>
         </section>
 

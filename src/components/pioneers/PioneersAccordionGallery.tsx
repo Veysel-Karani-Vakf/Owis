@@ -193,7 +193,7 @@ export default function PioneersAccordionGallery({
 
     if (!selectedCohortId) return portraitsFirst(pioneers);
     const filtered = pioneers.filter((p) => p.cohortId === selectedCohortId);
-    return portraitsFirst(filtered.length > 0 ? filtered : pioneers);
+    return portraitsFirst(filtered);
   }, [pioneers, selectedCohortId]);
 
   // 3. SINGLE GLOBALLY CONTROLLED ACTIVE PIONEER STATE ACROSS ALL ROWS
@@ -288,10 +288,6 @@ export default function PioneersAccordionGallery({
     }
   };
 
-  if (!pioneers || pioneers.length === 0) {
-    return null;
-  }
-
   // Determine row container max width based on cards per row
   const maxRowLength = Math.max(...rows.map((r) => r.length), 4);
   const containerMaxWidth =
@@ -344,6 +340,15 @@ export default function PioneersAccordionGallery({
       )}
 
       {/* 2. Multi-Row Gallery Container with Smooth Cohort Cross-Fade */}
+      {cohortPioneers.length === 0 && (
+        <p role="status" className="py-12 text-center text-dark-500">
+          {locale === 'ar'
+            ? 'لا يوجد رواد منشورون في هذه الدفعة حالياً.'
+            : locale === 'tr'
+              ? 'Bu kafilede henüz yayımlanan öncü yok.'
+              : 'There are currently no published pioneers in this cohort.'}
+        </p>
+      )}
       <AnimatePresence mode="wait">
         <motion.div
           key={`cohort-gallery-${selectedCohortId}`}

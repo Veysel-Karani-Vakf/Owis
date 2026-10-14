@@ -17,7 +17,9 @@ import {
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import PageSeo from '@/components/internal/PageSeo';
 import PioneerPortrait from '@/components/pioneers/PioneerPortrait';
-import { getPioneersContent, getPioneerBySlug } from '@/data/pioneers';
+import { getPioneersContent } from '@/data/pioneers';
+import PioneersLoadStatus from '@/components/pioneers/PioneersLoadStatus';
+import { cmsRows } from '@/cms/store';
 import { useI18n } from '@/i18n/useI18n';
 
 export default function PioneerBioPage() {
@@ -34,6 +36,14 @@ export default function PioneerBioPage() {
 
   if (content.visible === false) {
     return <Navigate to="/programs/yemen-pioneers" replace />;
+  }
+
+  if (cmsRows('pioneers') === null) {
+    return (
+      <main className="min-h-screen pt-32">
+        <PioneersLoadStatus />
+      </main>
+    );
   }
 
   if (!pioneer) {

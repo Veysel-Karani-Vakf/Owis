@@ -36,11 +36,10 @@ async function fetchTable(table: TableName) {
     .select('*')
     .order(sort.column, { ascending: sort.ascending, nullsFirst: false });
 
-  // For pioneers and org tables, unpublished rows are fetched so the CMS adapter knows which
+  // For org tables, unpublished rows are fetched so the CMS adapter knows which
   // slugs are in the database and explicitly marked hidden, preventing them
   // from resurrecting from the static fallback data.
   if (
-    table !== 'pioneers' &&
     table !== 'org_people' &&
     table !== 'org_sections' &&
     table !== 'org_memberships'

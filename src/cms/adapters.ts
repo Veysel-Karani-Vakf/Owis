@@ -392,7 +392,9 @@ export function cmsPioneers(
   cohorts: Cohort[],
 ): Pioneer[] {
   const rows = cmsRows('pioneers');
-  if (!rows) return fallback;
+  // Only the CMS can authorize a pioneer for public display, including while
+  // loading or offline. Static profiles only fill fields of published rows.
+  if (!rows) return [];
   const defaults = bySlug(fallback);
   const cohortNameMap = new Map(cohorts.map((c) => [c.id, c.title]));
 
@@ -449,10 +451,7 @@ export function cmsPioneers(
       };
     });
 
-  const cmsSlugs = new Set(rows.map((r) => r.slug));
-  const remainingFallbacks = fallback.filter((p) => !cmsSlugs.has(p.slug));
-
-  return [...fromCms, ...remainingFallbacks];
+  return fromCms;
 }
 
 // ORGANIZATIONAL STRUCTURE --------------------------------------------------

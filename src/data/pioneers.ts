@@ -2715,8 +2715,13 @@ function withCompleteRoster(base: PioneersPageContent, locale: Locale): Pioneers
   return { ...base, cohorts, pioneers };
 }
 
+/** Static source for imports; public pages must use getPioneersContent. */
+export function getStaticPioneersContent(locale: Locale): PioneersPageContent {
+  return withCompleteRoster(defaultPioneersData[locale], locale);
+}
+
 export function getPioneersContent(locale: Locale): PioneersPageContent {
-  const base = withCompleteRoster(defaultPioneersData[locale], locale);
+  const base = getStaticPioneersContent(locale);
   const page = cmsPageContent('pioneers-page', locale, base);
   const pioneers = cmsPioneers(locale, page.pioneers, page.cohorts);
   return { ...page, pioneers };

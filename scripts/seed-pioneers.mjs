@@ -33,10 +33,10 @@ let trPioneers = [];
 let enPioneers = [];
 
 try {
-  const { getPioneersContent } = await server.ssrLoadModule('/src/data/pioneers.ts');
-  arPioneers = getPioneersContent('ar').pioneers;
-  trPioneers = getPioneersContent('tr').pioneers;
-  enPioneers = getPioneersContent('en').pioneers;
+  const { getStaticPioneersContent } = await server.ssrLoadModule('/src/data/pioneers.ts');
+  arPioneers = getStaticPioneersContent('ar').pioneers;
+  trPioneers = getStaticPioneersContent('tr').pioneers;
+  enPioneers = getStaticPioneersContent('en').pioneers;
 } finally {
   await server.close();
 }

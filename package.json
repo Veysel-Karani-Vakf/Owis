@@ -19,6 +19,7 @@
     "db:check": "node scripts/db.mjs check",
     "test:bank-accounts": "node scripts/check-bank-accounts.mjs",
     "test:program-admin": "node scripts/check-program-admin.mjs",
+    "test:pioneers": "node scripts/check-pioneers.mjs",
     "cms:sync-programs": "node scripts/sync-program-content.mjs"
   },
   "dependencies": {
