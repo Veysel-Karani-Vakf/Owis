@@ -54,6 +54,7 @@ import VolunteerGoals from '@/components/programs/VolunteerGoals';
 import VolunteerStatement from '@/components/programs/VolunteerStatement';
 import VolunteerSteps from '@/components/programs/VolunteerSteps';
 import VideoModal from '@/components/ui/VideoModal';
+import { isCmsSettled } from '@/cms/store';
 import { donateRoute } from '@/data/donate';
 import { participateRoutes } from '@/data/participate';
 import {
@@ -1710,6 +1711,7 @@ export default function ProgramPage() {
   }, [program, siteName]);
 
   if (!program) {
+    if (!isCmsSettled()) return null;
     return <Navigate to="/" replace />;
   }
 

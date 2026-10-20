@@ -18,6 +18,7 @@ import {
   getSourceLanguageName,
   newsRoutes,
 } from '@/data/news';
+import { isCmsSettled } from '@/cms/store';
 import { getLibraryContent } from '@/data/library';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -57,7 +58,12 @@ export default function NewsArticlePage() {
     };
   }, [article, siteContent.siteConfig.logo, siteContent.siteConfig.name]);
 
-  if (!article) return <Navigate to={newsRoutes.index} replace />;
+  if (!article) {
+    // A direct link to a CMS-only article can land before hydration finishes;
+    // hold the redirect until the fetch settles so the deep link doesn't bounce.
+    if (!isCmsSettled()) return null;
+    return <Navigate to={newsRoutes.index} replace />;
+  }
 
   const related = getRelatedNewsArticles(locale, article.slug, labels.layout.relatedCount);
   const date = formatNewsDate(locale, article.publishedAt);

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import PageSeo from '@/components/internal/PageSeo';
+import { isCmsSettled } from '@/cms/store';
 import { donateRoute } from '@/data/donate';
 import { getDonateCheckoutContent } from '@/data/donateCheckout';
 import { useDonateContent } from '@/hooks/useCmsContent';
@@ -92,6 +93,7 @@ export default function DonateCheckoutPage() {
   const limits = config ?? DEFAULT_PAYMENT_CONFIG;
 
   if (!opportunity || !opportunity.available) {
+    if (!isCmsSettled()) return null;
     return <Navigate to={donateRoute} replace />;
   }
 

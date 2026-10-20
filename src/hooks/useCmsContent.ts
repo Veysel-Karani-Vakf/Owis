@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useCmsVersion } from '@/cms/CmsProvider';
 import { getDonateContent, type DonatePageContent } from '@/data/donate';
 import {
   getDocuments,
@@ -57,7 +58,8 @@ function useCmsValue<T>(fallback: T, load: () => Promise<T | null>, deps: unknow
 }
 
 export function useNewsArticles(locale: Locale) {
-  const fallback = useMemo(() => getNewsArticles(locale), [locale]);
+  const cmsVersion = useCmsVersion();
+  const fallback = useMemo(() => getNewsArticles(locale), [locale, cmsVersion]);
   return useCmsValue(fallback, () => loadNewsArticles(locale), [locale, fallback]);
 }
 
@@ -65,13 +67,14 @@ export function useProjectsContent(
   locale: Locale,
   homeProjects: Project[] = EMPTY_HOME_PROJECTS
 ): ProjectsPageContent {
+  const cmsVersion = useCmsVersion();
   const fallback = useMemo(() => {
     const page = getProjectsContent(locale);
     return {
       ...page,
       projects: applyHomeProjectImages(page.projects, homeProjects),
     };
-  }, [locale, homeProjects]);
+  }, [locale, homeProjects, cmsVersion]);
 
   return useCmsValue(
     fallback,
@@ -103,7 +106,8 @@ export function useHomeProjects(locale: Locale, fallbackProjects: Project[]) {
 }
 
 export function useProgramsContent(locale: Locale): ProgramsPageContent {
-  const fallback = useMemo(() => getProgramsContent(locale), [locale]);
+  const cmsVersion = useCmsVersion();
+  const fallback = useMemo(() => getProgramsContent(locale), [locale, cmsVersion]);
 
   return useCmsValue(
     fallback,
@@ -127,7 +131,8 @@ export function useHomePrograms(locale: Locale, fallbackPrograms: Program[]) {
 }
 
 export function useDonateContent(locale: Locale): DonatePageContent {
-  const fallback = useMemo(() => getDonateContent(locale), [locale]);
+  const cmsVersion = useCmsVersion();
+  const fallback = useMemo(() => getDonateContent(locale), [locale, cmsVersion]);
 
   return useCmsValue(
     fallback,
@@ -165,10 +170,11 @@ export function useLibraryTextItems(locale: Locale, collection: LibraryTextColle
 
 export function useLibraryDocuments(locale: Locale, collection: LibraryDocumentCollectionSlug) {
   const library = useMemo(() => getLibraryContent(locale), [locale]);
+  const cmsVersion = useCmsVersion();
   const fallback = useMemo(() => {
     const info = library.collections[collection];
     return info.documentCollection ? getDocuments(info.documentCollection) : [];
-  }, [collection, library]);
+  }, [collection, library, cmsVersion]);
 
   return useCmsValue(fallback, () => loadLibraryDocuments(locale, collection), [locale, collection, fallback]);
 }

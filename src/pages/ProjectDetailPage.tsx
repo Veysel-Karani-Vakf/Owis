@@ -5,6 +5,7 @@ import FadeContent from '@/components/effects/FadeContent';
 import PageHero from '@/components/internal/PageHero';
 import PageSeo from '@/components/internal/PageSeo';
 import VideoModal from '@/components/ui/VideoModal';
+import { isCmsSettled } from '@/cms/store';
 import { projectRoutes, type LocalizedWaqfProject } from '@/data/projects';
 import { useProjectsContent } from '@/hooks/useCmsContent';
 import { useI18n } from '@/i18n/useI18n';
@@ -99,6 +100,7 @@ export default function ProjectDetailPage() {
   }, [content.siteConfig.name, project]);
 
   if (!project) {
+    if (!isCmsSettled()) return null;
     return <Navigate to={projectRoutes.index} replace />;
   }
 
