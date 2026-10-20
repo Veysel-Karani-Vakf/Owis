@@ -222,6 +222,122 @@ export function getSourceLanguageName(locale: Locale, code: string | undefined) 
 
 const curatedNewsArticles = [
   {
+    "id": "yemen-pioneers-7th-forum-2026",
+    "slug": "yemen-pioneers-7th-forum-2026",
+    "sourceSlug": "yemen-pioneers-7th-forum-2026",
+    "sourceUrl": "https://veysvakfi.org/news/yemen-pioneers-7th-forum-2026",
+    "publishedAt": "2026-10-19T18:00:00+00:00",
+    "year": 2026,
+    "sourceLanguage": "ar",
+    "category": {
+      "ar": "فعاليات",
+      "en": "Events",
+      "tr": "Etkinlikler"
+    },
+    "title": {
+      "ar": "وقف أويس القرني يحتفي بالكوكبة الثانية من رواد اليمن ويختتم ملتقاهم السابع بإسطنبول",
+      "en": "Owais Al-Qarni Waqf Honors Second Cohort of Yemen Pioneers and Concludes Seventh Forum in Istanbul",
+      "tr": "Veysel Karani Vakfı, Yemen Öncüleri’nin İkinci Dönem Mezunlarını İstanbul’da Onurlandırdı ve 7. Buluşmalarını Tamamladı"
+    },
+    "excerpt": {
+      "ar": "احتفى وقف أويس القرني في إسطنبول بتخرّج 17 رائدًا ورائدة من الكوكبة الثانية لرواد اليمن، واختتم ملتقاهم السابع بمشاركة 75 شابًا وشابة في فعاليات علمية وتدريبية.",
+      "en": "Owais Al-Qarni Waqf honored 17 graduates of the second Yemen Pioneers cohort in Istanbul, concluding the Seventh Forum attended by 75 participants.",
+      "tr": "Veysel Karani Vakfı, İstanbul'da lisans eğitimini tamamlayan 17 Yemen Öncüsü'nü onurlandırdı. 75 katılımcılı 7. Yemen Öncüleri Buluşması sona erdi."
+    },
+    "content": {
+      "ar": [
+        "وقف أويس القرني يحتفي بالكوكبة الثانية من رواد اليمن ويختتم ملتقاهم السابع بإسطنبول",
+        "احتفى وقف أويس القرني، يوم الأحد 18 أكتوبر 2026، في مدينة إسطنبول، بالكوكبة الثانية من رواد اليمن، التي تضم 17 رائدا ورائدة أتموا مرحلة البكالوريوس، وذلك في ختام الملتقى السابع لرواد اليمن، الذي شهد مشاركة 75 مشاركا في برنامج متنوع من الأنشطة العلمية والتدريبية والثقافية.",
+        "وجاء الاحتفاء تتويجاً لخمس سنوات من التحصيل العلمي والتأهيل والرعاية، واختتاماً لفعاليات الملتقى التي انطلقت في 15 أكتوبر، وركزت على تطوير قدرات الرواد، وتعزيز جاهزيتهم المهنية، وترسيخ مسؤوليتهم تجاه وطنهم، وإبراز مشاريعهم وابتكاراتهم العلمية.",
+        "وفي كلمة الوقف، أكد الأستاذ صلاح باتيس، رئيس وقف أويس القرني، أن الإنسان اليمني يمثل أعظم ثروات اليمن وركيزته الأساسية للنهوض والتنمية، بما يمتلكه من قدرات على الصبر والتكيف والعمل والإبداع، وما أثبته من فاعلية وحضور إيجابي في المجتمعات التي استقر فيها.",
+        "وأوضح أن تأسيس الوقف جاء استجابةً للحاجة إلى مبادرة تشاركية تستثمر في الإنسان اليمني، وتفتح آفاقا عملية للإسهام في النهوض الحضاري باليمن، داعيا أبناء اليمن ومحبيه، بمختلف مكوناتهم وانتماءاتهم، إلى المشاركة في بناء الوقف وتنمية أصوله وموارده، بما يضمن استدامة برامجه وتوسيع أثره في خدمة اليمن ومستقبله.",
+        "من جانبها، ألقت الرائدة آلاء عبد الحكيم كلمة الكوكبة الثانية، مستعرضةً رحلة امتدت خمس سنوات، تجاوز خلالها الرواد تحديات الحرب والغربة إلى رحاب العلم والإنجاز، مشيدةً بدور الوقف ومؤسسيه وكادره والمساهمين فيه، وما قدموه من رعاية وتوجيه ومساندة.",
+        "وعبّرت عن امتنان الكوكبة لأسرهم ولكل من ساندهم، مؤكدةً أن إتمام مرحلة البكالوريوس يمثل انتقالًا إلى مرحلة جديدة من المسؤولية والعمل، وتوظيف ما اكتسبوه من علم ومهارات في خدمة اليمن والإسهام في بنائه، كلٌّ من موقعه وتخصصه.",
+        "وتضمن الحفل فقرة «ميثاق الرائد»، التي جسدت التزام الرواد بمواصلة التعلم والعمل والعطاء، إلى جانب وصلة فنية وفقرات احتفائية استحضرت مسيرة الكوكبة الثانية وما حققته من إنجازات.",
+        "وكان المؤتمر العلمي الثالث لرواد اليمن والمعرض المصاحب له من أبرز محطات الملتقى، حيث قدم الرواد مشاريعهم وأبحاثهم وابتكاراتهم، وعرضوا نماذج من نتاجهم العلمي والتطبيقي، في تجسيد لتنوع تخصصاتهم وقدرتهم على تحويل المعرفة إلى مشاريع وحلول عملية.",
+        "وشملت فعاليات الملتقى برامج تدريبية في بناء الهوية الرقمية، وتعزيز الحضور المهني، والتسويق الذاتي، ومهارات المقابلات الوظيفية، إلى جانب محاضرات وورش تناولت الدبلوماسية الشعبية والشراكات الدولية، وقضايا فكرية ووطنية، من أبرزها محاضرة «نداء الوطن يا رواد اليمن»، فضلًا عن أمسيات ثقافية وتفاعلية وتكريم المشاركين واللجان المنظمة.",
+        "كما تميز الملتقى السابع باستقبال الكوكبة الرابعة من رواد اليمن، الذين وصلوا حديثًا من اليمن لبدء رحلتهم العلمية والتأهيلية، إلى جانب مشاركة مجموعة من الموهوبين والمتميزين من المؤسسات الشريكة، في إطار تعزيز التعارف وتبادل الخبرات وتوسيع آفاق التعاون بين الكفاءات اليمنية الشابة.",
+        "ويأتي الاحتفاء بالكوكبة الثانية من رواد اليمن بمناسبة إتمامهم مرحلة البكالوريوس، والملتقى السابع للبرنامج، ضمن المسار الأول لوقف أويس القرني، الذي يُعنى برعاية وتأهيل الموهوبين والمتميزين من أبناء اليمن، وتمكينهم من الإسهام في النهوض الحضاري باليمن الحبيب.",
+        "#وقف_أويس_القرني\n#وقفنا_معا_لنهضة_اليمن"
+      ],
+      "en": [
+        "Owais Al-Qarni Waqf Honors Second Cohort of Yemen Pioneers and Concludes Seventh Forum in Istanbul",
+        "ISTANBUL – Owais Al-Qarni Waqf held a ceremony in Istanbul on Sunday, October 18, 2026, to honor the second cohort of Yemen Pioneers, comprising 17 young men and women who successfully completed their bachelor's degrees. The celebration marked the conclusion of the Seventh Yemen Pioneers Forum, which brought together 75 participants for a diverse program of scientific, educational, training, and cultural activities.",
+        "The ceremony celebrated the culmination of five years of academic achievement, professional development, and continuous support. It also marked the conclusion of the forum, which began on October 15 and focused on developing participants' capabilities, strengthening their professional readiness, fostering a sense of responsibility toward their homeland, and showcasing their scientific projects and innovations.",
+        "In his address on behalf of the Waqf, Salah Batis, President of Owais Al-Qarni Waqf, emphasized that the Yemeni people represent the nation's greatest asset and the foundation of its development and progress. He highlighted their remarkable resilience, adaptability, dedication, and creativity, noting the positive contributions and active roles Yemenis have demonstrated in the communities where they have settled.",
+        "Batis explained that the establishment of the Waqf was a response to the need for a collaborative initiative that invests in Yemeni human potential and creates practical opportunities to contribute to Yemen's comprehensive development. He called upon Yemenis and friends of Yemen, across all communities and affiliations, to participate in building the Waqf and developing its assets and resources, thereby ensuring the sustainability of its programs and expanding its long-term impact on Yemen and its future.",
+        "Speaking on behalf of the second cohort, Yemen Pioneer Alaa Abdulhakim reflected on a five-year journey during which participants overcame the challenges of war and life away from home to pursue knowledge and achieve academic success. She expressed her deep appreciation to the Waqf, its founders, staff, and contributors for their continued guidance, care, and support.",
+        "Abdulhakim also conveyed the cohort's gratitude to their families and everyone who had supported them throughout their journey. She emphasized that completing their bachelor's degrees marks the beginning of a new chapter of responsibility and meaningful work, in which graduates will apply their knowledge and skills to serve Yemen and contribute to its development, each within their respective fields of expertise.",
+        "The ceremony featured a special segment titled “The Pioneer's Covenant,” symbolizing the graduates' commitment to lifelong learning, dedication, and service. The program also included a musical performance and celebratory presentations highlighting the journey and achievements of the second cohort.",
+        "Among the forum's major highlights were the Third Yemen Pioneers Scientific Conference and its accompanying scientific exhibition, where participants presented their research, projects, and innovations, showcasing examples of their academic and practical achievements. These presentations reflected the diversity of their specializations and demonstrated their ability to transform knowledge into practical projects and solutions.",
+        "The forum also featured training programs focused on building a digital identity, strengthening professional presence, personal branding, and job interview skills. Additional lectures and workshops addressed public diplomacy, international partnerships, and intellectual and national issues, including a notable lecture titled “The Homeland Calls, O Yemen Pioneers.” The program further included cultural and interactive evening activities, along with recognition of participants and organizing committees for their contributions.",
+        "Another distinctive feature of the Seventh Yemen Pioneers Forum was the welcoming of the fourth cohort of Yemen Pioneers, who had recently arrived from Yemen to begin their academic and professional development journey. The forum also welcomed a group of talented and high-achieving young people from partner institutions, providing opportunities for networking, knowledge exchange, and broader collaboration among promising young Yemeni talents.",
+        "The celebration of the second cohort's completion of their bachelor's degrees, together with the Seventh Yemen Pioneers Forum, forms part of Owais Al-Qarni Waqf's first strategic program area, which focuses on supporting, nurturing, and empowering talented and high-achieving young Yemenis, enabling them to play an active role in advancing Yemen's comprehensive development and building a brighter future for their homeland.",
+        "#وقف_أويس_القرني\n#وقفنا_معا_لنهضة_اليمن"
+      ],
+      "tr": [
+        "Veysel Karani Vakfı, Yemen Öncüleri’nin İkinci Dönem Mezunlarını İstanbul’da Onurlandırdı ve 7. Buluşmalarını Tamamladı",
+        "İSTANBUL – Veysel Karani Vakfı, 18 Ekim 2026 Pazar günü İstanbul’da düzenlediği törenle, lisans eğitimlerini tamamlayan 17 gençten oluşan Yemen Öncüleri Programı’nın ikinci dönem mezunlarını onurlandırdı. Tören, 75 katılımcının yer aldığı, bilimsel, eğitsel ve kültürel etkinliklerle dolu 7. Yemen Öncüleri Buluşması’nın kapanışı kapsamında gerçekleştirildi.",
+        "Beş yıllık eğitim, mesleki gelişim ve destek sürecinin önemli bir dönüm noktası olan mezuniyet töreni, 15 Ekim’de başlayan buluşmanın da kapanışını oluşturdu. Program boyunca gençlerin yetkinliklerinin geliştirilmesine, mesleki hayata hazırlanmalarına, ülkelerine karşı sorumluluk bilincinin güçlendirilmesine ve bilimsel proje ile yenilikçi çalışmalarının tanıtılmasına odaklanıldı.",
+        "Törende vakıf adına konuşan Veysel Karani Vakfı Başkanı Salah Batis, Yemen halkının ülkenin en büyük zenginliği ve kalkınmasının temel dayanağı olduğunu vurguladı. Yemenlilerin sabır, uyum sağlama, çalışma ve üretkenlik konusundaki güçlü yeteneklerine dikkat çeken Batis, farklı ülkelerde yaşamlarını sürdüren Yemenlilerin bulundukları toplumlarda etkin ve olumlu roller üstlendiklerini ifade etti.",
+        "Batis, vakfın kuruluşunun, Yemen insanına yatırım yapmayı ve ülkenin çok yönlü kalkınmasına somut katkılar sunmayı hedefleyen ortak bir girişime duyulan ihtiyaçtan doğduğunu belirtti. Farklı toplumsal kesimlerden ve aidiyetlerden tüm Yemenlileri ve Yemen dostlarını vakfın güçlendirilmesine, varlıklarının ve kaynaklarının geliştirilmesine katkıda bulunmaya davet ederek, bu sayede vakfın programlarının sürdürülebilirliğinin sağlanabileceğini ve Yemen’in geleceğine yönelik çalışmalarının etkisinin artırılabileceğini kaydetti.",
+        "İkinci dönem mezunları adına konuşan Âlâ Abdülhakim ise beş yıllık eğitim yolculuklarını anlatarak, savaşın ve gurbet hayatının getirdiği zorlukları aşarak eğitim ve başarıya uzanan süreçlerine değindi. Abdülhakim, vakfın kurucularına, çalışanlarına ve bağışçılarına, sundukları destek, rehberlik ve katkılardan dolayı teşekkür etti.",
+        "Mezunlar adına ailelerine ve kendilerine destek veren herkese şükranlarını sunan Abdülhakim, lisans eğitimini tamamlamanın yeni bir sorumluluk ve çalışma döneminin başlangıcı olduğunu belirtti. Edindikleri bilgi ve becerileri kendi uzmanlık alanlarında Yemen’e hizmet etmek ve ülkenin yeniden kalkınmasına katkıda bulunmak amacıyla değerlendireceklerini vurguladı.",
+        "Törende, gençlerin öğrenmeye, çalışmaya ve topluma katkı sunmaya devam etme kararlılığını simgeleyen “Öncü Andı” (Mîsâku'r-Râid) bölümü gerçekleştirildi. Programda ayrıca müzik dinletisi ve ikinci dönem mezunlarının eğitim yolculuğunu ve başarılarını yansıtan çeşitli kutlama etkinlikleri yer aldı.",
+        "Buluşmanın öne çıkan etkinlikleri arasında 3. Yemen Öncüleri Bilimsel Konferansı ve beraberinde düzenlenen bilimsel sergi yer aldı. Konferans ve sergide katılımcılar, araştırmalarını, projelerini ve yenilikçi çalışmalarını tanıtarak bilimsel ve uygulamalı üretimlerinden örnekler sundu. Bu çalışmalar, gençlerin farklı uzmanlık alanlarındaki yetkinliklerini ve edindikleri bilgileri somut projelere ve pratik çözümlere dönüştürme potansiyellerini ortaya koydu.",
+        "Buluşma kapsamında dijital kimlik oluşturma, profesyonel görünürlüğü artırma, kişisel pazarlama ve iş görüşmesi becerileri gibi alanlarda eğitim programları düzenlendi. Ayrıca kamu diplomasisi, uluslararası ortaklıklar, düşünsel ve millî meseleler üzerine konferanslar ve atölye çalışmaları gerçekleştirildi. Bu etkinlikler arasında “Yemen Sizi Çağırıyor, Ey Yemen Öncüleri” başlıklı konferans da öne çıktı. Program, kültürel ve etkileşimli akşam etkinliklerinin yanı sıra katılımcıların ve organizasyon komitelerinin ödüllendirilmesiyle zenginleştirildi.",
+        "7. Yemen Öncüleri Buluşması’nın dikkat çeken bir diğer yönü ise eğitim ve gelişim yolculuklarına başlamak üzere Yemen’den yeni gelen dördüncü dönem Yemen Öncüleri’nin karşılanması oldu. Bunun yanı sıra, iş birliği yapılan kurumlardan yetenekli ve başarılı gençler de programa katılarak tanışma, deneyim paylaşımı ve genç Yemenli yetenekler arasındaki iş birliğinin geliştirilmesine katkı sağladı.",
+        "Yemen Öncüleri Programı’nın ikinci dönem mezunlarının lisans eğitimlerini tamamlamaları dolayısıyla düzenlenen tören ve programın 7. buluşması, Veysel Karani Vakfı’nın yetenekli ve başarılı Yemenli gençlerin desteklenmesi, eğitilmesi ve geliştirilmesini amaçlayan birinci faaliyet alanı kapsamında gerçekleştirildi. Bu çalışmalarla gençlerin Yemen’in çok yönlü kalkınmasına etkin biçimde katkıda bulunabilecek bireyler olarak yetiştirilmesi hedefleniyor.",
+        "#وقف_أويس_القرني\n#وقفنا_معا_لنهضة_اليمن"
+      ]
+    },
+    "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507806.jpg-w2ncys.jpeg",
+    "imageAlt": {
+      "ar": "وقف أويس القرني يحتفي بالكوكبة الثانية من رواد اليمن ويختتم ملتقاهم السابع بإسطنبول",
+      "en": "Owais Al-Qarni Waqf Honors Second Cohort of Yemen Pioneers and Concludes Seventh Forum in Istanbul",
+      "tr": "Veysel Karani Vakfı, Yemen Öncüleri’nin İkinci Dönem Mezunlarını İstanbul’da Onurlandırdı ve 7. Buluşmalarını Tamamladı"
+    },
+    "gallery": [
+      {
+        "id": "item-1-157sxj",
+        "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507791.jpg-gdaeb9.jpeg",
+        "thumbnail": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507787.jpg-awly0j.jpeg",
+        "sourceUrl": "https://veysvakfi.org/news/yemen-pioneers-7th-forum-2026",
+        "title": {
+          "ar": "",
+          "en": "",
+          "tr": ""
+        },
+        "imageAlt": {
+          "ar": "",
+          "en": "",
+          "tr": ""
+        },
+        "width": 7008,
+        "height": 4672
+      },
+      {
+        "id": "item-2-ifuh0a",
+        "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507568.jpg-dxc7gl.jpeg",
+        "thumbnail": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507771.jpg-2v9vz4.jpeg",
+        "sourceUrl": "https://veysvakfi.org/news/yemen-pioneers-7th-forum-2026",
+        "title": {
+          "ar": "",
+          "en": "",
+          "tr": ""
+        },
+        "imageAlt": {
+          "ar": "",
+          "en": "",
+          "tr": ""
+        },
+        "width": 7008,
+        "height": 4672
+      }
+    ],
+    "sourceImages": []
+  },
+  {
     "id": "24011",
     "slug": "shura-member-condolences-sheikh-hamad",
     "sourceSlug": "shura-member-condolences-sheikh-hamad-bin-khalifa",

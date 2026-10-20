@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Calendar, Languages } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
@@ -18,7 +18,10 @@ import {
   getSourceLanguageName,
   newsRoutes,
 } from '@/data/news';
+import { cmsNewsRow } from '@/cms/adapters';
 import { isCmsSettled } from '@/cms/store';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import type { NewsRow } from '@/lib/types';
 import { getLibraryContent } from '@/data/library';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -29,7 +32,43 @@ export default function NewsArticlePage() {
   const { locale, isRtl, content: siteContent } = useI18n();
   const labels = getNewsLabels(locale);
   const libraryLabels = getLibraryContent(locale).labels;
-  const article = getNewsArticle(locale, slug);
+  const storeArticle = getNewsArticle(locale, slug);
+  const [directState, setDirectState] = useState<{
+    slug: string;
+    row: NewsRow | null;
+    done: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!slug || storeArticle || isCmsSettled() || !isSupabaseConfigured) return;
+    let cancelled = false;
+    supabase
+      .from('news')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_published', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setDirectState({ slug, row: (data as NewsRow | null) ?? null, done: true });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDirectState({ slug, row: null, done: true });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, storeArticle]);
+
+  const directArticle = useMemo(() => {
+    if (!slug || directState?.slug !== slug || !directState.row) return undefined;
+    return cmsNewsRow(directState.row, locale);
+  }, [directState, locale, slug]);
+
+  const article = storeArticle ?? directArticle;
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const shouldReduceMotion = useReducedMotion();
@@ -59,9 +98,37 @@ export default function NewsArticlePage() {
   }, [article, siteContent.siteConfig.logo, siteContent.siteConfig.name]);
 
   if (!article) {
-    // A direct link to a CMS-only article can land before hydration finishes;
-    // hold the redirect until the fetch settles so the deep link doesn't bounce.
-    if (!isCmsSettled()) return null;
+    const directDone = Boolean(slug && directState?.slug === slug && directState.done);
+    if (!isCmsSettled() && !directDone) {
+      return (
+        <main className="min-h-screen bg-white">
+          <header className="relative isolate overflow-hidden bg-dark-950 pt-28 md:pt-32">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary-950/90 via-dark-950 to-dark-950" />
+            <div className="mx-auto w-full max-w-5xl px-4 pb-32 text-start md:px-8 md:pb-40">
+              <div className="mb-6">
+                <Breadcrumbs items={getNewsBreadcrumbs(locale)} light />
+              </div>
+              <div className="mb-5 flex flex-wrap gap-2.5">
+                <div className="h-10 w-36 animate-pulse rounded-full bg-white/10" />
+                <div className="h-10 w-24 animate-pulse rounded-full bg-white/10" />
+              </div>
+              <div className="max-w-3xl space-y-3">
+                <div className="h-9 w-full animate-pulse rounded-xl bg-white/15" />
+                <div className="h-9 w-3/4 animate-pulse rounded-xl bg-white/10" />
+              </div>
+            </div>
+          </header>
+          <div className="mx-auto max-w-5xl px-4 pb-24 md:px-8">
+            <div className="relative z-10 -mt-24 mb-12 aspect-[16/10] w-full animate-pulse rounded-[20px] border border-white/60 bg-warm shadow-[0_28px_72px_rgba(35,12,18,0.22)] md:-mt-28 md:mb-14" />
+            <div className="mx-auto max-w-[820px] space-y-4">
+              <div className="h-5 w-full animate-pulse rounded-lg bg-dark-100" />
+              <div className="h-5 w-11/12 animate-pulse rounded-lg bg-dark-100" />
+              <div className="h-5 w-4/5 animate-pulse rounded-lg bg-dark-100" />
+            </div>
+          </div>
+        </main>
+      );
+    }
     return <Navigate to={newsRoutes.index} replace />;
   }
 

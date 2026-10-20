@@ -8,7 +8,7 @@
 //  * Rows are matched to static defaults by slug only. Nothing is paired by
 //    array position, because editors reorder and delete rows.
 
-import type { Locale, ProgramLayout } from '@/lib/types';
+import type { Locale, NewsRow, ProgramLayout } from '@/lib/types';
 import type { LocalizedWaqfProject, ProjectSlug } from '@/data/projects';
 import type { Program, ProgramSlug } from '@/data/programs';
 import type { LocalizedNewsArticle } from '@/data/news';
@@ -147,6 +147,44 @@ export function cmsPrograms(locale: Locale, fallback: Program[]): Program[] {
 // NEWS -----------------------------------------------------------------------
 type GalleryItem = LocalizedNewsArticle['gallery'][number];
 
+export function cmsNewsRow(
+  row: NewsRow,
+  locale: Locale,
+  base?: LocalizedNewsArticle,
+): LocalizedNewsArticle {
+  const publishedAt = scalar(row.published_at, base?.publishedAt ?? '');
+  const publishedYear = publishedAt ? new Date(publishedAt).getFullYear() : NaN;
+  const gallery = localizedArray<GalleryItem>(row.gallery, locale, base?.gallery ?? []).map(
+    (image, index) => ({
+      ...image,
+      // Rows created in the dashboard carry no id; keys still have to be stable.
+      id: image.id || `${row.slug}-${index + 1}`,
+      thumbnail: image.thumbnail || image.image,
+    }),
+  );
+  return {
+    id: row.slug,
+    slug: row.slug,
+    route: `/news/${row.slug}`,
+    sourceSlug: scalar(row.source_slug, base?.sourceSlug ?? row.slug),
+    sourceUrl: scalar(row.source_url, base?.sourceUrl ?? ''),
+    publishedAt,
+    // The year filter follows the publish date; a separate typed year only
+    // ever drifted from it.
+    year: Number.isFinite(publishedYear) ? publishedYear : (row.year ?? base?.year ?? 0),
+    sourceLanguage: scalar(row.source_language, base?.sourceLanguage) || 'ar',
+    featured: Boolean(row.featured),
+    category: locText(row.category, locale, base?.category ?? ''),
+    title: locText(row.title, locale, base?.title ?? ''),
+    excerpt: locText(row.excerpt, locale, base?.excerpt ?? ''),
+    content: locList(row.content, locale, base?.content ?? []),
+    image: scalar(row.image, base?.image ?? ''),
+    imageAlt: locText(row.image_alt, locale, base?.imageAlt ?? ''),
+    gallery,
+    sourceImages: localizedArray(row.source_images, locale, base?.sourceImages ?? []),
+  } as LocalizedNewsArticle;
+}
+
 export function cmsNews(
   locale: Locale,
   fallback: LocalizedNewsArticle[],
@@ -155,40 +193,7 @@ export function cmsNews(
   if (!rows) return fallback;
   const defaults = bySlug(fallback);
 
-  return rows.map((row) => {
-    const base = defaults.get(row.slug);
-    const publishedAt = scalar(row.published_at, base?.publishedAt ?? '');
-    const publishedYear = publishedAt ? new Date(publishedAt).getFullYear() : NaN;
-    const gallery = localizedArray<GalleryItem>(row.gallery, locale, base?.gallery ?? []).map(
-      (image, index) => ({
-        ...image,
-        // Rows created in the dashboard carry no id; keys still have to be stable.
-        id: image.id || `${row.slug}-${index + 1}`,
-        thumbnail: image.thumbnail || image.image,
-      }),
-    );
-    return {
-      id: row.slug,
-      slug: row.slug,
-      route: `/news/${row.slug}`,
-      sourceSlug: scalar(row.source_slug, base?.sourceSlug ?? row.slug),
-      sourceUrl: scalar(row.source_url, base?.sourceUrl ?? ''),
-      publishedAt,
-      // The year filter follows the publish date; a separate typed year only
-      // ever drifted from it.
-      year: Number.isFinite(publishedYear) ? publishedYear : (row.year ?? base?.year ?? 0),
-      sourceLanguage: scalar(row.source_language, base?.sourceLanguage) || 'ar',
-      featured: Boolean(row.featured),
-      category: locText(row.category, locale, base?.category ?? ''),
-      title: locText(row.title, locale, base?.title ?? ''),
-      excerpt: locText(row.excerpt, locale, base?.excerpt ?? ''),
-      content: locList(row.content, locale, base?.content ?? []),
-      image: scalar(row.image, base?.image ?? ''),
-      imageAlt: locText(row.image_alt, locale, base?.imageAlt ?? ''),
-      gallery,
-      sourceImages: localizedArray(row.source_images, locale, base?.sourceImages ?? []),
-    } as LocalizedNewsArticle;
-  });
+  return rows.map((row) => cmsNewsRow(row, locale, defaults.get(row.slug)));
 }
 
 // DONATIONS ------------------------------------------------------------------
