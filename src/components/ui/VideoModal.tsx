@@ -50,16 +50,9 @@ function VideoPlayer({ videoId, videoFile, posterImage, title, loadingLabel }: V
   }
 
   return (
+    // The poster is a fallback for a video that does not play, not a placeholder:
+    // while the player loads the box stays dark with the spinner.
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl">
-      <img
-        src={posterImage}
-        alt=""
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-          isLoaded ? 'opacity-0' : 'opacity-70'
-        }`}
-      />
-
       {!isLoaded && (
         <div
           role="status"

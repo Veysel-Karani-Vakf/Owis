@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCmsSettled } from '@/cms/CmsProvider';
 import type { Locale } from '@/i18n/content';
 import { useI18n } from '@/i18n/useI18n';
+import { getHeroMediaState, subscribeHeroMedia } from '@/lib/heroMedia';
 
 // The splash never shows for less than this, so its entrance animation
 // completes even when the CMS answers at once.
@@ -38,11 +40,19 @@ function writeCachedBrand(locale: Locale, brand: SplashBrand) {
   }
 }
 
-/** Splash screen shown until the published content has been fetched. */
+/**
+ * Splash screen shown until the published content has been fetched and, on the
+ * landing route, until the hero's visual is settled (its video playing, or the
+ * poster when no video applies), so the poster is never seen standing in for
+ * the video. It shows once per load and never comes back.
+ */
 export default function Preloader() {
   const { content, locale } = useI18n();
+  const { pathname } = useLocation();
   const cmsSettled = useCmsSettled();
+  const heroMedia = useSyncExternalStore(subscribeHeroMedia, getHeroMediaState, getHeroMediaState);
   const [minTimeDone, setMinTimeDone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const logo = content.siteConfig.logo;
   const name = content.siteConfig.name;
   const cached = useMemo(() => readCachedBrand(locale), [locale]);
@@ -57,7 +67,13 @@ export default function Preloader() {
     if (cmsSettled) writeCachedBrand(locale, { logo, name });
   }, [cmsSettled, locale, logo, name]);
 
-  const loading = !cmsSettled || !minTimeDone;
+  const heroReady = pathname !== '/' || heroMedia !== 'pending';
+  const ready = cmsSettled && heroReady;
+  const loading = !dismissed && (!ready || !minTimeDone);
+
+  useEffect(() => {
+    if (!loading) setDismissed(true);
+  }, [loading]);
 
   return (
     <AnimatePresence>
@@ -92,11 +108,11 @@ export default function Preloader() {
             </motion.div>
 
             <div className="relative h-1 w-40 overflow-hidden rounded-full bg-white/10">
-              {/* Creeps most of the way while fetching, then completes once content is in. */}
+              {/* Creeps most of the way while loading, then completes once everything is ready. */}
               <motion.div
                 initial={{ x: '-100%' }}
-                animate={{ x: cmsSettled ? '0%' : '-15%' }}
-                transition={{ duration: cmsSettled ? 0.3 : 1.2, ease: 'easeInOut' }}
+                animate={{ x: ready ? '0%' : cmsSettled ? '-8%' : '-15%' }}
+                transition={{ duration: ready ? 0.3 : 1.2, ease: 'easeInOut' }}
                 className="absolute inset-0 bg-gradient-to-l from-primary-400 to-gold-400"
               />
             </div>

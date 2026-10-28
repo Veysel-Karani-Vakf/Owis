@@ -1,57 +1,128 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Play } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TypewriterText from '@/components/ui/TypewriterText';
 import VideoModal from '@/components/ui/VideoModal';
 import { useFitSingleLine } from '@/hooks/useFitSingleLine';
 import { useI18n } from '@/i18n/useI18n';
+import { getHeroMediaState, setHeroMediaState, subscribeHeroMedia } from '@/lib/heroMedia';
 import { resolveVideo, videoSourceKey, youTubeEmbedUrl } from '@/lib/video';
 
-type HeroBackgroundVideoProps = {
-  videoId: string;
-  videoFile?: string;
+const YOUTUBE_ORIGIN = 'https://www.youtube-nocookie.com';
+// YouTube's player state code for "playing" (IFrame API).
+const YT_PLAYING = 1;
+// How long the hero waits for the video to actually start before it falls
+// back to the poster. Generous: a slow YouTube is still better than the poster.
+const VIDEO_START_TIMEOUT_MS = 7000;
+
+type BackgroundVideoProps = {
+  /** The video is kept mounted while the modal is open, only paused. */
+  paused: boolean;
+  /** Called when frames are actually being shown, not merely when the player loaded. */
+  onPlaying: () => void;
   title: string;
 };
 
-function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoProps) {
-  const source = resolveVideo({ videoFile, videoId });
-  // Visibility follows what is rendered, not the raw fields. CMS hydration can turn
-  // `videoFile` from undefined into "" without changing the source; resetting on the raw
-  // fields would hide a frame that already loaded, and its load event never fires again.
-  const sourceKey = videoSourceKey(source);
-  // The key of the source whose load event fired; a different source starts hidden again.
-  const [loadedKey, setLoadedKey] = useState<string | null>(null);
-  const isLoaded = loadedKey === sourceKey;
-  const markLoaded = () => setLoadedKey(sourceKey);
+function FileBackground({ src, paused, onPlaying, title }: BackgroundVideoProps & { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  if (!source) return null;
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [paused]);
 
-  if (source.kind === 'file') {
-    return (
-      <video
-        key={sourceKey}
-        src={source.src}
-        preload="auto"
-        title={title}
-        className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-        autoPlay
-        muted
-        loop
-        playsInline
-        onLoadedData={markLoaded}
-      />
-    );
-  }
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      preload="auto"
+      title={title}
+      className="block"
+      autoPlay
+      muted
+      loop
+      playsInline
+      onPlaying={onPlaying}
+    />
+  );
+}
+
+/**
+ * YouTube background. The player is driven over the IFrame API's postMessage
+ * channel (no API script needed): after the "listening" handshake it reports
+ * state changes, which is how "playing" is detected, and it accepts
+ * pause/play commands while the modal is open.
+ */
+function YouTubeBackground({ id, paused, onPlaying, title }: BackgroundVideoProps & { id: string }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const handshakeTimer = useRef<number | null>(null);
+
+  const send = useCallback((message: Record<string, unknown>) => {
+    frameRef.current?.contentWindow?.postMessage(JSON.stringify(message), YOUTUBE_ORIGIN);
+  }, []);
+
+  const stopHandshake = useCallback(() => {
+    if (handshakeTimer.current !== null) {
+      window.clearInterval(handshakeTimer.current);
+      handshakeTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const frame = frameRef.current;
+      if (!frame || event.origin !== YOUTUBE_ORIGIN || event.source !== frame.contentWindow) return;
+      let data: unknown = event.data;
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          return;
+        }
+      }
+      if (!data || typeof data !== 'object') return;
+      // Any reply means the player heard the handshake.
+      stopHandshake();
+      const message = data as { event?: string; info?: unknown };
+      const playerState =
+        message.event === 'onStateChange'
+          ? message.info
+          : message.event === 'infoDelivery' && message.info && typeof message.info === 'object'
+            ? (message.info as { playerState?: unknown }).playerState
+            : undefined;
+      if (playerState === YT_PLAYING) onPlaying();
+    };
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      stopHandshake();
+    };
+  }, [onPlaying, stopHandshake]);
+
+  // The player stays silent until the page says it is listening; repeat until it answers.
+  const handleLoad = () => {
+    stopHandshake();
+    const listen = () => send({ event: 'listening', id: `hero-${id}`, channel: 'widget' });
+    listen();
+    handshakeTimer.current = window.setInterval(listen, 500);
+    window.setTimeout(stopHandshake, 10000);
+  };
+
+  useEffect(() => {
+    send({ event: 'command', func: paused ? 'pauseVideo' : 'playVideo', args: [] });
+  }, [paused, send]);
 
   return (
     <iframe
-      key={sourceKey}
-      src={youTubeEmbedUrl(source.id, {
+      ref={frameRef}
+      src={youTubeEmbedUrl(id, {
         autoplay: 1,
         mute: 1,
         loop: 1,
-        playlist: source.id,
+        playlist: id,
         controls: 0,
         modestbranding: 1,
         rel: 0,
@@ -59,19 +130,22 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
         iv_load_policy: 3,
         disablekb: 1,
         playsinline: 1,
+        enablejsapi: 1,
+        origin: window.location.origin,
       })}
       title={title}
-      className={`block border-0 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+      className="block border-0"
       allow="autoplay; encrypted-media; picture-in-picture"
       loading="eager"
       referrerPolicy="strict-origin-when-cross-origin"
-      onLoad={markLoaded}
+      onLoad={handleLoad}
     />
   );
 }
 
-// The hero mounts once the CMS has settled, which is when the preloader starts its fade; typing starts right after it.
-const TITLE_TYPING_START_DELAY = 1000;
+// Everything in the hero reveals once its visual is settled (video playing, or
+// the poster when there is no video); the title starts typing shortly after.
+const TITLE_TYPING_START_DELAY = 400;
 // A deliberate, readable pace that feels like someone typing the headline live.
 const TITLE_TYPING_CHAR_DELAY = 140;
 // When the title is an image (calligraphy), it is revealed writing-direction-first
@@ -115,6 +189,29 @@ export default function Hero() {
     fallbackPx: TITLE_WRAP_FONT_PX,
   });
 
+  // The hero's visual: the background video once it plays, else the poster. Its
+  // foreground reveals only then, and the splash waits for it on the landing route.
+  const mediaState = useSyncExternalStore(subscribeHeroMedia, getHeroMediaState, getHeroMediaState);
+  const revealed = mediaState !== 'pending';
+  const videoSource = resolveVideo({ videoFile: heroContent.videoFile, videoId: heroContent.videoId });
+  const videoKey = videoSourceKey(videoSource);
+  const wantsVideo = isDesktop && !shouldReduceMotion && videoSource !== null;
+
+  useLayoutEffect(() => {
+    if (!wantsVideo) {
+      setHeroMediaState('poster');
+      return undefined;
+    }
+    setHeroMediaState('pending');
+    const timer = window.setTimeout(() => {
+      if (getHeroMediaState() === 'pending') setHeroMediaState('poster');
+    }, VIDEO_START_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [wantsVideo, videoKey]);
+
+  // A video that starts late still takes over from the poster.
+  const handleVideoPlaying = useCallback(() => setHeroMediaState('video'), []);
+
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
 
@@ -131,8 +228,8 @@ export default function Hero() {
 
   // Mirrors TypewriterText's reduced-motion path: the finished title shows at once and unlocks the button.
   useEffect(() => {
-    if (titleImage && shouldReduceMotion) setTypedTitle(titleImage);
-  }, [titleImage, shouldReduceMotion]);
+    if (titleImage && shouldReduceMotion && revealed) setTypedTitle(titleImage);
+  }, [titleImage, shouldReduceMotion, revealed]);
 
   const openVideo = useCallback(() => {
     setBackgroundVideoPaused(true);
@@ -141,6 +238,7 @@ export default function Hero() {
   const closeVideo = useCallback(() => setVideoOpen(false), []);
   const resumeBackgroundVideo = useCallback(() => setBackgroundVideoPaused(false), []);
   const handleTitleTyped = useCallback(() => setTypedTitle(titleToken), [titleToken]);
+  const showCta = revealed && titleTyped;
 
   const scrollToAbout = () => {
     const el = document.querySelector('#about');
@@ -170,16 +268,39 @@ export default function Hero() {
     window.open(href, '_blank', 'noopener,noreferrer');
   };
 
+  const visualTransition = {
+    duration: shouldReduceMotion ? 0.01 : 0.9,
+    ease: heroEase,
+  };
+
+  // YouTube shows its title bar and centre controls for about 3.5s whenever
+  // playback starts (verified against a bare embed: also with the modal
+  // resuming it). The stage stays dark that long and the video blooms in once
+  // they are gone; an uploaded file has no such chrome and fades in at once.
+  const videoVisible = mediaState === 'video' && !backgroundVideoPaused;
+  const videoAnimate = !videoVisible
+    ? { opacity: 0, scale: 1.04 }
+    : videoSource?.kind === 'youtube'
+      ? { opacity: [0, 0, 1], scale: [1.04, 1.03, 1] }
+      : { opacity: 1, scale: 1 };
+  const videoTransition = !videoVisible
+    ? { duration: 0.3 }
+    : videoSource?.kind === 'youtube'
+      ? { duration: shouldReduceMotion ? 0.01 : 5.2, times: [0, 0.85, 1], ease: 'easeInOut' as const }
+      : visualTransition;
+
   return (
     <section
       id="hero"
       className="relative min-h-[100svh] overflow-hidden bg-dark-950"
     >
+      {/* The poster is the fallback visual: shown only when no video applies or it did not start. */}
       <motion.div
-        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
+        initial={false}
+        animate={mediaState === 'poster' ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
+        transition={visualTransition}
         className="absolute inset-0"
+        aria-hidden={mediaState !== 'poster'}
       >
         <img
           src={heroContent.posterImage}
@@ -189,16 +310,28 @@ export default function Hero() {
         />
       </motion.div>
 
+      {/* The video stays invisible until frames are playing, so the player's own loading screen is never seen. */}
       <motion.div
-        initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: shouldReduceMotion ? 0 : 0.15, duration: shouldReduceMotion ? 0.01 : 0.9, ease: heroEase }}
+        initial={false}
+        animate={videoAnimate}
+        transition={videoTransition}
         className="yt-bg-container hidden md:block"
       >
-        {isDesktop && !shouldReduceMotion && !backgroundVideoPaused && (
-          <HeroBackgroundVideo
-            videoId={heroContent.videoId}
-            videoFile={heroContent.videoFile}
+        {wantsVideo && videoSource?.kind === 'file' && (
+          <FileBackground
+            key={videoKey}
+            src={videoSource.src}
+            paused={backgroundVideoPaused}
+            onPlaying={handleVideoPlaying}
+            title={t('accessibility.videoBackgroundTitle')}
+          />
+        )}
+        {wantsVideo && videoSource?.kind === 'youtube' && (
+          <YouTubeBackground
+            key={videoKey}
+            id={videoSource.id}
+            paused={backgroundVideoPaused}
+            onPlaying={handleVideoPlaying}
             title={t('accessibility.videoBackgroundTitle')}
           />
         )}
@@ -227,13 +360,15 @@ export default function Hero() {
                   className="block h-auto select-none drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]"
                   style={{ width: 'min(100%, 20rem)' }}
                   initial={shouldReduceMotion ? false : { clipPath: titleImageClipStart }}
-                  animate={{ clipPath: 'inset(0% 0% 0% 0%)' }}
+                  animate={{ clipPath: revealed ? 'inset(0% 0% 0% 0%)' : titleImageClipStart }}
                   transition={{
                     delay: shouldReduceMotion ? 0 : TITLE_TYPING_START_DELAY / 1000,
                     duration: shouldReduceMotion ? 0.01 : TITLE_IMAGE_REVEAL_SECONDS,
                     ease: 'linear',
                   }}
-                  onAnimationComplete={handleTitleTyped}
+                  onAnimationComplete={() => {
+                    if (revealed) handleTitleTyped();
+                  }}
                 />
               </h1>
             ) : (
@@ -244,28 +379,30 @@ export default function Hero() {
                   titleSingleLine ? 'whitespace-nowrap' : 'text-balance'
                 } ${isLatinScript ? 'uppercase tracking-[0.02em]' : ''}`}
               >
-                <TypewriterText
-                  key={heroContent.title}
-                  text={heroContent.title}
-                  startDelay={TITLE_TYPING_START_DELAY}
-                  charDelay={TITLE_TYPING_CHAR_DELAY}
-                  respectReducedMotion
-                  onComplete={handleTitleTyped}
-                />
+                {revealed && (
+                  <TypewriterText
+                    key={heroContent.title}
+                    text={heroContent.title}
+                    startDelay={TITLE_TYPING_START_DELAY}
+                    charDelay={TITLE_TYPING_CHAR_DELAY}
+                    respectReducedMotion
+                    onComplete={handleTitleTyped}
+                  />
+                )}
               </h1>
             )}
 
             <motion.div
               initial={false}
-              animate={titleTyped ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+              animate={showCta ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
               transition={{ duration: 0.55, ease: heroEase }}
               className="mt-5 flex items-center justify-start sm:mt-6"
-              style={{ pointerEvents: titleTyped ? 'auto' : 'none' }}
-              aria-hidden={!titleTyped}
+              style={{ pointerEvents: showCta ? 'auto' : 'none' }}
+              aria-hidden={!showCta}
             >
               <button
                 onClick={openButtonTarget}
-                tabIndex={titleTyped ? 0 : -1}
+                tabIndex={showCta ? 0 : -1}
                 className={`btn-border-run btn-border-run--light btn-border-run--sheen-tint inline-flex min-w-[9.5rem] items-center justify-center rounded-md border border-white/75 bg-black/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-[2px] transition-all duration-300 hover:border-white hover:bg-white hover:text-dark-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 ${
                   isLatinScript ? 'uppercase tracking-[0.06em]' : 'text-base'
                 }`}
@@ -280,9 +417,11 @@ export default function Hero() {
       <motion.button
         onClick={openVideo}
         aria-label={t('accessibility.playVideo')}
-        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: shouldReduceMotion ? 0 : 0.75, duration: shouldReduceMotion ? 0.01 : 0.5, ease: heroEase }}
+        initial={false}
+        animate={revealed ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+        transition={{ delay: shouldReduceMotion || !revealed ? 0 : 0.5, duration: shouldReduceMotion ? 0.01 : 0.5, ease: heroEase }}
+        style={{ pointerEvents: revealed ? 'auto' : 'none' }}
+        tabIndex={revealed ? 0 : -1}
         className={`btn-border-run btn-border-run--light group absolute bottom-8 z-20 flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/60 hover:bg-primary-500 md:bottom-10 md:h-16 md:w-16 ${
           isRtl ? 'left-4 md:left-8' : 'right-4 md:right-8'
         }`}
@@ -294,9 +433,11 @@ export default function Hero() {
       <motion.button
         onClick={scrollToAbout}
         aria-label={t('accessibility.scrollDown')}
-        initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: shouldReduceMotion ? 0 : 1.05, duration: shouldReduceMotion ? 0.01 : 0.4 }}
+        initial={false}
+        animate={{ opacity: revealed ? 1 : 0 }}
+        transition={{ delay: shouldReduceMotion || !revealed ? 0 : 0.8, duration: shouldReduceMotion ? 0.01 : 0.4 }}
+        style={{ pointerEvents: revealed ? 'auto' : 'none' }}
+        tabIndex={revealed ? 0 : -1}
         className="absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 transition-colors hover:text-white md:flex"
       >
         <span className="text-xs font-medium">{t('common.discoverMore')}</span>
