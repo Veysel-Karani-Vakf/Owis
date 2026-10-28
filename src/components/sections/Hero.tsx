@@ -69,7 +69,7 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
   );
 }
 
-// The preloader stays for ~0.95s (700ms + fade); typing starts right after it.
+// The hero mounts once the CMS has settled; the preloader then holds ~0.85s (600ms + fade) and typing starts right after it.
 const TITLE_TYPING_START_DELAY = 1000;
 // A deliberate, readable pace that feels like someone typing the headline live.
 const TITLE_TYPING_CHAR_DELAY = 140;

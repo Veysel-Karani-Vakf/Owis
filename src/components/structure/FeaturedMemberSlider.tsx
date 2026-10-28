@@ -428,18 +428,22 @@ export default function FeaturedMemberSlider({
 
     if (valid.length > 0) return valid;
 
-    return [
-      {
-        id: 'administrative-body',
-        slug: 'administrative-body',
-        title: pageTitle,
-        description: '',
-        layoutType: 'cards',
-        order: 1,
-        published: true,
-        members: fallbackMembers ?? [],
-      },
-    ];
+    if (fallbackMembers && fallbackMembers.length > 0) {
+      return [
+        {
+          id: 'administrative-body',
+          slug: 'administrative-body',
+          title: pageTitle,
+          description: '',
+          layoutType: 'cards',
+          order: 1,
+          published: true,
+          members: fallbackMembers,
+        },
+      ];
+    }
+
+    return [];
   }, [sections, fallbackMembers, pageTitle]);
 
   const [activeSectionId, setActiveSectionId] = useState<string>(() => {

@@ -53,12 +53,14 @@ export function cmsProjects(
   fallback: LocalizedWaqfProject[],
 ): LocalizedWaqfProject[] {
   const rows = cmsRows('projects');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const defaults = bySlug(fallback);
 
   return rows.map((row) => {
     const base = defaults.get(row.slug);
     const video = localizedObject<LocalizedWaqfProject['video']>(row.video, locale, base?.video);
+    const rawImage =
+      typeof row.image === 'string' && !row.image.startsWith('/src/assets/') ? row.image : null;
     return {
       // Slugs are open-ended once editors can add projects; the literal union
       // only describes the three that ship statically.
@@ -71,7 +73,7 @@ export function cmsProjects(
       category: locText(row.category, locale, base?.category ?? ''),
       shortDescription: locText(row.short_description, locale, base?.shortDescription ?? ''),
       fullDescription: locList(row.full_description, locale, base?.fullDescription ?? []),
-      image: scalar(row.image, base?.image ?? ''),
+      image: scalar(rawImage, base?.image ?? ''),
       imageAlt: locText(row.image_alt, locale, base?.imageAlt ?? ''),
       imageScale: row.image_scale ?? base?.imageScale,
       contributionValue: locText(row.contribution_value, locale, base?.contributionValue ?? ''),
@@ -94,7 +96,7 @@ export function cmsProjects(
 // PROGRAMS -------------------------------------------------------------------
 export function cmsPrograms(locale: Locale, fallback: Program[]): Program[] {
   const rows = cmsRows('programs');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const defaults = bySlug(fallback);
 
   return rows.map((row) => {
@@ -190,7 +192,7 @@ export function cmsNews(
   fallback: LocalizedNewsArticle[],
 ): LocalizedNewsArticle[] {
   const rows = cmsRows('news');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const defaults = bySlug(fallback);
 
   return rows.map((row) => cmsNewsRow(row, locale, defaults.get(row.slug)));
@@ -202,7 +204,7 @@ export function cmsDonations(
   fallback: DonationOpportunity[],
 ): DonationOpportunity[] {
   const rows = cmsRows('donation_opportunities');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const defaults = new Map(fallback.map((item) => [item.id, item]));
 
   return rows.map((row) => {
@@ -223,9 +225,9 @@ export function cmsDonations(
 // PARTNERS -------------------------------------------------------------------
 export type PartnerItem = { name: string; logo: string; url?: string };
 
-export function cmsPartners(locale: Locale, fallback: PartnerItem[]): PartnerItem[] {
+export function cmsPartners(locale: Locale, _fallback: PartnerItem[]): PartnerItem[] {
   const rows = cmsRows('partners');
-  if (!rows) return fallback;
+  if (!rows) return [];
   return rows.map((row) => ({
     name: locText(row.name, locale, ''),
     logo: row.logo ?? '',
@@ -285,10 +287,10 @@ type Indicator = {
 export function cmsStats<T extends Indicator>(
   group: 'yemen-pioneers' | 'statistics',
   locale: Locale,
-  fallback: T[],
+  _fallback: T[],
 ): T[] {
   const rows = cmsRows('stat_indicators');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const scoped = rows.filter((row) => row.stat_group === group);
 
   // Rows have no slug to pair with a static indicator, and pairing by position
@@ -321,7 +323,7 @@ export function cmsLibraryArticles(
   fallback: LibraryTextItem[],
 ): LibraryTextItem[] {
   const rows = cmsRows('library_articles');
-  if (!rows) return fallback;
+  if (!rows) return [];
   const scoped = rows.filter((row) => row.collection === collection);
   const defaults = bySlug(fallback);
   const prefix = textRoutePrefix[collection];
@@ -353,7 +355,7 @@ export function cmsLibraryDocuments(
   _fallback: LibraryDocumentItem[],
 ): LibraryDocumentItem[] {
   const rows = cmsRows('library_documents');
-  if (!rows) return _fallback;
+  if (!rows) return [];
   const scoped = rows.filter((row) => row.collection === collection);
 
   // Documents carry no slug, so there is no static record to borrow from; the
@@ -374,10 +376,10 @@ export function cmsLibraryDocuments(
 
 export function cmsGallery(
   locale: Locale,
-  fallback: LibraryGalleryImage[],
+  _fallback: LibraryGalleryImage[],
 ): LibraryGalleryImage[] {
   const rows = cmsRows('gallery_images');
-  if (!rows) return fallback;
+  if (!rows) return [];
 
   return rows.map((row) => ({
     id: row.id,
@@ -484,6 +486,8 @@ export function cmsStructure(
     return {
       ...page,
       published: isPagePublished !== false,
+      sections: [],
+      members: [],
     };
   }
 
@@ -533,7 +537,7 @@ export function cmsStructure(
     .sort((a, b) => a.order - b.order);
 
   const adminSection = sections.find((s) => s.slug === 'administrative-body') ?? sections[0];
-  const members = adminSection?.members ?? page.members;
+  const members = adminSection?.members ?? [];
 
   return {
     ...page,

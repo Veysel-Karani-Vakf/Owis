@@ -1,6 +1,13 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCmsVersion, markCmsSettled, setDraft, setPublished, subscribeCms } from './store';
+import {
+  getCmsVersion,
+  isCmsSettled,
+  markCmsSettled,
+  setDraft,
+  setPublished,
+  subscribeCms,
+} from './store';
 import { hydrateCms } from './hydrate';
 import {
   ADMIN_SOURCE,
@@ -21,6 +28,13 @@ export function useCmsVersion(): number {
   return useSyncExternalStore(subscribeCms, getCmsVersion, getCmsVersion);
 }
 
+/**
+ * True once the initial CMS hydration pass has finished (or a preview draft has landed).
+ */
+export function useCmsSettled(): boolean {
+  return useSyncExternalStore(subscribeCms, isCmsSettled, isCmsSettled);
+}
+
 function postToParent(message: PreviewMessage) {
   if (typeof window === 'undefined' || window.parent === window) return;
   window.parent.postMessage(message, window.location.origin);
@@ -29,10 +43,6 @@ function postToParent(message: PreviewMessage) {
 /**
  * Hydrates published content on boot and, inside the dashboard's preview frame,
  * accepts unsaved drafts over postMessage.
- *
- * Children render immediately; content with static defaults uses them for the
- * first paint, while database-only content can show its own loading state.
- * Hydration swaps the published snapshot in when it lands.
  */
 export function CmsProvider({ children }: { children: ReactNode }) {
   const preview = isPreviewFrame();
@@ -46,17 +56,19 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         if (active) setPublished(snapshot);
       })
       .catch(() => {
-        // Offline or misconfigured Supabase: the static content already shown
-        // stays in place rather than blanking the site.
+        // Offline or misconfigured Supabase: mark settled so the app can render.
       })
       .finally(() => {
         // Pages holding a redirect for CMS-only content may now decide.
-        if (active) markCmsSettled();
+        if (active) {
+          markCmsSettled();
+          if (preview) window.setTimeout(reapplyHighlight, 50);
+        }
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
     if (!preview) return undefined;
@@ -69,6 +81,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
       if (message.type === 'draft') {
         setDraft(message.snapshot);
+        markCmsSettled();
         // A re-render may recreate DOM nodes and drop the isolation attributes;
         // re-apply after React has committed the new content.
         window.setTimeout(reapplyHighlight, 50);
@@ -166,5 +179,5 @@ function applyHighlight(selector: string | null, isolate = false) {
 
 /** Re-applies the last highlight/isolation after content re-renders. */
 function reapplyHighlight() {
-  if (lastSelector && lastIsolate) applyHighlight(lastSelector, true);
+  if (lastSelector) applyHighlight(lastSelector, lastIsolate);
 }
