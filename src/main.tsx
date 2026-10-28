@@ -7,9 +7,15 @@ import { CmsProvider } from './cms/CmsProvider';
 import './index.css';
 import { localizedContent } from './i18n/content';
 
-// The landing hero's poster is the first thing seen once content is in; start
-// it now rather than after the content round trip (home only: it is ~400 KB).
-if (window.location.pathname === '/') {
+// On phones (and with reduced motion) the landing hero shows its poster, so
+// start that ~400 KB download now rather than after the content round trip.
+// On desktop the poster is only a fallback behind the video, and downloading
+// it while the video starts would only take bandwidth from the video, whose
+// adaptive quality is chosen from what the connection has to spare.
+const heroShowsPoster =
+  window.matchMedia('(max-width: 767px)').matches ||
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (window.location.pathname === '/' && heroShowsPoster) {
   const link = document.createElement('link');
   link.rel = 'preload';
   link.as = 'image';
