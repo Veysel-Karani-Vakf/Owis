@@ -10,7 +10,7 @@ import type {
   GalleryImageRow,
   LibraryArticleRow,
   LibraryDocumentRow,
-  NewsRow,
+  NewsBootRow,
   OrgMembershipRow,
   OrgPersonRow,
   OrgSectionRow,
@@ -22,7 +22,7 @@ import type {
 } from '@/lib/types';
 
 export type CmsTables = {
-  news: NewsRow[];
+  news: NewsBootRow[];
   projects: ProjectRow[];
   programs: ProgramRow[];
   pioneers: PioneerRow[];

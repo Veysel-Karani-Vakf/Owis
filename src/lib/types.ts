@@ -44,6 +44,12 @@ export type NewsRow = BaseRow & {
   source_images: string[];
 };
 
+/**
+ * The news columns fetched at boot: everything but the body, gallery and source
+ * images, which the article page fetches for the one story it shows.
+ */
+export type NewsBootRow = Omit<NewsRow, 'content' | 'gallery' | 'source_images'>;
+
 export type ProjectRow = BaseRow & {
   slug: string;
   route: string | null;

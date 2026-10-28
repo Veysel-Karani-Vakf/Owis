@@ -32,6 +32,7 @@ function HeroBackgroundVideo({ videoId, videoFile, title }: HeroBackgroundVideoP
       <video
         key={sourceKey}
         src={source.src}
+        preload="auto"
         title={title}
         className={`transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         autoPlay

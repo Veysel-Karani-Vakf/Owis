@@ -25,9 +25,11 @@ export async function uploadToMedia(file: File, folder = 'uploads'): Promise<str
   const rand = Math.abs(hashString(file.name + file.size + file.lastModified)).toString(36);
   const path = `${folder}/${base}-${rand}${ext ? '.' + ext : ''}`;
 
+  // Paths are unique per file (name + size + mtime hash), so a year-long cache
+  // is safe and keeps videos and images on the CDN edge across visits.
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
-    .upload(path, file, { cacheControl: '3600', upsert: true });
+    .upload(path, file, { cacheControl: '31536000', upsert: true });
   if (error) throw new Error(error.message);
 
   const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);

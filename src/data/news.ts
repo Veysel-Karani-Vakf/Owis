@@ -1,7 +1,6 @@
 import { cmsNews, cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 import type { BreadcrumbItem } from '@/data/about';
-import { archivedNewsArticles } from './newsArchive.generated';
 
 type LocalizedString = Partial<Record<Locale, string>> & { ar: string };
 type LocalizedParagraphs = Partial<Record<Locale, string[]>> & { ar: string[] };
@@ -1499,10 +1498,13 @@ const curatedNewsArticles = [
  * hand-picked galleries. The generated archive contains every older public
  * WordPress story and is refreshed by `npm run import:news`.
  */
-export const newsArticles: NewsArticle[] = [
-  ...curatedNewsArticles,
-  ...archivedNewsArticles,
-].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+// The generated archive (`newsArchive.generated.ts`, every older WordPress
+// story) is deliberately not bundled: the database holds all of it, and
+// shipping it cost ~900 KB of source on every page load. `npm run import:news`
+// still regenerates the file for seeding.
+export const newsArticles: NewsArticle[] = [...curatedNewsArticles].sort(
+  (a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt),
+);
 
 const dateLocales: Record<Locale, string> = {
   ar: 'ar',

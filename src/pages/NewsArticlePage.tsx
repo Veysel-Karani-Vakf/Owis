@@ -19,7 +19,6 @@ import {
   newsRoutes,
 } from '@/data/news';
 import { cmsNewsRow } from '@/cms/adapters';
-import { isCmsSettled } from '@/cms/store';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { NewsRow } from '@/lib/types';
 import { getLibraryContent } from '@/data/library';
@@ -27,48 +26,73 @@ import { useI18n } from '@/i18n/useI18n';
 
 const heroEase = [0.22, 1, 0.36, 1] as const;
 
+// Full rows (body + gallery) of the stories opened this session. The boot
+// snapshot carries the list columns only (see `NewsBootRow`), so each article
+// page fetches its own row once; `null` records a story the database does not
+// publish.
+const fullRows = new Map<string, NewsRow | null>();
+
+type FullState = { slug: string; row: NewsRow | null };
+
 export default function NewsArticlePage() {
   const { slug } = useParams();
-  const { locale, isRtl, content: siteContent } = useI18n();
+  const { locale, isRtl, content: siteContent, contentVersion } = useI18n();
   const labels = getNewsLabels(locale);
   const libraryLabels = getLibraryContent(locale).labels;
-  const storeArticle = getNewsArticle(locale, slug);
-  const [directState, setDirectState] = useState<{
-    slug: string;
-    row: NewsRow | null;
-    done: boolean;
-  } | null>(null);
+  // Header fields (title, date, image) come from the snapshot at once.
+  const storeArticle = useMemo(
+    () => getNewsArticle(locale, slug),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, slug, contentVersion],
+  );
+  // The dashboard preview streams the row under edit with its body; show that
+  // draft rather than the saved copy.
+  const storeHasBody = Boolean(storeArticle && storeArticle.content.length > 0);
+  const [fullState, setFullState] = useState<FullState | null>(() =>
+    slug && fullRows.has(slug) ? { slug, row: fullRows.get(slug) ?? null } : null,
+  );
 
   useEffect(() => {
-    if (!slug || storeArticle || isCmsSettled() || !isSupabaseConfigured) return;
+    if (!slug || storeHasBody) return undefined;
+    const known = fullRows.get(slug);
+    if (known !== undefined) {
+      setFullState({ slug, row: known });
+      return undefined;
+    }
+    if (!isSupabaseConfigured) {
+      setFullState({ slug, row: null });
+      return undefined;
+    }
     let cancelled = false;
-    supabase
-      .from('news')
-      .select('*')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) {
-          setDirectState({ slug, row: (data as NewsRow | null) ?? null, done: true });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setDirectState({ slug, row: null, done: true });
-        }
-      });
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('news')
+          .select('*')
+          .eq('slug', slug)
+          .eq('is_published', true)
+          .maybeSingle();
+        const row = error ? null : ((data as NewsRow | null) ?? null);
+        // Only a definite answer is remembered; a failed request is retried next time.
+        if (!error) fullRows.set(slug, row);
+        if (!cancelled) setFullState({ slug, row });
+      } catch {
+        if (!cancelled) setFullState({ slug, row: null });
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [slug, storeArticle]);
+  }, [slug, storeHasBody]);
 
-  const directArticle = useMemo(() => {
-    if (!slug || directState?.slug !== slug || !directState.row) return undefined;
-    return cmsNewsRow(directState.row, locale);
-  }, [directState, locale, slug]);
+  const fullArticle = useMemo(() => {
+    if (!slug || fullState?.slug !== slug || !fullState.row) return undefined;
+    return cmsNewsRow(fullState.row, locale);
+  }, [fullState, locale, slug]);
+  const fullDone = storeHasBody || Boolean(slug && fullState?.slug === slug);
 
-  const article = storeArticle ?? directArticle;
+  const article = storeHasBody ? storeArticle : (fullArticle ?? storeArticle);
+  const bodyPending = Boolean(article) && !storeHasBody && !fullArticle && !fullDone;
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const shouldReduceMotion = useReducedMotion();
@@ -98,8 +122,7 @@ export default function NewsArticlePage() {
   }, [article, siteContent.siteConfig.logo, siteContent.siteConfig.name]);
 
   if (!article) {
-    const directDone = Boolean(slug && directState?.slug === slug && directState.done);
-    if (!isCmsSettled() && !directDone) {
+    if (!fullDone) {
       return (
         <main className="min-h-screen bg-white">
           <header className="relative isolate overflow-hidden bg-dark-950 pt-28 md:pt-32">
@@ -218,12 +241,22 @@ export default function NewsArticlePage() {
                 </p>
               )}
 
-              <div className="space-y-6 text-lg leading-9 text-dark-800">
-                {article.content.map((paragraph, index) => (
-                  <p key={`${article.id}-${index}`} dir="auto">
-                    {paragraph}
-                  </p>
-                ))}
+              <div className="space-y-6 text-lg leading-9 text-dark-800" aria-busy={bodyPending}>
+                {bodyPending ? (
+                  <>
+                    <div className="h-5 w-full animate-pulse rounded-lg bg-dark-100" />
+                    <div className="h-5 w-11/12 animate-pulse rounded-lg bg-dark-100" />
+                    <div className="h-5 w-4/5 animate-pulse rounded-lg bg-dark-100" />
+                    <div className="h-5 w-full animate-pulse rounded-lg bg-dark-100" />
+                    <div className="h-5 w-3/5 animate-pulse rounded-lg bg-dark-100" />
+                  </>
+                ) : (
+                  article.content.map((paragraph, index) => (
+                    <p key={`${article.id}-${index}`} dir="auto">
+                      {paragraph}
+                    </p>
+                  ))
+                )}
               </div>
 
             </div>

@@ -5,6 +5,17 @@ import App from './App.tsx';
 import { I18nProvider } from './i18n/LanguageProvider';
 import { CmsProvider } from './cms/CmsProvider';
 import './index.css';
+import { localizedContent } from './i18n/content';
+
+// The landing hero's poster is the first thing seen once content is in; start
+// it now rather than after the content round trip (home only: it is ~400 KB).
+if (window.location.pathname === '/') {
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = localizedContent.ar.hero.posterImage;
+  document.head.appendChild(link);
+}
 
 // A data router (rather than <BrowserRouter>) so the dashboard can block
 // navigation — including the browser's back button — while edits are unsaved.
