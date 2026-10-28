@@ -130,6 +130,9 @@ function YouTubeBackground({ id, paused, onPlaying, title }: BackgroundVideoProp
         iv_load_policy: 3,
         disablekb: 1,
         playsinline: 1,
+        // Best effort: asks the player to start at full HD instead of ramping
+        // up from a low rendition (honoured when bandwidth and size allow).
+        vq: 'hd1080',
         enablejsapi: 1,
         origin: window.location.origin,
       })}
@@ -273,11 +276,10 @@ export default function Hero() {
     ease: heroEase,
   };
 
-  // The video shows the moment it plays. YouTube's player puts its title bar
-  // and "More videos" tray on screen for ~3.5s at every start (also after the
-  // modal resumes it); the iframe is scaled in index.css so those edges fall
-  // outside the hero. Its centre pause glyph cannot be cropped and stays for
-  // those seconds: an uploaded file has no such chrome at all.
+  // The video shows the moment it plays, at its native sharpness: the player is
+  // never upscaled to hide the title bar and controls YouTube puts on screen
+  // for ~3.5s at every start (an upscale visibly softened the picture). An
+  // uploaded file has no such chrome at all.
   const videoVisible = mediaState === 'video' && !backgroundVideoPaused;
   const videoAnimate = videoVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 };
   const videoTransition = videoVisible

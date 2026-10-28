@@ -999,10 +999,10 @@
   height: 56.25vw;
   min-height: 100svh;
   min-width: 177.78svh;
-  /* Scaled past the edges so YouTube's title bar (top) and "More videos" tray
-     and logo (bottom), shown for a few seconds at every playback start, fall
-     outside the hero: 1.22 crops 9% of the player's height on each edge. */
-  transform: translate(-50%, -50%) scale(1.22);
+  /* Never scaled beyond cover: any upscale softens the picture, and the user
+     wants the video at its native sharpness even though YouTube's title bar
+     then shows for a few seconds at every playback start. */
+  transform: translate(-50%, -50%);
   pointer-events: none;
   border: 0;
   filter: saturate(1.05) contrast(1.05);
