@@ -273,21 +273,16 @@ export default function Hero() {
     ease: heroEase,
   };
 
-  // YouTube shows its title bar and centre controls for about 3.5s whenever
-  // playback starts (verified against a bare embed: also with the modal
-  // resuming it). The stage stays dark that long and the video blooms in once
-  // they are gone; an uploaded file has no such chrome and fades in at once.
+  // The video shows the moment it plays. YouTube's player puts its title bar
+  // and "More videos" tray on screen for ~3.5s at every start (also after the
+  // modal resumes it); the iframe is scaled in index.css so those edges fall
+  // outside the hero. Its centre pause glyph cannot be cropped and stays for
+  // those seconds: an uploaded file has no such chrome at all.
   const videoVisible = mediaState === 'video' && !backgroundVideoPaused;
-  const videoAnimate = !videoVisible
-    ? { opacity: 0, scale: 1.04 }
-    : videoSource?.kind === 'youtube'
-      ? { opacity: [0, 0, 1], scale: [1.04, 1.03, 1] }
-      : { opacity: 1, scale: 1 };
-  const videoTransition = !videoVisible
-    ? { duration: 0.3 }
-    : videoSource?.kind === 'youtube'
-      ? { duration: shouldReduceMotion ? 0.01 : 5.2, times: [0, 0.85, 1], ease: 'easeInOut' as const }
-      : visualTransition;
+  const videoAnimate = videoVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.04 };
+  const videoTransition = videoVisible
+    ? { duration: shouldReduceMotion ? 0.01 : 0.6, ease: heroEase }
+    : { duration: 0.3 };
 
   return (
     <section

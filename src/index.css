@@ -999,10 +999,23 @@
   height: 56.25vw;
   min-height: 100svh;
   min-width: 177.78svh;
-  transform: translate(-50%, -50%);
+  /* Scaled past the edges so YouTube's title bar (top) and "More videos" tray
+     and logo (bottom), shown for a few seconds at every playback start, fall
+     outside the hero: 1.22 crops 9% of the player's height on each edge. */
+  transform: translate(-50%, -50%) scale(1.22);
   pointer-events: none;
   border: 0;
   filter: saturate(1.05) contrast(1.05);
+}
+
+/* An uploaded background video has no player chrome: it simply covers the hero. */
+.yt-bg-container video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
 @media (max-width: 767px) {
