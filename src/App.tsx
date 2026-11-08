@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import ScrollRestoration from '@/components/internal/ScrollRestoration';
 import { useCmsSettled } from '@/cms/CmsProvider';
 import { isPreviewFrame } from '@/cms/preview';
+import { usePageViewTracking } from '@/analytics/usePageViewTracking';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
@@ -38,6 +39,7 @@ function App() {
   const { pathname } = location;
   const cmsSettled = useCmsSettled();
   const preview = isPreviewFrame();
+  usePageViewTracking(pathname, location.search, cmsSettled);
 
   // The admin dashboard renders its own chrome (no public Header/Footer/Preloader).
   if (pathname.startsWith('/admin')) {

@@ -6,6 +6,11 @@ import { I18nProvider } from './i18n/LanguageProvider';
 import { CmsProvider } from './cms/CmsProvider';
 import './index.css';
 import { localizedContent } from './i18n/content';
+import { initAnalytics } from './analytics/googleAnalytics';
+
+// Google Analytics 4: loads gtag.js asynchronously on the public production
+// site only (never on /admin or inside the dashboard preview).
+initAnalytics();
 
 // On phones (and with reduced motion) the landing hero shows its poster, so
 // start that ~400 KB download now rather than after the content round trip.
