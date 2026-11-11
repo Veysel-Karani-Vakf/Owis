@@ -34,6 +34,8 @@ import LibraryTextPage from '@/pages/library/LibraryTextPage';
 import LibraryGalleryPage from '@/pages/library/LibraryGalleryPage';
 import LibraryDocumentsPage from '@/pages/library/LibraryDocumentsPage';
 import AwardLandingPage from '@/pages/award/AwardLandingPage';
+import AwardApplyPage from '@/pages/award/AwardApplyPage';
+import AwardSuccessPage from '@/pages/award/AwardSuccessPage';
 
 function App() {
   const location = useLocation();
@@ -101,6 +103,8 @@ function App() {
               <Route path="/donate/result" element={<DonateResultPage />} />
               <Route path="/bank-accounts" element={<BankAccountsPage />} />
               <Route path="/volunteer-award" element={<AwardLandingPage />} />
+              <Route path="/volunteer-award/apply" element={<AwardApplyPage />} />
+              <Route path="/volunteer-award/success" element={<AwardSuccessPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

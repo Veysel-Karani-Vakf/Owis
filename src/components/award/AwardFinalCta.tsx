@@ -66,7 +66,7 @@ export default function AwardFinalCta({ content }: AwardFinalCtaProps) {
               {cta.description}
             </motion.p>
             <motion.div {...action} className="mt-8 flex justify-center lg:justify-start">
-              <Link to={awardRoutes.eligibility} className={awardButton.light}>
+              <Link to={awardRoutes.apply} className={awardButton.light}>
                 {cta.button}
                 <ArrowIcon
                   className={`h-[18px] w-[18px] transition-transform duration-300 ${

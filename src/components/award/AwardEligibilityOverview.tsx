@@ -86,7 +86,7 @@ export default function AwardEligibilityOverview({ content }: AwardEligibilityOv
         </ol>
 
         <div className="mt-10 flex justify-center">
-          <Link to={awardRoutes.eligibility} className={awardButton.primaryOnDark}>
+          <Link to={awardRoutes.apply} className={awardButton.primaryOnDark}>
             {eligibility.cta}
             <ArrowIcon
               className={`h-[18px] w-[18px] transition-transform duration-300 ${

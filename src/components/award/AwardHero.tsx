@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { awardMedia, awardSectionIds, type AwardContent } from '@/data/award/content';
 import { awardRoutes } from '@/data/award/routes';
+import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
 import { quickLinkIcons } from './awardIcons';
 import { awardButton, awardEase, scrollToAwardSection } from './awardUi';
@@ -11,17 +12,35 @@ type AwardHeroProps = {
   content: AwardContent;
 };
 
+// Sparkles around the trophy (percent positions inside the trophy stage, size in px).
+const SPARKLES: [number, number, number][] = [
+  [12, 18, 3],
+  [84, 12, 2],
+  [92, 38, 3],
+  [6, 52, 2],
+  [18, 80, 2],
+  [78, 74, 3],
+  [64, 6, 2],
+  [34, 92, 2],
+  [96, 64, 2],
+  [4, 30, 2],
+  [50, 2, 2],
+  [88, 88, 2],
+];
+
 /**
- * Landing hero: full-bleed photograph under the site's dark / deep-red veil,
- * white title with the year in the official red, two calls to action and the
- * quick-links card floating over the lower edge. The site header stays in its
- * usual transparent state above it.
+ * Landing hero after the official 2026 poster: the gold trophy on a deep-red
+ * glow with concentric rings and sparkles, the two partner marks, "back again",
+ * the title, the "second edition | 2026" pill and the hashtag. The site header
+ * keeps its usual transparent state above it.
  */
 export default function AwardHero({ content }: AwardHeroProps) {
   const { hero, labels } = content;
-  const { isRtl } = useI18n();
+  const { isRtl, locale } = useI18n();
   const reduceMotion = useReducedMotion();
+  const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  const float = !reduceMotion && !isNarrow;
 
   const rise = (delay: number, distance = 22) =>
     reduceMotion
@@ -34,7 +53,7 @@ export default function AwardHero({ content }: AwardHeroProps) {
 
   // Latin display type (en/tr) runs wider than Arabic, so it gets a smaller scale.
   const titleSize = isRtl
-    ? 'text-[clamp(2.15rem,9.5vw,2.75rem)] sm:text-5xl lg:text-[3.6rem] xl:text-[4.1rem]'
+    ? 'text-[clamp(2.2rem,9.5vw,2.9rem)] sm:text-5xl lg:text-[3.6rem] xl:text-[4.1rem]'
     : 'text-[clamp(1.9rem,8vw,2.4rem)] sm:text-[2.6rem] lg:text-[2.9rem] xl:text-[3.2rem]';
 
   return (
@@ -44,41 +63,51 @@ export default function AwardHero({ content }: AwardHeroProps) {
         aria-labelledby="award-hero-title"
         className="relative isolate overflow-hidden bg-dark-950"
       >
-        <motion.img
-          src={awardMedia.hero.src}
-          srcSet={awardMedia.hero.srcSet}
-          sizes="100vw"
-          width={awardMedia.hero.width}
-          height={awardMedia.hero.height}
-          alt={hero.imageAlt}
-          // React 18 only passes the lowercase attribute through to the DOM.
-          {...{ fetchpriority: 'high' }}
-          decoding="async"
-          initial={reduceMotion ? false : { scale: 1.07, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.6, ease: awardEase }}
-          className="absolute inset-0 -z-20 h-full w-full object-cover object-[42%_50%] lg:object-[30%_50%]"
+        {/* The poster's red: brightest behind the trophy, falling to near black at the edges. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_28%,#b4121c_0%,#8a0b14_24%,#4d0306_55%,#1a0102_90%)] lg:ltr:bg-[radial-gradient(circle_at_72%_52%,#b4121c_0%,#8a0b14_22%,#4d0306_50%,#1a0102_82%)] lg:rtl:bg-[radial-gradient(circle_at_28%_52%,#b4121c_0%,#8a0b14_22%,#4d0306_50%,#1a0102_82%)]"
         />
-        {/* Veil: an even dark wash on phones; on desktop dark + deep red from the text side, opening onto the photo. */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-dark-950/80 via-dark-950/70 to-dark-950/85 lg:hidden" />
-        <div className="absolute inset-0 -z-10 hidden from-dark-950/95 from-0% via-primary-950/80 via-40% to-dark-950/20 to-80% lg:block ltr:bg-gradient-to-r rtl:bg-gradient-to-l" />
-        <div className="absolute inset-0 -z-10 ltr:bg-[radial-gradient(circle_at_22%_45%,rgba(218,8,18,0.22),transparent_42%)] rtl:bg-[radial-gradient(circle_at_78%_45%,rgba(218,8,18,0.22),transparent_42%)]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-t from-dark-950/85 to-transparent" />
-        {/* Keeps the site's transparent header legible over bright parts of the photo. */}
-        <div className="absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-dark-950/60 to-transparent" />
-        <div aria-hidden="true" className="geometric-pattern absolute inset-0 -z-10 opacity-20" />
+        <div aria-hidden="true" className="geometric-pattern absolute inset-0 -z-10 opacity-10" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-dark-950/50 to-transparent"
+        />
 
-        <div className="relative mx-auto flex min-h-[620px] max-w-7xl items-center px-4 pb-32 pt-28 sm:min-h-[660px] md:px-8 lg:min-h-[700px] lg:pb-36 lg:pt-32 xl:min-h-[740px]">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-6 px-4 pb-32 pt-28 md:px-8 lg:min-h-[720px] lg:grid-cols-[1.08fr_0.92fr] lg:gap-10 lg:pb-40 lg:pt-32 xl:min-h-[760px]">
           <div className="mx-auto w-full max-w-[36rem] text-center lg:mx-0 lg:max-w-[40rem] lg:text-start">
+            {/* Partner marks, as on the poster */}
+            <motion.ul {...rise(0.05, 12)} className="mb-7 inline-flex items-center gap-4 sm:gap-5">
+              <li>
+                <img
+                  src={awardMedia.logos.volunteerUnit}
+                  alt={hero.partners.volunteerUnit}
+                  width={278}
+                  height={320}
+                  className="h-14 w-auto brightness-0 invert sm:h-16 lg:h-[4.5rem]"
+                />
+              </li>
+              <li aria-hidden="true" className="h-12 w-px bg-white/30 sm:h-14" />
+              <li>
+                <img
+                  src={awardMedia.logos.maanLight}
+                  alt={hero.partners.maan}
+                  width={201}
+                  height={320}
+                  className="h-16 w-auto sm:h-[4.5rem] lg:h-20"
+                />
+              </li>
+            </motion.ul>
+
             <motion.p
-              {...rise(0.1, 14)}
-              className="inline-flex items-center gap-3 text-sm font-semibold text-white/85 sm:text-[15px]"
+              {...rise(0.12, 14)}
+              className="flex items-center justify-center gap-3 text-[15px] font-semibold text-white/85 sm:text-base lg:justify-start"
             >
-              <span aria-hidden="true" className="h-px w-8 bg-primary-400" />
+              <span aria-hidden="true" className="h-px w-8 bg-primary-300" />
               {hero.eyebrow}
             </motion.p>
 
-            <h1 id="award-hero-title" className={`mt-5 font-brand font-bold leading-[1.18] text-white ${titleSize}`}>
+            <h1 id="award-hero-title" className={`mt-4 font-brand font-bold leading-[1.18] text-white ${titleSize}`}>
               {hero.titleLines.map((line, index) => (
                 <span key={line} className="block overflow-hidden pb-[0.08em] lg:whitespace-nowrap">
                   <motion.span
@@ -95,32 +124,30 @@ export default function AwardHero({ content }: AwardHeroProps) {
                   </motion.span>{' '}
                 </span>
               ))}
-              <motion.span
-                className="mt-1 block font-bold text-primary-500 [font-size:0.86em] [letter-spacing:0.04em]"
-                {...(reduceMotion
-                  ? {}
-                  : {
-                      initial: { opacity: 0, y: 14, filter: 'blur(6px)' },
-                      animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-                      transition: { duration: 0.9, delay: 0.55, ease: awardEase },
-                    })}
-              >
-                {hero.year}
-              </motion.span>
+              <span className="sr-only"> {hero.year}</span>
             </h1>
 
             <motion.p
-              {...rise(0.7)}
-              className="mx-auto mt-6 max-w-[34rem] text-[15px] leading-[1.95] text-white/80 sm:text-lg lg:mx-0 lg:mt-7"
+              {...rise(0.5, 14)}
+              className="mt-5 inline-flex items-center gap-3 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-[15px] font-bold text-white backdrop-blur-sm sm:text-base"
+            >
+              {hero.edition}
+              <span aria-hidden="true" className="h-4 w-px bg-white/40" />
+              <span className="font-latin tracking-wide">{hero.year}</span>
+            </motion.p>
+
+            <motion.p
+              {...rise(0.65)}
+              className="mx-auto mt-6 max-w-[34rem] text-[15px] leading-[1.95] text-white/80 sm:text-lg lg:mx-0"
             >
               {hero.description}
             </motion.p>
 
             <motion.div
-              {...rise(0.85)}
+              {...rise(0.8)}
               className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start"
             >
-              <Link to={awardRoutes.eligibility} className={awardButton.primaryOnDark}>
+              <Link to={awardRoutes.apply} className={awardButton.light}>
                 {hero.primaryCta}
                 <ArrowIcon
                   className={`h-[18px] w-[18px] transition-transform duration-300 ${
@@ -140,6 +167,81 @@ export default function AwardHero({ content }: AwardHeroProps) {
                 {hero.secondaryCta}
               </a>
             </motion.div>
+
+            <motion.div
+              {...rise(0.95, 10)}
+              className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:justify-start"
+            >
+              <span className="text-sm font-bold tracking-wide text-white/70" dir="rtl">
+                {hero.hashtag}
+              </span>
+              {locale === 'ar' && (
+                <img
+                  src="/media/hero-slogan-ar-white.png"
+                  alt="وقفنا معًا لنهضة اليمن"
+                  width={823}
+                  height={167}
+                  className="h-7 w-auto opacity-80 sm:h-8"
+                />
+              )}
+            </motion.div>
+          </div>
+
+          {/* Trophy stage */}
+          <div className="relative order-first mx-auto flex h-[300px] w-full max-w-[22rem] items-center justify-center sm:h-[360px] lg:order-none lg:h-[560px] lg:max-w-none xl:h-[600px]">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              {[1, 0.74, 0.5].map((scale) => (
+                <span
+                  key={scale}
+                  className="absolute aspect-square rounded-full border border-white/10"
+                  style={{ width: `${scale * 118}%` }}
+                />
+              ))}
+              <span className="absolute aspect-square w-[70%] rounded-full bg-[radial-gradient(circle,rgba(255,206,140,0.28),transparent_62%)]" />
+            </div>
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+              {SPARKLES.map(([x, y, size], index) => (
+                <motion.span
+                  key={`${x}-${y}`}
+                  className="absolute rounded-full bg-[#ffe7c2]"
+                  style={{
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    width: size,
+                    height: size,
+                    boxShadow: '0 0 8px 2px rgba(255,214,150,0.45)',
+                  }}
+                  initial={false}
+                  animate={float && index % 3 === 0 ? { opacity: [0.25, 0.9, 0.25] } : { opacity: 0.55 }}
+                  transition={
+                    float && index % 3 === 0
+                      ? { duration: 3 + index * 0.4, repeat: Infinity, ease: 'easeInOut' }
+                      : { duration: 0 }
+                  }
+                />
+              ))}
+            </div>
+            <motion.img
+              src={awardMedia.trophy.src}
+              alt={hero.imageAlt}
+              width={awardMedia.trophy.width}
+              height={awardMedia.trophy.height}
+              // React 18 only passes the lowercase attribute through to the DOM.
+              {...{ fetchpriority: 'high' }}
+              decoding="async"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: 24 }}
+              animate={float ? { opacity: 1, scale: 1, y: [0, -10, 0] } : { opacity: 1, scale: 1, y: 0 }}
+              transition={
+                float
+                  ? {
+                      opacity: { duration: 1, ease: awardEase },
+                      scale: { duration: 1.1, ease: awardEase },
+                      y: { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1.1 },
+                    }
+                  : { duration: reduceMotion ? 0 : 1, ease: awardEase }
+              }
+              className="relative h-full w-auto max-w-none drop-shadow-[0_34px_50px_rgba(0,0,0,0.5)]"
+            />
           </div>
         </div>
       </section>

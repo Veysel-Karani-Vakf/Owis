@@ -53,14 +53,20 @@ export type AwardContent = {
     sectionNav: string;
   };
   hero: {
-    /** Small line above the title naming the organiser. */
+    /** Small line above the title (from the official poster). */
     eyebrow: string;
     titleLines: [string, string];
+    /** Edition shown beside the year, as on the poster. */
+    edition: string;
     year: string;
     description: string;
     primaryCta: string;
     secondaryCta: string;
+    /** Alt text of the award trophy. */
     imageAlt: string;
+    hashtag: string;
+    /** Names of the two partner marks shown on the poster. */
+    partners: { volunteerUnit: string; maan: string };
     quickLinks: AwardQuickLink[];
   };
   about: {
@@ -82,23 +88,26 @@ export type AwardContent = {
 };
 
 /**
- * Photographs, shared by every language. Both come from the waqf's own
- * development program in Wadi Hadramout (Yemen), re-encoded as responsive WebP
- * under public/award/ (originals: public/library/profile/photos/inst-4.jpg and
- * inst-1.jpg). Replace them here once authentic award/volunteer photos exist.
+ * Award imagery, shared by every language (public/award/):
+ *  - the trophy, cut out of the official 2026 poster;
+ *  - the Volunteer Unit and "Together We Build Yemen" marks shown on the poster
+ *    (the latter rendered from the supplied logo PDF, with a white-lettered
+ *    variant for dark backgrounds);
+ *  - a photo from the first edition's honouring ceremony (2025 certificates in
+ *    front of the event banner), from the waqf's shared photo folder.
  */
 export const awardMedia = {
-  hero: {
-    src: '/award/award-hero-1600.webp',
-    srcSet: '/award/award-hero-720.webp 720w, /award/award-hero-1100.webp 1100w, /award/award-hero-1600.webp 1600w',
-    width: 1600,
-    height: 1067,
+  trophy: { src: '/award/award-trophy.webp', width: 364, height: 856 },
+  logos: {
+    volunteerUnit: '/award/award-logo-volunteer-unit.webp',
+    maan: '/award/award-logo-maan.webp',
+    maanLight: '/award/award-logo-maan-light.webp',
   },
   about: {
-    src: '/award/award-about-854.webp',
-    srcSet: '/award/award-about-560.webp 560w, /award/award-about-854.webp 854w',
-    width: 854,
-    height: 1067,
+    src: '/award/award-ceremony-880.webp',
+    srcSet: '/award/award-ceremony-560.webp 560w, /award/award-ceremony-880.webp 880w',
+    width: 880,
+    height: 1100,
   },
   /** og:image — JPEG for the widest crawler support (1200x630). */
   share: '/award/award-share.jpg',
@@ -117,14 +126,17 @@ const ar: AwardContent = {
     sectionNav: 'أقسام صفحة الجائزة',
   },
   hero: {
-    eyebrow: 'مبادرة من وقف أويس القرني',
+    eyebrow: 'تعود من جديد',
     titleLines: ['جائزة أويس', 'للأعمال التطوعية'],
+    edition: 'النسخة الثانية',
     year: '2026',
     description:
       'نحتفي بالعطاء، ونُبرز المبادرات التطوعية الملهمة داخل اليمن؛ تقديرًا لأصحابها، وتشجيعًا لعملٍ تطوعيٍّ يدوم أثره.',
     primaryCta: 'تقدّم للجائزة',
     secondaryCta: 'تعرّف على الشروط',
-    imageAlt: 'تسليم شهادة لأحد المشاركين في برنامج تنموي نفّذه وقف أويس القرني في وادي حضرموت',
+    imageAlt: 'مجسّم جائزة أويس للأعمال التطوعية',
+    hashtag: '#تطوعك_وقف',
+    partners: { volunteerUnit: 'وحدة التطوع — وقف أويس القرني', maan: 'مبادرة معًا نبني اليمن' },
     quickLinks: [
       { target: 'about', title: 'عن الجائزة', description: 'تعرّف على فكرتها وأهدافها' },
       { target: 'categories', title: 'مجالات المشاركة', description: 'في مختلف المجالات التنموية' },
@@ -150,8 +162,8 @@ const ar: AwardContent = {
       { id: 'sustain', title: 'تشجيع الاستدامة', description: 'دعم ثقافة التطوع التي يمتدّ أثرها ويدوم.' },
     ],
     quote: 'نؤمن بأن المبادرات التطوعية تصنع فرقًا حقيقيًا في حياة الناس والمجتمعات.',
-    imageAlt: 'متحدث في برنامج لرفع كفاءة منظمات المجتمع المدني نفّذه وقف أويس القرني في وادي حضرموت',
-    imageCaption: 'من برامج وقف أويس القرني التنموية في اليمن',
+    imageAlt: 'شهادات تكريم جائزة أويس للأعمال التطوعية أمام لافتة حفل التكريم',
+    imageCaption: 'من حفل تكريم النسخة الأولى من الجائزة (2025)',
   },
   categories: {
     title: 'مجالات المشاركة',
@@ -200,7 +212,7 @@ const ar: AwardContent = {
         description: 'أن يدير فريق المبادرة أعمالها وينفّذها باستقلالية.',
       },
     ],
-    cta: 'اطّلع على الشروط كاملة',
+    cta: 'ابدأ الترشيح الآن',
   },
   steps: {
     title: 'كيف تشارك؟',
@@ -277,14 +289,17 @@ const en: AwardContent = {
     sectionNav: 'Award page sections',
   },
   hero: {
-    eyebrow: 'An initiative of Veysel Karani Waqf',
+    eyebrow: 'Back once again',
     titleLines: ['Owais', 'Volunteer Award'],
+    edition: 'Second edition',
     year: '2026',
     description:
       'We celebrate giving and spotlight inspiring volunteer initiatives inside Yemen — honouring the people behind them and encouraging volunteer work whose impact lasts.',
     primaryCta: 'Apply for the award',
     secondaryCta: 'Read the conditions',
-    imageAlt: 'A participant receives a certificate at a Veysel Karani Waqf development program in Wadi Hadramout',
+    imageAlt: 'The Owais Volunteer Award trophy',
+    hashtag: '#تطوعك_وقف',
+    partners: { volunteerUnit: 'Volunteer Unit — Veysel Karani Waqf', maan: 'Together We Build Yemen initiative' },
     quickLinks: [
       { target: 'about', title: 'About the award', description: 'Its idea and goals' },
       { target: 'categories', title: 'Participation fields', description: 'Across development fields' },
@@ -318,8 +333,8 @@ const en: AwardContent = {
       },
     ],
     quote: 'We believe volunteer initiatives make a real difference in the lives of people and communities.',
-    imageAlt: 'A speaker at a civil-society capacity-building program run by Veysel Karani Waqf in Wadi Hadramout',
-    imageCaption: 'From Veysel Karani Waqf’s development programs in Yemen',
+    imageAlt: 'Owais Volunteer Award certificates in front of the honouring ceremony banner',
+    imageCaption: 'From the first edition’s honouring ceremony (2025)',
   },
   categories: {
     title: 'Participation fields',
@@ -385,7 +400,7 @@ const en: AwardContent = {
         description: 'The initiative team must manage and implement its work independently.',
       },
     ],
-    cta: 'View the full conditions',
+    cta: 'Start your nomination',
   },
   steps: {
     title: 'How to participate?',
@@ -480,14 +495,20 @@ const tr: AwardContent = {
     sectionNav: 'Ödül sayfası bölümleri',
   },
   hero: {
-    eyebrow: 'Veysel Karani Vakfı’nın bir girişimi',
+    eyebrow: 'Yeniden başlıyor',
     titleLines: ['Owais', 'Gönüllülük Ödülü'],
+    edition: 'İkinci dönem',
     year: '2026',
     description:
       'Gönüllülüğü kutluyor, Yemen’deki ilham veren gönüllü girişimleri öne çıkarıyoruz; emeği geçenleri onurlandırıyor, etkisi kalıcı gönüllü çalışmaları teşvik ediyoruz.',
     primaryCta: 'Ödüle başvur',
     secondaryCta: 'Koşulları incele',
-    imageAlt: 'Veysel Karani Vakfı’nın Hadramut Vadisi’ndeki bir kalkınma programında katılımcıya sertifika takdimi',
+    imageAlt: 'Owais Gönüllülük Ödülü kupası',
+    hashtag: '#تطوعك_وقف',
+    partners: {
+      volunteerUnit: 'Gönüllülük Birimi — Veysel Karani Vakfı',
+      maan: 'Birlikte Yemen’i İnşa Ediyoruz girişimi',
+    },
     quickLinks: [
       { target: 'about', title: 'Ödül hakkında', description: 'Fikri ve hedefleri' },
       { target: 'categories', title: 'Katılım alanları', description: 'Farklı kalkınma alanlarında' },
@@ -521,9 +542,8 @@ const tr: AwardContent = {
       },
     ],
     quote: 'Gönüllü girişimlerin insanların ve toplumların hayatında gerçek bir fark yarattığına inanıyoruz.',
-    imageAlt:
-      'Veysel Karani Vakfı’nın Hadramut Vadisi’nde yürüttüğü sivil toplum kapasite geliştirme programında bir konuşmacı',
-    imageCaption: 'Veysel Karani Vakfı’nın Yemen’deki kalkınma programlarından',
+    imageAlt: 'Tören pankartı önünde Owais Gönüllülük Ödülü sertifikaları',
+    imageCaption: 'Ödülün birinci döneminin onur töreninden (2025)',
   },
   categories: {
     title: 'Katılım alanları',
@@ -588,7 +608,7 @@ const tr: AwardContent = {
         description: 'Girişimin çalışmaları kendi ekibi tarafından bağımsız olarak yönetilmeli ve uygulanmalıdır.',
       },
     ],
-    cta: 'Koşulların tamamını görün',
+    cta: 'Aday göstermeye başlayın',
   },
   steps: {
     title: 'Nasıl katılırım?',
