@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useTopOnlyChrome } from '@/hooks/useTopOnlyChrome';
+import { useLightTopChrome } from '@/hooks/useLightTopChrome';
 import { useI18n } from '@/i18n/useI18n';
 import { getAboutContent } from '@/data/about';
 import { donateRoute } from '@/data/donate';
@@ -16,7 +17,9 @@ export default function Header() {
   // On top-only-chrome routes the header sits at the top of the document and
   // scrolls away with it, so it never needs the glassy "scrolled" treatment.
   const topOnly = useTopOnlyChrome();
-  const scrolled = useScrolled(60) && !topOnly;
+  // Light-stage pages (the volunteer award) keep the solid header from the top.
+  const lightTop = useLightTopChrome();
+  const scrolled = (useScrolled(60) || lightTop) && !topOnly;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [programsOpen, setProgramsOpen] = useState(false);
