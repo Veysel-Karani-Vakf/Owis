@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { getAboutContent } from '@/data/about';
 import { donateRoute } from '@/data/donate';
 import { getProgramsContent } from '@/data/programs';
+import { withAwardNavLink } from '@/data/award/routes';
 import { useI18n } from '@/i18n/useI18n';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { navMenuFor } from '@/i18n/content';
@@ -17,7 +18,7 @@ type MobileMenuProps = {
 export default function MobileMenu({ onClose, onNavClick }: MobileMenuProps) {
   const { content, t, isRtl, locale } = useI18n();
   const { siteConfig } = content;
-  const navLinks = content.navLinks ?? [];
+  const navLinks = withAwardNavLink(content.navLinks, locale);
   const donateUrl = siteConfig.donateUrl || donateRoute;
   const aboutNavItems = getAboutContent(locale).nav;
   const programNavItems = getProgramsContent(locale).nav;
