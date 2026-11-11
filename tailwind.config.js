@@ -49,43 +49,6 @@ export default {
         },
         cream: '#ffffff',
         warm: '#f7f5f5',
-        // Owais Volunteer Award 2026 sub-brand, used only by the /volunteer-award
-        // pages: forest green, warm cream and a muted gold (from the approved design).
-        award: {
-          ink: '#0f383c',
-          body: '#5b6670',
-          line: '#e7e2d8',
-          green: {
-            50: '#f1f7f3',
-            100: '#ddece3',
-            200: '#c5dbcc',
-            300: '#9cc3ae',
-            400: '#6aa088',
-            500: '#2f806a',
-            600: '#0e6b56',
-            700: '#045c4b',
-            800: '#05453c',
-            900: '#032f2c',
-            950: '#021d1c',
-          },
-          gold: {
-            50: '#fbf7ef',
-            100: '#f4e8d2',
-            200: '#ead5ae',
-            300: '#dcbb85',
-            400: '#c7a069',
-            500: '#b68342',
-            600: '#8f6631',
-            700: '#6f4f27',
-          },
-          cream: {
-            50: '#fdfbf8',
-            100: '#f9f5ee',
-            200: '#f4ece1',
-            300: '#ede2d2',
-            400: '#e2d3bd',
-          },
-        },
       },
       animation: {
         'marquee': 'marquee 40s linear infinite',

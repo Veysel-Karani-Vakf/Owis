@@ -39,9 +39,10 @@ const TREES: [number, number, number][] = [
 ];
 
 /**
- * An original, illustrated Yemeni highland: hazy ranges, terraced slopes and a
- * hilltop village of tower houses. Purely decorative backdrop for the
- * conditions band; its top and bottom fade into the section colour (#f6f0e6).
+ * An original, illustrated Yemeni highland at dusk: ranges against a deep-red
+ * glow, terraced slopes and a hilltop village of tower houses with lit windows.
+ * Purely decorative backdrop for the dark conditions band; its top and bottom
+ * fade into the section colour (dark-950, #000).
  */
 export default function AwardHighlands({ className = '' }: AwardHighlandsProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
@@ -61,19 +62,20 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
     >
       <defs>
         <linearGradient id={sky} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f6f0e6" />
-          <stop offset="0.42" stopColor="#f0e6d4" />
-          <stop offset="0.7" stopColor="#f3ebde" />
-          <stop offset="1" stopColor="#f6f0e6" />
+          <stop offset="0" stopColor="#000000" />
+          <stop offset="0.42" stopColor="#1a0708" />
+          <stop offset="0.62" stopColor="#3a0a0e" />
+          <stop offset="0.82" stopColor="#140405" />
+          <stop offset="1" stopColor="#000000" />
         </linearGradient>
         <radialGradient id={sun} cx="0.5" cy="0.38" r="0.3">
-          <stop offset="0" stopColor="#fffaf0" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#fffaf0" stopOpacity="0" />
+          <stop offset="0" stopColor="#da0812" stopOpacity="0.42" />
+          <stop offset="1" stopColor="#da0812" stopOpacity="0" />
         </radialGradient>
         <linearGradient id={fog} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0.45" stopColor="#f6f0e6" stopOpacity="0" />
-          <stop offset="0.84" stopColor="#f6f0e6" stopOpacity="0.75" />
-          <stop offset="1" stopColor="#f6f0e6" stopOpacity="1" />
+          <stop offset="0.5" stopColor="#000000" stopOpacity="0" />
+          <stop offset="0.84" stopColor="#000000" stopOpacity="0.7" />
+          <stop offset="1" stopColor="#000000" stopOpacity="1" />
         </linearGradient>
         <clipPath id={midClip}>
           <path d={MID_RIDGE} />
@@ -87,7 +89,7 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
       <rect width="1440" height="480" fill={`url(#${sun})`} />
 
       {/* Birds */}
-      <g fill="none" stroke="#aaa58d" strokeWidth="1.4" strokeLinecap="round" opacity="0.7">
+      <g fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" opacity="0.28">
         <path d="M282 150 q6 -5 12 0 q6 -5 12 0" />
         <path d="M316 132 q5 -4 10 0 q5 -4 10 0" />
         <path d="M1150 118 q5 -4 10 0 q5 -4 10 0" />
@@ -96,13 +98,13 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
       {/* Far range */}
       <path
         d="M0 250 C90 214 170 196 255 214 C330 230 372 182 452 170 C540 157 598 214 690 196 C770 180 822 150 910 142 C1004 134 1052 196 1140 192 C1222 188 1268 146 1350 150 C1396 152 1424 162 1440 168 L1440 480 L0 480 Z"
-        fill="#ddd8c5"
-        opacity="0.85"
+        fill="#2a1214"
+        opacity="0.9"
       />
 
       {/* Middle range with terraces */}
-      <path d={MID_RIDGE} fill="#cecbb1" />
-      <g clipPath={`url(#${midClip})`} fill="none" stroke="#bab794" strokeWidth="1.1" opacity="0.55">
+      <path d={MID_RIDGE} fill="#1b0d0f" />
+      <g clipPath={`url(#${midClip})`} fill="none" stroke="#ffffff" strokeWidth="1.1" opacity="0.06">
         {terraces(266, 470, 13, 9).map((d) => (
           <path key={d} d={d} />
         ))}
@@ -112,14 +114,14 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
       <g>
         {HOUSES.map(([x, top, width, height]) => (
           <g key={`${x}-${top}`}>
-            <rect x={x} y={top} width={width} height={height} fill="#e8dbc1" />
-            <rect x={x + width * 0.62} y={top} width={width * 0.38} height={height} fill="#d7c5a3" />
-            <rect x={x - 1} y={top - 3} width={width + 2} height={4} fill="#f1e9d8" />
+            <rect x={x} y={top} width={width} height={height} fill="#2e2022" />
+            <rect x={x + width * 0.62} y={top} width={width * 0.38} height={height} fill="#241819" />
+            <rect x={x - 1} y={top - 3} width={width + 2} height={4} fill="#3a2a2c" />
             {Array.from({ length: Math.max(1, Math.floor((height - 12) / 14)) }, (_, row) => (
-              <g key={row} fill="#9f8a63">
+              <g key={row} fill="#ffc8ce" fillOpacity="0.85">
                 <rect x={x + width * 0.2} y={top + 8 + row * 14} width={3} height={5} />
                 <rect x={x + width * 0.48} y={top + 8 + row * 14} width={3} height={5} />
-                <path d={`M${x + width * 0.2 - 0.6} ${top + 7 + row * 14} a2.1 2.1 0 0 1 4.2 0`} fill="#fbf6ec" />
+                <path d={`M${x + width * 0.2 - 0.6} ${top + 7 + row * 14} a2.1 2.1 0 0 1 4.2 0`} fill="#ff9ba5" />
               </g>
             ))}
           </g>
@@ -130,15 +132,15 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
       <g>
         {TREES.map(([x, base, radius]) => (
           <g key={`${x}-${base}`}>
-            <path d={`M${x} ${base} L${x} ${base - radius - 4}`} stroke="#8f9775" strokeWidth="1.6" />
-            <circle cx={x} cy={base - radius - 5} r={radius} fill="#a7ae88" />
+            <path d={`M${x} ${base} L${x} ${base - radius - 4}`} stroke="#241617" strokeWidth="1.6" />
+            <circle cx={x} cy={base - radius - 5} r={radius} fill="#1e1213" />
           </g>
         ))}
       </g>
 
       {/* Near hills with terraces */}
-      <path d={NEAR_RIDGE} fill="#bfc6a5" />
-      <g clipPath={`url(#${nearClip})`} fill="none" stroke="#a8b08b" strokeWidth="1.1" opacity="0.5">
+      <path d={NEAR_RIDGE} fill="#110809" />
+      <g clipPath={`url(#${nearClip})`} fill="none" stroke="#ffffff" strokeWidth="1.1" opacity="0.045">
         {terraces(310, 476, 11, 7).map((d) => (
           <path key={d} d={d} />
         ))}
@@ -147,7 +149,7 @@ export default function AwardHighlands({ className = '' }: AwardHighlandsProps) 
       {/* Foreground slope */}
       <path
         d="M0 430 C160 410 300 418 440 436 C580 452 700 424 840 428 C980 432 1080 456 1220 448 C1330 442 1400 430 1440 428 L1440 480 L0 480 Z"
-        fill="#acb593"
+        fill="#090505"
       />
 
       {/* Valley haze */}

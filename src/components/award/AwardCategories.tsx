@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import type { CSSProperties } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { awardSectionIds, type AwardContent } from '@/data/award/content';
 import { useI18n } from '@/i18n/useI18n';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import AwardSectionHeading from './AwardSectionHeading';
-import { categoryIcons, categoryTints } from './awardIcons';
+import { categoryIcons } from './awardIcons';
 import { awardEase } from './awardUi';
 
 type AwardCategoriesProps = {
@@ -13,8 +13,8 @@ type AwardCategoriesProps = {
 
 /**
  * Section C — the five participation fields. Cards are informational (not
- * links): an icon chip, the field and a short line, over a small landscape
- * of soft waves tinted per field.
+ * links): a neutral icon chip, the field and a short line over a soft neutral
+ * landscape; hover lights the chip and a rule along the foot in the brand red.
  */
 export default function AwardCategories({ content }: AwardCategoriesProps) {
   const { categories } = content;
@@ -27,12 +27,13 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
       id={awardSectionIds.categories}
       tabIndex={-1}
       aria-labelledby="award-categories-title"
-      className="relative bg-white py-20 focus:outline-none md:py-28"
+      className="relative bg-warm py-20 focus:outline-none md:py-28"
     >
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <AwardSectionHeading
           id="award-categories-title"
           title={categories.title}
+          highlight={categories.highlight}
           description={categories.description}
         />
 
@@ -40,7 +41,6 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
         <ul className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:mt-14 md:grid-cols-6 lg:grid-cols-5 lg:gap-5">
           {categories.items.map((category, index) => {
             const Icon = categoryIcons[category.id];
-            const tint = categoryTints[category.id];
             const isLast = index === categories.items.length - 1;
             const placement = [
               'md:col-span-2 lg:col-span-1',
@@ -61,33 +61,23 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
                   ease: awardEase,
                 }}
               >
-                <article
-                  style={{ '--award-tint-edge': tint.edge } as CSSProperties}
-                  className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-award-line bg-white text-center shadow-[0_10px_30px_rgba(15,56,60,0.05)] transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-[color:var(--award-tint-edge)] hover:shadow-[0_24px_46px_rgba(15,56,60,0.11)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-                >
+                <article className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-dark-100 bg-white text-center shadow-[0_10px_30px_rgba(20,0,4,0.04)] transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-primary-200 hover:shadow-[0_24px_46px_rgba(20,0,4,0.1)] motion-reduce:transition-none motion-reduce:hover:translate-y-0">
                   <span
                     aria-hidden="true"
-                    className="absolute end-4 top-4 font-latin text-[11px] font-semibold tracking-[0.18em] text-award-gold-500/80"
+                    className="absolute end-4 top-4 font-latin text-[11px] font-semibold tracking-[0.18em] text-primary-500"
                   >
                     {formatNumber(index + 1).padStart(2, '0')}
                   </span>
 
                   <div className="relative z-10 flex flex-1 flex-col items-center px-3 pb-3 pt-7 sm:px-5 sm:pt-8">
-                    <span
-                      className="flex h-14 w-14 items-center justify-center rounded-full ring-[6px] ring-white transition-transform duration-500 group-hover:scale-110 motion-reduce:transition-none sm:h-16 sm:w-16"
-                      style={{ backgroundColor: tint.chip, color: tint.ink, boxShadow: `0 0 0 1px ${tint.edge}` }}
-                    >
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-warm text-dark-800 ring-1 ring-dark-100 transition-[transform,background-color,color] duration-500 group-hover:scale-110 group-hover:bg-primary-500 group-hover:text-white group-hover:ring-primary-500 motion-reduce:transition-none sm:h-16 sm:w-16">
                       <Icon className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={1.7} aria-hidden="true" />
                     </span>
-                    <h3 className="mt-4 text-base font-bold leading-snug text-award-ink sm:text-lg">
-                      {category.title}
-                    </h3>
-                    <p className="mt-2 text-[13px] leading-relaxed text-award-body sm:text-sm">
-                      {category.description}
-                    </p>
+                    <h3 className="mt-4 text-base font-bold leading-snug text-dark-900 sm:text-lg">{category.title}</h3>
+                    <p className="mt-2 text-[13px] leading-relaxed text-dark-600 sm:text-sm">{category.description}</p>
                   </div>
 
-                  <CategoryScene tint={tint} Icon={Icon} />
+                  <CategoryScene Icon={Icon} />
                 </article>
               </motion.li>
             );
@@ -98,13 +88,8 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
   );
 }
 
-type SceneProps = {
-  tint: (typeof categoryTints)[keyof typeof categoryTints];
-  Icon: (typeof categoryIcons)[keyof typeof categoryIcons];
-};
-
-/** Decorative foot of each card: two soft hills in the field's tint and a large outline of its icon. */
-function CategoryScene({ tint, Icon }: SceneProps) {
+/** Decorative foot of each card: two soft neutral hills, a large outline of the field's icon and a red rule. */
+function CategoryScene({ Icon }: { Icon: LucideIcon }) {
   return (
     <div aria-hidden="true" className="relative h-16 overflow-hidden sm:h-20">
       <svg
@@ -112,14 +97,14 @@ function CategoryScene({ tint, Icon }: SceneProps) {
         preserveAspectRatio="none"
         className="absolute inset-x-0 bottom-0 h-full w-full translate-y-1 transition-transform duration-500 group-hover:translate-y-0 motion-reduce:transition-none"
       >
-        <path d="M0 46 C30 34 62 38 94 46 S154 40 200 30 L200 80 L0 80 Z" fill={tint.wave} />
-        <path d="M0 60 C44 50 82 62 122 58 S174 48 200 54 L200 80 L0 80 Z" fill={tint.waveDeep} />
+        <path d="M0 46 C30 34 62 38 94 46 S154 40 200 30 L200 80 L0 80 Z" fill="#f7f5f5" />
+        <path d="M0 60 C44 50 82 62 122 58 S174 48 200 54 L200 80 L0 80 Z" fill="#efeaea" />
       </svg>
       <Icon
-        className="absolute -bottom-4 end-3 h-16 w-16 opacity-[0.16] transition-transform duration-500 group-hover:-translate-y-1.5 group-hover:-rotate-6 motion-reduce:transition-none"
-        style={{ color: tint.ink }}
+        className="absolute -bottom-4 end-3 h-16 w-16 text-dark-900 opacity-[0.07] transition-[transform,opacity,color] duration-500 group-hover:-translate-y-1.5 group-hover:-rotate-6 group-hover:text-primary-500 group-hover:opacity-[0.16] motion-reduce:transition-none"
         strokeWidth={1.2}
       />
+      <span className="absolute inset-x-0 bottom-0 h-1 scale-x-0 bg-primary-500 transition-transform duration-500 group-hover:scale-x-100 motion-reduce:transition-none ltr:origin-left rtl:origin-right" />
     </div>
   );
 }

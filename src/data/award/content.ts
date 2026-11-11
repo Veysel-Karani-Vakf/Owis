@@ -40,6 +40,9 @@ export type AwardFaqItem = {
   draft?: boolean;
 };
 
+/** A section heading; `highlight` is the part of the title shown in the brand red. */
+export type AwardHeading = { title: string; highlight?: string; description: string };
+
 export type AwardContent = {
   /** The award's full name on one line (alt text, share titles). */
   name: string;
@@ -50,6 +53,8 @@ export type AwardContent = {
     sectionNav: string;
   };
   hero: {
+    /** Small line above the title naming the organiser. */
+    eyebrow: string;
     titleLines: [string, string];
     year: string;
     description: string;
@@ -61,6 +66,7 @@ export type AwardContent = {
   about: {
     eyebrow: string;
     title: string;
+    highlight?: string;
     lead: string;
     paragraphs: string[];
     pillars: AwardPillar[];
@@ -68,10 +74,10 @@ export type AwardContent = {
     imageAlt: string;
     imageCaption: string;
   };
-  categories: { title: string; description: string; items: AwardCategory[] };
-  eligibility: { title: string; description: string; items: AwardCondition[]; cta: string };
-  steps: { title: string; description: string; stepLabel: string; items: AwardStep[] };
-  faq: { title: string; description: string; items: AwardFaqItem[] };
+  categories: AwardHeading & { items: AwardCategory[] };
+  eligibility: AwardHeading & { items: AwardCondition[]; cta: string };
+  steps: AwardHeading & { stepLabel: string; items: AwardStep[] };
+  faq: AwardHeading & { items: AwardFaqItem[] };
   cta: { title: string; description: string; button: string };
 };
 
@@ -111,6 +117,7 @@ const ar: AwardContent = {
     sectionNav: 'أقسام صفحة الجائزة',
   },
   hero: {
+    eyebrow: 'مبادرة من وقف أويس القرني',
     titleLines: ['جائزة أويس', 'للأعمال التطوعية'],
     year: '2026',
     description:
@@ -127,6 +134,7 @@ const ar: AwardContent = {
   about: {
     eyebrow: 'جائزة أويس للأعمال التطوعية 2026',
     title: 'عن الجائزة',
+    highlight: 'الجائزة',
     lead: 'مساحةٌ للاحتفاء بالمبادرات التطوعية التي تصنع فرقًا حقيقيًا في حياة الناس داخل اليمن.',
     paragraphs: [
       'جائزة أويس للأعمال التطوعية مبادرةٌ من وقف أويس القرني، تُعنى بإبراز المبادرات التطوعية ذات الأثر داخل اليمن، وتقدير الفرق التي تعمل بإخلاص لخدمة مجتمعاتها.',
@@ -147,6 +155,7 @@ const ar: AwardContent = {
   },
   categories: {
     title: 'مجالات المشاركة',
+    highlight: 'المشاركة',
     description: 'تتنوّع مجالات الجائزة لتشمل أبرز المجالات التنموية في المجتمع اليمني.',
     items: [
       { id: 'education', title: 'التعليم', description: 'مبادرات تنمّي المعرفة والمهارات، وتفتح فرص التعلّم.' },
@@ -162,6 +171,7 @@ const ar: AwardContent = {
   },
   eligibility: {
     title: 'شروط المشاركة',
+    highlight: 'المشاركة',
     description: 'تأكّد من استيفاء مبادرتك لجميع الشروط التالية قبل التقديم.',
     items: [
       {
@@ -194,6 +204,7 @@ const ar: AwardContent = {
   },
   steps: {
     title: 'كيف تشارك؟',
+    highlight: 'تشارك',
     description: 'بأربع خطوات بسيطة يمكنك تقديم مبادرتك للجائزة.',
     stepLabel: 'الخطوة',
     items: [
@@ -205,6 +216,7 @@ const ar: AwardContent = {
   },
   faq: {
     title: 'الأسئلة الشائعة',
+    highlight: 'الشائعة',
     description: 'إجابات عن أبرز الاستفسارات حول الجائزة والتقديم.',
     items: [
       {
@@ -265,6 +277,7 @@ const en: AwardContent = {
     sectionNav: 'Award page sections',
   },
   hero: {
+    eyebrow: 'An initiative of Veysel Karani Waqf',
     titleLines: ['Owais', 'Volunteer Award'],
     year: '2026',
     description:
@@ -281,6 +294,7 @@ const en: AwardContent = {
   about: {
     eyebrow: 'Owais Volunteer Award 2026',
     title: 'About the award',
+    highlight: 'award',
     lead: 'A space to celebrate volunteer initiatives that make a real difference in people’s lives across Yemen.',
     paragraphs: [
       'The Owais Volunteer Award is an initiative of Veysel Karani Waqf that highlights impactful volunteer initiatives inside Yemen and honours the teams who serve their communities with dedication.',
@@ -309,6 +323,7 @@ const en: AwardContent = {
   },
   categories: {
     title: 'Participation fields',
+    highlight: 'fields',
     description: 'The award spans the key development fields of Yemeni society.',
     items: [
       {
@@ -340,6 +355,7 @@ const en: AwardContent = {
   },
   eligibility: {
     title: 'Participation conditions',
+    highlight: 'conditions',
     description: 'Make sure your initiative meets all of the following conditions before applying.',
     items: [
       {
@@ -373,6 +389,7 @@ const en: AwardContent = {
   },
   steps: {
     title: 'How to participate?',
+    highlight: 'participate',
     description: 'Submit your initiative to the award in four simple steps.',
     stepLabel: 'Step',
     items: [
@@ -400,6 +417,7 @@ const en: AwardContent = {
   },
   faq: {
     title: 'Frequently asked questions',
+    highlight: 'questions',
     description: 'Answers to the most common questions about the award and how to apply.',
     items: [
       {
@@ -462,6 +480,7 @@ const tr: AwardContent = {
     sectionNav: 'Ödül sayfası bölümleri',
   },
   hero: {
+    eyebrow: 'Veysel Karani Vakfı’nın bir girişimi',
     titleLines: ['Owais', 'Gönüllülük Ödülü'],
     year: '2026',
     description:
@@ -478,6 +497,7 @@ const tr: AwardContent = {
   about: {
     eyebrow: 'Owais Gönüllülük Ödülü 2026',
     title: 'Ödül hakkında',
+    highlight: 'Ödül',
     lead: 'Yemen’de insanların hayatında gerçek bir fark yaratan gönüllü girişimleri kutlamak için bir alan.',
     paragraphs: [
       'Owais Gönüllülük Ödülü, Veysel Karani Vakfı’nın bir girişimidir; Yemen’deki etkili gönüllü girişimleri görünür kılmayı ve toplumuna özveriyle hizmet eden ekipleri onurlandırmayı amaçlar.',
@@ -507,6 +527,7 @@ const tr: AwardContent = {
   },
   categories: {
     title: 'Katılım alanları',
+    highlight: 'alanları',
     description: 'Ödülün alanları, Yemen toplumunun öne çıkan kalkınma alanlarını kapsar.',
     items: [
       {
@@ -538,6 +559,7 @@ const tr: AwardContent = {
   },
   eligibility: {
     title: 'Katılım koşulları',
+    highlight: 'koşulları',
     description: 'Başvurmadan önce girişiminizin aşağıdaki koşulların tamamını karşıladığından emin olun.',
     items: [
       {
@@ -570,6 +592,7 @@ const tr: AwardContent = {
   },
   steps: {
     title: 'Nasıl katılırım?',
+    highlight: 'katılırım',
     description: 'Girişiminizi dört basit adımda ödüle sunabilirsiniz.',
     stepLabel: 'Adım',
     items: [
@@ -597,6 +620,7 @@ const tr: AwardContent = {
   },
   faq: {
     title: 'Sıkça sorulan sorular',
+    highlight: 'sorular',
     description: 'Ödül ve başvuru hakkında en çok sorulan soruların yanıtları.',
     items: [
       {

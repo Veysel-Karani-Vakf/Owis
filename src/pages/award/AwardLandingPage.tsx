@@ -37,7 +37,7 @@ export default function AwardLandingPage() {
         image={awardMedia.share}
         structuredData={structuredData}
       />
-      <main className="award-page overflow-x-clip bg-award-cream-50 text-award-ink">
+      <main className="award-page overflow-x-clip bg-white text-dark-900">
         <AwardHero content={content} />
         <AwardAbout content={content} />
         <AwardCategories content={content} />

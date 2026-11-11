@@ -48,10 +48,15 @@ export default function AwardFaq({ content }: AwardFaqProps) {
       id={awardSectionIds.faq}
       tabIndex={-1}
       aria-labelledby="award-faq-title"
-      className="relative bg-white py-20 focus:outline-none md:py-28"
+      className="relative bg-warm py-20 focus:outline-none md:py-28"
     >
       <div className="mx-auto max-w-3xl px-4 md:px-8">
-        <AwardSectionHeading id="award-faq-title" title={faq.title} description={faq.description} />
+        <AwardSectionHeading
+          id="award-faq-title"
+          title={faq.title}
+          highlight={faq.highlight}
+          description={faq.description}
+        />
 
         <div className="mt-12 space-y-3">
           {faq.items.map((item, index) => {
@@ -68,8 +73,8 @@ export default function AwardFaq({ content }: AwardFaqProps) {
                 transition={{ duration: 0.5, delay: reduceMotion ? 0 : index * 0.05, ease: awardEase }}
                 className={`rounded-[20px] border bg-white transition-[border-color,box-shadow] duration-300 ${
                   open
-                    ? 'border-award-green-200 shadow-[0_18px_40px_rgba(15,56,60,0.08)]'
-                    : 'border-award-line hover:border-award-green-200/70'
+                    ? 'border-primary-200 shadow-[0_18px_40px_rgba(20,0,4,0.08)]'
+                    : 'border-dark-100 hover:border-primary-200'
                 }`}
               >
                 <h3>
@@ -83,12 +88,12 @@ export default function AwardFaq({ content }: AwardFaqProps) {
                     aria-controls={panelId}
                     onClick={() => toggle(item.id)}
                     onKeyDown={(event) => onQuestionKeyDown(event, index)}
-                    className="flex w-full items-center justify-between gap-4 rounded-[20px] px-5 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-award-green-600 sm:px-6 sm:py-5"
+                    className="flex w-full items-center justify-between gap-4 rounded-[20px] px-5 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 sm:px-6 sm:py-5"
                   >
-                    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[15px] font-bold leading-snug text-award-ink sm:text-base">
+                    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[15px] font-bold leading-snug text-dark-900 sm:text-base">
                       {item.question}
                       {item.draft && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-award-gold-300 bg-award-gold-50 px-2.5 py-0.5 text-[11px] font-bold text-award-gold-700">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-dark-200 bg-dark-50 px-2.5 py-0.5 text-[11px] font-bold text-dark-600">
                           <PenLine className="h-3 w-3" aria-hidden="true" />
                           {labels.draft}
                         </span>
@@ -97,7 +102,7 @@ export default function AwardFaq({ content }: AwardFaqProps) {
                     <span
                       aria-hidden="true"
                       className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-                        open ? 'bg-award-green-700 text-white' : 'bg-award-cream-100 text-award-green-700'
+                        open ? 'bg-primary-500 text-white' : 'bg-primary-50 text-primary-600'
                       }`}
                     >
                       <span className="absolute h-0.5 w-3.5 rounded-full bg-current" />
@@ -119,7 +124,7 @@ export default function AwardFaq({ content }: AwardFaqProps) {
                   }`}
                 >
                   <div className="min-h-0 overflow-hidden">
-                    <p className="px-5 pb-5 text-sm leading-[1.95] text-award-body sm:px-6 sm:pb-6 sm:text-[15px]">
+                    <p className="px-5 pb-5 text-sm leading-[1.95] text-dark-600 sm:px-6 sm:pb-6 sm:text-[15px]">
                       {item.answer}
                     </p>
                   </div>
@@ -130,8 +135,8 @@ export default function AwardFaq({ content }: AwardFaqProps) {
         </div>
 
         {hasDraft && (
-          <p className="mt-6 flex items-start justify-center gap-2 text-center text-[13px] leading-relaxed text-award-body">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-award-gold-500" aria-hidden="true" />
+          <p className="mt-6 flex items-start justify-center gap-2 text-center text-[13px] leading-relaxed text-dark-500">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-dark-400" aria-hidden="true" />
             {labels.draftNotice}
           </p>
         )}

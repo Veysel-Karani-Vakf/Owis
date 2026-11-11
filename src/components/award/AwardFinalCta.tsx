@@ -12,34 +12,46 @@ type AwardFinalCtaProps = {
   content: AwardContent;
 };
 
-/** Section G — closing call to action on a deep green panel, with a seedling that grows in. */
+/**
+ * Section G — closing call to action on a deep-red panel signed with the
+ * waqf's official logo (the per-language mark from the site settings, shown
+ * in white as in the header and footer), with a seedling that grows in.
+ */
 export default function AwardFinalCta({ content }: AwardFinalCtaProps) {
   const { cta } = content;
-  const { isRtl } = useI18n();
+  const { isRtl, content: siteContent } = useI18n();
+  const { siteConfig } = siteContent;
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
-  const title = useRevealMotion({ y: 20, duration: 0.7 });
-  const text = useRevealMotion({ y: 16, duration: 0.7, delay: 0.08 });
-  const action = useRevealMotion({ y: 14, duration: 0.7, delay: 0.16 });
+  const logo = useRevealMotion({ y: 14, duration: 0.6 });
+  const title = useRevealMotion({ y: 20, duration: 0.7, delay: 0.06 });
+  const text = useRevealMotion({ y: 16, duration: 0.7, delay: 0.12 });
+  const action = useRevealMotion({ y: 14, duration: 0.7, delay: 0.18 });
 
   return (
-    <section
-      id="award-cta"
-      aria-labelledby="award-cta-title"
-      className="bg-gradient-to-b from-white to-award-cream-50 px-4 pb-20 pt-4 md:px-8 md:pb-28"
-    >
-      <div className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-[32px] bg-award-green-900 px-6 py-14 text-white shadow-[0_40px_90px_rgba(3,47,44,0.32)] sm:px-10 md:px-14 md:py-16 lg:py-14">
+    <section id="award-cta" aria-labelledby="award-cta-title" className="bg-white px-4 py-20 md:px-8 md:py-28">
+      <div className="relative isolate mx-auto max-w-6xl overflow-hidden rounded-[32px] bg-dark-950 px-6 py-14 text-white shadow-[0_40px_90px_rgba(36,0,2,0.35)] sm:px-10 md:px-14 md:py-16 lg:py-14">
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-gradient-to-br from-award-green-800 via-award-green-900 to-award-green-950"
+          className="absolute inset-0 -z-10 from-primary-800 via-primary-900 to-dark-950 ltr:bg-gradient-to-br rtl:bg-gradient-to-bl"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_20%,rgba(199,160,105,0.22),transparent_40%),radial-gradient(circle_at_85%_90%,rgba(106,160,136,0.25),transparent_45%)]"
+          className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(218,8,18,0.35),transparent_55%)]"
         />
-        <div aria-hidden="true" className="award-pattern award-pattern--light absolute inset-0 -z-10 opacity-60" />
+        <div aria-hidden="true" className="geometric-pattern absolute inset-0 -z-10 opacity-30" />
 
         <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:gap-10">
           <div className="text-center lg:text-start">
+            {siteConfig.logo && (
+              <motion.img
+                {...logo}
+                src={siteConfig.logo}
+                alt={siteConfig.name}
+                loading="lazy"
+                decoding="async"
+                className="mx-auto mb-7 h-12 w-auto brightness-0 invert md:h-14 lg:mx-0"
+              />
+            )}
             <motion.h2
               id="award-cta-title"
               {...title}
@@ -54,7 +66,7 @@ export default function AwardFinalCta({ content }: AwardFinalCtaProps) {
               {cta.description}
             </motion.p>
             <motion.div {...action} className="mt-8 flex justify-center lg:justify-start">
-              <Link to={awardRoutes.eligibility} className={`group ${awardButton.light}`}>
+              <Link to={awardRoutes.eligibility} className={awardButton.light}>
                 {cta.button}
                 <ArrowIcon
                   className={`h-[18px] w-[18px] transition-transform duration-300 ${
@@ -98,28 +110,28 @@ function Seedling() {
     >
       <defs>
         <linearGradient id="award-cta-leaf" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#6aa088" />
-          <stop offset="1" stopColor="#c5dbcc" />
+          <stop offset="0" stopColor="#ffc8ce" />
+          <stop offset="1" stopColor="#ffffff" />
         </linearGradient>
-        <linearGradient id="award-cta-leaf-gold" x1="1" y1="1" x2="0" y2="0">
-          <stop offset="0" stopColor="#b68342" />
-          <stop offset="1" stopColor="#e2c48f" />
+        <linearGradient id="award-cta-bud" x1="1" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#da0812" />
+          <stop offset="1" stopColor="#ff5d6b" />
         </linearGradient>
       </defs>
 
       {/* Halo rings */}
-      <g fill="none" stroke="#ffffff" strokeOpacity="0.09">
+      <g fill="none" stroke="#ffffff" strokeOpacity="0.12">
         <circle cx="160" cy="132" r="96" />
         <circle cx="160" cy="132" r="72" strokeDasharray="3 7" />
       </g>
 
       {/* Soil held in cupped hands (abstracted as a bowl line) */}
-      <path d="M92 206 C116 194 204 194 228 206 C214 222 106 222 92 206 Z" fill="#05453c" />
+      <path d="M92 206 C116 194 204 194 228 206 C214 222 106 222 92 206 Z" fill="#000000" fillOpacity="0.35" />
       <path
         d="M66 200 C88 238 232 238 254 200"
         fill="none"
-        stroke="#dcbb85"
-        strokeOpacity="0.7"
+        stroke="#ffffff"
+        strokeOpacity="0.55"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -128,7 +140,8 @@ function Seedling() {
       <motion.path
         d="M160 204 C158 176 164 150 160 104"
         fill="none"
-        stroke="#dcbb85"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
         strokeWidth="4"
         strokeLinecap="round"
         initial={instant ? false : { pathLength: 0 }}
@@ -149,7 +162,7 @@ function Seedling() {
       />
       <motion.path
         d="M160 106 C150 92 150 74 160 60 C170 74 170 92 160 106 Z"
-        fill="url(#award-cta-leaf-gold)"
+        fill="url(#award-cta-bud)"
         {...leaf(1.05, 0.5, 1)}
       />
     </svg>
