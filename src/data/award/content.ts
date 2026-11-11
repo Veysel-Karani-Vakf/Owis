@@ -89,7 +89,7 @@ export type AwardContent = {
 
 /**
  * Award imagery, shared by every language (public/award/):
- *  - the trophy, cut out of the official 2026 poster;
+ *  - the trophy (clean studio image supplied by the waqf, white background removed);
  *  - the Volunteer Unit and "Together We Build Yemen" marks shown on the poster
  *    (the latter rendered from the supplied logo PDF, with a white-lettered
  *    variant for dark backgrounds);
@@ -97,7 +97,7 @@ export type AwardContent = {
  *    front of the event banner), from the waqf's shared photo folder.
  */
 export const awardMedia = {
-  trophy: { src: '/award/award-trophy.webp', width: 364, height: 856 },
+  trophy: { src: '/award/award-trophy.webp', width: 561, height: 1280 },
   logos: {
     volunteerUnit: '/award/award-logo-volunteer-unit.webp',
     maan: '/award/award-logo-maan.webp',

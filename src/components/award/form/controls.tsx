@@ -60,12 +60,19 @@ export function FieldShell({
           {caption}
         </label>
       )}
-      {hint && (
+      {/* A group (full width) explains itself before its controls; a single field
+          keeps its hint under the box, so boxes side by side always line up. */}
+      {hint && group && (
         <p id={`${id}-hint`} className="-mt-1 mb-2 text-xs leading-relaxed text-dark-500">
           {hint}
         </p>
       )}
       {children}
+      {hint && !group && (
+        <p id={`${id}-hint`} className="mt-1.5 text-xs leading-relaxed text-dark-500">
+          {hint}
+        </p>
+      )}
       <FieldError id={`${id}-error`} message={error} />
     </Wrapper>
   );
