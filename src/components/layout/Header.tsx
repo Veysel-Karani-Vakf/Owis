@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useTopOnlyChrome } from '@/hooks/useTopOnlyChrome';
+import { useNavFits } from '@/hooks/useNavFits';
 import { useI18n } from '@/i18n/useI18n';
 import { getAboutContent } from '@/data/about';
 import { donateRoute } from '@/data/donate';
 import { getProgramsContent } from '@/data/programs';
+import { withAwardNavLink } from '@/data/award/routes';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import MobileMenu from './MobileMenu';
 import { navMenuFor } from '@/i18n/content';
@@ -22,10 +24,13 @@ export default function Header() {
   const [programsOpen, setProgramsOpen] = useState(false);
   const { content, t, locale } = useI18n();
   const { siteConfig } = content;
-  const navLinks = content.navLinks ?? [];
+  const navLinks = withAwardNavLink(content.navLinks, locale);
   const donateUrl = siteConfig.donateUrl || donateRoute;
   const aboutNavItems = getAboutContent(locale).nav;
   const programNavItems = getProgramsContent(locale).nav;
+  // Falls back to the hamburger menu when the full menu would overflow the bar.
+  const barRef = useRef<HTMLDivElement>(null);
+  const navFits = useNavFits(barRef, `${locale}:${navLinks.map((link) => link.label).join('|')}`);
   const location = useLocation();
   const navigate = useNavigate();
   const aboutMenuRef = useRef<HTMLDivElement>(null);
@@ -179,6 +184,7 @@ export default function Header() {
         }`}
       >
         <div
+          ref={barRef}
           className={`pointer-events-auto mx-auto flex h-16 w-full max-w-[1712px] items-center justify-between rounded-[18px] border px-3 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 rtl:flex-row-reverse sm:px-5 md:h-20 md:rounded-[22px] md:px-7 ${
             scrolled
               ? 'border-white/55 bg-white/[0.60] shadow-[0_12px_32px_rgba(20,0,4,0.14)] backdrop-blur-lg'
@@ -214,7 +220,7 @@ export default function Header() {
             </span>
           </a>
 
-          <nav className="hidden items-center gap-0.5 xl:flex 2xl:gap-1">
+          <nav className={`hidden items-center gap-0.5 2xl:gap-1 ${navFits ? 'xl:flex' : ''}`}>
             {navLinks.map((link, index) => {
               const menu = navMenuFor(link);
               const linkKey = `${link.href}-${index}`;
@@ -542,7 +548,7 @@ export default function Header() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3 xl:ms-5 2xl:ms-8">
-            <div className="hidden xl:block">
+            <div className={navFits ? 'hidden xl:block' : 'hidden'}>
               <LanguageSwitcher tone={scrolled ? 'light' : 'dark'} />
             </div>
 
@@ -558,7 +564,7 @@ export default function Header() {
               {t('common.donateNow')}
             </button>
 
-            <div className="xl:hidden">
+            <div className={navFits ? 'xl:hidden' : undefined}>
               <LanguageSwitcher tone={scrolled ? 'light' : 'dark'} compact />
             </div>
 
@@ -568,7 +574,7 @@ export default function Header() {
               aria-label={t('accessibility.openMenu')}
               aria-controls="mobile-navigation"
               aria-expanded={mobileOpen}
-              className={`btn-border-run flex h-10 w-10 items-center justify-center rounded-xl transition-colors xl:hidden ${
+              className={`btn-border-run flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${navFits ? 'xl:hidden' : ''} ${
                 scrolled
                   ? 'btn-border-run--sheen-tint text-dark-800 hover:bg-primary-50 hover:text-primary-700'
                   : 'btn-border-run--light text-white drop-shadow-[0_1px_7px_rgba(0,0,0,0.7)] hover:bg-white/10'
