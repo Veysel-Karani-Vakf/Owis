@@ -82,9 +82,9 @@ export default function AwardHero({ content }: AwardHeroProps) {
                 <img
                   src={media.logoVolunteerUnit}
                   alt={hero.partners.volunteerUnit}
-                  width={278}
-                  height={320}
-                  className="h-14 w-auto brightness-0 invert sm:h-16 lg:h-[4.5rem]"
+                  width={379}
+                  height={380}
+                  className="h-14 w-auto sm:h-16 lg:h-[4.5rem]"
                 />
               </li>
               <li aria-hidden="true" className="h-12 w-px bg-white/30 sm:h-14" />
