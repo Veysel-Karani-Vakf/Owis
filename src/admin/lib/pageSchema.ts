@@ -1862,7 +1862,7 @@ export const SITE_PAGES: SitePageDef[] = [
             path: 'media.logoVolunteerUnit',
             label: L('شعار وحدة التطوع', 'Gönüllülük Birimi logosu', 'Volunteer Unit logo'),
             type: 'image',
-            help: L('يُعرض باللون الأبيض فوق الخلفية الداكنة، فاستخدم شعاراً بخلفية شفافة', 'Koyu zemin üzerinde beyaz gösterilir; şeffaf zeminli bir logo kullanın', 'Shown in white over the dark background, so use a logo with a transparent background'),
+            help: L('يُعرض كما هو فوق الخلفية الداكنة، فاستخدم النسخة البيضاء من الشعار بخلفية شفافة', 'Koyu zemin üzerinde olduğu gibi gösterilir; şeffaf zeminli beyaz logo sürümünü kullanın', 'Shown as is over the dark background, so use the white version of the logo with a transparent background'),
           },
           {
             path: 'hero.partners.volunteerUnit',

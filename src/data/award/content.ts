@@ -53,7 +53,7 @@ export type AwardHeading = { title: string; highlight?: string; description: str
 export type AwardMedia = {
   /** The trophy: landing hero and the banner of the inner pages. */
   trophy: string;
-  /** Volunteer Unit mark (rendered white over the dark hero). */
+  /** Volunteer Unit mark, the white variant made for the dark hero (shown as is). */
   logoVolunteerUnit: string;
   /** "Together We Build Yemen" mark, the variant made for dark backgrounds. */
   logoMaan: string;
@@ -111,16 +111,20 @@ export type AwardContent = {
 /**
  * Award imagery, shared by every language (public/award/):
  *  - the trophy (clean studio image supplied by the waqf, white background removed);
- *  - the Volunteer Unit and "Together We Build Yemen" marks shown on the poster
- *    (the latter rendered from the supplied logo PDF, with a white-lettered
- *    variant for dark backgrounds);
+ *  - the Volunteer Unit and "Together We Build Yemen" marks shown on the poster,
+ *    each with a white-lettered variant for the dark hero (the Volunteer Unit
+ *    one is the waqf's own white logo with the red Owais mark in the centre;
+ *    the other is rendered from the supplied logo PDF);
  *  - a photo from the first edition's honouring ceremony (2025 certificates in
  *    front of the event banner), from the waqf's shared photo folder.
  */
 export const awardMedia = {
   trophy: { src: '/award/award-trophy.webp', width: 561, height: 1280 },
   logos: {
+    /** Retired default: full-colour mark that the hero used to wash white with a CSS filter. */
     volunteerUnit: '/award/award-logo-volunteer-unit.webp',
+    /** White letters and petals, the red Owais mark kept in the centre. */
+    volunteerUnitLight: { src: '/award/award-logo-volunteer-unit-light.webp', width: 379, height: 380 },
     maan: '/award/award-logo-maan.webp',
     maanLight: '/award/award-logo-maan-light.webp',
   },
@@ -137,7 +141,7 @@ export const awardMedia = {
 /** The built-in pictures, in the shape the dashboard edits. */
 export const defaultAwardMedia: AwardMedia = {
   trophy: awardMedia.trophy.src,
-  logoVolunteerUnit: awardMedia.logos.volunteerUnit,
+  logoVolunteerUnit: awardMedia.logos.volunteerUnitLight.src,
   logoMaan: awardMedia.logos.maanLight,
   about: awardMedia.about.src,
   share: awardMedia.share,
@@ -749,12 +753,17 @@ export function staticAwardContent(locale: Locale): AwardContent {
 const mediaKeys = Object.keys(defaultAwardMedia) as (keyof AwardMedia)[];
 const mediaLocales: Locale[] = ['ar', 'tr', 'en'];
 
+/** Former built-in paths a saved row may still hold; they count as "not chosen" too. */
+const retiredMedia: Partial<Record<keyof AwardMedia, string>> = {
+  logoVolunteerUnit: awardMedia.logos.volunteerUnit,
+};
+
 /**
  * The award pictures are the same in every language, while the dashboard saves
  * one language at a time. So a picture changed in any language is used by the
  * languages that have not chosen their own: this language's picture first,
  * then Arabic's, then the others', then the built-in one. A blank field or one
- * still holding the built-in path counts as "not chosen".
+ * still holding a built-in path (current or retired) counts as "not chosen".
  */
 function resolveAwardMedia(locale: Locale): AwardMedia {
   const page = cmsPage(AWARD_PAGE_KEY);
@@ -765,7 +774,7 @@ function resolveAwardMedia(locale: Locale): AwardMedia {
   for (const key of mediaKeys) {
     for (const entry of order) {
       const stored = (page[entry] as { media?: Record<string, unknown> } | undefined)?.media?.[key];
-      if (typeof stored === 'string' && stored.trim() && stored !== defaultAwardMedia[key]) {
+      if (typeof stored === 'string' && stored.trim() && stored !== defaultAwardMedia[key] && stored !== retiredMedia[key]) {
         media[key] = stored.trim();
         break;
       }
