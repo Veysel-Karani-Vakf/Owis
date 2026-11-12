@@ -31,8 +31,8 @@ function hashAddress(address: string): string | null {
  *
  * The body is the form's payload plus the paths of the photos the browser has
  * already uploaded to the private bucket. Nothing is trusted: the award's
- * conditions are checked again here, the application window set in the
- * dashboard is enforced, and the row is written with the service role.
+ * conditions are checked again here, the dashboard's switches (award hidden,
+ * form closed, deadline) are enforced, and the row is written with the service role.
  * Answers: 200 { ok, reference } · 400 invalid · 403 closed · 429 rate-limited.
  */
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {

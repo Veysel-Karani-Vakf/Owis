@@ -7,10 +7,11 @@ import { AWARD_PAGE_KEY } from './content';
  *
  * The four Arabic impact questions, their word limits and the Yemeni-team /
  * 12-month conditions come from the award's official requirements; the en/tr
- * strings are translations of them. The photo attachments are optional: they
- * are not a requirement of the official document. The same limits are enforced
- * again by the server (api/_lib/awardRules.ts); `npm run test:award` fails
- * when the two copies drift apart.
+ * strings are translations of them. At least one photo of the initiative is
+ * required with every application (the award team's decision; the official
+ * document does not ask for photos). The same limits are enforced again by the
+ * server (api/_lib/awardRules.ts); `npm run test:award` fails when the two
+ * copies drift apart.
  */
 
 export type ApplyStepId = 'basic' | 'details' | 'impact' | 'review';
@@ -70,8 +71,9 @@ export const awardFormRules = {
   maxSocialRows: 8,
   maxTeamSize: 10000,
   maxTextLength: 120,
-  /** Optional supporting photos (not a requirement of the official document). */
+  /** Photos of the initiative: at least `min`, at most `max`. */
   images: {
+    min: 1,
     max: 5,
     maxBytes: 3 * 1024 * 1024,
     types: ['image/jpeg', 'image/png', 'image/webp'],
@@ -268,7 +270,6 @@ export type AwardFormContent = {
   };
   attachments: {
     heading: string;
-    optionalBadge: string;
     note: string;
     dropTitle: string;
     dropOr: string;
@@ -328,6 +329,7 @@ export type AwardFormContent = {
     socialDomain: string;
     socialDuplicate: string;
     wordsOver: string;
+    imagesRequired: string;
     declaration: string;
   };
   success: {
@@ -367,7 +369,7 @@ const ar: AwardFormContent = {
     details: {
       label: 'تفاصيل المبادرة',
       heading: 'تفاصيل المبادرة',
-      description: 'مكان تنفيذ النشاط المشارك به وفترته ومجاله، وحسابات المبادرة.',
+      description: 'مكان تنفيذ المبادرة وفترة تنفيذها ومجالها، وحساباتها.',
     },
     impact: {
       label: 'الأثر والتميز',
@@ -377,7 +379,7 @@ const ar: AwardFormContent = {
     review: {
       label: 'المرفقات والمراجعة',
       heading: 'المرفقات ومراجعة الطلب',
-      description: 'أضف صورًا داعمة إن رغبت، ثم راجع بياناتك قبل الإرسال.',
+      description: 'أرفق صور المبادرة، ثم راجع بياناتك قبل الإرسال.',
     },
   },
   progress: { stepOf: 'الخطوة {current} من {total}', navLabel: 'خطوات الاستمارة', done: 'مكتملة' },
@@ -426,13 +428,13 @@ const ar: AwardFormContent = {
     governorate: { label: 'المحافظة', placeholder: 'اختر المحافظة' },
     district: { label: 'المديرية', placeholder: 'اكتب اسم المديرية' },
     period: {
-      label: 'فترة تنفيذ النشاط المشارك به',
+      label: 'فترة تنفيذ المبادرة',
       hint: 'تشترط الجائزة أن تكون المبادرة قد نُفّذت داخل اليمن خلال آخر 12 شهرًا.',
       start: 'بداية التنفيذ',
       end: 'نهاية التنفيذ',
       month: 'الشهر',
       year: 'السنة',
-      ongoing: 'النشاط مستمر حتى الآن',
+      ongoing: 'المبادرة مستمرة حتى الآن',
     },
     category: {
       label: 'مجال المبادرة',
@@ -496,8 +498,7 @@ const ar: AwardFormContent = {
   },
   attachments: {
     heading: 'صور داعمة',
-    optionalBadge: 'اختياري',
-    note: 'إرفاق الصور اختياري، وتُرسَل الصور مع طلبك عند الضغط على «إرسال الطلب».',
+    note: 'أرفق صورة واحدة على الأقل للمبادرة؛ تُرسَل الصور مع طلبك عند الضغط على «إرسال الطلب».',
     dropTitle: 'اسحب الصور وأفلتها هنا',
     dropOr: 'أو',
     choose: 'اختر صورًا من جهازك',
@@ -553,10 +554,10 @@ const ar: AwardFormContent = {
     nationality: 'وفق شروط الجائزة يجب أن يكون جميع أعضاء المبادرة يمنيين، لذا لا يمكن متابعة الترشيح.',
     teamSize: 'أدخل عددًا صحيحًا موجبًا (1 فأكثر).',
     periodStart: 'اختر شهر وسنة بداية التنفيذ.',
-    periodEnd: 'اختر شهر وسنة نهاية التنفيذ، أو حدّد أن النشاط مستمر.',
+    periodEnd: 'اختر شهر وسنة نهاية التنفيذ، أو حدّد أن المبادرة مستمرة.',
     periodOrder: 'يجب أن تكون نهاية التنفيذ بعد بدايته أو في الشهر نفسه.',
     periodFuture: 'لا يمكن أن يكون التاريخ في المستقبل.',
-    periodWindow: 'وفق شروط الجائزة يجب أن يكون النشاط قد نُفّذ خلال آخر 12 شهرًا.',
+    periodWindow: 'وفق شروط الجائزة يجب أن تكون المبادرة قد نُفّذت خلال آخر 12 شهرًا.',
     categoryOther: 'حدّد مجال المبادرة.',
     socialMin: 'أضف رابطين صحيحين على الأقل لمنصتين مختلفتين.',
     socialPlatform: 'اختر المنصة.',
@@ -565,6 +566,7 @@ const ar: AwardFormContent = {
     socialDomain: 'الرابط لا يبدو تابعًا لمنصة {platform}.',
     socialDuplicate: 'هذه المنصة مضافة مسبقًا.',
     wordsOver: 'تجاوزت الحد الأقصى ({limit} كلمة) بـ {over} كلمة، يرجى الاختصار.',
+    imagesRequired: 'أرفق صورة واحدة على الأقل للمبادرة.',
     declaration: 'يرجى تأكيد مراجعة بيانات الطلب.',
   },
   success: {
@@ -605,7 +607,7 @@ const en: AwardFormContent = {
     details: {
       label: 'Initiative details',
       heading: 'Initiative details',
-      description: 'Where and when the submitted activity took place, its field and the initiative’s accounts.',
+      description: 'Where and when the initiative was implemented, its field and its accounts.',
     },
     impact: {
       label: 'Impact & distinction',
@@ -615,7 +617,7 @@ const en: AwardFormContent = {
     review: {
       label: 'Attachments & review',
       heading: 'Attachments and application review',
-      description: 'Add supporting photos if you wish, then review your answers before sending.',
+      description: 'Attach photos of the initiative, then review your answers before sending.',
     },
   },
   progress: { stepOf: 'Step {current} of {total}', navLabel: 'Form steps', done: 'completed' },
@@ -666,13 +668,13 @@ const en: AwardFormContent = {
     governorate: { label: 'Governorate', placeholder: 'Select the governorate' },
     district: { label: 'District', placeholder: 'Type the district’s name' },
     period: {
-      label: 'Implementation period of the submitted activity',
+      label: 'Implementation period of the initiative',
       hint: 'The award requires the initiative to have been implemented inside Yemen within the last 12 months.',
       start: 'Start',
       end: 'End',
       month: 'Month',
       year: 'Year',
-      ongoing: 'The activity is still ongoing',
+      ongoing: 'The initiative is still ongoing',
     },
     category: {
       label: 'Field of the initiative',
@@ -738,8 +740,7 @@ const en: AwardFormContent = {
   },
   attachments: {
     heading: 'Supporting photos',
-    optionalBadge: 'Optional',
-    note: 'Photos are optional; they are sent with your application when you press “Send application”.',
+    note: 'Attach at least one photo of the initiative; photos are sent with your application when you press “Send application”.',
     dropTitle: 'Drag and drop photos here',
     dropOr: 'or',
     choose: 'Choose photos from your device',
@@ -796,10 +797,10 @@ const en: AwardFormContent = {
       'Under the award’s conditions all members of the initiative must be Yemeni, so the nomination cannot continue.',
     teamSize: 'Enter a positive whole number (1 or more).',
     periodStart: 'Choose the month and year the implementation started.',
-    periodEnd: 'Choose the month and year it ended, or mark the activity as ongoing.',
+    periodEnd: 'Choose the month and year it ended, or mark the initiative as ongoing.',
     periodOrder: 'The end must be in or after the month of the start.',
     periodFuture: 'The date cannot be in the future.',
-    periodWindow: 'Under the award’s conditions the activity must have been implemented within the last 12 months.',
+    periodWindow: 'Under the award’s conditions the initiative must have been implemented within the last 12 months.',
     categoryOther: 'Specify the initiative’s field.',
     socialMin: 'Add at least two valid links on two different platforms.',
     socialPlatform: 'Choose the platform.',
@@ -808,6 +809,7 @@ const en: AwardFormContent = {
     socialDomain: 'This link does not look like a {platform} link.',
     socialDuplicate: 'This platform has already been added.',
     wordsOver: 'You are {over} words over the {limit}-word limit; please shorten your answer.',
+    imagesRequired: 'Attach at least one photo of the initiative.',
     declaration: 'Please confirm that you have reviewed the application.',
   },
   success: {
@@ -848,7 +850,7 @@ const tr: AwardFormContent = {
     details: {
       label: 'Girişim ayrıntıları',
       heading: 'Girişim ayrıntıları',
-      description: 'Başvurulan faaliyetin yeri, dönemi ve alanı ile girişimin hesapları.',
+      description: 'Girişimin uygulandığı yer, dönemi ve alanı ile hesapları.',
     },
     impact: {
       label: 'Etki ve özgünlük',
@@ -858,8 +860,7 @@ const tr: AwardFormContent = {
     review: {
       label: 'Ekler ve kontrol',
       heading: 'Ekler ve başvurunun kontrolü',
-      description:
-        'Dilerseniz destekleyici fotoğraflar ekleyin, ardından göndermeden önce bilgilerinizi gözden geçirin.',
+      description: 'Girişimin fotoğraflarını ekleyin, ardından göndermeden önce bilgilerinizi gözden geçirin.',
     },
   },
   progress: { stepOf: 'Adım {current} / {total}', navLabel: 'Form adımları', done: 'tamamlandı' },
@@ -910,13 +911,13 @@ const tr: AwardFormContent = {
     governorate: { label: 'İl (muhafaza)', placeholder: 'İli seçin' },
     district: { label: 'İlçe (müdüriyet)', placeholder: 'İlçenin adını yazın' },
     period: {
-      label: 'Başvurulan faaliyetin uygulama dönemi',
+      label: 'Girişimin uygulama dönemi',
       hint: 'Ödül, girişimin son 12 ay içinde Yemen’de uygulanmış olmasını şart koşar.',
       start: 'Başlangıç',
       end: 'Bitiş',
       month: 'Ay',
       year: 'Yıl',
-      ongoing: 'Faaliyet hâlâ sürüyor',
+      ongoing: 'Girişim hâlâ sürüyor',
     },
     category: {
       label: 'Girişimin alanı',
@@ -982,8 +983,7 @@ const tr: AwardFormContent = {
   },
   attachments: {
     heading: 'Destekleyici fotoğraflar',
-    optionalBadge: 'İsteğe bağlı',
-    note: 'Fotoğraf eklemek isteğe bağlıdır; fotoğraflar “Başvuruyu gönder”e bastığınızda başvurunuzla birlikte gönderilir.',
+    note: 'Girişime ait en az bir fotoğraf ekleyin; fotoğraflar “Başvuruyu gönder”e bastığınızda başvurunuzla birlikte gönderilir.',
     dropTitle: 'Fotoğrafları buraya sürükleyip bırakın',
     dropOr: 'veya',
     choose: 'Cihazınızdan fotoğraf seçin',
@@ -1040,10 +1040,10 @@ const tr: AwardFormContent = {
       'Ödül koşullarına göre girişimin tüm üyeleri Yemenli olmalıdır; bu nedenle aday gösterme devam edemez.',
     teamSize: 'Pozitif bir tam sayı girin (1 veya daha fazla).',
     periodStart: 'Uygulamanın başladığı ayı ve yılı seçin.',
-    periodEnd: 'Bittiği ayı ve yılı seçin veya faaliyetin sürdüğünü işaretleyin.',
+    periodEnd: 'Bittiği ayı ve yılı seçin veya girişimin sürdüğünü işaretleyin.',
     periodOrder: 'Bitiş, başlangıçla aynı ay veya sonrasında olmalıdır.',
     periodFuture: 'Tarih gelecekte olamaz.',
-    periodWindow: 'Ödül koşullarına göre faaliyet son 12 ay içinde uygulanmış olmalıdır.',
+    periodWindow: 'Ödül koşullarına göre girişim son 12 ay içinde uygulanmış olmalıdır.',
     categoryOther: 'Girişimin alanını belirtin.',
     socialMin: 'İki farklı platformda en az iki geçerli bağlantı ekleyin.',
     socialPlatform: 'Platformu seçin.',
@@ -1052,6 +1052,7 @@ const tr: AwardFormContent = {
     socialDomain: 'Bu bağlantı bir {platform} bağlantısına benzemiyor.',
     socialDuplicate: 'Bu platform zaten eklendi.',
     wordsOver: '{limit} kelimelik sınırı {over} kelime aştınız; lütfen yanıtınızı kısaltın.',
+    imagesRequired: 'Girişime ait en az bir fotoğraf ekleyin.',
     declaration: 'Lütfen başvuruyu gözden geçirdiğinizi onaylayın.',
   },
   success: {

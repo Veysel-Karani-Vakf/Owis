@@ -68,8 +68,8 @@ export default function ApplyWizard() {
 
   const step = applySteps[stepIndex];
   const errors = useMemo(
-    () => (attempted[step] ? validateStep(step, values, content) : []),
-    [attempted, step, values, content]
+    () => (attempted[step] ? validateStep(step, values, content, { imageCount: images.length }) : []),
+    [attempted, step, values, content, images.length]
   );
   const errorMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -131,7 +131,7 @@ export default function ApplyWizard() {
   /** Validates steps from `from` up to (not including) `to`; stops at the first invalid one. */
   const firstInvalid = (from: number, to: number) => {
     for (let index = from; index < to; index += 1) {
-      const stepErrors = validateStep(applySteps[index], values, content);
+      const stepErrors = validateStep(applySteps[index], values, content, { imageCount: images.length });
       if (stepErrors.length) return { index, stepErrors };
     }
     return null;

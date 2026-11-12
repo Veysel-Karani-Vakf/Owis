@@ -36,6 +36,7 @@ import LibraryDocumentsPage from '@/pages/library/LibraryDocumentsPage';
 import AwardLandingPage from '@/pages/award/AwardLandingPage';
 import AwardApplyPage from '@/pages/award/AwardApplyPage';
 import AwardSuccessPage from '@/pages/award/AwardSuccessPage';
+import AwardGate from '@/components/award/AwardGate';
 
 function App() {
   const location = useLocation();
@@ -102,9 +103,10 @@ function App() {
               <Route path="/donate/checkout/:slug" element={<DonateCheckoutPage />} />
               <Route path="/donate/result" element={<DonateResultPage />} />
               <Route path="/bank-accounts" element={<BankAccountsPage />} />
-              <Route path="/volunteer-award" element={<AwardLandingPage />} />
-              <Route path="/volunteer-award/apply" element={<AwardApplyPage />} />
-              <Route path="/volunteer-award/success" element={<AwardSuccessPage />} />
+              {/* The award team can hide the whole award section from the dashboard. */}
+              <Route path="/volunteer-award" element={<AwardGate><AwardLandingPage /></AwardGate>} />
+              <Route path="/volunteer-award/apply" element={<AwardGate><AwardApplyPage /></AwardGate>} />
+              <Route path="/volunteer-award/success" element={<AwardGate><AwardSuccessPage /></AwardGate>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

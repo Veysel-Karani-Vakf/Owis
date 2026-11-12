@@ -8,7 +8,7 @@ import { serviceClient } from './db';
 
 const TABLE = 'award_applications';
 
-/** Dashboard switch + deadline; a missing row means "open, no deadline". */
+/** Dashboard switches + deadline; a missing row means "visible, open, no deadline". */
 export async function readAwardSettings(): Promise<AwardSettings> {
   const { data, error } = await serviceClient()
     .from('site_pages')

@@ -1,8 +1,8 @@
 // Owais Volunteer Award — checks that need no network and no database:
 //   1. the server's rules (api/_lib/awardRules.ts) match the form's (src/data/award/form.ts);
 //   2. what the form sends passes the server, and tampered submissions do not;
-//   3. the application window (switch + deadline) closes at the end of the day, Yemen time;
-//   4. award pictures saved in one language reach the others;
+//   3. the award's switches: hidden / form closed / deadline at the end of the day, Yemen time;
+//   4. award pictures saved in one language reach the others; a hidden award has no menu tab;
 //   5. the Excel export holds every application, right-to-left in Arabic.
 // Usage: npm run test:award
 import assert from 'node:assert/strict';
@@ -21,6 +21,7 @@ try {
   const form = await load('/src/data/award/form.ts');
   const state = await load('/src/components/award/form/applyState.ts');
   const settings = await load('/src/data/award/settings.ts');
+  const routes = await load('/src/data/award/routes.ts');
   const content = await load('/src/data/award/content.ts');
   const store = await load('/src/cms/store.ts');
   const applications = await load('/src/admin/lib/awardApplications.ts');
@@ -42,6 +43,7 @@ try {
   assert.equal(rules.AWARD_LIMITS.maxSocialRows, form.awardFormRules.maxSocialRows);
   assert.equal(rules.AWARD_LIMITS.maxTeamSize, form.awardFormRules.maxTeamSize);
   assert.equal(rules.AWARD_LIMITS.maxTextLength, form.awardFormRules.maxTextLength);
+  assert.equal(rules.AWARD_LIMITS.minImages, form.awardFormRules.images.min);
   assert.equal(rules.AWARD_LIMITS.maxImages, form.awardFormRules.images.max);
   assert.equal(rules.AWARD_LIMITS.maxImageBytes, form.awardFormRules.images.maxBytes);
   assert.deepEqual([...rules.AWARD_LIMITS.imageTypes], form.awardFormRules.images.types);
@@ -92,8 +94,14 @@ try {
   };
   const formContent = form.getAwardFormContent('ar');
   for (const step of form.applySteps) {
-    assert.deepEqual(state.validateStep(step, values, formContent, now), [], `form step "${step}" is valid`);
+    assert.deepEqual(state.validateStep(step, values, formContent, { now, imageCount: 1 }), [], `form step "${step}" is valid`);
   }
+  assert.deepEqual(
+    state.validateStep('review', values, formContent, { now, imageCount: 0 }).map((error) => error.key),
+    ['images'],
+    'the last step asks for at least one photo',
+  );
+  assert.equal(formContent.fields.period.label, 'فترة تنفيذ المبادرة');
 
   const upload = 'award/3f2b8c1e-5a47-4d0e-9b1a-6c2d7e8f9a0b';
   const payload = {
@@ -140,6 +148,8 @@ try {
   rejects('a bad phone', (p) => (p.whatsapp = '777123456'), 'whatsapp');
   rejects('a team of zero', (p) => (p.teamSize = 0), 'teamSize');
   rejects('"other" with no field named', (p) => (p.categoryOther = ''), 'categoryOther');
+  rejects('no photo at all', (p) => (p.images = []), 'images');
+  rejects('a missing photo list', (p) => delete p.images, 'images');
   rejects('a photo outside the upload folder', (p) => (p.images[0].path = 'volunteer/cv.pdf'), 'images');
   rejects('a photo in someone else’s folder', (p) =>
     p.images.push({ ...p.images[0], path: 'award/00000000-0000-4000-8000-000000000000/2-aaaaaaaa.jpg' }),
@@ -156,13 +166,16 @@ try {
 
   /* 3. Application window --------------------------------------------------- */
   for (const api of [rules, settings]) {
-    assert.deepEqual(api.parseAwardSettings(null), { accepting: true, deadline: null }, 'no row = open');
-    assert.deepEqual(api.parseAwardSettings({ accepting: false, deadline: '2026-13-40' }), { accepting: false, deadline: null });
+    assert.deepEqual(api.parseAwardSettings(null), { visible: true, accepting: true, deadline: null }, 'no row = visible and open');
+    assert.deepEqual(api.parseAwardSettings({ accepting: false, deadline: '2026-13-40' }), { visible: true, accepting: false, deadline: null });
+    assert.equal(api.parseAwardSettings({ visible: false }).visible, false);
     const withDeadline = api.parseAwardSettings({ accepting: true, deadline: '2026-11-30' });
     // 23:59 on the 30th in Yemen is 20:59 UTC; one minute past midnight there is 21:01 UTC.
     assert.equal(api.awardWindow(withDeadline, new Date('2026-11-30T20:59:00Z')).open, true);
     assert.deepEqual(api.awardWindow(withDeadline, new Date('2026-11-30T21:01:00Z')), { open: false, reason: 'deadline' });
-    assert.deepEqual(api.awardWindow({ accepting: false, deadline: null }), { open: false, reason: 'paused' });
+    assert.deepEqual(api.awardWindow({ visible: true, accepting: false, deadline: null }), { open: false, reason: 'paused' });
+    // A hidden award accepts nothing, whatever the form's own switch says.
+    assert.deepEqual(api.awardWindow({ visible: false, accepting: true, deadline: null }), { open: false, reason: 'hidden' });
   }
   assert.match(settings.formatAwardDeadline('2026-11-30', 'en'), /30 November 2026/);
 
@@ -203,7 +216,23 @@ try {
   assert.equal(form.getAwardFormContent('ar').declaration.noticeText, 'النص الرسمي للإشعار.');
   assert.equal(form.getAwardFormContent('ar').declaration.noticeApproved, true);
   assert.equal(form.getAwardFormContent('tr').declaration.noticeApproved, false, 'approval is per language');
-  assert.deepEqual(settings.getAwardSettings(), { accepting: true, deadline: '2026-11-30' });
+  assert.deepEqual(settings.getAwardSettings(), { visible: true, accepting: true, deadline: '2026-11-30' });
+
+  // The menu tab follows the dashboard's visibility switch.
+  const nav = [
+    { label: 'الأخبار', href: '/news' },
+    { label: 'شاركنا', href: '/participate/share-ideas' },
+  ];
+  const hrefs = (links) => links.map((link) => link.href);
+  assert.deepEqual(hrefs(routes.withAwardNavLink(nav, 'ar')), ['/news', '/volunteer-award', '/participate/share-ideas']);
+  store.setPublished({ tables: {}, pages: { 'award-settings': { visible: false } } });
+  assert.deepEqual(hrefs(routes.withAwardNavLink(nav, 'ar')), ['/news', '/participate/share-ideas'], 'hidden: no tab');
+  assert.deepEqual(
+    hrefs(routes.withAwardNavLink([...nav, { label: 'الجائزة', href: '/volunteer-award' }], 'ar')),
+    ['/news', '/participate/share-ideas'],
+    'hidden: a tab added by hand in the dashboard is dropped too',
+  );
+  assert.equal(settings.awardWindow(settings.getAwardSettings()).reason, 'hidden');
 
   store.setPublished({
     tables: {},
@@ -290,7 +319,7 @@ try {
   assert.notEqual(english.worksheets[0].views[0].rightToLeft, true, 'the English sheet reads left to right');
   assert.equal(english.worksheets[0].getRow(2).getCell(columnOf('governorate')).value, "Ta'izz");
 
-  console.log('Owais Award checks passed: rules parity, validation, window, shared pictures, Excel export.');
+  console.log('Owais Award checks passed: rules parity, validation, switches, shared pictures, menu tab, Excel export.');
 } finally {
   await server.close();
 }

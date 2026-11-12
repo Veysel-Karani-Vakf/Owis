@@ -1,6 +1,7 @@
 // Nominations for the Owais Volunteer Award: who applied, the full application
 // behind each row, its review status and notes, the Excel export, and the
-// switch + deadline that decide whether the public form accepts applications.
+// award's switches: whether its pages are shown to visitors, whether the form
+// accepts applications, and until when.
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -10,6 +11,7 @@ import {
   CopyPlus,
   ExternalLink,
   Eye,
+  EyeOff,
   FileSpreadsheet,
   Inbox,
   Loader2,
@@ -276,7 +278,7 @@ export default function AwardApplicationsPage() {
         </button>
       </div>
 
-      <ApplicationWindowCard label={label} locale={locale} />
+      <AwardSettingsCard label={label} locale={locale} />
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {(['all', ...AWARD_STATUSES] as const).map((status) => {
@@ -455,15 +457,23 @@ export default function AwardApplicationsPage() {
 }
 
 /* ------------------------------------------------------------------------- */
-/* Application window: master switch + deadline                              */
+/* Award settings: page visibility, form switch, deadline                    */
 /* ------------------------------------------------------------------------- */
 
 const SETTINGS_LABEL = { ar: 'إعدادات جائزة أويس', tr: 'Owais Ödülü ayarları', en: 'Owais Award settings' };
 
-function ApplicationWindowCard({ label, locale }: { label: Label; locale: Locale }) {
+const switchTrack =
+  'relative h-6 w-11 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 after:absolute after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all ltr:after:left-0.5 rtl:after:right-0.5 ltr:peer-checked:after:left-[1.375rem] rtl:peer-checked:after:right-[1.375rem]';
+
+/**
+ * The award's switches, saved together in the `award-settings` row: whether the
+ * award pages are shown to visitors at all, whether the form takes applications,
+ * and the last day it does.
+ */
+function AwardSettingsCard({ label, locale }: { label: Label; locale: Locale }) {
   const toast = useToast();
   const [saved, setSaved] = useState<AwardSettings | null>(null);
-  const [draft, setDraft] = useState<AwardSettings>({ accepting: true, deadline: null });
+  const [draft, setDraft] = useState<AwardSettings>({ visible: true, accepting: true, deadline: null });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -477,7 +487,7 @@ function ApplicationWindowCard({ label, locale }: { label: Label; locale: Locale
         if (!active) return;
         if (error) {
           // A failed read is not "no settings yet": never present the defaults as the live state.
-          toast.error(label('تعذر تحميل إعدادات استقبال الطلبات', 'Başvuru ayarları yüklenemedi', 'Could not load the application settings'));
+          toast.error(label('تعذر تحميل إعدادات الجائزة', 'Ödül ayarları yüklenemedi', 'Could not load the award settings'));
           return;
         }
         const settings = parseAwardSettings(data?.data);
@@ -490,7 +500,9 @@ function ApplicationWindowCard({ label, locale }: { label: Label; locale: Locale
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
-  const dirty = saved !== null && (saved.accepting !== draft.accepting || saved.deadline !== draft.deadline);
+  const dirty =
+    saved !== null &&
+    (saved.visible !== draft.visible || saved.accepting !== draft.accepting || saved.deadline !== draft.deadline);
 
   const save = async (): Promise<boolean> => {
     setSaving(true);
@@ -503,92 +515,145 @@ function ApplicationWindowCard({ label, locale }: { label: Label; locale: Locale
       return false;
     }
     setSaved(draft);
-    // Refresh the shared snapshot so previews inside the dashboard see the new state.
+    // Refresh the shared snapshot so the rest of the dashboard sees the new state.
     hydrateCms().then(setPublished).catch(() => undefined);
-    toast.success(label('تم حفظ إعدادات استقبال الطلبات', 'Başvuru ayarları kaydedildi', 'Application settings saved'));
+    toast.success(label('تم حفظ إعدادات الجائزة', 'Ödül ayarları kaydedildi', 'Award settings saved'));
     return true;
   };
 
   useUnsavedChanges(dirty, save);
 
-  const state = awardWindow(saved ?? draft);
-  const pill = !saved
-    ? { text: '…', style: 'bg-slate-100 text-slate-500' }
+  const live = saved ?? draft;
+  const state = awardWindow(live);
+  const loadingPill = { text: '…', style: 'bg-slate-100 text-slate-500' };
+  const pagePill = !saved
+    ? loadingPill
+    : live.visible
+      ? { text: label('ظاهرة للزوار', 'Ziyaretçilere açık', 'Visible to visitors'), style: 'bg-emerald-100 text-emerald-700' }
+      : { text: label('مخفية عن الزوار', 'Ziyaretçilerden gizli', 'Hidden from visitors'), style: 'bg-amber-100 text-amber-800' };
+  const formPill = !saved
+    ? loadingPill
     : state.open
       ? { text: label('الاستمارة مفتوحة', 'Form açık', 'Form is open'), style: 'bg-emerald-100 text-emerald-700' }
-      : state.reason === 'deadline'
-        ? { text: label('انتهى الموعد — الاستمارة مغلقة', 'Süre doldu — form kapalı', 'Deadline passed — form closed'), style: 'bg-slate-200 text-slate-700' }
-        : { text: label('الاستمارة مغلقة', 'Form kapalı', 'Form is closed'), style: 'bg-slate-200 text-slate-700' };
+      : state.reason === 'hidden'
+        ? { text: label('مغلقة لأن الصفحة مخفية', 'Sayfa gizli olduğu için kapalı', 'Closed: the page is hidden'), style: 'bg-slate-200 text-slate-700' }
+        : state.reason === 'deadline'
+          ? { text: label('انتهى الموعد — الاستمارة مغلقة', 'Süre doldu — form kapalı', 'Deadline passed — form closed'), style: 'bg-slate-200 text-slate-700' }
+          : { text: label('الاستمارة مغلقة', 'Form kapalı', 'Form is closed'), style: 'bg-slate-200 text-slate-700' };
 
   return (
-    <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
-            <CalendarClock size={18} />
-          </span>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">{label('استقبال الطلبات', 'Başvuru kabulü', 'Accepting applications')}</h2>
-            <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${pill.style}`}>{pill.text}</span>
-          </div>
-        </div>
-
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
-          <input
-            type="checkbox"
-            role="switch"
-            className="peer sr-only"
-            checked={draft.accepting}
-            disabled={!saved}
-            onChange={(event) => setDraft((current) => ({ ...current, accepting: event.target.checked }))}
-          />
-          <span className="relative h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 after:absolute after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-all ltr:after:left-0.5 rtl:after:right-0.5 ltr:peer-checked:after:left-[1.375rem] rtl:peer-checked:after:right-[1.375rem]" />
-          {label('الاستمارة تستقبل الطلبات', 'Form başvuru kabul ediyor', 'The form accepts applications')}
-        </label>
-
-        <label className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
-          {label('آخر يوم للتقديم', 'Son başvuru günü', 'Last day to apply')}
-          <input
-            type="date"
-            value={draft.deadline ?? ''}
-            disabled={!saved}
-            onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value || null }))}
-            className={inputClass}
-          />
-          {draft.deadline && (
-            <button
-              type="button"
-              onClick={() => setDraft((current) => ({ ...current, deadline: null }))}
-              className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
-            >
-              {label('بدون موعد', 'Tarih yok', 'No deadline')}
-            </button>
-          )}
-        </label>
-
+    <section className="mb-4 rounded-xl border border-slate-200 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <h2 className="text-sm font-bold text-slate-900">{label('إعدادات الجائزة', 'Ödül ayarları', 'Award settings')}</h2>
         <button
           type="button"
           onClick={() => void save()}
           disabled={!dirty || saving}
-          className="ms-auto inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
           {label('حفظ', 'Kaydet', 'Save')}
         </button>
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-slate-500">
-        {draft.deadline
-          ? label(
-              `تُغلق الاستمارة تلقائياً بنهاية يوم ${formatAwardDeadline(draft.deadline, locale)} بتوقيت اليمن، وتظهر للزوار رسالة أن باب الترشيح مغلق.`,
-              `Form, Yemen saatiyle ${formatAwardDeadline(draft.deadline, locale)} günü sonunda kendiliğinden kapanır; ziyaretçiler başvuruların kapalı olduğunu görür.`,
-              `The form closes by itself at the end of ${formatAwardDeadline(draft.deadline, locale)}, Yemen time; visitors then see that applications are closed.`,
-            )
-          : label(
-              'لا يوجد موعد إغلاق: تبقى الاستمارة مفتوحة حتى توقفها من المفتاح أو تحدد آخر يوم للتقديم.',
-              'Kapanış tarihi yok: form, anahtarla kapatılana veya son gün belirlenene kadar açık kalır.',
-              'No deadline: the form stays open until you switch it off or set a last day.',
-            )}
-      </p>
+
+      <div className="grid gap-x-8 gap-y-5 p-4 lg:grid-cols-2">
+        {/* Page visibility ---------------------------------------------------- */}
+        <div data-award-setting="visibility">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
+              {draft.visible ? <Eye size={18} /> : <EyeOff size={18} />}
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">{label('صفحة الجائزة في الموقع', 'Sitedeki ödül sayfası', 'Award page on the site')}</h3>
+              <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${pagePill.style}`}>{pagePill.text}</span>
+            </div>
+          </div>
+          <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              role="switch"
+              className="peer sr-only"
+              checked={draft.visible}
+              disabled={!saved}
+              onChange={(event) => setDraft((current) => ({ ...current, visible: event.target.checked }))}
+            />
+            <span className={switchTrack} />
+            {label('إظهار صفحة الجائزة للزوار', 'Ödül sayfasını ziyaretçilere göster', 'Show the award page to visitors')}
+          </label>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            {draft.visible
+              ? label(
+                  'تبويب «جائزة أويس» ظاهر في قائمة الموقع، وصفحة الجائزة والاستمارة متاحتان للزوار.',
+                  '“Owais Ödülü” sekmesi site menüsünde görünür; ödül sayfası ve form ziyaretçilere açıktır.',
+                  'The “Owais Award” tab is in the site menu, and the award page and form are open to visitors.',
+                )
+              : label(
+                  'عند الإخفاء يختفي تبويب «جائزة أويس» من قائمة الموقع، ومن يفتح رابط صفحة الجائزة أو الاستمارة يُحوَّل إلى الصفحة الرئيسية، ولا تُقبل طلبات جديدة. الطلبات المستلمة تبقى هنا كما هي.',
+                  'Gizlenince “Owais Ödülü” sekmesi site menüsünden kalkar; ödül sayfasının veya formun bağlantısını açanlar ana sayfaya yönlendirilir ve yeni başvuru alınmaz. Alınan başvurular burada kalır.',
+                  'While hidden, the “Owais Award” tab leaves the site menu, anyone opening the award page or the form is sent to the home page, and no new application is accepted. Applications already received stay here.',
+                )}
+          </p>
+        </div>
+
+        {/* Application window -------------------------------------------------- */}
+        <div data-award-setting="window" className={draft.visible ? '' : 'opacity-60'}>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
+              <CalendarClock size={18} />
+            </span>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">{label('استقبال الطلبات', 'Başvuru kabulü', 'Accepting applications')}</h3>
+              <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${formPill.style}`}>{formPill.text}</span>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                role="switch"
+                className="peer sr-only"
+                checked={draft.accepting}
+                disabled={!saved}
+                onChange={(event) => setDraft((current) => ({ ...current, accepting: event.target.checked }))}
+              />
+              <span className={switchTrack} />
+              {label('الاستمارة تستقبل الطلبات', 'Form başvuru kabul ediyor', 'The form accepts applications')}
+            </label>
+            <label className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
+              {label('آخر يوم للتقديم', 'Son başvuru günü', 'Last day to apply')}
+              <input
+                type="date"
+                value={draft.deadline ?? ''}
+                disabled={!saved}
+                onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value || null }))}
+                className={inputClass}
+              />
+              {draft.deadline && (
+                <button
+                  type="button"
+                  onClick={() => setDraft((current) => ({ ...current, deadline: null }))}
+                  className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
+                >
+                  {label('بدون موعد', 'Tarih yok', 'No deadline')}
+                </button>
+              )}
+            </label>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            {draft.deadline
+              ? label(
+                  `تُغلق الاستمارة تلقائياً بنهاية يوم ${formatAwardDeadline(draft.deadline, locale)} بتوقيت اليمن، وتظهر للزوار رسالة أن باب الترشيح مغلق.`,
+                  `Form, Yemen saatiyle ${formatAwardDeadline(draft.deadline, locale)} günü sonunda kendiliğinden kapanır; ziyaretçiler başvuruların kapalı olduğunu görür.`,
+                  `The form closes by itself at the end of ${formatAwardDeadline(draft.deadline, locale)}, Yemen time; visitors then see that applications are closed.`,
+                )
+              : label(
+                  'لا يوجد موعد إغلاق: تبقى الاستمارة مفتوحة حتى توقفها من المفتاح أو تحدد آخر يوم للتقديم.',
+                  'Kapanış tarihi yok: form, anahtarla kapatılana veya son gün belirlenene kadar açık kalır.',
+                  'No deadline: the form stays open until you switch it off or set a last day.',
+                )}
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

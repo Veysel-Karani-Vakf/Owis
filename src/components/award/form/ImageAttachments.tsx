@@ -2,12 +2,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, ImagePlus, Info, RefreshCw, X } from 'lucide-react';
 import { useRef, useState, type DragEvent } from 'react';
 import { awardFormRules, fillTemplate, type AwardFormContent } from '@/data/award/form';
-import type { AttachedImage } from './applyState';
+import { fieldDomId, type AttachedImage } from './applyState';
+import { FieldError } from './controls';
 import { formButton } from './formStyles';
 
 type ImageAttachmentsProps = {
   images: AttachedImage[];
   notices: string[];
+  /** Shown when the step was sent without the required photo. */
+  error?: string;
   content: AwardFormContent;
   onAdd: (files: File[]) => void;
   onReplace: (id: string, file: File) => void;
@@ -17,12 +20,13 @@ type ImageAttachmentsProps = {
 const mb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1);
 
 /**
- * Optional supporting photos (a feature proposed for this preview). Files stay
- * in browser memory as object URLs; nothing is uploaded anywhere.
+ * Photos of the initiative: at least one is required. Files stay in browser
+ * memory as object URLs until the application is sent; the upload happens then.
  */
 export default function ImageAttachments({
   images,
   notices,
+  error,
   content,
   onAdd,
   onReplace,
@@ -31,6 +35,8 @@ export default function ImageAttachments({
   const reduceMotion = useReducedMotion();
   const text = content.attachments;
   const { max, maxBytes, accept } = awardFormRules.images;
+  const pickId = fieldDomId('images');
+  const errorId = `${pickId}-error`;
   const pickRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const replaceTarget = useRef<string | null>(null);
@@ -52,10 +58,11 @@ export default function ImageAttachments({
       <div className="flex flex-wrap items-center gap-2">
         <h3 id="award-attachments-title" className="text-base font-bold text-dark-900 sm:text-[17px]">
           {text.heading}
+          <span className="ms-1 text-primary-500" aria-hidden="true">
+            *
+          </span>
+          <span className="sr-only"> ({content.common.requiredMark})</span>
         </h3>
-        <span className="rounded-full bg-warm px-2.5 py-0.5 text-[11px] font-bold text-dark-600 ring-1 ring-dark-100">
-          {text.optionalBadge}
-        </span>
       </div>
       <p className="mt-2 flex items-start gap-2 text-[13px] leading-relaxed text-dark-500">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-dark-400" aria-hidden="true" />
@@ -72,9 +79,11 @@ export default function ImageAttachments({
         className={`mt-4 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-7 text-center transition-colors duration-200 ${
           dragging
             ? 'border-primary-500 bg-primary-50'
-            : full
-              ? 'border-dark-200 bg-warm/60'
-              : 'border-dark-200 bg-warm/40 hover:border-primary-300'
+            : error
+              ? 'border-primary-700 bg-primary-50/40'
+              : full
+                ? 'border-dark-200 bg-warm/60'
+                : 'border-dark-200 bg-warm/40 hover:border-primary-300'
         }`}
       >
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-primary-600 shadow-sm ring-1 ring-dark-100">
@@ -83,10 +92,11 @@ export default function ImageAttachments({
         <p className="text-[15px] font-bold text-dark-800">{text.dropTitle}</p>
         <p className="text-[13px] text-dark-500">{text.dropOr}</p>
         <button
+          id={pickId}
           type="button"
           onClick={() => pickRef.current?.click()}
           disabled={full}
-          aria-describedby="award-attachments-constraints award-attachments-count"
+          aria-describedby={`award-attachments-constraints award-attachments-count${error ? ` ${errorId}` : ''}`}
           className={`${formButton.secondary} min-h-11 px-5 text-sm disabled:cursor-not-allowed`}
         >
           {text.choose}
@@ -126,6 +136,8 @@ export default function ImageAttachments({
           }}
         />
       </div>
+
+      <FieldError id={errorId} message={error} />
 
       <div aria-live="polite">
         {notices.length > 0 && (

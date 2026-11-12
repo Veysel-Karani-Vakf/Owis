@@ -1,6 +1,7 @@
 import { CalendarClock, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { isPreviewFrame } from '@/cms/preview';
 import PageSeo from '@/components/internal/PageSeo';
 import AwardPageBanner from '@/components/award/AwardPageBanner';
 import ApplyWizard from '@/components/award/form/ApplyWizard';
@@ -24,7 +25,10 @@ export default function AwardApplyPage() {
   // not swap the form away under them (the server still refuses a late send).
   const [{ settings, state }] = useState(() => {
     const current = getAwardSettings();
-    return { settings: current, state: awardWindow(current) };
+    // A hidden award never reaches this page (AwardGate), except in the
+    // dashboard's preview frame, where the form itself is what the editor wants.
+    const shown = isPreviewFrame() ? { ...current, visible: true } : current;
+    return { settings: shown, state: awardWindow(shown) };
   });
   const deadline = settings.deadline ? formatAwardDeadline(settings.deadline, locale) : '';
 

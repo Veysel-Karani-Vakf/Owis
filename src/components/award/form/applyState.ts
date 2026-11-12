@@ -44,7 +44,7 @@ export type ApplyValues = {
   declaration: boolean;
 };
 
-/** An image kept in browser memory only (never uploaded in this phase). */
+/** A picked photo, kept in browser memory until the application is sent. */
 export type AttachedImage = { id: string; file: File; url: string };
 
 let rowSeed = 0;
@@ -162,7 +162,7 @@ export type FieldError = {
   focus?: string;
 };
 
-type Ctx = { content: AwardFormContent; now: Date };
+type Ctx = { content: AwardFormContent; now: Date; imageCount: number };
 
 function requiredText(errors: FieldError[], key: string, value: string, msg: AwardFormContent['messages']) {
   const trimmed = value.trim();
@@ -294,8 +294,12 @@ function validateImpact(values: ApplyValues, { content }: Ctx) {
   return errors;
 }
 
-function validateReview(values: ApplyValues, { content }: Ctx) {
-  return values.declaration ? [] : [{ key: 'declaration', message: content.messages.declaration }];
+function validateReview(values: ApplyValues, { content, imageCount }: Ctx) {
+  const errors: FieldError[] = [];
+  // At least one photo of the initiative goes with every application.
+  if (imageCount < awardFormRules.images.min) errors.push({ key: 'images', message: content.messages.imagesRequired });
+  if (!values.declaration) errors.push({ key: 'declaration', message: content.messages.declaration });
+  return errors;
 }
 
 const validators: Record<ApplyStepId, (values: ApplyValues, ctx: Ctx) => FieldError[]> = {
@@ -305,8 +309,17 @@ const validators: Record<ApplyStepId, (values: ApplyValues, ctx: Ctx) => FieldEr
   review: validateReview,
 };
 
-export function validateStep(step: ApplyStepId, values: ApplyValues, content: AwardFormContent, now = new Date()) {
-  return validators[step](values, { content, now });
+/**
+ * Errors of one step. The photos live outside `values` (they are files), so
+ * the last step is told how many are attached.
+ */
+export function validateStep(
+  step: ApplyStepId,
+  values: ApplyValues,
+  content: AwardFormContent,
+  context: { now?: Date; imageCount?: number } = {}
+) {
+  return validators[step](values, { content, now: context.now ?? new Date(), imageCount: context.imageCount ?? 0 });
 }
 
 /** Distinct platforms with a valid link, for the live "x of 2" counter. */

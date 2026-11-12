@@ -302,9 +302,9 @@ export const SITE_AREAS: SiteArea[] = [
     icon: Trophy,
     label: L('جائزة أويس', 'Owais Ödülü', 'Owais Award'),
     description: L(
-      'صور صفحة جائزة أويس للأعمال التطوعية ونص إشعار الاستمارة؛ الطلبات نفسها في «طلبات جائزة أويس»',
-      'Owais Gönüllülük Ödülü sayfasının görselleri ve form bildirimi; başvurular “Owais Ödülü başvuruları”nda',
-      'The Owais Volunteer Award page pictures and the form notice; the applications are under “Owais Award applications”',
+      'صور صفحة جائزة أويس ونص إشعار الاستمارة؛ الطلبات وإخفاء الصفحة وموعد الإغلاق في «طلبات جائزة أويس»',
+      'Owais Ödülü sayfasının görselleri ve form bildirimi; başvurular, sayfayı gizleme ve son tarih “Owais Ödülü başvuruları”nda',
+      'The Owais Award page pictures and the form notice; applications, hiding the page and the deadline are under “Owais Award applications”',
     ),
     route: '/volunteer-award',
     tone: {

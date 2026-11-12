@@ -6,7 +6,7 @@ import { SUBMISSIONS_BUCKET } from './participateForms';
 /*
  * Sends an award nomination.
  *
- *  1. The supporting photos go straight from the browser to the private
+ *  1. The photos of the initiative go straight from the browser to the private
  *     `submissions` bucket (a serverless function cannot carry 15 MB), under a
  *     folder that belongs to this application only.
  *  2. The answers, with the paths of those photos, are posted to

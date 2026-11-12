@@ -210,13 +210,14 @@ four-step nomination form. A submission travels like this:
 
 1. The form validates each step in the browser
    (`src/components/award/form/applyState.ts`).
-2. On "send", the optional photos go straight from the browser to the private
-   `submissions` bucket, under `award/<upload id>/` (a serverless function
-   cannot carry 15 MB).
+2. On "send", the photos of the initiative (at least one, at most five) go
+   straight from the browser to the private `submissions` bucket, under
+   `award/<upload id>/` (a serverless function cannot carry 15 MB).
 3. `POST /api/award/apply` receives the answers and the photo paths. It checks
-   the window set in the dashboard, validates everything again against the
-   award's conditions (`api/_lib/awardRules.ts`: all members Yemeni, inside the
-   last 12 months, word limits, two social platforms, …), applies loose flood
+   the dashboard's switches (award hidden, form closed, deadline), validates
+   everything again against the award's conditions (`api/_lib/awardRules.ts`:
+   all members Yemeni, inside the last 12 months, word limits, two social
+   platforms, at least one photo, …), applies loose flood
    limits (20 per address per hour, 5 per email per day; a hidden field traps
    bots) and inserts into `award_applications` with the service-role key.
 4. The database assigns the reference number (`OWA-2026-0001`, trigger +
@@ -246,11 +247,17 @@ Dashboard:
   row per application, one column per field, right-to-left in Arabic, and it
   follows the table's current filters. Repeated applications from one email or
   WhatsApp number are accepted and flagged "duplicate".
-- The **استقبال الطلبات** card on that page opens or closes the form and sets
-  the last day to apply (end of that day, Yemen time, UTC+3). It is stored once
-  for every language in the `site_pages` row `award-settings`
-  (`{ accepting, deadline }`); the public page shows a "closed" notice and the
-  function refuses late submissions.
+- The **إعدادات الجائزة** card on that page holds the award's switches, stored
+  once for every language in the `site_pages` row `award-settings`
+  (`{ visible, accepting, deadline }`):
+  - *visible* hides or shows the whole award section. While hidden, the
+    "جائزة أويس" tab leaves the header and mobile menu (`withAwardNavLink`),
+    the three award routes redirect to the home page (`AwardGate`) and the
+    function refuses submissions. The dashboard's preview frame still renders
+    the pages, so they can be prepared while hidden.
+  - *accepting* + *deadline* open or close the form (end of the deadline day,
+    Yemen time, UTC+3); the public page then shows a "closed" notice and the
+    function refuses late submissions.
 - **جائزة أويس** hub (`/admin/site/award`, `site_pages` key `award-page`): the
   award pictures (trophy, the two marks, the "about" photo, the share picture)
   with their alt texts, and the organiser's notice of the form (its wording and

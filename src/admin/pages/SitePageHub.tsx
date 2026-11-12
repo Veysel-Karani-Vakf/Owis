@@ -15,6 +15,7 @@ import { getArea, hubPath, partKey, type AreaPart, type InboxKey, type SiteArea 
 import PageContentEditor from '../components/PageContentEditor';
 import ResourceCollection from '../components/ResourceCollection';
 import OrgStructureManager from '../components/OrgStructureManager';
+import AwardVisibilityNotice from '../components/AwardVisibilityNotice';
 
 const INBOX_META: Record<InboxKey, { to: string; icon: LucideIcon }> = {
   submissions: { to: '/admin/submissions', icon: Inbox },
@@ -102,6 +103,9 @@ export default function SitePageHub() {
           {label('عرض الصفحة في الموقع', 'Sayfayı sitede gör', 'View the page on the site')}
         </a>
       </div>
+
+      {/* The award is the one page its team can hide from visitors; say so while it is. */}
+      {area.key === 'award' && <AwardVisibilityNotice />}
 
       {/* Tabs -------------------------------------------------------------- */}
       {area.parts.length > 1 && (

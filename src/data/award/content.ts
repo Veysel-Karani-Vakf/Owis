@@ -272,7 +272,7 @@ const ar: AwardCopy = {
     items: [
       { id: 'read', title: 'اقرأ شروط المشاركة', description: 'تأكّد من انطباق الشروط الخمسة على مبادرتك.' },
       { id: 'form', title: 'عبّئ استمارة الترشيح', description: 'أدخل بيانات المبادرة وممثّلها وتفاصيل تنفيذها.' },
-      { id: 'support', title: 'أضف المعلومات الداعمة', description: 'أجب عن أسئلة الأثر، وأرفق صورًا داعمة إن رغبت.' },
+      { id: 'support', title: 'أضف المعلومات الداعمة', description: 'أجب عن أسئلة الأثر، وأرفق صورًا للمبادرة.' },
       { id: 'submit', title: 'أرسل الطلب للمراجعة', description: 'راجع ملخّص طلبك، ثم أرسله لتتم مراجعته.' },
     ],
   },
@@ -308,7 +308,7 @@ const ar: AwardCopy = {
         id: 'requirements',
         question: 'ما المعلومات المطلوبة في استمارة الترشيح؟',
         answer:
-          'اسم المبادرة وبيانات التواصل مع ممثّلها، وعدد أعضاء الفريق، ومكان التنفيذ ومدّته ومجال المبادرة، وروابط حسابين على الأقل للمبادرة في وسائل التواصل الاجتماعي، إضافةً إلى إجابات قصيرة عن فكرة المبادرة وأثرها وفريقها واستدامتها. ويمكن إرفاق صور داعمة اختياريًا.',
+          'اسم المبادرة وبيانات التواصل مع ممثّلها، وعدد أعضاء الفريق، ومكان التنفيذ ومدّته ومجال المبادرة، وروابط حسابين على الأقل للمبادرة في وسائل التواصل الاجتماعي، إضافةً إلى إجابات قصيرة عن فكرة المبادرة وأثرها وفريقها واستدامتها، وصورة واحدة على الأقل للمبادرة.',
       },
       {
         id: 'timeline',
@@ -471,7 +471,7 @@ const en: AwardCopy = {
       {
         id: 'support',
         title: 'Add supporting information',
-        description: 'Answer the impact questions and attach supporting photos if you wish.',
+        description: 'Answer the impact questions and attach photos of the initiative.',
       },
       {
         id: 'submit',
@@ -513,7 +513,7 @@ const en: AwardCopy = {
         id: 'requirements',
         question: 'What information does the application form ask for?',
         answer:
-          'The initiative’s name, its representative’s contact details, the team size, where and when it was implemented, its field and links to at least two of its social media accounts, plus short answers about the initiative’s idea, impact, team and sustainability. Supporting photos can be attached optionally.',
+          'The initiative’s name, its representative’s contact details, the team size, where and when it was implemented, its field and links to at least two of its social media accounts, plus short answers about the initiative’s idea, impact, team and sustainability, and at least one photo of the initiative.',
       },
       {
         id: 'timeline',
@@ -679,7 +679,7 @@ const tr: AwardCopy = {
       {
         id: 'support',
         title: 'Destekleyici bilgileri ekleyin',
-        description: 'Etki sorularını yanıtlayın, dilerseniz destekleyici fotoğraflar ekleyin.',
+        description: 'Etki sorularını yanıtlayın ve girişimin fotoğraflarını ekleyin.',
       },
       {
         id: 'submit',
@@ -721,7 +721,7 @@ const tr: AwardCopy = {
         id: 'requirements',
         question: 'Başvuru formunda hangi bilgiler istenir?',
         answer:
-          'Girişimin adı, temsilcisinin iletişim bilgileri, ekip büyüklüğü, uygulandığı yer ve tarih, alanı ve en az iki sosyal medya hesabının bağlantıları ile girişimin fikri, etkisi, ekibi ve sürdürülebilirliği hakkında kısa yanıtlar. Destekleyici fotoğraflar isteğe bağlı olarak eklenebilir.',
+          'Girişimin adı, temsilcisinin iletişim bilgileri, ekip büyüklüğü, uygulandığı yer ve tarih, alanı ve en az iki sosyal medya hesabının bağlantıları ile girişimin fikri, etkisi, ekibi ve sürdürülebilirliği hakkında kısa yanıtlar ve girişime ait en az bir fotoğraf.',
       },
       {
         id: 'timeline',

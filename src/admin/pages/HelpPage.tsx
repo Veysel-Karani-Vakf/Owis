@@ -199,17 +199,17 @@ const SECTIONS: Section[] = [
       [
         'كل مبادرة تتقدم عبر استمارة الترشيح تظهر في "طلبات جائزة أويس" برقم طلب خاص بها. افتح الطلب لقراءة بياناته كاملة وصوره، ثم غيّر حالته (قيد المراجعة، مقبول مبدئياً، مرفوض، مؤرشف) واكتب ملاحظاتك الداخلية.',
         'زر "تحميل Excel" ينزّل كل ما يظهر في الجدول (بعد البحث والفلترة) في ملف واحد: طلب في كل صف وحقل في كل عمود.',
-        'من بطاقة "استقبال الطلبات" أعلى الصفحة تفتح الاستمارة أو تغلقها، وتحدد آخر يوم للتقديم فتُغلق تلقائياً بنهايته بتوقيت اليمن. الطلبات المكررة من نفس البريد أو الرقم تُقبل وتُميَّز بعلامة "مكرر".',
+        'من بطاقة "إعدادات الجائزة" أعلى الصفحة: تُخفي صفحة الجائزة عن الزوار أو تُظهرها (عند الإخفاء يختفي تبويبها من القائمة ولا تُفتح الصفحة ولا الاستمارة)، وتفتح الاستمارة أو تغلقها، وتحدد آخر يوم للتقديم فتُغلق تلقائياً بنهايته بتوقيت اليمن. الطلبات المكررة من نفس البريد أو الرقم تُقبل وتُميَّز بعلامة "مكرر".',
       ],
       [
         'Aday gösterme formuyla başvuran her girişim, kendi başvuru numarasıyla "Owais Ödülü başvuruları"nda görünür. Başvuruyu açıp tüm bilgilerini ve fotoğraflarını okuyun, sonra durumunu değiştirin (inceleniyor, ön kabul, reddedildi, arşivlendi) ve dahili notlarınızı yazın.',
         '"Excel indir" düğmesi, tabloda görünen her şeyi (arama ve filtreden sonra) tek dosyada indirir: her satırda bir başvuru, her sütunda bir alan.',
-        'Sayfanın üstündeki "Başvuru kabulü" kartından formu açıp kapatabilir, son başvuru gününü belirleyebilirsiniz; form o günün sonunda (Yemen saatiyle) kendiliğinden kapanır. Aynı e-posta veya numaradan gelen yinelenen başvurular kabul edilir ve "Yinelenen" olarak işaretlenir.',
+        'Sayfanın üstündeki "Ödül ayarları" kartından: ödül sayfasını ziyaretçilerden gizleyebilir veya gösterebilir (gizlenince sekmesi menüden kalkar, sayfa ve form açılmaz), formu açıp kapatabilir ve son başvuru gününü belirleyebilirsiniz; form o günün sonunda (Yemen saatiyle) kendiliğinden kapanır. Aynı e-posta veya numaradan gelen yinelenen başvurular kabul edilir ve "Yinelenen" olarak işaretlenir.',
       ],
       [
         'Every initiative that applies through the nomination form appears under "Owais Award applications" with its own application number. Open one to read all its details and photos, then change its status (under review, shortlisted, rejected, archived) and write your internal notes.',
         'The "Download Excel" button saves everything the table shows (after search and filters) into one file: one application per row, one field per column.',
-        'The "Accepting applications" card at the top opens or closes the form and sets the last day to apply; the form then closes by itself at the end of that day, Yemen time. Repeated applications from the same email or number are accepted and marked "Duplicate".',
+        'The "Award settings" card at the top hides the award page from visitors or shows it (while hidden its tab leaves the menu and neither the page nor the form opens), opens or closes the form, and sets the last day to apply; the form then closes by itself at the end of that day, Yemen time. Repeated applications from the same email or number are accepted and marked "Duplicate".',
       ],
     ),
     link: { to: '/admin/award-applications', label: L('افتح طلبات الجائزة', 'Başvuruları aç', 'Open the applications') },

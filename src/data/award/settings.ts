@@ -2,14 +2,23 @@ import { cmsPage } from '@/cms/store';
 import type { Locale } from '@/i18n/content';
 
 /*
- * When the award accepts nominations. The award team sets this in the dashboard
- * (طلبات جائزة أويس → استقبال الطلبات); it is stored once for every language in
- * the `site_pages` row `award-settings`. The same rules run on the server
- * (api/_lib/awardRules.ts), which has the final say on every submission.
+ * The award's switches. The award team sets them in the dashboard
+ * (طلبات جائزة أويس → إعدادات الجائزة); they are stored once for every language
+ * in the `site_pages` row `award-settings`:
+ *   - `visible`   — whether the award pages exist for visitors at all;
+ *   - `accepting` — whether the nomination form takes applications;
+ *   - `deadline`  — the last day it does.
+ * The same rules run on the server (api/_lib/awardRules.ts), which has the
+ * final say on every submission.
  */
 
 export type AwardSettings = {
-  /** Master switch: false closes the form whatever the deadline says. */
+  /**
+   * False hides the whole award section from visitors: no tab in the menu, the
+   * award pages redirect home and no application is accepted.
+   */
+  visible: boolean;
+  /** Master switch of the form: false closes it whatever the deadline says. */
   accepting: boolean;
   /** Last day applications are accepted (YYYY-MM-DD), or null for no deadline. */
   deadline: string | null;
@@ -23,11 +32,11 @@ const AWARD_TIME_ZONE = 'Asia/Aden';
 
 const DATE_ONLY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
-/** A missing or malformed row means "open, no deadline". */
+/** A missing or malformed row means "visible, open, no deadline". */
 export function parseAwardSettings(raw: unknown): AwardSettings {
   const data = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   const deadline = typeof data.deadline === 'string' && DATE_ONLY.test(data.deadline.trim()) ? data.deadline.trim() : null;
-  return { accepting: data.accepting !== false, deadline };
+  return { visible: data.visible !== false, accepting: data.accepting !== false, deadline };
 }
 
 /** The settings visitors are served (defaults until the dashboard saves a row). */
@@ -40,9 +49,11 @@ export function awardDeadlineInstant(deadline: string): number {
   return Date.parse(`${deadline}T23:59:59.999${AWARD_UTC_OFFSET}`);
 }
 
-export type AwardWindow = { open: boolean; reason: 'open' | 'paused' | 'deadline' };
+export type AwardWindow = { open: boolean; reason: 'open' | 'hidden' | 'paused' | 'deadline' };
 
+/** Whether an application sent at `now` is accepted, and why not when it is not. */
 export function awardWindow(settings: AwardSettings, now: Date = new Date()): AwardWindow {
+  if (!settings.visible) return { open: false, reason: 'hidden' };
   if (!settings.accepting) return { open: false, reason: 'paused' };
   if (settings.deadline && now.getTime() > awardDeadlineInstant(settings.deadline)) {
     return { open: false, reason: 'deadline' };

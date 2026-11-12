@@ -286,6 +286,7 @@ export function StepReview({
       <ImageAttachments
         images={images}
         notices={imageNotices}
+        error={errorOf('images')}
         content={content}
         onAdd={onAddImages}
         onReplace={onReplaceImage}
