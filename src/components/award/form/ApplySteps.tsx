@@ -312,13 +312,16 @@ export function StepReview({
         <div id={noticeId} className="mt-3 rounded-2xl border border-dark-100 bg-white p-4">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-bold text-dark-900">{declaration.noticeTitle}</p>
-            <span className="inline-flex items-center gap-1 rounded-full border border-dark-200 bg-dark-50 px-2.5 py-0.5 text-[11px] font-bold text-dark-600">
-              <PenLine className="h-3 w-3" aria-hidden="true" />
-              {declaration.noticeDraft}
-            </span>
+            {/* Draft markers stay until the award team confirms the official wording in the dashboard. */}
+            {!declaration.noticeApproved && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-dark-200 bg-dark-50 px-2.5 py-0.5 text-[11px] font-bold text-dark-600">
+                <PenLine className="h-3 w-3" aria-hidden="true" />
+                {declaration.noticeDraft}
+              </span>
+            )}
           </div>
-          <p className="mt-2 text-[15px] leading-[1.9] text-dark-700">{declaration.noticeText}</p>
-          <p className="mt-2 text-xs text-dark-500">{declaration.noticePending}</p>
+          <p className="mt-2 whitespace-pre-line text-[15px] leading-[1.9] text-dark-700">{declaration.noticeText}</p>
+          {!declaration.noticeApproved && <p className="mt-2 text-xs text-dark-500">{declaration.noticePending}</p>}
         </div>
         <div className="mt-4">
           <Checkbox

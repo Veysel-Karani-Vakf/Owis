@@ -1,14 +1,20 @@
+import { cmsPageContent } from '@/cms/adapters';
+import { cmsPage } from '@/cms/store';
 import type { Locale } from '@/i18n/content';
 
 /*
  * Owais Volunteer Award 2026 — trilingual content for the public award pages.
  *
- * Static on purpose (frontend-only phase): there is no site_pages row or admin
- * editor for it yet. The five participation conditions and the fields come
+ * The copy ships here. The pictures (and their alt texts) are editable from the
+ * dashboard: the `site_pages` row `award-page` is layered over these defaults
+ * by `getAwardContent`. The five participation conditions and the fields come
  * from the award brief; anything the official award document has not settled
  * yet (deadlines, evaluation, recognition) is marked `draft` and rendered with
  * a visible "draft" badge, never as an announcement.
  */
+
+/** `site_pages` key of the award pages' editable content. */
+export const AWARD_PAGE_KEY = 'award-page';
 
 export type AwardCategoryId = 'education' | 'health' | 'environment' | 'empowerment' | 'development';
 export type AwardConditionId = 'yemeni-team' | 'inside-yemen' | 'voluntary' | 'development-field' | 'independent';
@@ -43,9 +49,24 @@ export type AwardFaqItem = {
 /** A section heading; `highlight` is the part of the title shown in the brand red. */
 export type AwardHeading = { title: string; highlight?: string; description: string };
 
+/** The award pictures an editor can replace from the dashboard (image URLs). */
+export type AwardMedia = {
+  /** The trophy: landing hero and the banner of the inner pages. */
+  trophy: string;
+  /** Volunteer Unit mark (rendered white over the dark hero). */
+  logoVolunteerUnit: string;
+  /** "Together We Build Yemen" mark, the variant made for dark backgrounds. */
+  logoMaan: string;
+  /** Photo of the "about the award" section. */
+  about: string;
+  /** Link-preview picture (og:image). */
+  share: string;
+};
+
 export type AwardContent = {
   /** The award's full name on one line (alt text, share titles). */
   name: string;
+  media: AwardMedia;
   seo: { title: string; description: string };
   labels: {
     draft: string;
@@ -113,7 +134,36 @@ export const awardMedia = {
   share: '/award/award-share.jpg',
 } as const;
 
-const ar: AwardContent = {
+/** The built-in pictures, in the shape the dashboard edits. */
+export const defaultAwardMedia: AwardMedia = {
+  trophy: awardMedia.trophy.src,
+  logoVolunteerUnit: awardMedia.logos.volunteerUnit,
+  logoMaan: awardMedia.logos.maanLight,
+  about: awardMedia.about.src,
+  share: awardMedia.share,
+};
+
+/**
+ * Intrinsic size (and responsive variants) of a built-in picture. A picture
+ * uploaded from the dashboard has its own dimensions, so it gets none of these
+ * and the layout's own sizing rules apply.
+ */
+export function awardImageAttrs(
+  kind: 'trophy' | 'about',
+  src: string
+): { width?: number; height?: number; srcSet?: string } {
+  if (kind === 'trophy') {
+    return src === awardMedia.trophy.src ? { width: awardMedia.trophy.width, height: awardMedia.trophy.height } : {};
+  }
+  return src === awardMedia.about.src
+    ? { width: awardMedia.about.width, height: awardMedia.about.height, srcSet: awardMedia.about.srcSet }
+    : {};
+}
+
+/** The copy of one language; the pictures are added by the getters below. */
+type AwardCopy = Omit<AwardContent, 'media'>;
+
+const ar: AwardCopy = {
   name: 'جائزة أويس للأعمال التطوعية 2026',
   seo: {
     title: 'جائزة أويس للأعمال التطوعية 2026 | وقف أويس القرني',
@@ -275,7 +325,7 @@ const ar: AwardContent = {
   },
 };
 
-const en: AwardContent = {
+const en: AwardCopy = {
   name: 'Owais Volunteer Award 2026',
   seo: {
     title: 'Owais Volunteer Award 2026 | Veysel Karani Waqf',
@@ -481,7 +531,7 @@ const en: AwardContent = {
   },
 };
 
-const tr: AwardContent = {
+const tr: AwardCopy = {
   name: 'Owais Gönüllülük Ödülü 2026',
   seo: {
     title: 'Owais Gönüllülük Ödülü 2026 | Veysel Karani Vakfı',
@@ -689,8 +739,44 @@ const tr: AwardContent = {
   },
 };
 
-const awardContent: Record<Locale, AwardContent> = { ar, en, tr };
+const awardCopy: Record<Locale, AwardCopy> = { ar, en, tr };
 
-export function getAwardContent(locale: Locale): AwardContent {
-  return awardContent[locale] ?? awardContent.ar;
+/** The content as it ships in this repo — what the dashboard's restore tool falls back to. */
+export function staticAwardContent(locale: Locale): AwardContent {
+  return { ...(awardCopy[locale] ?? awardCopy.ar), media: defaultAwardMedia };
 }
+
+const mediaKeys = Object.keys(defaultAwardMedia) as (keyof AwardMedia)[];
+const mediaLocales: Locale[] = ['ar', 'tr', 'en'];
+
+/**
+ * The award pictures are the same in every language, while the dashboard saves
+ * one language at a time. So a picture changed in any language is used by the
+ * languages that have not chosen their own: this language's picture first,
+ * then Arabic's, then the others', then the built-in one. A blank field or one
+ * still holding the built-in path counts as "not chosen".
+ */
+function resolveAwardMedia(locale: Locale): AwardMedia {
+  const page = cmsPage(AWARD_PAGE_KEY);
+  if (!page) return defaultAwardMedia;
+
+  const order = [locale, ...mediaLocales.filter((entry) => entry !== locale)];
+  const media = { ...defaultAwardMedia };
+  for (const key of mediaKeys) {
+    for (const entry of order) {
+      const stored = (page[entry] as { media?: Record<string, unknown> } | undefined)?.media?.[key];
+      if (typeof stored === 'string' && stored.trim() && stored !== defaultAwardMedia[key]) {
+        media[key] = stored.trim();
+        break;
+      }
+    }
+  }
+  return media;
+}
+
+/** What visitors see: the dashboard's `award-page` row layered over the built-in content. */
+export function getAwardContent(locale: Locale): AwardContent {
+  const merged = cmsPageContent(AWARD_PAGE_KEY, locale, staticAwardContent(locale));
+  return { ...merged, media: resolveAwardMedia(locale) };
+}
+

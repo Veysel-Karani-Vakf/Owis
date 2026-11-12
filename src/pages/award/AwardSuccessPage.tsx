@@ -1,36 +1,59 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, FlaskConical, Info, RotateCcw } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Check, Copy, Info, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import PageSeo from '@/components/internal/PageSeo';
 import AwardPageBanner from '@/components/award/AwardPageBanner';
 import { formButton } from '@/components/award/form/formStyles';
-import { awardMedia, getAwardContent } from '@/data/award/content';
+import { getAwardContent } from '@/data/award/content';
 import { fillTemplate, getAwardFormContent } from '@/data/award/form';
 import { awardRoutes } from '@/data/award/routes';
 import { useI18n } from '@/i18n/useI18n';
 
 /**
- * /volunteer-award/success — end of the DEMO flow. It must never read as a
- * real confirmation: no reference number, and an explicit "nothing was sent".
- * The initiative name arrives in router state (never in the URL).
+ * /volunteer-award/success — confirmation of a nomination the server accepted.
+ * The reference number and the initiative name arrive in router state (never
+ * in the URL); without a reference there is nothing to confirm, so the page
+ * sends the visitor back to the award instead of showing a false receipt.
  */
 export default function AwardSuccessPage() {
   const { locale, isRtl } = useI18n();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = window.setTimeout(() => setCopied(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
   const form = getAwardFormContent(locale);
   const award = getAwardContent(locale);
   const text = form.success;
-  const state = location.state as { initiativeName?: unknown } | null;
+  const state = location.state as { initiativeName?: unknown; reference?: unknown } | null;
   const name = typeof state?.initiativeName === 'string' ? state.initiativeName.trim().slice(0, 160) : '';
+  const reference = typeof state?.reference === 'string' ? state.reference.trim().slice(0, 40) : '';
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+
+  if (!reference) return <Navigate to={awardRoutes.landing} replace />;
+
+  const copyReference = async () => {
+    try {
+      await navigator.clipboard.writeText(reference);
+      setCopied(true);
+    } catch {
+      // Clipboard unavailable (old browser, insecure origin): the number stays selectable on screen.
+    }
+  };
 
   return (
     <>
-      <PageSeo title={text.seoTitle} description={form.seo.description} image={awardMedia.share} />
+      <PageSeo title={text.seoTitle} description={form.seo.description} image={award.media.share} />
       <main className="award-page overflow-x-clip bg-warm text-dark-900">
         <AwardPageBanner
           title={award.name}
+          trophySrc={award.media.trophy}
           trophyAlt={award.hero.imageAlt}
           breadcrumbs={[
             { label: form.banner.crumbHome, href: '/' },
@@ -41,12 +64,7 @@ export default function AwardSuccessPage() {
 
         <div className="relative z-10 mx-auto -mt-16 max-w-2xl px-4 pb-20 md:px-8 md:pb-28">
           <div className="rounded-[28px] border border-dark-100 bg-white p-6 text-center shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-10">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-[13px] font-bold text-amber-900">
-              <FlaskConical className="h-4 w-4" aria-hidden="true" />
-              {text.badge}
-            </span>
-
-            <div className="relative mx-auto mt-7 flex h-24 w-24 items-center justify-center" aria-hidden="true">
+            <div className="relative mx-auto flex h-24 w-24 items-center justify-center" aria-hidden="true">
               {!reduceMotion && (
                 <motion.span
                   className="absolute inset-0 rounded-full bg-emerald-100"
@@ -85,17 +103,37 @@ export default function AwardSuccessPage() {
               {name ? fillTemplate(text.withName, { name }) : text.withoutName}
             </p>
 
-            <div role="note" className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-start">
-              <p className="flex items-start gap-2.5 text-[15px] font-bold leading-relaxed text-amber-900">
-                <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-                {text.notice}
+            <div className="mt-6 rounded-2xl border border-dark-100 bg-warm/60 p-4 sm:p-5">
+              <p className="text-[13px] font-bold text-dark-500">{text.referenceLabel}</p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+                <span
+                  dir="ltr"
+                  className="select-all font-mono text-2xl font-bold tracking-wider text-dark-900 sm:text-[1.75rem]"
+                >
+                  {reference}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void copyReference()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-dark-200 bg-white px-3.5 py-1.5 text-[13px] font-bold text-dark-700 transition hover:border-primary-300 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                  ) : (
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span aria-live="polite">{copied ? text.copied : text.copy}</span>
+                </button>
+              </div>
+              <p className="mt-3 flex items-start justify-center gap-2 text-[13px] leading-relaxed text-dark-600">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-dark-400" aria-hidden="true" />
+                {text.referenceHint}
               </p>
-              <p className="mt-2 ps-7 text-[13px] leading-relaxed text-amber-900/80">{text.detail}</p>
             </div>
 
             <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
               <Link to={awardRoutes.apply} className={formButton.secondary}>
-                <RotateCcw className="h-[18px] w-[18px]" aria-hidden="true" />
+                <Plus className="h-[18px] w-[18px]" aria-hidden="true" />
                 {text.again}
               </Link>
               <Link to={awardRoutes.landing} className={formButton.primary}>

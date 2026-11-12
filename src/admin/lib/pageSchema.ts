@@ -47,6 +47,8 @@ import {
   Banknote,
   Clapperboard,
   Eye,
+  Trophy,
+  ScrollText,
   type LucideIcon,
 } from 'lucide-react';
 import type { Locale } from '@/lib/types';
@@ -1810,6 +1812,139 @@ export const SITE_PAGES: SitePageDef[] = [
               ] as PageFieldDef[])),
         ],
       })),
+    ],
+  },
+
+  // OWAIS VOLUNTEER AWARD -----------------------------------------------------
+  // Pictures and the organiser's notice only: the rest of the award copy ships
+  // with the site. The pictures are shared by every language (see
+  // resolveAwardMedia in src/data/award/content.ts).
+  {
+    key: 'award-page',
+    group: 'involve',
+    label: L('صفحة جائزة أويس', 'Owais Ödülü sayfası', 'Owais Award page'),
+    description: L(
+      'صور صفحة الجائزة (المجسّم، الشعاران، صورة «عن الجائزة»، صورة المشاركة) ونص إشعار الجهة المنظِّمة في الاستمارة',
+      'Ödül sayfasının görselleri (kupa, logolar, “Ödül hakkında” fotoğrafı, paylaşım görseli) ve formdaki düzenleyici bildirimi',
+      'The award page pictures (trophy, logos, the “about” photo, the share picture) and the organiser’s notice in the form',
+    ),
+    icon: Trophy,
+    route: '/volunteer-award',
+    sections: [
+      {
+        key: 'hero-media',
+        label: L('صور الواجهة', 'Açılış görselleri', 'Hero pictures'),
+        description: L(
+          'مجسّم الجائزة والشعاران أعلى صفحة الجائزة؛ المجسّم يظهر أيضاً في رأس صفحة الاستمارة وصفحة استلام الطلب',
+          'Ödül sayfasının üstündeki kupa ve iki logo; kupa form ve başvuru alındı sayfalarının başlığında da görünür',
+          'The trophy and the two marks at the top of the award page; the trophy also heads the form and confirmation pages',
+        ),
+        icon: ImageIcon,
+        anchor: '#award-hero',
+        fields: [
+          {
+            path: 'media.trophy',
+            label: L('صورة مجسّم الجائزة', 'Kupa görseli', 'Trophy picture'),
+            type: 'image',
+            help: L(
+              'يُفضَّل PNG أو WebP بخلفية شفافة وبوضع عمودي. صور الجائزة مشتركة بين اللغات: ما تغيّره هنا يظهر في كل لغة لم تُحفظ لها صورة مختلفة.',
+              'Şeffaf zeminli, dikey PNG veya WebP önerilir. Ödül görselleri diller arasında ortaktır: burada değiştirdiğiniz, kendi görseli kaydedilmemiş her dilde görünür.',
+              'A portrait PNG or WebP with a transparent background works best. Award pictures are shared across languages: what you change here shows in every language that has no picture of its own saved.',
+            ),
+          },
+          {
+            path: 'hero.imageAlt',
+            label: L('وصف صورة المجسّم', 'Kupa görseli açıklaması', 'Trophy picture description'),
+            type: 'text',
+            help: L('نص بديل لقارئات الشاشة ومحركات البحث', 'Ekran okuyucular ve arama motorları için alternatif metin', 'Alternative text for screen readers and search engines'),
+          },
+          {
+            path: 'media.logoVolunteerUnit',
+            label: L('شعار وحدة التطوع', 'Gönüllülük Birimi logosu', 'Volunteer Unit logo'),
+            type: 'image',
+            help: L('يُعرض باللون الأبيض فوق الخلفية الداكنة، فاستخدم شعاراً بخلفية شفافة', 'Koyu zemin üzerinde beyaz gösterilir; şeffaf zeminli bir logo kullanın', 'Shown in white over the dark background, so use a logo with a transparent background'),
+          },
+          {
+            path: 'hero.partners.volunteerUnit',
+            label: L('اسم شعار وحدة التطوع (نص بديل)', 'Gönüllülük Birimi logosunun adı (alternatif metin)', 'Volunteer Unit logo name (alternative text)'),
+            type: 'text',
+          },
+          {
+            path: 'media.logoMaan',
+            label: L('شعار «معاً نبني اليمن»', '“Birlikte Yemen’i İnşa Ediyoruz” logosu', '“Together We Build Yemen” logo'),
+            type: 'image',
+            help: L('استخدم نسخة فاتحة الحروف تناسب الخلفية الداكنة', 'Koyu zemine uygun açık renkli sürümü kullanın', 'Use the light-lettered version made for dark backgrounds'),
+          },
+          {
+            path: 'hero.partners.maan',
+            label: L('اسم شعار «معاً نبني اليمن» (نص بديل)', '“Birlikte Yemen’i İnşa Ediyoruz” logosunun adı (alternatif metin)', '“Together We Build Yemen” logo name (alternative text)'),
+            type: 'text',
+          },
+        ],
+      },
+      {
+        key: 'about-media',
+        label: L('صورة قسم «عن الجائزة»', '“Ödül hakkında” fotoğrafı', '“About the award” photo'),
+        description: L(
+          'الصورة المقوّسة بجانب نص التعريف بالجائزة، مع التعليق المكتوب أسفلها',
+          'Ödülü tanıtan metnin yanındaki kemerli fotoğraf ve altındaki açıklama',
+          'The arched photo beside the text introducing the award, with the caption under it',
+        ),
+        icon: ImageIcon,
+        anchor: '#award-about',
+        fields: [
+          {
+            path: 'media.about',
+            label: L('الصورة', 'Fotoğraf', 'Photo'),
+            type: 'image',
+            help: L('تُعرض بوضع عمودي (4:5) وتُقصّ أطرافها الزائدة تلقائياً', 'Dikey (4:5) gösterilir; fazlası kendiliğinden kırpılır', 'Shown in portrait (4:5); anything beyond that is cropped automatically'),
+          },
+          { path: 'about.imageAlt', label: L('وصف الصورة', 'Fotoğraf açıklaması', 'Photo description'), type: 'text' },
+          { path: 'about.imageCaption', label: L('التعليق أسفل الصورة', 'Fotoğraf altı yazısı', 'Caption under the photo'), type: 'text' },
+        ],
+      },
+      {
+        key: 'share',
+        label: L('صورة المشاركة', 'Paylaşım görseli', 'Share picture'),
+        description: L(
+          'الصورة التي تظهر عند مشاركة رابط صفحة الجائزة في واتساب ووسائل التواصل',
+          'Ödül sayfasının bağlantısı WhatsApp ve sosyal medyada paylaşıldığında görünen görsel',
+          'The picture shown when the award page link is shared on WhatsApp and social media',
+        ),
+        icon: Share2,
+        fields: [
+          {
+            path: 'media.share',
+            label: L('صورة المشاركة', 'Paylaşım görseli', 'Share picture'),
+            type: 'image',
+            help: L('المقاس الأنسب 1200×630 بصيغة JPG', 'En uygun boyut 1200×630, JPG', 'Best at 1200×630, JPG'),
+          },
+        ],
+      },
+      {
+        key: 'notice',
+        label: L('إشعار الجهة المنظِّمة', 'Düzenleyicinin bildirimi', 'Organiser’s notice'),
+        description: L(
+          'النص الذي يقرؤه المتقدم قبل تأكيد الإقرار في الخطوة الأخيرة من استمارة الترشيح',
+          'Başvuranın, formun son adımında beyanı onaylamadan önce okuduğu metin',
+          'The text an applicant reads before confirming the declaration in the last step of the form',
+        ),
+        icon: ScrollText,
+        route: '/volunteer-award/apply',
+        fields: [
+          { path: 'declaration.noticeText', label: L('نص الإشعار', 'Bildirim metni', 'Notice text'), type: 'textarea', full: true },
+          {
+            path: 'declaration.noticeApproved',
+            label: L('النص معتمد رسمياً (إخفاء علامة «مسودة»)', 'Metin resmen onaylandı (“taslak” işaretini gizle)', 'The wording is official (hide the “draft” marker)'),
+            type: 'boolean',
+            help: L(
+              'فعّله بعد وضع النص الوارد في وثيقة الجائزة الرسمية؛ وما دام غير مفعّل تظهر في الاستمارة علامة «مسودة — بانتظار النص الرسمي».',
+              'Resmî ödül belgesindeki metni girdikten sonra açın; kapalıyken formda “Taslak — resmî metin bekleniyor” işareti görünür.',
+              'Switch it on once the wording of the official award document is in place; while it is off the form shows “Draft — awaiting the official wording”.',
+            ),
+          },
+        ],
+      },
     ],
   },
 

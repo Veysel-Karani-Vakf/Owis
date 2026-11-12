@@ -59,7 +59,7 @@ export default function ImageAttachments({
       </div>
       <p className="mt-2 flex items-start gap-2 text-[13px] leading-relaxed text-dark-500">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-dark-400" aria-hidden="true" />
-        {text.proposedNote}
+        {text.note}
       </p>
 
       <div

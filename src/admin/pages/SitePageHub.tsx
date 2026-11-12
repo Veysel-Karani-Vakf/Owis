@@ -6,7 +6,7 @@
 
 import { useEffect } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ExternalLink, Inbox, Mail, CreditCard, type LucideIcon } from 'lucide-react';
+import { ExternalLink, Inbox, Mail, CreditCard, Trophy, type LucideIcon } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { LOCALES, type Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
@@ -20,6 +20,7 @@ const INBOX_META: Record<InboxKey, { to: string; icon: LucideIcon }> = {
   submissions: { to: '/admin/submissions', icon: Inbox },
   subscribers: { to: '/admin/subscribers', icon: Mail },
   payments: { to: '/admin/payments', icon: CreditCard },
+  award_applications: { to: '/admin/award-applications', icon: Trophy },
 };
 
 function isLocale(value: string | undefined): value is Locale {

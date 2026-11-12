@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Search,
   BookOpen,
+  Trophy,
 } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { supabase } from '@/lib/supabase';
@@ -37,14 +38,17 @@ type NavEntry = {
   tone?: AreaTone;
 };
 
-/** Number of form messages nobody has opened yet — shown on the inbox link. */
-function useNewSubmissionCount() {
+/**
+ * Number of rows still marked "new" in an inbox table — form messages nobody
+ * has opened, award applications nobody has triaged — shown on its link.
+ */
+function useNewCount(table: 'participate_submissions' | 'award_applications') {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let active = true;
     const load = () =>
       supabase
-        .from('participate_submissions')
+        .from(table)
         .select('id', { count: 'exact', head: true })
         .eq('status', 'new')
         .then(({ count: next }) => {
@@ -56,7 +60,7 @@ function useNewSubmissionCount() {
       active = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [table]);
   return count;
 }
 
@@ -71,7 +75,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const newCount = useNewSubmissionCount();
+  const newCount = useNewCount('participate_submissions');
+  const newAwardCount = useNewCount('award_applications');
 
   // Signing out unmounts the editor before any navigation the blocker could
   // stop, so the question has to be asked here, first.
@@ -143,6 +148,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       title: strings.navInbox,
       entries: [
         { to: '/admin/submissions', label: strings.sections.submissions, icon: Inbox, badge: newCount },
+        {
+          to: '/admin/award-applications',
+          label: strings.sections.award_applications,
+          icon: Trophy,
+          badge: newAwardCount,
+        },
         { to: '/admin/subscribers', label: strings.sections.subscribers, icon: Mail },
         { to: '/admin/payments', label: strings.sections.payments, icon: CreditCard },
       ],

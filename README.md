@@ -202,3 +202,66 @@ to port 3000. Payments show up read-only in the dashboard at `/admin/payments`
 imports and crash every function at load (`ERR_MODULE_NOT_FOUND`, surfaced as
 `FUNCTION_INVOCATION_FAILED`). Keep that file, or add `.js` to every relative
 import in `api/`, whenever the API layout changes.
+
+## Owais Volunteer Award (nominations)
+
+`/volunteer-award` is the award's landing page and `/volunteer-award/apply` its
+four-step nomination form. A submission travels like this:
+
+1. The form validates each step in the browser
+   (`src/components/award/form/applyState.ts`).
+2. On "send", the optional photos go straight from the browser to the private
+   `submissions` bucket, under `award/<upload id>/` (a serverless function
+   cannot carry 15 MB).
+3. `POST /api/award/apply` receives the answers and the photo paths. It checks
+   the window set in the dashboard, validates everything again against the
+   award's conditions (`api/_lib/awardRules.ts`: all members Yemeni, inside the
+   last 12 months, word limits, two social platforms, …), applies loose flood
+   limits (20 per address per hour, 5 per email per day; a hidden field traps
+   bots) and inserts into `award_applications` with the service-role key.
+4. The database assigns the reference number (`OWA-2026-0001`, trigger +
+   sequence) and the applicant sees it on `/volunteer-award/success`.
+
+`award_applications` has no anon policy: visitors can neither read nor write
+it, and only the function inserts. Admins read, update and delete through RLS
+(`is_admin()`). Migration: `0014_award_applications.sql`, applied on the
+production project (Nov 2026):
+
+```bash
+node scripts/db.mjs migrate 0014_award_applications.sql
+```
+
+The function needs `SUPABASE_SERVICE_ROLE_KEY` in the Vercel environment (the
+same variable the payment functions use). Locally the form therefore needs
+`npm run dev:full` with that key in `.env.local`; under plain `npm run dev` it
+answers "could not be sent", because nothing is listening behind `/api`.
+
+Dashboard:
+
+- **طلبات جائزة أويس** (`/admin/award-applications`): the applicants' table
+  (search, status / governorate / field filters), the full application with its
+  photos (signed links), review status (new → under review → shortlisted /
+  rejected / archived), internal notes, delete, and **Download Excel**. The
+  export is a real `.xlsx` built in the browser (ExcelJS, loaded on click): one
+  row per application, one column per field, right-to-left in Arabic, and it
+  follows the table's current filters. Repeated applications from one email or
+  WhatsApp number are accepted and flagged "duplicate".
+- The **استقبال الطلبات** card on that page opens or closes the form and sets
+  the last day to apply (end of that day, Yemen time, UTC+3). It is stored once
+  for every language in the `site_pages` row `award-settings`
+  (`{ accepting, deadline }`); the public page shows a "closed" notice and the
+  function refuses late submissions.
+- **جائزة أويس** hub (`/admin/site/award`, `site_pages` key `award-page`): the
+  award pictures (trophy, the two marks, the "about" photo, the share picture)
+  with their alt texts, and the organiser's notice of the form (its wording and
+  whether it is still marked as a draft). Award pictures are shared by every
+  language: one changed in any language is used by the languages that have not
+  saved a picture of their own (`resolveAwardMedia` in
+  `src/data/award/content.ts`). The rest of the award copy still ships in
+  `src/data/award/`.
+
+`npm run test:award` checks, without network or database, that the server
+rules match the form's, that the form's payload passes the server while
+tampered ones do not, the window logic, the shared pictures and the Excel
+export. Keep `api/_lib/awardRules.ts` and `src/data/award/form.ts` in step: the
+script fails when they drift.

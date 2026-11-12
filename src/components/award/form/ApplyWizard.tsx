@@ -5,7 +5,13 @@ import { Link, useBlocker, useNavigate } from 'react-router-dom';
 import { applySteps, fillTemplate, getAwardFormContent, type ApplyStepId } from '@/data/award/form';
 import { awardRoutes } from '@/data/award/routes';
 import { useI18n } from '@/i18n/useI18n';
-import { submitAwardApplicationDemo } from '@/services/awardApplication';
+import {
+  AwardSubmitError,
+  newAwardUploadSession,
+  submitAwardApplication,
+  type AwardSubmitErrorCode,
+  type AwardSubmitStage,
+} from '@/services/awardApplication';
 import {
   buildApplicationPayload,
   fieldDomId,
@@ -28,8 +34,9 @@ let imageSeed = 0;
 
 /**
  * The four-step nomination wizard. State lives here (React state only — no
- * localStorage, nothing leaves the browser); steps validate on "Next", the
- * first invalid field takes focus, and the demo submission never calls an API.
+ * localStorage); steps validate on "Next" and the first invalid field takes
+ * focus. Nothing leaves the browser until the last step is sent: the photos
+ * are uploaded, then the application is posted to /api/award/apply.
  */
 export default function ApplyWizard() {
   const { locale, isRtl } = useI18n();
@@ -44,7 +51,12 @@ export default function ApplyWizard() {
   const [direction, setDirection] = useState(1);
   const [attempted, setAttempted] = useState<Partial<Record<ApplyStepId, boolean>>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [submitFailed, setSubmitFailed] = useState(false);
+  const [submitStage, setSubmitStage] = useState<AwardSubmitStage>({ step: 'sending' });
+  const [submitError, setSubmitError] = useState<AwardSubmitErrorCode | null>(null);
+  // Remembers the photos already uploaded, so a retry does not send them twice.
+  const [uploadSession] = useState(newAwardUploadSession);
+  // Hidden field no visitor sees; automated senders fill it and are refused.
+  const [trap, setTrap] = useState('');
   const [focusTarget, setFocusTarget] = useState<{ id: string; seq: number } | null>(null);
 
   const formTopRef = useRef<HTMLDivElement>(null);
@@ -154,15 +166,22 @@ export default function ApplyWizard() {
 
     submittingRef.current = true;
     setSubmitting(true);
-    setSubmitFailed(false);
+    setSubmitError(null);
+    setSubmitStage(images.length ? { step: 'uploading', current: 1, total: images.length } : { step: 'sending' });
     try {
-      await submitAwardApplicationDemo(buildApplicationPayload(values, images));
+      const { reference } = await submitAwardApplication(buildApplicationPayload(values, images), {
+        locale,
+        session: uploadSession,
+        files: images.map((image) => image.file),
+        trap,
+        onStage: setSubmitStage,
+      });
       submittedRef.current = true;
-      navigate(awardRoutes.success, { state: { initiativeName: values.initiativeName.trim() } });
-    } catch {
+      navigate(awardRoutes.success, { state: { initiativeName: values.initiativeName.trim(), reference } });
+    } catch (error) {
       submittingRef.current = false;
       setSubmitting(false);
-      setSubmitFailed(true);
+      setSubmitError(error instanceof AwardSubmitError ? error.code : 'network');
     }
   };
 
@@ -225,6 +244,12 @@ export default function ApplyWizard() {
   const PrevIcon = isRtl ? ArrowRight : ArrowLeft;
   const isLast = stepIndex === applySteps.length - 1;
   const offset = (reduceMotion ? 0 : 28) * (isRtl ? -1 : 1);
+  const submitMessages: Record<AwardSubmitErrorCode, string> = {
+    network: content.common.submitFailed,
+    closed: content.common.submitClosed,
+    invalid: content.common.submitRejected,
+    'rate-limited': content.common.submitRateLimited,
+  };
 
   return (
     <div
@@ -242,6 +267,19 @@ export default function ApplyWizard() {
         }}
         className="mt-7 border-t border-dark-100 pt-7"
       >
+        <div aria-hidden="true" className="pointer-events-none absolute h-0 w-0 overflow-hidden">
+          <label>
+            Leave this field empty
+            <input
+              type="text"
+              name="extra_info"
+              tabIndex={-1}
+              autoComplete="off"
+              value={trap}
+              onChange={(event) => setTrap(event.target.value)}
+            />
+          </label>
+        </div>
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={step}
@@ -294,13 +332,13 @@ export default function ApplyWizard() {
           </motion.div>
         </AnimatePresence>
 
-        {submitFailed && (
+        {submitError && (
           <div
             role="alert"
             className="mt-6 flex items-start gap-2.5 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-800"
           >
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-            {content.common.submitFailed}
+            {submitMessages[submitError]}
           </div>
         )}
 
@@ -331,7 +369,12 @@ export default function ApplyWizard() {
               submitting ? (
                 <>
                   <Loader2 className="h-[18px] w-[18px] animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                  {content.common.submitting}
+                  {submitStage.step === 'uploading'
+                    ? fillTemplate(content.common.uploading, {
+                        current: submitStage.current,
+                        total: submitStage.total,
+                      })
+                    : content.common.submitting}
                 </>
               ) : (
                 <>

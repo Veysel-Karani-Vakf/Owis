@@ -9,6 +9,8 @@ import type { Locale } from '@/lib/types';
 import { resolveSiteContent } from '@/cms/siteContent';
 import { localizedContent } from '@/i18n/content';
 import { aboutPages, getAboutContent } from '@/data/about';
+import { getAwardContent, staticAwardContent } from '@/data/award/content';
+import { getAwardFormContent, staticAwardFormContent } from '@/data/award/form';
 import { getBankAccountsContent, localizedBankAccountsContent } from '@/data/bankAccounts';
 import { getDonateContent, localizedDonateContent } from '@/data/donate';
 import {
@@ -71,6 +73,12 @@ function pageSource(pageKey: string, locale: Locale, mode: PageSource): unknown 
       return live ? getLibraryProfileContent(locale) : staticLibraryProfileContent(locale);
     case 'news-page':
       return live ? getNewsLabels(locale) : newsLabels[locale];
+    case 'award-page':
+      // The landing content carries the pictures; the organiser's notice lives
+      // in the form copy. The schema lists only those paths.
+      return live
+        ? { ...getAwardContent(locale), declaration: getAwardFormContent(locale).declaration }
+        : { ...staticAwardContent(locale), declaration: staticAwardFormContent(locale).declaration };
     default:
       return {};
   }

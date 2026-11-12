@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin, Quote } from 'lucide-react';
-import { awardMedia, awardSectionIds, type AwardContent } from '@/data/award/content';
+import { awardImageAttrs, awardSectionIds, type AwardContent } from '@/data/award/content';
 import { useNarrowScreen, useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { AwardHighlight } from './AwardSectionHeading';
 import { pillarIcons } from './awardIcons';
@@ -12,7 +12,7 @@ type AwardAboutProps = {
 
 /** Section B — editorial "about" block: copy and pillars beside an arched photograph. */
 export default function AwardAbout({ content }: AwardAboutProps) {
-  const { about } = content;
+  const { about, media } = content;
   const reduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
   const copy = useRevealMotion({ y: 22, duration: 0.7 });
@@ -94,11 +94,9 @@ export default function AwardAbout({ content }: AwardAboutProps) {
             />
             <div className="relative aspect-[4/5] overflow-hidden rounded-b-[30px] rounded-t-[999px] bg-dark-100 shadow-[0_30px_70px_rgba(20,0,4,0.2)]">
               <motion.img
-                src={awardMedia.about.src}
-                srcSet={awardMedia.about.srcSet}
+                src={media.about}
+                {...awardImageAttrs('about', media.about)}
                 sizes="(min-width: 1024px) 430px, (min-width: 640px) 400px, 92vw"
-                width={awardMedia.about.width}
-                height={awardMedia.about.height}
                 alt={about.imageAlt}
                 loading="lazy"
                 decoding="async"
