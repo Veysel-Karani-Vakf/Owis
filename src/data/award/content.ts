@@ -5,12 +5,14 @@ import type { Locale } from '@/i18n/content';
 /*
  * Owais Volunteer Award 2026 — trilingual content for the public award pages.
  *
- * The copy ships here. The pictures (and their alt texts) are editable from the
- * dashboard: the `site_pages` row `award-page` is layered over these defaults
- * by `getAwardContent`. The five participation conditions and the fields come
- * from the award brief; anything the official award document has not settled
- * yet (deadlines, evaluation, recognition) is marked `draft` and rendered with
- * a visible "draft" badge, never as an announcement.
+ * The copy ships here as the default: every text, the pictures, the label of
+ * the menu tab and a hide switch per section are editable from the dashboard,
+ * whose `site_pages` row `award-page` is layered over these defaults by
+ * `getAwardContent` (schema: src/admin/lib/awardPageSchema.ts). The five
+ * participation conditions and the fields come from the award brief; anything
+ * the official award document has not settled yet (deadlines, evaluation,
+ * recognition) is marked `draft` and rendered with a visible "draft" badge,
+ * never as an announcement.
  */
 
 /** `site_pages` key of the award pages' editable content. */
@@ -39,15 +41,19 @@ export type AwardPillar = { id: AwardPillarId; title: string; description: strin
 export type AwardQuickLink = { target: AwardLandingSection; title: string; description: string };
 
 export type AwardFaqItem = {
-  id: string;
+  /** Built-in questions carry one; a question added from the dashboard may not. */
+  id?: string;
   question: string;
   answer: string;
   /** Not settled by the official award document yet: shown with a draft badge. */
   draft?: boolean;
 };
 
-/** A section heading; `highlight` is the part of the title shown in the brand red. */
-export type AwardHeading = { title: string; highlight?: string; description: string };
+/**
+ * A section heading; `highlight` is the part of the title shown in the brand
+ * red, and `hidden` (a dashboard switch) takes the whole section off the page.
+ */
+export type AwardHeading = { title: string; highlight?: string; description: string; hidden?: boolean };
 
 /** The award pictures an editor can replace from the dashboard (image URLs). */
 export type AwardMedia = {
@@ -66,6 +72,8 @@ export type AwardMedia = {
 export type AwardContent = {
   /** The award's full name on one line (alt text, share titles). */
   name: string;
+  /** Label of the award tab in the site header and mobile menu. */
+  navLabel: string;
   media: AwardMedia;
   seo: { title: string; description: string };
   labels: {
@@ -91,6 +99,8 @@ export type AwardContent = {
     quickLinks: AwardQuickLink[];
   };
   about: {
+    /** Dashboard switch: true takes the section off the page. */
+    hidden?: boolean;
     eyebrow: string;
     title: string;
     highlight?: string;
@@ -105,7 +115,7 @@ export type AwardContent = {
   eligibility: AwardHeading & { items: AwardCondition[]; cta: string };
   steps: AwardHeading & { stepLabel: string; items: AwardStep[] };
   faq: AwardHeading & { items: AwardFaqItem[] };
-  cta: { title: string; description: string; button: string };
+  cta: { title: string; description: string; button: string; hidden?: boolean };
 };
 
 /**
@@ -169,6 +179,7 @@ type AwardCopy = Omit<AwardContent, 'media'>;
 
 const ar: AwardCopy = {
   name: 'جائزة أويس للأعمال التطوعية 2026',
+  navLabel: 'جائزة أويس',
   seo: {
     title: 'جائزة أويس للأعمال التطوعية 2026 | وقف أويس القرني',
     description:
@@ -331,6 +342,7 @@ const ar: AwardCopy = {
 
 const en: AwardCopy = {
   name: 'Owais Volunteer Award 2026',
+  navLabel: 'Owais Award',
   seo: {
     title: 'Owais Volunteer Award 2026 | Veysel Karani Waqf',
     description:
@@ -537,6 +549,7 @@ const en: AwardCopy = {
 
 const tr: AwardCopy = {
   name: 'Owais Gönüllülük Ödülü 2026',
+  navLabel: 'Owais Ödülü',
   seo: {
     title: 'Owais Gönüllülük Ödülü 2026 | Veysel Karani Vakfı',
     description:
@@ -787,5 +800,13 @@ function resolveAwardMedia(locale: Locale): AwardMedia {
 export function getAwardContent(locale: Locale): AwardContent {
   const merged = cmsPageContent(AWARD_PAGE_KEY, locale, staticAwardContent(locale));
   return { ...merged, media: resolveAwardMedia(locale) };
+}
+
+/** The landing sections a dashboard switch can take off the page (the hero always shows). */
+export type AwardHideableSection = AwardLandingSection | 'cta';
+
+/** True when the award team hid `section` from the dashboard. */
+export function awardSectionHidden(content: AwardContent, section: AwardHideableSection): boolean {
+  return content[section]?.hidden === true;
 }
 

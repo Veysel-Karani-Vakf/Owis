@@ -253,6 +253,7 @@ export default function ApplyWizard() {
 
   return (
     <div
+      id="award-apply-form"
       ref={formTopRef}
       className="rounded-[28px] border border-dark-100 bg-white p-4 shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-7 lg:p-9"
     >

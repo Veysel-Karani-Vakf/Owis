@@ -7,7 +7,7 @@ import AwardFaq from '@/components/award/AwardFaq';
 import AwardFinalCta from '@/components/award/AwardFinalCta';
 import AwardHero from '@/components/award/AwardHero';
 import AwardSteps from '@/components/award/AwardSteps';
-import { getAwardContent } from '@/data/award/content';
+import { awardSectionHidden, getAwardContent, type AwardHideableSection } from '@/data/award/content';
 import { awardRoutes } from '@/data/award/routes';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -15,6 +15,8 @@ import { useI18n } from '@/i18n/useI18n';
 export default function AwardLandingPage() {
   const { locale, content: siteContent } = useI18n();
   const content = getAwardContent(locale);
+  // Every section after the hero can be taken off the page from the dashboard.
+  const show = (section: AwardHideableSection) => !awardSectionHidden(content, section);
 
   const structuredData = useMemo(() => {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
@@ -39,12 +41,12 @@ export default function AwardLandingPage() {
       />
       <main className="award-page overflow-x-clip bg-white text-dark-900">
         <AwardHero content={content} />
-        <AwardAbout content={content} />
-        <AwardCategories content={content} />
-        <AwardEligibilityOverview content={content} />
-        <AwardSteps content={content} />
-        <AwardFaq content={content} />
-        <AwardFinalCta content={content} />
+        {show('about') && <AwardAbout content={content} />}
+        {show('categories') && <AwardCategories content={content} />}
+        {show('eligibility') && <AwardEligibilityOverview content={content} />}
+        {show('steps') && <AwardSteps content={content} />}
+        {show('faq') && <AwardFaq content={content} />}
+        {show('cta') && <AwardFinalCta content={content} />}
       </main>
     </>
   );

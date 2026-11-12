@@ -258,17 +258,36 @@ Dashboard:
   - *accepting* + *deadline* open or close the form (end of the deadline day,
     Yemen time, UTC+3); the public page then shows a "closed" notice and the
     function refuses late submissions.
-- **جائزة أويس** hub (`/admin/site/award`, `site_pages` key `award-page`): the
-  award pictures (trophy, the two marks, the "about" photo, the share picture)
-  with their alt texts, and the organiser's notice of the form (its wording and
-  whether it is still marked as a draft). Award pictures are shared by every
-  language: one changed in any language is used by the languages that have not
-  saved a picture of their own (`resolveAwardMedia` in
-  `src/data/award/content.ts`). The rest of the award copy still ships in
-  `src/data/award/`.
+- **جائزة أويس** hub (`/admin/site/award`), two tabs described in
+  `src/admin/lib/awardPageSchema.ts`:
+  - *صفحة الجائزة* (`site_pages` key `award-page`): every text of the landing
+    page (hero, about, fields, conditions, steps, FAQ, closing call, search
+    title), the label of the "جائزة أويس" menu tab, a hide switch per section,
+    and the award pictures (trophy, the two marks, the "about" photo, the
+    share picture) with their alt texts. The lists (fields, conditions, steps,
+    pillars, FAQ, quick links) can gain, lose or reorder items; each item picks
+    its icon, and an icon id the site does not know falls back to a neutral
+    one. Award pictures are shared by every language: one changed in any
+    language is used by the languages that have not saved a picture of their
+    own (`resolveAwardMedia` in `src/data/award/content.ts`).
+  - *استمارة الترشيح* (`site_pages` key `award-form`): every text of the
+    nomination form — the four steps, each field's label, placeholder and
+    hint, the impact questions, the buttons, the validation messages, the
+    organiser's notice (its wording and whether it is still a draft), the
+    "closed" notice and the confirmation page. Texts with `{placeholders}`
+    keep them; the site fills them in. The rules themselves (word limits,
+    number of photos, the 12-month window…) stay in code: `awardFormRules`
+    and `api/_lib/awardRules.ts`.
+
+  Before the form had a row of its own the notice lived in `award-page`;
+  `getAwardFormContent` still honours that wording until the form row carries
+  one. `src/data/award/{content,form}.ts` hold the shipped defaults; a saved
+  row layered over them is what visitors see.
 
 `npm run test:award` checks, without network or database, that the server
 rules match the form's, that the form's payload passes the server while
-tampered ones do not, the window logic, the shared pictures and the Excel
-export. Keep `api/_lib/awardRules.ts` and `src/data/award/form.ts` in step: the
+tampered ones do not, the window logic, the shared pictures, the Excel
+export, and that every dashboard field of the two award pages maps to a
+shipped text (and every shipped text is editable), including the hidden
+sections, the menu label and the notice's old home. Keep `api/_lib/awardRules.ts` and `src/data/award/form.ts` in step: the
 script fails when they drift.

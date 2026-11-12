@@ -60,7 +60,10 @@ export default function AwardApplyPage() {
               <ApplyWizard />
             </>
           ) : (
-            <div className="rounded-[28px] border border-dark-100 bg-white p-6 text-center shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-10">
+            <div
+              id="award-closed"
+              className="rounded-[28px] border border-dark-100 bg-white p-6 text-center shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-10"
+            >
               <span
                 aria-hidden="true"
                 className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-dark-50 text-dark-500 ring-1 ring-dark-100"

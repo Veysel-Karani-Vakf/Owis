@@ -3,7 +3,10 @@
 //   2. what the form sends passes the server, and tampered submissions do not;
 //   3. the award's switches: hidden / form closed / deadline at the end of the day, Yemen time;
 //   4. award pictures saved in one language reach the others; a hidden award has no menu tab;
-//   5. the Excel export holds every application, right-to-left in Arabic.
+//   5. the Excel export holds every application, right-to-left in Arabic;
+//   6. every dashboard field of the two award pages maps to a shipped text and
+//      every shipped text is editable; saved texts, hidden sections and the
+//      menu label reach the site; the organiser's notice keeps its old home.
 // Usage: npm run test:award
 import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
@@ -319,7 +322,117 @@ try {
   assert.notEqual(english.worksheets[0].views[0].rightToLeft, true, 'the English sheet reads left to right');
   assert.equal(english.worksheets[0].getRow(2).getCell(columnOf('governorate')).value, "Ta'izz");
 
-  console.log('Owais Award checks passed: rules parity, validation, switches, shared pictures, menu tab, Excel export.');
+  /* 6. Every text from the dashboard ---------------------------------------- */
+  const schema = await load('/src/admin/lib/pageSchema.ts');
+  const paths = await load('/src/admin/lib/paths.ts');
+  const defaults = await load('/src/admin/lib/pageDefaults.ts');
+  const icons = await load('/src/components/award/awardIcons.ts');
+  const locales = ['ar', 'tr', 'en'];
+
+  // A schema path with no shipped value would open as an empty field and save
+  // junk; only the hide switches, the FAQ draft flags and the optional question
+  // notes may be unset.
+  const optional = [/\.hidden$/, /^draft$/, /^fields\.impact\.\w+\.note$/];
+  const checkFields = (pageKey, fields, value, prefix = '') => {
+    for (const field of fields) {
+      const path = `${prefix}${field.path}`;
+      const current = paths.getAtPath(value, field.path);
+      if (field.type === 'repeater') {
+        assert.ok(Array.isArray(current) && current.length > 0, `${pageKey}: ${path} is a shipped list`);
+        for (const item of current) checkFields(pageKey, field.itemFields, item, `${path}[].`);
+      } else if (!optional.some((pattern) => pattern.test(field.path))) {
+        assert.notEqual(current, undefined, `${pageKey}: ${path} has a shipped value`);
+      }
+    }
+  };
+  const editable = new Set();
+  for (const pageKey of ['award-page', 'award-form']) {
+    const definition = schema.getPageDef(pageKey);
+    assert.ok(definition, `${pageKey} is a dashboard page`);
+    for (const locale of locales) {
+      for (const section of definition.sections) {
+        checkFields(pageKey, section.fields, defaults.buildPageValue(pageKey, locale, 'static'));
+      }
+    }
+    for (const section of definition.sections) for (const field of section.fields) editable.add(`${pageKey}:${field.path}`);
+  }
+  // ... and nothing of the shipped copy is left out of the dashboard.
+  const leaves = (value, prefix = '') =>
+    Object.entries(value).flatMap(([key, entry]) =>
+      entry && typeof entry === 'object' && !Array.isArray(entry) ? leaves(entry, `${prefix}${key}.`) : [`${prefix}${key}`],
+    );
+  for (const [pageKey, shipped] of [
+    ['award-page', content.staticAwardContent('ar')],
+    ['award-form', form.staticAwardFormContent('ar')],
+  ]) {
+    for (const path of leaves(shipped)) assert.ok(editable.has(`${pageKey}:${path}`), `${pageKey}: "${path}" is editable in the dashboard`);
+  }
+
+  store.setPublished({
+    tables: {},
+    pages: {
+      'award-page': {
+        ar: {
+          navLabel: 'الجائزة',
+          hero: {
+            titleLines: ['جائزة', 'أويس', '2026'],
+            quickLinks: [
+              { target: 'about', title: 'عن', description: '' },
+              { target: 'faq', title: 'أسئلة', description: '' },
+            ],
+          },
+          about: { hidden: true },
+          categories: {
+            items: [
+              { id: 'education', title: 'أ', description: '' },
+              { id: 'water', title: 'ب', description: '' },
+            ],
+          },
+          faq: { items: [{ question: 'س؟', answer: 'ج.' }] },
+          cta: { hidden: true },
+        },
+      },
+      'award-form': {
+        ar: { common: { next: 'استمرار' }, declaration: { noticeText: 'نص الاستمارة.', noticeApproved: true } },
+      },
+    },
+  });
+  const edited = content.getAwardContent('ar');
+  assert.deepEqual(edited.hero.titleLines, ['جائزة', 'أويس', '2026'], 'the title lines come from the dashboard');
+  assert.equal(edited.categories.items.length, 2, 'a list saved in the dashboard replaces the built-in one');
+  assert.deepEqual(edited.faq.items, [{ question: 'س؟', answer: 'ج.' }], 'a question needs no id');
+  assert.equal(edited.hero.eyebrow, 'تعود من جديد', 'untouched texts keep the shipped copy');
+  assert.equal(content.awardSectionHidden(edited, 'about'), true);
+  assert.equal(content.awardSectionHidden(edited, 'cta'), true);
+  assert.equal(content.awardSectionHidden(edited, 'steps'), false);
+  assert.equal(content.awardSectionHidden(content.getAwardContent('en'), 'about'), false, 'hiding is per language');
+  assert.equal(routes.withAwardNavLink(nav, 'ar')[1].label, 'الجائزة', 'the menu tab takes its label from the dashboard');
+  assert.equal(routes.withAwardNavLink(nav, 'en')[1].label, 'Owais Award');
+  assert.equal(icons.categoryIcon('education'), icons.categoryIcons.education);
+  assert.ok(icons.categoryIcon('water'), 'an icon id the site does not know still gets an icon');
+  assert.equal(icons.categoryIcon('water'), icons.categoryIcon(''), 'the same neutral icon for every unknown id');
+  assert.equal(form.getAwardFormContent('ar').common.next, 'استمرار');
+  assert.equal(form.getAwardFormContent('ar').common.previous, 'السابق');
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeText, 'نص الاستمارة.');
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeApproved, true);
+
+  // The notice saved in award-page before the form had its own row still
+  // applies — and opens in the form editor — until the form row carries one.
+  const legacyNotice = { declaration: { noticeText: 'النص القديم.', noticeApproved: true } };
+  store.setPublished({ tables: {}, pages: { 'award-page': { ar: legacyNotice }, 'award-form': { ar: { common: { next: 'استمرار' } } } } });
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeText, 'النص القديم.');
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeApproved, true);
+  assert.equal(paths.getAtPath(defaults.buildPageValue('award-form', 'ar'), 'declaration.noticeText'), 'النص القديم.');
+  assert.equal(form.getAwardFormContent('tr').declaration.noticeApproved, false, 'the old notice is per language too');
+  store.setPublished({
+    tables: {},
+    pages: { 'award-page': { ar: legacyNotice }, 'award-form': { ar: { declaration: { noticeText: 'النص الجديد.', noticeApproved: false } } } },
+  });
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeText, 'النص الجديد.', 'the form row wins once it holds a notice');
+  assert.equal(form.getAwardFormContent('ar').declaration.noticeApproved, false);
+  store.setPublished({ tables: {}, pages: {} });
+
+  console.log('Owais Award checks passed: rules parity, validation, switches, shared pictures, menu tab, Excel export, dashboard texts.');
 } finally {
   await server.close();
 }

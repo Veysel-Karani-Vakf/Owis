@@ -3,7 +3,7 @@ import { MapPin, Quote } from 'lucide-react';
 import { awardImageAttrs, awardSectionIds, type AwardContent } from '@/data/award/content';
 import { useNarrowScreen, useRevealMotion } from '@/hooks/useResponsiveMotion';
 import { AwardHighlight } from './AwardSectionHeading';
-import { pillarIcons } from './awardIcons';
+import { pillarIcon } from './awardIcons';
 import { awardEase } from './awardUi';
 
 type AwardAboutProps = {
@@ -49,18 +49,18 @@ export default function AwardAbout({ content }: AwardAboutProps) {
           </motion.p>
 
           <motion.div {...body} className="mt-5 space-y-4 text-[15px] leading-[2] text-dark-600 sm:text-base">
-            {about.paragraphs.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+            {about.paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
             ))}
           </motion.div>
 
           <ul className="mt-9 grid gap-3 sm:grid-cols-3">
             {about.pillars.map((pillar, index) => {
-              const Icon = pillarIcons[pillar.id];
+              const Icon = pillarIcon(pillar.id);
 
               return (
                 <motion.li
-                  key={pillar.id}
+                  key={`${pillar.id}-${index}`}
                   initial={reduceMotion ? false : { opacity: 0, y: isNarrow ? 12 : 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}

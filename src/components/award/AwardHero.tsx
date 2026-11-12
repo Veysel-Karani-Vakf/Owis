@@ -1,11 +1,17 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { awardImageAttrs, awardMedia, awardSectionIds, type AwardContent } from '@/data/award/content';
+import {
+  awardImageAttrs,
+  awardMedia,
+  awardSectionHidden,
+  awardSectionIds,
+  type AwardContent,
+} from '@/data/award/content';
 import { awardRoutes } from '@/data/award/routes';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
-import { quickLinkIcons } from './awardIcons';
+import { quickLinkIcon } from './awardIcons';
 import { awardButton, awardEase, scrollToAwardSection } from './awardUi';
 
 type AwardHeroProps = {
@@ -41,6 +47,13 @@ export default function AwardHero({ content }: AwardHeroProps) {
   const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
   const float = !reduceMotion && !isNarrow;
+
+  // Quick links lead only to sections that exist: a link added in the dashboard
+  // must point at a known section, and one whose section is hidden is dropped.
+  const quickLinks = hero.quickLinks.filter(
+    (link) => link.target in awardSectionIds && !awardSectionHidden(content, link.target),
+  );
+  const showConditionsLink = !awardSectionHidden(content, 'eligibility');
 
   const rise = (delay: number, distance = 22) =>
     reduceMotion
@@ -109,7 +122,7 @@ export default function AwardHero({ content }: AwardHeroProps) {
 
             <h1 id="award-hero-title" className={`mt-4 font-brand font-bold leading-[1.18] text-white ${titleSize}`}>
               {hero.titleLines.map((line, index) => (
-                <span key={line} className="block overflow-hidden pb-[0.08em] lg:whitespace-nowrap">
+                <span key={index} className="block overflow-hidden pb-[0.08em] lg:whitespace-nowrap">
                   <motion.span
                     className="block"
                     {...(reduceMotion
@@ -156,16 +169,18 @@ export default function AwardHero({ content }: AwardHeroProps) {
                   aria-hidden="true"
                 />
               </Link>
-              <a
-                href={`#${awardSectionIds.eligibility}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  scrollToAwardSection(awardSectionIds.eligibility);
-                }}
-                className={awardButton.secondaryOnDark}
-              >
-                {hero.secondaryCta}
-              </a>
+              {showConditionsLink && (
+                <a
+                  href={`#${awardSectionIds.eligibility}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    scrollToAwardSection(awardSectionIds.eligibility);
+                  }}
+                  className={awardButton.secondaryOnDark}
+                >
+                  {hero.secondaryCta}
+                </a>
+              )}
             </motion.div>
 
             <motion.div
@@ -249,19 +264,23 @@ export default function AwardHero({ content }: AwardHeroProps) {
         </div>
       </section>
 
-      {/* Quick links, floating over the hero's lower edge. */}
+      {/* Quick links, floating over the hero's lower edge (one column each, three at most per row). */}
+      {quickLinks.length > 0 && (
       <motion.nav
         aria-label={labels.sectionNav}
         {...rise(1, 26)}
         className="relative z-10 mx-auto -mt-20 max-w-5xl px-4 md:px-8"
       >
-        <ul className="grid grid-cols-3 overflow-hidden rounded-[26px] border border-dark-100 bg-white shadow-[0_26px_60px_rgba(20,0,4,0.12)]">
-          {hero.quickLinks.map((link) => {
-            const Icon = quickLinkIcons[link.target];
+        <ul
+          className="grid overflow-hidden rounded-[26px] border border-dark-100 bg-white shadow-[0_26px_60px_rgba(20,0,4,0.12)]"
+          style={{ gridTemplateColumns: `repeat(${Math.min(quickLinks.length, 3)}, minmax(0, 1fr))` }}
+        >
+          {quickLinks.map((link, index) => {
+            const Icon = quickLinkIcon(link.target);
             const targetId = awardSectionIds[link.target];
 
             return (
-              <li key={link.target} className="border-dark-100 [&:not(:first-child)]:border-s">
+              <li key={`${link.target}-${index}`} className="border-dark-100 [&:not(:first-child)]:border-s">
                 <a
                   href={`#${targetId}`}
                   onClick={(event) => {
@@ -281,6 +300,7 @@ export default function AwardHero({ content }: AwardHeroProps) {
           })}
         </ul>
       </motion.nav>
+      )}
     </>
   );
 }

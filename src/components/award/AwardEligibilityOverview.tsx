@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n/useI18n';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import AwardHighlands from './AwardHighlands';
 import AwardSectionHeading from './AwardSectionHeading';
-import { conditionIcons } from './awardIcons';
+import { conditionIcon } from './awardIcons';
 import { awardButton, awardEase } from './awardUi';
 
 type AwardEligibilityOverviewProps = {
@@ -21,6 +21,9 @@ export default function AwardEligibilityOverview({ content }: AwardEligibilityOv
   const reduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
+  // The built-in five sit in one row on desktop; any other number (the dashboard
+  // can add or remove conditions) flows in centred rows.
+  const fixed = eligibility.items.length === 5;
 
   return (
     <section
@@ -44,18 +47,24 @@ export default function AwardEligibilityOverview({ content }: AwardEligibilityOv
           tone="dark"
         />
 
-        <ol className="mx-auto mt-[11rem] grid max-w-6xl gap-3 rounded-[30px] bg-white p-3 shadow-[0_30px_80px_rgba(0,0,0,0.45)] sm:mt-[13rem] sm:p-4 md:grid-cols-6 lg:mt-52 lg:grid-cols-5 lg:gap-0 lg:p-2">
+        <ol
+          className={`mx-auto mt-[11rem] max-w-6xl gap-3 rounded-[30px] bg-white p-3 shadow-[0_30px_80px_rgba(0,0,0,0.45)] sm:mt-[13rem] sm:p-4 lg:mt-52 lg:p-2 ${
+            fixed ? 'grid md:grid-cols-6 lg:grid-cols-5 lg:gap-0' : 'flex flex-wrap justify-center lg:gap-2'
+          }`}
+        >
           {eligibility.items.map((condition, index) => {
-            const Icon = conditionIcons[condition.id];
-            const placement = [
-              'md:col-span-2 lg:col-span-1',
-              index === 3 ? 'md:col-start-2 lg:col-start-auto' : '',
-              index > 0 ? 'lg:border-s lg:border-dark-100' : '',
-            ].join(' ');
+            const Icon = conditionIcon(condition.id);
+            const placement = fixed
+              ? [
+                  'md:col-span-2 lg:col-span-1',
+                  index === 3 ? 'md:col-start-2 lg:col-start-auto' : '',
+                  index > 0 ? 'lg:border-s lg:border-dark-100' : '',
+                ].join(' ')
+              : 'basis-full md:basis-[calc(33.333%-0.5rem)] lg:basis-[calc(20%-0.4rem)]';
 
             return (
               <motion.li
-                key={condition.id}
+                key={`${condition.id}-${index}`}
                 className={placement}
                 initial={reduceMotion ? false : { opacity: 0, y: isNarrow ? 12 : 20 }}
                 whileInView={{ opacity: 1, y: 0 }}

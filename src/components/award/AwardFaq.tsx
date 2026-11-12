@@ -60,13 +60,15 @@ export default function AwardFaq({ content }: AwardFaqProps) {
 
         <div className="mt-12 space-y-3">
           {faq.items.map((item, index) => {
-            const open = openIds.includes(item.id);
-            const buttonId = `award-faq-q-${item.id}`;
-            const panelId = `award-faq-a-${item.id}`;
+            // Built-in questions carry an id; one added in the dashboard is keyed by its position.
+            const id = item.id || `q${index + 1}`;
+            const open = openIds.includes(id);
+            const buttonId = `award-faq-q-${id}`;
+            const panelId = `award-faq-a-${id}`;
 
             return (
               <motion.div
-                key={item.id}
+                key={id}
                 initial={reduceMotion ? false : { opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
@@ -86,7 +88,7 @@ export default function AwardFaq({ content }: AwardFaqProps) {
                     type="button"
                     aria-expanded={open}
                     aria-controls={panelId}
-                    onClick={() => toggle(item.id)}
+                    onClick={() => toggle(id)}
                     onKeyDown={(event) => onQuestionKeyDown(event, index)}
                     className="flex w-full items-center justify-between gap-4 rounded-[20px] px-5 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 sm:px-6 sm:py-5"
                   >
