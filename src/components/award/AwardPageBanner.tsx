@@ -39,7 +39,7 @@ export default function AwardPageBanner({
         };
 
   return (
-    <section className="relative isolate overflow-hidden bg-dark-950">
+    <section id="award-banner" className="relative isolate overflow-hidden bg-dark-950">
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_0%,#9c1006_0%,#4d0306_45%,#1a0102_85%)] lg:ltr:bg-[radial-gradient(circle_at_80%_60%,#b4121c_0%,#7d070c_25%,#3a0204_55%,#140102_90%)] lg:rtl:bg-[radial-gradient(circle_at_20%_60%,#b4121c_0%,#7d070c_25%,#3a0204_55%,#140102_90%)]"

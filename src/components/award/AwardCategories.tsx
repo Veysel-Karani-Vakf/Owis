@@ -4,7 +4,7 @@ import { awardSectionIds, type AwardContent } from '@/data/award/content';
 import { useI18n } from '@/i18n/useI18n';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import AwardSectionHeading from './AwardSectionHeading';
-import { categoryIcons } from './awardIcons';
+import { categoryIcon } from './awardIcons';
 import { awardEase } from './awardUi';
 
 type AwardCategoriesProps = {
@@ -21,6 +21,9 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
   const { formatNumber } = useI18n();
   const reduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
+  // The built-in five have a tailored grid; any other number (the dashboard can
+  // add or remove fields) flows in centred rows.
+  const fixed = categories.items.length === 5;
 
   return (
     <section
@@ -37,20 +40,26 @@ export default function AwardCategories({ content }: AwardCategoriesProps) {
           description={categories.description}
         />
 
-        {/* 2 columns on phones (the fifth card spans both), 3+2 centred on tablets, 5 in a row on desktop. */}
-        <ul className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 md:mt-14 md:grid-cols-6 lg:grid-cols-5 lg:gap-5">
+        {/* Five: 2 columns on phones (the fifth card spans both), 3+2 centred on tablets, 5 in a row on desktop. */}
+        <ul
+          className={`mt-12 gap-3 sm:gap-4 md:mt-14 lg:gap-5 ${
+            fixed ? 'grid grid-cols-2 md:grid-cols-6 lg:grid-cols-5' : 'flex flex-wrap justify-center'
+          }`}
+        >
           {categories.items.map((category, index) => {
-            const Icon = categoryIcons[category.id];
+            const Icon = categoryIcon(category.id);
             const isLast = index === categories.items.length - 1;
-            const placement = [
-              'md:col-span-2 lg:col-span-1',
-              index === 3 ? 'md:col-start-2 lg:col-start-auto' : '',
-              isLast ? 'col-span-2' : '',
-            ].join(' ');
+            const placement = fixed
+              ? [
+                  'md:col-span-2 lg:col-span-1',
+                  index === 3 ? 'md:col-start-2 lg:col-start-auto' : '',
+                  isLast ? 'col-span-2' : '',
+                ].join(' ')
+              : 'basis-[calc(50%-0.375rem)] sm:basis-[calc(50%-0.5rem)] md:basis-[calc(33.333%-0.75rem)] lg:basis-[calc(20%-1rem)]';
 
             return (
               <motion.li
-                key={category.id}
+                key={`${category.id}-${index}`}
                 className={placement}
                 initial={reduceMotion ? false : { opacity: 0, y: isNarrow ? 14 : 26 }}
                 whileInView={{ opacity: 1, y: 0 }}

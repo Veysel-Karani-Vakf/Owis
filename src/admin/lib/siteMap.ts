@@ -302,9 +302,9 @@ export const SITE_AREAS: SiteArea[] = [
     icon: Trophy,
     label: L('جائزة أويس', 'Owais Ödülü', 'Owais Award'),
     description: L(
-      'صور صفحة جائزة أويس ونص إشعار الاستمارة؛ الطلبات وإخفاء الصفحة وموعد الإغلاق في «طلبات جائزة أويس»',
-      'Owais Ödülü sayfasının görselleri ve form bildirimi; başvurular, sayfayı gizleme ve son tarih “Owais Ödülü başvuruları”nda',
-      'The Owais Award page pictures and the form notice; applications, hiding the page and the deadline are under “Owais Award applications”',
+      'كل نصوص صفحة الجائزة وصورها، واستمارة الترشيح وصفحة الاستلام؛ الطلبات وإخفاء الصفحة وموعد الإغلاق في «طلبات جائزة أويس»',
+      'Ödül sayfasının tüm metinleri ve görselleri, aday gösterme formu ve alındı sayfası; başvurular, sayfayı gizleme ve son tarih “Owais Ödülü başvuruları”nda',
+      'Every text and picture of the award page, the nomination form and the confirmation page; applications, hiding the page and the deadline are under “Owais Award applications”',
     ),
     route: '/volunteer-award',
     tone: {
@@ -313,7 +313,10 @@ export const SITE_AREAS: SiteArea[] = [
       bar: 'bg-orange-500',
       hover: 'hover:border-orange-300',
     },
-    parts: [{ type: 'content', pageKey: 'award-page', label: L('صور الصفحة والإشعار', 'Sayfa görselleri ve bildirim', 'Page pictures & notice') }],
+    parts: [
+      { type: 'content', pageKey: 'award-page', label: L('صفحة الجائزة', 'Ödül sayfası', 'Award page') },
+      { type: 'content', pageKey: 'award-form', label: L('استمارة الترشيح', 'Aday gösterme formu', 'Nomination form') },
+    ],
     inbox: ['award_applications'],
   },
   {

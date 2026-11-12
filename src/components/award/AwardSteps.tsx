@@ -1,9 +1,9 @@
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { awardSectionIds, type AwardContent } from '@/data/award/content';
 import { useI18n } from '@/i18n/useI18n';
 import AwardSectionHeading from './AwardSectionHeading';
-import { stepIcons } from './awardIcons';
+import { stepIcon } from './awardIcons';
 import { awardEase } from './awardUi';
 
 type AwardStepsProps = {
@@ -46,14 +46,19 @@ export default function AwardSteps({ content }: AwardStepsProps) {
           description={steps.description}
         />
 
-        <ol ref={listRef} className="mt-14 grid gap-0 md:mt-16 md:grid-cols-4">
+        {/* One column per step from md up; the dashboard decides how many steps there are. */}
+        <ol
+          ref={listRef}
+          className="mt-14 grid gap-0 md:mt-16 md:grid-cols-[repeat(var(--award-steps),minmax(0,1fr))]"
+          style={{ '--award-steps': String(Math.max(steps.items.length, 1)) } as CSSProperties}
+        >
           {steps.items.map((step, index) => {
-            const Icon = stepIcons[step.id];
+            const Icon = stepIcon(step.id);
             const isLast = index === steps.items.length - 1;
 
             return (
               <li
-                key={step.id}
+                key={`${step.id}-${index}`}
                 className="relative flex gap-5 pb-10 last:pb-0 md:flex-col md:items-center md:gap-0 md:px-3 md:pb-0 md:text-center"
               >
                 {/* Connector to the next step: vertical on phones, horizontal from md. */}

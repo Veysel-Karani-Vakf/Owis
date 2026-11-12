@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, Copy, Info, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import { isPreviewFrame } from '@/cms/preview';
 import PageSeo from '@/components/internal/PageSeo';
 import AwardPageBanner from '@/components/award/AwardPageBanner';
 import { formButton } from '@/components/award/form/formStyles';
@@ -14,7 +15,9 @@ import { useI18n } from '@/i18n/useI18n';
  * /volunteer-award/success — confirmation of a nomination the server accepted.
  * The reference number and the initiative name arrive in router state (never
  * in the URL); without a reference there is nothing to confirm, so the page
- * sends the visitor back to the award instead of showing a false receipt.
+ * sends the visitor back to the award instead of showing a false receipt. The
+ * dashboard's preview frame is the exception: it shows a sample number so the
+ * texts can be edited in place.
  */
 export default function AwardSuccessPage() {
   const { locale, isRtl } = useI18n();
@@ -33,7 +36,8 @@ export default function AwardSuccessPage() {
   const text = form.success;
   const state = location.state as { initiativeName?: unknown; reference?: unknown } | null;
   const name = typeof state?.initiativeName === 'string' ? state.initiativeName.trim().slice(0, 160) : '';
-  const reference = typeof state?.reference === 'string' ? state.reference.trim().slice(0, 40) : '';
+  const reference =
+    typeof state?.reference === 'string' ? state.reference.trim().slice(0, 40) : isPreviewFrame() ? 'OWA-2026-0001' : '';
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   if (!reference) return <Navigate to={awardRoutes.landing} replace />;
@@ -63,7 +67,10 @@ export default function AwardSuccessPage() {
         />
 
         <div className="relative z-10 mx-auto -mt-16 max-w-2xl px-4 pb-20 md:px-8 md:pb-28">
-          <div className="rounded-[28px] border border-dark-100 bg-white p-6 text-center shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-10">
+          <div
+            id="award-success"
+            className="rounded-[28px] border border-dark-100 bg-white p-6 text-center shadow-[0_30px_80px_rgba(20,0,4,0.1)] sm:p-10"
+          >
             <div className="relative mx-auto flex h-24 w-24 items-center justify-center" aria-hidden="true">
               {!reduceMotion && (
                 <motion.span

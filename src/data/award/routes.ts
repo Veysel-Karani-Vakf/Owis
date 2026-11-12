@@ -1,4 +1,5 @@
 import type { Locale, SiteContent } from '@/i18n/content';
+import { getAwardContent } from './content';
 import { getAwardSettings } from './settings';
 
 /** Public routes of the Owais Volunteer Award 2026 section. */
@@ -14,13 +15,6 @@ export function isAwardRoute(pathname: string) {
   return pathname === awardRoutes.landing || pathname.startsWith(`${awardRoutes.landing}/`);
 }
 
-/** Label of the award tab in the site header and mobile menu. */
-export const awardNavLabel: Record<Locale, string> = {
-  ar: 'جائزة أويس',
-  en: 'Owais Award',
-  tr: 'Owais Ödülü',
-};
-
 type NavLinks = SiteContent['navLinks'];
 
 /**
@@ -28,10 +22,11 @@ type NavLinks = SiteContent['navLinks'];
  * "Participate" tab (after "News" when that is missing).
  *
  * The live `settings` row stores the whole nav list per language, so the tab
- * is added here, at render time, rather than in the content the dashboard
- * edits: it ships with the award pages and is never written to the database
- * by a settings save. If an editor later adds a /volunteer-award entry from
- * the dashboard, that entry is used as is.
+ * is added here, at render time, rather than in the site settings the
+ * dashboard edits: it ships with the award pages and is never written to the
+ * database by a settings save. Its label is the award page's own `navLabel`
+ * (editable in the award hub). If an editor adds a /volunteer-award entry to
+ * the menu itself, that entry is used as is.
  *
  * While the award is hidden from the dashboard there is no tab at all, not
  * even one an editor added by hand: it would lead nowhere.
@@ -41,7 +36,7 @@ export function withAwardNavLink(links: NavLinks | undefined, locale: Locale): N
   if (!getAwardSettings().visible) return list.filter((link) => !isAwardRoute(link.href ?? ''));
   if (list.some((link) => isAwardRoute(link.href ?? ''))) return list;
 
-  const tab = { label: awardNavLabel[locale], href: awardRoutes.landing };
+  const tab = { label: getAwardContent(locale).navLabel, href: awardRoutes.landing };
   const participate = list.findIndex((link) => (link.href ?? '').startsWith('/participate'));
   const news = list.findIndex((link) => link.href === '/news');
   const at = participate >= 0 ? participate : news >= 0 ? news + 1 : list.length;

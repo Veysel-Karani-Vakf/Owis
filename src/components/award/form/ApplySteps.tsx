@@ -293,7 +293,7 @@ export function StepReview({
         onRemove={onRemoveImage}
       />
 
-      <section aria-labelledby="award-review-title">
+      <section id="award-review" aria-labelledby="award-review-title">
         <h3 id="award-review-title" className="text-lg font-bold text-dark-900">
           {content.review.heading}
         </h3>
@@ -304,6 +304,7 @@ export function StepReview({
       </section>
 
       <section
+        id="award-declaration"
         aria-labelledby="award-declaration-title"
         className="rounded-[22px] border border-dark-100 bg-warm/60 p-4 sm:p-6"
       >

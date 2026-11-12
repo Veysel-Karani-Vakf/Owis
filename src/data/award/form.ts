@@ -1,4 +1,6 @@
 import { cmsPageContent } from '@/cms/adapters';
+import { pageForLocale } from '@/cms/localize';
+import { cmsPage } from '@/cms/store';
 import type { Locale } from '@/i18n/content';
 import { AWARD_PAGE_KEY } from './content';
 
@@ -12,7 +14,15 @@ import { AWARD_PAGE_KEY } from './content';
  * document does not ask for photos). The same limits are enforced again by the
  * server (api/_lib/awardRules.ts); `npm run test:award` fails when the two
  * copies drift apart.
+ *
+ * Every text below is a default: the dashboard's `site_pages` row `award-form`
+ * (schema: src/admin/lib/awardPageSchema.ts) is layered over it by
+ * `getAwardFormContent`. The rules themselves (limits, conditions) are not
+ * editable there.
  */
+
+/** `site_pages` key of the form's editable copy: every text of the form, the "closed" notice and the confirmation page. */
+export const AWARD_FORM_KEY = 'award-form';
 
 export type ApplyStepId = 'basic' | 'details' | 'impact' | 'review';
 export const applySteps: ApplyStepId[] = ['basic', 'details', 'impact', 'review'];
@@ -1077,19 +1087,30 @@ export function staticAwardFormContent(locale: Locale): AwardFormContent {
   return formContent[locale] ?? formContent.ar;
 }
 
+type StoredNotice = { noticeText: string; noticeApproved: boolean };
+
+/** The organiser's notice saved in the `site_pages` row `key` for `locale`, when it holds a wording. */
+function storedNotice(key: string, locale: Locale): StoredNotice | null {
+  const page = cmsPage(key);
+  if (!page) return null;
+  const own = pageForLocale(page, locale) as { declaration?: { noticeText?: unknown; noticeApproved?: unknown } } | null;
+  const declaration = own?.declaration;
+  if (!declaration || typeof declaration.noticeText !== 'string' || !declaration.noticeText.trim()) return null;
+  return { noticeText: declaration.noticeText, noticeApproved: declaration.noticeApproved === true };
+}
+
 /**
- * What applicants see. Only the organiser's notice is editable from the
- * dashboard (the `award-page` row): its wording, and whether it is still a draft.
+ * What applicants see: the dashboard's `award-form` row layered over the
+ * built-in copy. Before the form had a row of its own, the organiser's notice
+ * was saved in the `award-page` row; that wording (and whether it is approved)
+ * still applies until the form row carries a notice itself.
  */
 export function getAwardFormContent(locale: Locale): AwardFormContent {
-  const base = staticAwardFormContent(locale);
-  const stored = cmsPageContent(AWARD_PAGE_KEY, locale, { declaration: base.declaration }).declaration;
-  const noticeText = typeof stored?.noticeText === 'string' && stored.noticeText.trim() ? stored.noticeText : null;
-  if (!noticeText) return base;
-  return {
-    ...base,
-    declaration: { ...base.declaration, noticeText, noticeApproved: stored.noticeApproved === true },
-  };
+  const merged = cmsPageContent(AWARD_FORM_KEY, locale, staticAwardFormContent(locale));
+  if (storedNotice(AWARD_FORM_KEY, locale)) return merged;
+  const legacy = storedNotice(AWARD_PAGE_KEY, locale);
+  if (!legacy) return merged;
+  return { ...merged, declaration: { ...merged.declaration, ...legacy } };
 }
 
 /** Replaces {tokens} in a message. */

@@ -74,11 +74,11 @@ function pageSource(pageKey: string, locale: Locale, mode: PageSource): unknown 
     case 'news-page':
       return live ? getNewsLabels(locale) : newsLabels[locale];
     case 'award-page':
-      // The landing content carries the pictures; the organiser's notice lives
-      // in the form copy. The schema lists only those paths.
-      return live
-        ? { ...getAwardContent(locale), declaration: getAwardFormContent(locale).declaration }
-        : { ...staticAwardContent(locale), declaration: staticAwardFormContent(locale).declaration };
+      return live ? getAwardContent(locale) : staticAwardContent(locale);
+    case 'award-form':
+      // Carries the organiser's notice too: while the form row has none of its
+      // own, `getAwardFormContent` still honours the one saved in award-page.
+      return live ? getAwardFormContent(locale) : staticAwardFormContent(locale);
     default:
       return {};
   }
