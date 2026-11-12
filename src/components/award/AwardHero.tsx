@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { awardMedia, awardSectionIds, type AwardContent } from '@/data/award/content';
+import { awardImageAttrs, awardMedia, awardSectionIds, type AwardContent } from '@/data/award/content';
 import { awardRoutes } from '@/data/award/routes';
 import { useNarrowScreen } from '@/hooks/useResponsiveMotion';
 import { useI18n } from '@/i18n/useI18n';
@@ -35,7 +35,7 @@ const SPARKLES: [number, number, number][] = [
  * keeps its usual transparent state above it.
  */
 export default function AwardHero({ content }: AwardHeroProps) {
-  const { hero, labels } = content;
+  const { hero, labels, media } = content;
   const { isRtl, locale } = useI18n();
   const reduceMotion = useReducedMotion();
   const isNarrow = useNarrowScreen();
@@ -80,7 +80,7 @@ export default function AwardHero({ content }: AwardHeroProps) {
             <motion.ul {...rise(0.05, 12)} className="mb-7 inline-flex items-center gap-4 sm:gap-5">
               <li>
                 <img
-                  src={awardMedia.logos.volunteerUnit}
+                  src={media.logoVolunteerUnit}
                   alt={hero.partners.volunteerUnit}
                   width={278}
                   height={320}
@@ -90,7 +90,7 @@ export default function AwardHero({ content }: AwardHeroProps) {
               <li aria-hidden="true" className="h-12 w-px bg-white/30 sm:h-14" />
               <li>
                 <img
-                  src={awardMedia.logos.maanLight}
+                  src={media.logoMaan}
                   alt={hero.partners.maan}
                   width={201}
                   height={320}
@@ -222,10 +222,9 @@ export default function AwardHero({ content }: AwardHeroProps) {
               ))}
             </div>
             <motion.img
-              src={awardMedia.trophy.src}
+              src={media.trophy}
               alt={hero.imageAlt}
-              width={awardMedia.trophy.width}
-              height={awardMedia.trophy.height}
+              {...awardImageAttrs('trophy', media.trophy)}
               // React 18 only passes the lowercase attribute through to the DOM.
               {...{ fetchpriority: 'high' }}
               decoding="async"
@@ -240,7 +239,11 @@ export default function AwardHero({ content }: AwardHeroProps) {
                     }
                   : { duration: reduceMotion ? 0 : 1, ease: awardEase }
               }
-              className="relative h-full w-auto max-w-none drop-shadow-[0_34px_50px_rgba(0,0,0,0.5)]"
+              // The built-in trophy may spill past its stage; a picture uploaded from
+              // the dashboard can have any shape, so it is fitted inside instead.
+              className={`relative h-full w-auto drop-shadow-[0_34px_50px_rgba(0,0,0,0.5)] ${
+                media.trophy === awardMedia.trophy.src ? 'max-w-none' : 'max-w-full object-contain'
+              }`}
             />
           </div>
         </div>

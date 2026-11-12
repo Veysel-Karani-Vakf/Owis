@@ -16,6 +16,7 @@ import {
   Newspaper,
   BookOpen,
   Clapperboard,
+  Trophy,
   MessageSquare,
   HandHeart,
   Banknote,
@@ -48,7 +49,7 @@ export type AreaPart =
       label?: Record<Locale, string>;
     };
 
-export type InboxKey = 'submissions' | 'payments' | 'subscribers';
+export type InboxKey = 'submissions' | 'payments' | 'subscribers' | 'award_applications';
 
 /**
  * Each page's identity colour, as literal Tailwind classes (dynamic class
@@ -295,6 +296,25 @@ export const SITE_AREAS: SiteArea[] = [
     parts: [
       { type: 'content', pageKey: 'library-profile', label: L('فصول العرض', 'Sunum bölümleri', 'Presentation chapters') },
     ],
+  },
+  {
+    key: 'award',
+    icon: Trophy,
+    label: L('جائزة أويس', 'Owais Ödülü', 'Owais Award'),
+    description: L(
+      'صور صفحة جائزة أويس ونص إشعار الاستمارة؛ الطلبات وإخفاء الصفحة وموعد الإغلاق في «طلبات جائزة أويس»',
+      'Owais Ödülü sayfasının görselleri ve form bildirimi; başvurular, sayfayı gizleme ve son tarih “Owais Ödülü başvuruları”nda',
+      'The Owais Award page pictures and the form notice; applications, hiding the page and the deadline are under “Owais Award applications”',
+    ),
+    route: '/volunteer-award',
+    tone: {
+      soft: 'bg-orange-100 text-orange-700',
+      solid: 'bg-orange-600 text-white',
+      bar: 'bg-orange-500',
+      hover: 'hover:border-orange-300',
+    },
+    parts: [{ type: 'content', pageKey: 'award-page', label: L('صور الصفحة والإشعار', 'Sayfa görselleri ve bildirim', 'Page pictures & notice') }],
+    inbox: ['award_applications'],
   },
   {
     key: 'participate',

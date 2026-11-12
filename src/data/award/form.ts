@@ -1,12 +1,17 @@
+import { cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
+import { AWARD_PAGE_KEY } from './content';
 
 /*
- * Owais Volunteer Award 2026 — nomination form (frontend only).
+ * Owais Volunteer Award 2026 — nomination form.
  *
  * The four Arabic impact questions, their word limits and the Yemeni-team /
  * 12-month conditions come from the award's official requirements; the en/tr
- * strings are translations of them. The image attachments are a feature
- * proposed for this preview, not an official requirement, and are labelled so.
+ * strings are translations of them. At least one photo of the initiative is
+ * required with every application (the award team's decision; the official
+ * document does not ask for photos). The same limits are enforced again by the
+ * server (api/_lib/awardRules.ts); `npm run test:award` fails when the two
+ * copies drift apart.
  */
 
 export type ApplyStepId = 'basic' | 'details' | 'impact' | 'review';
@@ -66,8 +71,9 @@ export const awardFormRules = {
   maxSocialRows: 8,
   maxTeamSize: 10000,
   maxTextLength: 120,
-  /** Proposed for this preview (not in the official document). */
+  /** Photos of the initiative: at least `min`, at most `max`. */
   images: {
+    min: 1,
     max: 5,
     maxBytes: 3 * 1024 * 1024,
     types: ['image/jpeg', 'image/png', 'image/webp'],
@@ -194,8 +200,8 @@ export type AwardFormContent = {
   banner: {
     title: string;
     subtitle: string;
-    demoBadge: string;
-    demoNotice: string;
+    /** Shown above the form while a deadline is set; {date} is its last day. */
+    deadline: string;
     crumbHome: string;
     crumbAward: string;
     crumbForm: string;
@@ -210,11 +216,19 @@ export type AwardFormContent = {
     backToAward: string;
     submit: string;
     submitting: string;
+    /** While the photos are being sent: {current} of {total}. */
+    uploading: string;
     edit: string;
     errorSummary: string;
     leaveConfirm: string;
     selectPlaceholder: string;
+    /** The request never reached the server, or the server failed. */
     submitFailed: string;
+    /** The award team closed the form (or the deadline passed) meanwhile. */
+    submitClosed: string;
+    submitRateLimited: string;
+    /** The server refused the data (should not happen through this form). */
+    submitRejected: string;
   };
   fields: {
     initiativeName: { label: string; placeholder: string };
@@ -256,8 +270,7 @@ export type AwardFormContent = {
   };
   attachments: {
     heading: string;
-    optionalBadge: string;
-    proposedNote: string;
+    note: string;
     dropTitle: string;
     dropOr: string;
     choose: string;
@@ -284,7 +297,15 @@ export type AwardFormContent = {
     noticeDraft: string;
     noticeText: string;
     noticePending: string;
+    /**
+     * False while the notice is still our draft wording: the form then shows
+     * the "draft" badge and the pending line. The award team switches it on
+     * from the dashboard once the official text is in place.
+     */
+    noticeApproved: boolean;
   };
+  /** Shown instead of the form while applications are closed. */
+  closed: { title: string; paused: string; deadline: string; back: string };
   messages: {
     required: string;
     tooShort: string;
@@ -308,6 +329,7 @@ export type AwardFormContent = {
     socialDomain: string;
     socialDuplicate: string;
     wordsOver: string;
+    imagesRequired: string;
     declaration: string;
   };
   success: {
@@ -316,8 +338,10 @@ export type AwardFormContent = {
     heading: string;
     withName: string;
     withoutName: string;
-    notice: string;
-    detail: string;
+    referenceLabel: string;
+    referenceHint: string;
+    copy: string;
+    copied: string;
     back: string;
     again: string;
   };
@@ -331,9 +355,7 @@ const ar: AwardFormContent = {
   banner: {
     title: 'استمارة الترشيح لجائزة أويس',
     subtitle: 'أكمل بيانات مبادرتك عبر أربع خطوات بسيطة',
-    demoBadge: 'معاينة تجريبية',
-    demoNotice:
-      'هذه نسخة تجريبية من الاستمارة: لن تُرسَل أي بيانات أو صور إلى الوقف، وتبقى معلوماتك في هذه الصفحة فقط.',
+    deadline: 'آخر موعد لاستقبال طلبات الترشيح: {date}',
     crumbHome: 'الرئيسية',
     crumbAward: 'جائزة أويس',
     crumbForm: 'استمارة الترشيح',
@@ -347,7 +369,7 @@ const ar: AwardFormContent = {
     details: {
       label: 'تفاصيل المبادرة',
       heading: 'تفاصيل المبادرة',
-      description: 'مكان تنفيذ النشاط المشارك به وفترته ومجاله، وحسابات المبادرة.',
+      description: 'مكان تنفيذ المبادرة وفترة تنفيذها ومجالها، وحساباتها.',
     },
     impact: {
       label: 'الأثر والتميز',
@@ -357,7 +379,7 @@ const ar: AwardFormContent = {
     review: {
       label: 'المرفقات والمراجعة',
       heading: 'المرفقات ومراجعة الطلب',
-      description: 'أضف صورًا داعمة إن رغبت، ثم راجع بياناتك قبل الإرسال.',
+      description: 'أرفق صور المبادرة، ثم راجع بياناتك قبل الإرسال.',
     },
   },
   progress: { stepOf: 'الخطوة {current} من {total}', navLabel: 'خطوات الاستمارة', done: 'مكتملة' },
@@ -367,13 +389,19 @@ const ar: AwardFormContent = {
     next: 'التالي',
     previous: 'السابق',
     backToAward: 'العودة إلى صفحة الجائزة',
-    submit: 'إرسال الطلب (تجريبي)',
-    submitting: 'جارٍ التحقق من الطلب…',
+    submit: 'إرسال الطلب',
+    submitting: 'جارٍ إرسال الطلب…',
+    uploading: 'جارٍ رفع الصور ({current} من {total})…',
     edit: 'تعديل',
     errorSummary: 'يرجى تصحيح الحقول المشار إليها ({count}) قبل المتابعة.',
     leaveConfirm: 'لم يُرسَل طلبك، وستفقد البيانات التي أدخلتها إذا غادرت الصفحة. هل تريد المغادرة؟',
     selectPlaceholder: 'اختر…',
-    submitFailed: 'تعذّر إكمال المعاينة، يرجى المحاولة مرة أخرى.',
+    submitFailed:
+      'تعذّر إرسال الطلب. تحقّق من اتصالك بالإنترنت ثم حاول مرة أخرى؛ بياناتك ما زالت في هذه الصفحة.',
+    submitClosed: 'عذرًا، أُغلق باب استقبال طلبات الترشيح، ولم يُرسَل هذا الطلب.',
+    submitRateLimited: 'وصلتنا عدة طلبات من هذا الجهاز أو البريد خلال وقت قصير. يرجى المحاولة مرة أخرى لاحقًا.',
+    submitRejected:
+      'تعذّر قبول الطلب لأن بعض بياناته لا تستوفي شروط الاستمارة. يرجى مراجعة الخطوات ثم إعادة الإرسال.',
   },
   fields: {
     initiativeName: { label: 'اسم المبادرة', placeholder: 'أدخل اسم المبادرة' },
@@ -400,13 +428,13 @@ const ar: AwardFormContent = {
     governorate: { label: 'المحافظة', placeholder: 'اختر المحافظة' },
     district: { label: 'المديرية', placeholder: 'اكتب اسم المديرية' },
     period: {
-      label: 'فترة تنفيذ النشاط المشارك به',
+      label: 'فترة تنفيذ المبادرة',
       hint: 'تشترط الجائزة أن تكون المبادرة قد نُفّذت داخل اليمن خلال آخر 12 شهرًا.',
       start: 'بداية التنفيذ',
       end: 'نهاية التنفيذ',
       month: 'الشهر',
       year: 'السنة',
-      ongoing: 'النشاط مستمر حتى الآن',
+      ongoing: 'المبادرة مستمرة حتى الآن',
     },
     category: {
       label: 'مجال المبادرة',
@@ -470,9 +498,7 @@ const ar: AwardFormContent = {
   },
   attachments: {
     heading: 'صور داعمة',
-    optionalBadge: 'اختياري',
-    proposedNote:
-      'إرفاق الصور ميزة مقترحة في هذه المعاينة وليست من متطلبات وثيقة الجائزة الرسمية، والصور تبقى في متصفحك ولا تُرفع إلى أي خادم.',
+    note: 'أرفق صورة واحدة على الأقل للمبادرة؛ تُرسَل الصور مع طلبك عند الضغط على «إرسال الطلب».',
     dropTitle: 'اسحب الصور وأفلتها هنا',
     dropOr: 'أو',
     choose: 'اختر صورًا من جهازك',
@@ -509,6 +535,13 @@ const ar: AwardFormContent = {
     noticeText:
       'يحق للجهة المنظِّمة استخدام المعلومات والصور والفيديوهات المقدّمة لأغراض التوثيق والنشر والمواد الترويجية والتقارير المؤسسية، مع حفظ الحقوق الأدبية للمشاركين.',
     noticePending: 'سيُستبدل هذا النص بالصيغة الواردة في وثيقة الجائزة الرسمية حرفيًا.',
+    noticeApproved: false,
+  },
+  closed: {
+    title: 'باب الترشيح مغلق',
+    paused: 'استقبال طلبات الترشيح لجائزة أويس للأعمال التطوعية متوقف حاليًا.',
+    deadline: 'انتهى موعد استقبال طلبات الترشيح في {date}.',
+    back: 'العودة إلى صفحة الجائزة',
   },
   messages: {
     required: 'هذا الحقل مطلوب.',
@@ -521,10 +554,10 @@ const ar: AwardFormContent = {
     nationality: 'وفق شروط الجائزة يجب أن يكون جميع أعضاء المبادرة يمنيين، لذا لا يمكن متابعة الترشيح.',
     teamSize: 'أدخل عددًا صحيحًا موجبًا (1 فأكثر).',
     periodStart: 'اختر شهر وسنة بداية التنفيذ.',
-    periodEnd: 'اختر شهر وسنة نهاية التنفيذ، أو حدّد أن النشاط مستمر.',
+    periodEnd: 'اختر شهر وسنة نهاية التنفيذ، أو حدّد أن المبادرة مستمرة.',
     periodOrder: 'يجب أن تكون نهاية التنفيذ بعد بدايته أو في الشهر نفسه.',
     periodFuture: 'لا يمكن أن يكون التاريخ في المستقبل.',
-    periodWindow: 'وفق شروط الجائزة يجب أن يكون النشاط قد نُفّذ خلال آخر 12 شهرًا.',
+    periodWindow: 'وفق شروط الجائزة يجب أن تكون المبادرة قد نُفّذت خلال آخر 12 شهرًا.',
     categoryOther: 'حدّد مجال المبادرة.',
     socialMin: 'أضف رابطين صحيحين على الأقل لمنصتين مختلفتين.',
     socialPlatform: 'اختر المنصة.',
@@ -533,18 +566,21 @@ const ar: AwardFormContent = {
     socialDomain: 'الرابط لا يبدو تابعًا لمنصة {platform}.',
     socialDuplicate: 'هذه المنصة مضافة مسبقًا.',
     wordsOver: 'تجاوزت الحد الأقصى ({limit} كلمة) بـ {over} كلمة، يرجى الاختصار.',
+    imagesRequired: 'أرفق صورة واحدة على الأقل للمبادرة.',
     declaration: 'يرجى تأكيد مراجعة بيانات الطلب.',
   },
   success: {
-    seoTitle: 'معاينة الطلب | جائزة أويس للأعمال التطوعية 2026',
-    badge: 'معاينة تجريبية',
-    heading: 'اكتملت معاينة طلب الترشيح',
-    withName: 'اجتاز طلب «{name}» جميع خطوات التحقق في هذه المعاينة.',
-    withoutName: 'اكتملت خطوات استمارة الترشيح في هذه المعاينة.',
-    notice: 'هذه معاينة تجريبية، ولم يتم إرسال طلب فعلي إلى الوقف.',
-    detail: 'لم تُحفَظ بياناتك أو صورك في أي مكان، وسيُفعَّل الإرسال الفعلي عند ربط الاستمارة بأنظمة الوقف.',
+    seoTitle: 'تم استلام الطلب | جائزة أويس للأعمال التطوعية 2026',
+    badge: 'تم الاستلام',
+    heading: 'تم استلام طلب الترشيح',
+    withName: 'استلمنا طلب ترشيح «{name}» لجائزة أويس للأعمال التطوعية.',
+    withoutName: 'استلمنا طلب ترشيحك لجائزة أويس للأعمال التطوعية.',
+    referenceLabel: 'رقم الطلب',
+    referenceHint: 'احتفظ بهذا الرقم للرجوع إليه عند أي استفسار عن طلبك.',
+    copy: 'نسخ الرقم',
+    copied: 'تم النسخ',
     back: 'العودة إلى صفحة الجائزة',
-    again: 'تجربة الاستمارة من جديد',
+    again: 'تقديم مبادرة أخرى',
   },
 };
 
@@ -557,9 +593,7 @@ const en: AwardFormContent = {
   banner: {
     title: 'Owais Award nomination form',
     subtitle: 'Complete your initiative’s details in four simple steps',
-    demoBadge: 'Preview',
-    demoNotice:
-      'This is a preview of the form: no data or images are sent to the waqf, and your information stays on this page only.',
+    deadline: 'Applications close on {date}',
     crumbHome: 'Home',
     crumbAward: 'Owais Award',
     crumbForm: 'Nomination form',
@@ -573,7 +607,7 @@ const en: AwardFormContent = {
     details: {
       label: 'Initiative details',
       heading: 'Initiative details',
-      description: 'Where and when the submitted activity took place, its field and the initiative’s accounts.',
+      description: 'Where and when the initiative was implemented, its field and its accounts.',
     },
     impact: {
       label: 'Impact & distinction',
@@ -583,7 +617,7 @@ const en: AwardFormContent = {
     review: {
       label: 'Attachments & review',
       heading: 'Attachments and application review',
-      description: 'Add supporting photos if you wish, then review your answers before sending.',
+      description: 'Attach photos of the initiative, then review your answers before sending.',
     },
   },
   progress: { stepOf: 'Step {current} of {total}', navLabel: 'Form steps', done: 'completed' },
@@ -593,14 +627,21 @@ const en: AwardFormContent = {
     next: 'Next',
     previous: 'Previous',
     backToAward: 'Back to the award page',
-    submit: 'Send application (preview)',
-    submitting: 'Checking your application…',
+    submit: 'Send application',
+    submitting: 'Sending your application…',
+    uploading: 'Uploading photos ({current} of {total})…',
     edit: 'Edit',
     errorSummary: 'Please correct the highlighted fields ({count}) before continuing.',
     leaveConfirm:
       'Your application has not been sent and the information you entered will be lost if you leave. Leave this page?',
     selectPlaceholder: 'Select…',
-    submitFailed: 'The preview could not be completed. Please try again.',
+    submitFailed:
+      'Your application could not be sent. Check your internet connection and try again; your answers are still on this page.',
+    submitClosed: 'Sorry, applications have closed and this application was not sent.',
+    submitRateLimited:
+      'We received several applications from this device or email in a short time. Please try again later.',
+    submitRejected:
+      'The application could not be accepted because some of its details do not meet the form’s conditions. Please review the steps and send it again.',
   },
   fields: {
     initiativeName: { label: 'Initiative name', placeholder: 'Enter the initiative’s name' },
@@ -627,13 +668,13 @@ const en: AwardFormContent = {
     governorate: { label: 'Governorate', placeholder: 'Select the governorate' },
     district: { label: 'District', placeholder: 'Type the district’s name' },
     period: {
-      label: 'Implementation period of the submitted activity',
+      label: 'Implementation period of the initiative',
       hint: 'The award requires the initiative to have been implemented inside Yemen within the last 12 months.',
       start: 'Start',
       end: 'End',
       month: 'Month',
       year: 'Year',
-      ongoing: 'The activity is still ongoing',
+      ongoing: 'The initiative is still ongoing',
     },
     category: {
       label: 'Field of the initiative',
@@ -699,9 +740,7 @@ const en: AwardFormContent = {
   },
   attachments: {
     heading: 'Supporting photos',
-    optionalBadge: 'Optional',
-    proposedNote:
-      'Attaching photos is a feature proposed for this preview, not a requirement of the official award document; the photos stay in your browser and are not uploaded anywhere.',
+    note: 'Attach at least one photo of the initiative; photos are sent with your application when you press “Send application”.',
     dropTitle: 'Drag and drop photos here',
     dropOr: 'or',
     choose: 'Choose photos from your device',
@@ -738,6 +777,13 @@ const en: AwardFormContent = {
     noticeText:
       'The organiser may use the information, photos and videos submitted for documentation, publication, promotional materials and institutional reports, while preserving the participants’ moral rights.',
     noticePending: 'This text will be replaced word for word by the wording of the official award document.',
+    noticeApproved: false,
+  },
+  closed: {
+    title: 'Applications are closed',
+    paused: 'The Owais Volunteer Award is not accepting applications at the moment.',
+    deadline: 'The application period ended on {date}.',
+    back: 'Back to the award page',
   },
   messages: {
     required: 'This field is required.',
@@ -751,10 +797,10 @@ const en: AwardFormContent = {
       'Under the award’s conditions all members of the initiative must be Yemeni, so the nomination cannot continue.',
     teamSize: 'Enter a positive whole number (1 or more).',
     periodStart: 'Choose the month and year the implementation started.',
-    periodEnd: 'Choose the month and year it ended, or mark the activity as ongoing.',
+    periodEnd: 'Choose the month and year it ended, or mark the initiative as ongoing.',
     periodOrder: 'The end must be in or after the month of the start.',
     periodFuture: 'The date cannot be in the future.',
-    periodWindow: 'Under the award’s conditions the activity must have been implemented within the last 12 months.',
+    periodWindow: 'Under the award’s conditions the initiative must have been implemented within the last 12 months.',
     categoryOther: 'Specify the initiative’s field.',
     socialMin: 'Add at least two valid links on two different platforms.',
     socialPlatform: 'Choose the platform.',
@@ -763,19 +809,21 @@ const en: AwardFormContent = {
     socialDomain: 'This link does not look like a {platform} link.',
     socialDuplicate: 'This platform has already been added.',
     wordsOver: 'You are {over} words over the {limit}-word limit; please shorten your answer.',
+    imagesRequired: 'Attach at least one photo of the initiative.',
     declaration: 'Please confirm that you have reviewed the application.',
   },
   success: {
-    seoTitle: 'Application preview | Owais Volunteer Award 2026',
-    badge: 'Preview',
-    heading: 'Nomination preview completed',
-    withName: 'The application for “{name}” passed every check in this preview.',
-    withoutName: 'All steps of the nomination form were completed in this preview.',
-    notice: 'This is a preview; no application has actually been sent to the waqf.',
-    detail:
-      'Your data and photos were not saved anywhere. Real submission will be enabled once the form is connected to the waqf’s systems.',
+    seoTitle: 'Application received | Owais Volunteer Award 2026',
+    badge: 'Received',
+    heading: 'Your nomination has been received',
+    withName: 'We have received the nomination of “{name}” for the Owais Volunteer Award.',
+    withoutName: 'We have received your nomination for the Owais Volunteer Award.',
+    referenceLabel: 'Application number',
+    referenceHint: 'Keep this number to refer to if you have any question about your application.',
+    copy: 'Copy number',
+    copied: 'Copied',
     back: 'Back to the award page',
-    again: 'Try the form again',
+    again: 'Nominate another initiative',
   },
 };
 
@@ -788,9 +836,7 @@ const tr: AwardFormContent = {
   banner: {
     title: 'Owais Ödülü aday gösterme formu',
     subtitle: 'Girişiminizin bilgilerini dört basit adımda tamamlayın',
-    demoBadge: 'Önizleme',
-    demoNotice:
-      'Bu, formun bir önizlemesidir: vakfa hiçbir veri veya fotoğraf gönderilmez, bilgileriniz yalnızca bu sayfada kalır.',
+    deadline: 'Son başvuru tarihi: {date}',
     crumbHome: 'Ana Sayfa',
     crumbAward: 'Owais Ödülü',
     crumbForm: 'Aday gösterme formu',
@@ -804,7 +850,7 @@ const tr: AwardFormContent = {
     details: {
       label: 'Girişim ayrıntıları',
       heading: 'Girişim ayrıntıları',
-      description: 'Başvurulan faaliyetin yeri, dönemi ve alanı ile girişimin hesapları.',
+      description: 'Girişimin uygulandığı yer, dönemi ve alanı ile hesapları.',
     },
     impact: {
       label: 'Etki ve özgünlük',
@@ -814,8 +860,7 @@ const tr: AwardFormContent = {
     review: {
       label: 'Ekler ve kontrol',
       heading: 'Ekler ve başvurunun kontrolü',
-      description:
-        'Dilerseniz destekleyici fotoğraflar ekleyin, ardından göndermeden önce bilgilerinizi gözden geçirin.',
+      description: 'Girişimin fotoğraflarını ekleyin, ardından göndermeden önce bilgilerinizi gözden geçirin.',
     },
   },
   progress: { stepOf: 'Adım {current} / {total}', navLabel: 'Form adımları', done: 'tamamlandı' },
@@ -825,14 +870,21 @@ const tr: AwardFormContent = {
     next: 'İleri',
     previous: 'Geri',
     backToAward: 'Ödül sayfasına dön',
-    submit: 'Başvuruyu gönder (önizleme)',
-    submitting: 'Başvurunuz kontrol ediliyor…',
+    submit: 'Başvuruyu gönder',
+    submitting: 'Başvurunuz gönderiliyor…',
+    uploading: 'Fotoğraflar yükleniyor ({current} / {total})…',
     edit: 'Düzenle',
     errorSummary: 'Devam etmeden önce lütfen işaretli alanları ({count}) düzeltin.',
     leaveConfirm:
       'Başvurunuz gönderilmedi; sayfadan ayrılırsanız girdiğiniz bilgiler kaybolacak. Ayrılmak istiyor musunuz?',
     selectPlaceholder: 'Seçin…',
-    submitFailed: 'Önizleme tamamlanamadı, lütfen tekrar deneyin.',
+    submitFailed:
+      'Başvurunuz gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin; bilgileriniz bu sayfada duruyor.',
+    submitClosed: 'Üzgünüz, başvurular kapandı ve bu başvuru gönderilmedi.',
+    submitRateLimited:
+      'Bu cihazdan veya e-posta adresinden kısa sürede birden fazla başvuru aldık. Lütfen daha sonra tekrar deneyin.',
+    submitRejected:
+      'Bazı bilgiler formun koşullarını karşılamadığı için başvuru kabul edilemedi. Lütfen adımları gözden geçirip yeniden gönderin.',
   },
   fields: {
     initiativeName: { label: 'Girişimin adı', placeholder: 'Girişimin adını yazın' },
@@ -859,13 +911,13 @@ const tr: AwardFormContent = {
     governorate: { label: 'İl (muhafaza)', placeholder: 'İli seçin' },
     district: { label: 'İlçe (müdüriyet)', placeholder: 'İlçenin adını yazın' },
     period: {
-      label: 'Başvurulan faaliyetin uygulama dönemi',
+      label: 'Girişimin uygulama dönemi',
       hint: 'Ödül, girişimin son 12 ay içinde Yemen’de uygulanmış olmasını şart koşar.',
       start: 'Başlangıç',
       end: 'Bitiş',
       month: 'Ay',
       year: 'Yıl',
-      ongoing: 'Faaliyet hâlâ sürüyor',
+      ongoing: 'Girişim hâlâ sürüyor',
     },
     category: {
       label: 'Girişimin alanı',
@@ -931,9 +983,7 @@ const tr: AwardFormContent = {
   },
   attachments: {
     heading: 'Destekleyici fotoğraflar',
-    optionalBadge: 'İsteğe bağlı',
-    proposedNote:
-      'Fotoğraf eklemek bu önizleme için önerilen bir özelliktir, resmî ödül belgesinin bir şartı değildir; fotoğraflar tarayıcınızda kalır ve hiçbir yere yüklenmez.',
+    note: 'Girişime ait en az bir fotoğraf ekleyin; fotoğraflar “Başvuruyu gönder”e bastığınızda başvurunuzla birlikte gönderilir.',
     dropTitle: 'Fotoğrafları buraya sürükleyip bırakın',
     dropOr: 'veya',
     choose: 'Cihazınızdan fotoğraf seçin',
@@ -970,6 +1020,13 @@ const tr: AwardFormContent = {
     noticeText:
       'Düzenleyici, sunulan bilgileri, fotoğrafları ve videoları; katılımcıların manevi haklarını koruyarak belgeleme, yayın, tanıtım materyalleri ve kurumsal raporlar için kullanabilir.',
     noticePending: 'Bu metin, resmî ödül belgesindeki ifadeyle kelimesi kelimesine değiştirilecektir.',
+    noticeApproved: false,
+  },
+  closed: {
+    title: 'Başvurular kapalı',
+    paused: 'Owais Gönüllülük Ödülü şu anda başvuru kabul etmiyor.',
+    deadline: 'Başvuru süresi {date} tarihinde sona erdi.',
+    back: 'Ödül sayfasına dön',
   },
   messages: {
     required: 'Bu alan zorunludur.',
@@ -983,10 +1040,10 @@ const tr: AwardFormContent = {
       'Ödül koşullarına göre girişimin tüm üyeleri Yemenli olmalıdır; bu nedenle aday gösterme devam edemez.',
     teamSize: 'Pozitif bir tam sayı girin (1 veya daha fazla).',
     periodStart: 'Uygulamanın başladığı ayı ve yılı seçin.',
-    periodEnd: 'Bittiği ayı ve yılı seçin veya faaliyetin sürdüğünü işaretleyin.',
+    periodEnd: 'Bittiği ayı ve yılı seçin veya girişimin sürdüğünü işaretleyin.',
     periodOrder: 'Bitiş, başlangıçla aynı ay veya sonrasında olmalıdır.',
     periodFuture: 'Tarih gelecekte olamaz.',
-    periodWindow: 'Ödül koşullarına göre faaliyet son 12 ay içinde uygulanmış olmalıdır.',
+    periodWindow: 'Ödül koşullarına göre girişim son 12 ay içinde uygulanmış olmalıdır.',
     categoryOther: 'Girişimin alanını belirtin.',
     socialMin: 'İki farklı platformda en az iki geçerli bağlantı ekleyin.',
     socialPlatform: 'Platformu seçin.',
@@ -995,26 +1052,44 @@ const tr: AwardFormContent = {
     socialDomain: 'Bu bağlantı bir {platform} bağlantısına benzemiyor.',
     socialDuplicate: 'Bu platform zaten eklendi.',
     wordsOver: '{limit} kelimelik sınırı {over} kelime aştınız; lütfen yanıtınızı kısaltın.',
+    imagesRequired: 'Girişime ait en az bir fotoğraf ekleyin.',
     declaration: 'Lütfen başvuruyu gözden geçirdiğinizi onaylayın.',
   },
   success: {
-    seoTitle: 'Başvuru önizlemesi | Owais Gönüllülük Ödülü 2026',
-    badge: 'Önizleme',
-    heading: 'Aday gösterme önizlemesi tamamlandı',
-    withName: '“{name}” başvurusu bu önizlemedeki tüm kontrolleri geçti.',
-    withoutName: 'Aday gösterme formunun tüm adımları bu önizlemede tamamlandı.',
-    notice: 'Bu bir önizlemedir; vakfa gerçek bir başvuru gönderilmedi.',
-    detail:
-      'Bilgileriniz ve fotoğraflarınız hiçbir yerde saklanmadı. Gerçek gönderim, form vakfın sistemlerine bağlandığında etkinleşecektir.',
+    seoTitle: 'Başvuru alındı | Owais Gönüllülük Ödülü 2026',
+    badge: 'Alındı',
+    heading: 'Aday gösterme başvurunuz alındı',
+    withName: '“{name}” için Owais Gönüllülük Ödülü başvurusunu aldık.',
+    withoutName: 'Owais Gönüllülük Ödülü başvurunuzu aldık.',
+    referenceLabel: 'Başvuru numarası',
+    referenceHint: 'Başvurunuzla ilgili sorularınızda başvurmak için bu numarayı saklayın.',
+    copy: 'Numarayı kopyala',
+    copied: 'Kopyalandı',
     back: 'Ödül sayfasına dön',
-    again: 'Formu yeniden deneyin',
+    again: 'Başka bir girişim için başvur',
   },
 };
 
 const formContent: Record<Locale, AwardFormContent> = { ar, en, tr };
 
-export function getAwardFormContent(locale: Locale): AwardFormContent {
+/** The form copy as it ships in this repo. */
+export function staticAwardFormContent(locale: Locale): AwardFormContent {
   return formContent[locale] ?? formContent.ar;
+}
+
+/**
+ * What applicants see. Only the organiser's notice is editable from the
+ * dashboard (the `award-page` row): its wording, and whether it is still a draft.
+ */
+export function getAwardFormContent(locale: Locale): AwardFormContent {
+  const base = staticAwardFormContent(locale);
+  const stored = cmsPageContent(AWARD_PAGE_KEY, locale, { declaration: base.declaration }).declaration;
+  const noticeText = typeof stored?.noticeText === 'string' && stored.noticeText.trim() ? stored.noticeText : null;
+  if (!noticeText) return base;
+  return {
+    ...base,
+    declaration: { ...base.declaration, noticeText, noticeApproved: stored.noticeApproved === true },
+  };
 }
 
 /** Replaces {tokens} in a message. */

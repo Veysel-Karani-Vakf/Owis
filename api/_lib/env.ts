@@ -150,7 +150,7 @@ export function supabaseUrl(): string {
 export function supabaseServiceRoleKey(): string {
   const value = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (value) return value;
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for the payment functions.');
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for the server functions (payments, award applications).');
 }
 
 // Assistant AI provider keys moved to api/_lib/aiConfig.ts (one env var per

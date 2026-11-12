@@ -12,6 +12,7 @@ import ResourceEditPage from './pages/ResourceEditPage';
 import SubmissionsPage from './pages/SubmissionsPage';
 import SubscribersPage from './pages/SubscribersPage';
 import PaymentsPage from './pages/PaymentsPage';
+import AwardApplicationsPage from './pages/AwardApplicationsPage';
 import ContentManagementPage from './pages/ContentManagementPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
 import AssistantAiPage from './pages/AssistantAiPage';
@@ -124,6 +125,14 @@ function AdminRoutes() {
         element={
           <Protected>
             <PaymentsPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="award-applications"
+        element={
+          <Protected>
+            <AwardApplicationsPage />
           </Protected>
         }
       />

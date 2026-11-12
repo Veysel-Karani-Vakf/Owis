@@ -25,6 +25,7 @@ const requiredTables = [
   'bank_accounts',
   'site_pages',
   'participate_submissions',
+  'award_applications',
   'newsletter_subscribers',
   'pioneers',
   'org_sections',

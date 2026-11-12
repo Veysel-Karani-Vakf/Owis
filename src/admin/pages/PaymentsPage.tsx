@@ -1,45 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CreditCard, Download, Search } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import type { Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
 import { listRows } from '../lib/api';
 import { translateDbError } from '../lib/errors';
+import { PAYMENT_MODE_LABEL, PAYMENT_MODE_STYLES, formatPaymentAmount, type PaymentRow } from '../lib/payments';
 import { useToast } from '../components/Toast';
-
-type PaymentRow = {
-  id: string;
-  oid: string;
-  opportunity_slug: string | null;
-  opportunity_title: string | null;
-  donor_name: string;
-  donor_email: string | null;
-  donor_phone: string | null;
-  amount: number | string;
-  currency: string;
-  status: 'pending' | 'paid' | 'failed';
-  gateway_mode: 'mock' | 'test' | 'production';
-  auth_code: string | null;
-  error_message: string | null;
-  masked_pan: string | null;
-  created_at: string;
-};
 
 function formatDate(iso: string, locale: Locale): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   const tag = locale === 'ar' ? 'ar' : locale === 'tr' ? 'tr-TR' : 'en-GB';
   return new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-}
-
-function formatAmount(row: PaymentRow, locale: Locale): string {
-  const tag = locale === 'ar' ? 'ar' : locale === 'tr' ? 'tr-TR' : 'en-US';
-  const amount = Number(row.amount);
-  try {
-    return new Intl.NumberFormat(tag, { style: 'currency', currency: row.currency || 'USD' }).format(amount);
-  } catch {
-    return `${amount} ${row.currency}`;
-  }
 }
 
 /** See SubscribersPage: visitor-entered cells must not execute in Excel. */
@@ -54,11 +28,7 @@ const STATUS_STYLES: Record<PaymentRow['status'], string> = {
   pending: 'bg-amber-100 text-amber-700',
 };
 
-const MODE_STYLES: Record<PaymentRow['gateway_mode'], string> = {
-  mock: 'bg-amber-100 text-amber-700',
-  test: 'bg-sky-100 text-sky-700',
-  production: 'bg-slate-100 text-slate-600',
-};
+const STATUSES: PaymentRow['status'][] = ['paid', 'failed', 'pending'];
 
 export default function PaymentsPage() {
   const s = useAdminStrings();
@@ -67,7 +37,12 @@ export default function PaymentsPage() {
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | PaymentRow['status']>('all');
+  // ?status=paid opens the list already filtered (the dashboard links here that way).
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState<'all' | PaymentRow['status']>(() => {
+    const status = searchParams.get('status');
+    return STATUSES.find((value) => value === status) ?? 'all';
+  });
 
   const label = (ar: string, tr: string, en: string) => (locale === 'ar' ? ar : locale === 'tr' ? tr : en);
 
@@ -78,12 +53,7 @@ export default function PaymentsPage() {
         ? label('فاشلة', 'Başarısız', 'Failed')
         : label('معلّقة', 'Beklemede', 'Pending');
 
-  const modeName = (mode: PaymentRow['gateway_mode']) =>
-    mode === 'production'
-      ? label('إنتاج', 'Canlı', 'Live')
-      : mode === 'test'
-        ? label('اختبار البنك', 'Banka testi', 'Bank test')
-        : label('محاكاة', 'Simülasyon', 'Mock');
+  const modeName = (mode: PaymentRow['gateway_mode']) => PAYMENT_MODE_LABEL[mode][locale];
 
   useEffect(() => {
     listRows('donation_payments', { sort: { column: 'created_at', ascending: false } })
@@ -240,14 +210,14 @@ export default function PaymentsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{row.opportunity_title ?? row.opportunity_slug ?? '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">{formatAmount(row, locale)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">{formatPaymentAmount(row, locale)}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[row.status]}`}>
                         {statusName(row.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${MODE_STYLES[row.gateway_mode]}`}>
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${PAYMENT_MODE_STYLES[row.gateway_mode]}`}>
                         {modeName(row.gateway_mode)}
                       </span>
                     </td>

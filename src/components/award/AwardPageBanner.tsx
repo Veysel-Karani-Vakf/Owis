@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import Breadcrumbs from '@/components/internal/Breadcrumbs';
 import type { BreadcrumbItem } from '@/data/about';
-import { awardMedia } from '@/data/award/content';
+import { awardImageAttrs } from '@/data/award/content';
 import { awardEase } from './awardUi';
 
 type AwardPageBannerProps = {
@@ -11,6 +11,8 @@ type AwardPageBannerProps = {
   breadcrumbs: BreadcrumbItem[];
   /** Small pill under the title (e.g. "preview"). */
   badge?: ReactNode;
+  /** The award trophy picture (editable from the dashboard). */
+  trophySrc: string;
   trophyAlt: string;
 };
 
@@ -18,7 +20,14 @@ type AwardPageBannerProps = {
  * Compact award banner for the inner pages (form, preview result): the poster's
  * deep-red glow, the trophy on the far side and room for the floating header.
  */
-export default function AwardPageBanner({ title, subtitle, breadcrumbs, badge, trophyAlt }: AwardPageBannerProps) {
+export default function AwardPageBanner({
+  title,
+  subtitle,
+  breadcrumbs,
+  badge,
+  trophySrc,
+  trophyAlt,
+}: AwardPageBannerProps) {
   const reduceMotion = useReducedMotion();
   const rise = (delay: number) =>
     reduceMotion
@@ -64,14 +73,13 @@ export default function AwardPageBanner({ title, subtitle, breadcrumbs, badge, t
           <span className="absolute bottom-6 aspect-square w-64 rounded-full border border-white/10" />
           <span className="absolute bottom-10 aspect-square w-44 rounded-full bg-[radial-gradient(circle,rgba(255,206,140,0.25),transparent_65%)]" />
           <motion.img
-            src={awardMedia.trophy.src}
+            src={trophySrc}
             alt={trophyAlt}
-            width={awardMedia.trophy.width}
-            height={awardMedia.trophy.height}
+            {...awardImageAttrs('trophy', trophySrc)}
             initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: reduceMotion ? 0 : 0.9, ease: awardEase }}
-            className="relative h-full w-auto drop-shadow-[0_24px_40px_rgba(0,0,0,0.5)]"
+            className="relative h-full w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(0,0,0,0.5)]"
           />
         </div>
       </div>

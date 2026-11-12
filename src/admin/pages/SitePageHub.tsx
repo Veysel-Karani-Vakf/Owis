@@ -6,7 +6,7 @@
 
 import { useEffect } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ExternalLink, Inbox, Mail, CreditCard, type LucideIcon } from 'lucide-react';
+import { ExternalLink, Inbox, Mail, CreditCard, Trophy, type LucideIcon } from 'lucide-react';
 import { useI18n } from '@/i18n/useI18n';
 import { LOCALES, type Locale } from '@/lib/types';
 import { useAdminStrings } from '../hooks/useAdmin';
@@ -15,11 +15,13 @@ import { getArea, hubPath, partKey, type AreaPart, type InboxKey, type SiteArea 
 import PageContentEditor from '../components/PageContentEditor';
 import ResourceCollection from '../components/ResourceCollection';
 import OrgStructureManager from '../components/OrgStructureManager';
+import AwardVisibilityNotice from '../components/AwardVisibilityNotice';
 
 const INBOX_META: Record<InboxKey, { to: string; icon: LucideIcon }> = {
   submissions: { to: '/admin/submissions', icon: Inbox },
   subscribers: { to: '/admin/subscribers', icon: Mail },
   payments: { to: '/admin/payments', icon: CreditCard },
+  award_applications: { to: '/admin/award-applications', icon: Trophy },
 };
 
 function isLocale(value: string | undefined): value is Locale {
@@ -101,6 +103,9 @@ export default function SitePageHub() {
           {label('عرض الصفحة في الموقع', 'Sayfayı sitede gör', 'View the page on the site')}
         </a>
       </div>
+
+      {/* The award is the one page its team can hide from visitors; say so while it is. */}
+      {area.key === 'award' && <AwardVisibilityNotice />}
 
       {/* Tabs -------------------------------------------------------------- */}
       {area.parts.length > 1 && (

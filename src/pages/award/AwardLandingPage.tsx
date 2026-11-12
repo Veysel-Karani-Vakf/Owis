@@ -7,7 +7,7 @@ import AwardFaq from '@/components/award/AwardFaq';
 import AwardFinalCta from '@/components/award/AwardFinalCta';
 import AwardHero from '@/components/award/AwardHero';
 import AwardSteps from '@/components/award/AwardSteps';
-import { awardMedia, getAwardContent } from '@/data/award/content';
+import { getAwardContent } from '@/data/award/content';
 import { awardRoutes } from '@/data/award/routes';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -34,7 +34,7 @@ export default function AwardLandingPage() {
       <PageSeo
         title={content.seo.title}
         description={content.seo.description}
-        image={awardMedia.share}
+        image={content.media.share}
         structuredData={structuredData}
       />
       <main className="award-page overflow-x-clip bg-white text-dark-900">

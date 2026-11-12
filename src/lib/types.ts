@@ -244,6 +244,49 @@ export type SubscriberRow = {
   created_at: string;
 };
 
+/** Review state of an Owais Volunteer Award nomination. */
+export type AwardApplicationStatus = 'new' | 'reviewing' | 'shortlisted' | 'rejected' | 'archived';
+
+/** One nomination sent through /volunteer-award/apply (admin-only table). */
+export type AwardApplicationRow = {
+  id: string;
+  /** Shown to the applicant, e.g. OWA-2026-0007. */
+  reference_no: string | null;
+  edition: number;
+  /** Language the form was filled in. */
+  locale: string | null;
+  initiative_name: string;
+  representative: string;
+  /** E.164, e.g. +967777123456. */
+  whatsapp: string;
+  email: string;
+  all_members_yemeni: boolean;
+  team_size: number;
+  /** ISO 3166-2:YE code. */
+  governorate: string;
+  district: string;
+  /** YYYY-MM; `period_end` is null while the activity is ongoing. */
+  period_start: string;
+  period_end: string | null;
+  ongoing: boolean;
+  category: string;
+  category_other: string | null;
+  /** [{ platform, name, url }] */
+  social_links: unknown;
+  answer_idea: string;
+  answer_results: string;
+  answer_team: string;
+  answer_sustainability: string;
+  /** [{ path, name, type, size }] — objects in the private submissions bucket. */
+  images: unknown;
+  declaration_accepted: boolean;
+  status: AwardApplicationStatus;
+  admin_notes: string;
+  source_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type OrgSectionRow = BaseRow & {
   slug: string;
   title: Localized;

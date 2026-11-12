@@ -1,4 +1,5 @@
 import type { Locale, SiteContent } from '@/i18n/content';
+import { getAwardSettings } from './settings';
 
 /** Public routes of the Owais Volunteer Award 2026 section. */
 export const awardRoutes = {
@@ -31,9 +32,13 @@ type NavLinks = SiteContent['navLinks'];
  * edits: it ships with the award pages and is never written to the database
  * by a settings save. If an editor later adds a /volunteer-award entry from
  * the dashboard, that entry is used as is.
+ *
+ * While the award is hidden from the dashboard there is no tab at all, not
+ * even one an editor added by hand: it would lead nowhere.
  */
 export function withAwardNavLink(links: NavLinks | undefined, locale: Locale): NavLinks {
   const list = links ?? [];
+  if (!getAwardSettings().visible) return list.filter((link) => !isAwardRoute(link.href ?? ''));
   if (list.some((link) => isAwardRoute(link.href ?? ''))) return list;
 
   const tab = { label: awardNavLabel[locale], href: awardRoutes.landing };
