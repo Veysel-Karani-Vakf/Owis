@@ -4,6 +4,7 @@ import {
   PAYMENT_LIMITS,
   paymentClientId,
   paymentGateUrl,
+  paymentsDisabled,
   paymentStoreKey,
   siteOrigin,
 } from '../_lib/env';
@@ -16,6 +17,7 @@ type CreateErrorCode =
   | 'invalid-name'
   | 'invalid-email'
   | 'unavailable'
+  | 'payments-disabled'
   | 'server-error';
 
 function fail(res: ApiResponse, status: number, error: CreateErrorCode): void {
@@ -44,6 +46,13 @@ const LOCALES: PaymentLocale[] = ['ar', 'tr', 'en'];
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     methodNotAllowed(res, 'POST');
+    return;
+  }
+
+  // Online payments are switched off (PAYMENT_MODE=disabled): nothing is
+  // recorded and nothing is sent to a bank.
+  if (paymentsDisabled()) {
+    fail(res, 503, 'payments-disabled');
     return;
   }
 
