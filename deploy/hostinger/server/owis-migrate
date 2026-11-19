@@ -31,6 +31,12 @@
 #                               (the real bank, with the stored values), rebuild
 #                               and check; the settings before are kept, and put
 #                               back if the new build does not start
+#   owis-migrate dns            what the domain's own name servers answer now
+#   owis-migrate cutover plan|apply
+#                               the last step, after the DNS records point here:
+#                               serve the official address (certificate, redirects
+#                               from www and the old address, sign-in links,
+#                               stored file addresses); undone if the build fails
 #   owis-migrate files-test     ask the source for one stored file of each kind
 #   owis-migrate files-copy [n] copy the stored files (all, or the first n that
 #                               are missing) into this server's storage; keeps
@@ -559,9 +565,9 @@ SQL
 # still point at the old project after an import.
 rewrite_urls() {
   local from="${1:-}" to="${2:-}" mode="${3:-count}"
-  local origin='^https://[a-z0-9.-]+$'
+  local origin='^https://[a-z0-9.-]+(/[A-Za-z0-9/._-]*[A-Za-z0-9])?$'
   [[ "$from" =~ $origin ]] && [[ "$to" =~ $origin ]] && [ "$from" != "$to" ] || {
-    echo "usage: owis-migrate urls https://old.example https://new.example [apply]" >&2
+    echo "usage: owis-migrate urls https://old.example[/path] https://new.example[/path] [apply]" >&2
     exit 2
   }
   case "$mode" in
@@ -1125,6 +1131,226 @@ promote() {
   fi
 }
 
+# ---- the domain ------------------------------------------------------------
+# The last step: the official address is served by this stack. It only runs
+# when the domain's own name servers already answer with this server's
+# address, so the certificate can be issued at once.
+CANONICAL_HOST="veysvakfi.org"
+WWW_HOST="www.veysvakfi.org"
+DOMAIN_NAME_SERVERS="${OWIS_DOMAIN_NAME_SERVERS:-ns1.dns-parking.com ns2.dns-parking.com}"
+SUPA_DIR="$ROOT/supabase-$TARGET_ENV"
+
+server_ipv4() {
+  ip -4 route get 1.1.1.1 2> /dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -n 1
+}
+
+# dns_answer <host>: what the domain's own name servers say (no cache in
+# between), as "A 1.2.3.4 ttl=300" lines or "CNAME ttl=300".
+dns_answer() {
+  python3 - "$1" $DOMAIN_NAME_SERVERS <<'PYTHON'
+import random, socket, struct, sys
+
+name, servers = sys.argv[1], sys.argv[2:]
+
+
+def ask(server, name):
+    query = struct.pack(">HHHHHH", random.randrange(65536), 0, 1, 0, 0, 0)
+    query += b"".join(bytes([len(part)]) + part.encode() for part in name.strip(".").split("."))
+    query += b"\x00" + struct.pack(">HH", 1, 1)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(6)
+    sock.sendto(query, (socket.gethostbyname(server), 53))
+    data, _ = sock.recvfrom(4096)
+    sock.close()
+    questions, answers = struct.unpack(">HH", data[4:8])
+    pos = 12
+
+    def skip(pos):
+        while True:
+            length = data[pos]
+            if length == 0:
+                return pos + 1
+            if length & 0xC0 == 0xC0:
+                return pos + 2
+            pos += 1 + length
+
+    for _ in range(questions):
+        pos = skip(pos) + 4
+    found = []
+    for _ in range(answers):
+        pos = skip(pos)
+        rtype, _rclass, ttl, size = struct.unpack(">HHIH", data[pos:pos + 10])
+        pos += 10
+        if rtype == 1 and size == 4:
+            found.append("A %s ttl=%d" % (socket.inet_ntoa(data[pos:pos + 4]), ttl))
+        elif rtype == 5:
+            found.append("CNAME ttl=%d" % ttl)
+        pos += size
+    return found
+
+
+last = None
+for server in servers:
+    try:
+        for line in ask(server, name) or ["none"]:
+            print(line)
+        sys.exit(0)
+    except Exception as error:  # try the next name server
+        last = error
+print("unknown (%s)" % last)
+sys.exit(1)
+PYTHON
+}
+
+dns_report() {
+  local host here
+  here="$(server_ipv4)"
+  echo "this server: $here"
+  for host in "$CANONICAL_HOST" "$WWW_HOST" "staging.$CANONICAL_HOST"; do
+    echo "$host: $(dns_answer "$host" | paste -sd, - || true)"
+  done
+}
+
+points_here() {
+  # points_here <host>: true when its name servers give this server's address, and nothing else
+  local answer
+  answer="$(dns_answer "$1" | cut -d' ' -f1,2 | sort -u || true)"
+  [ "$answer" = "A $(server_ipv4)" ]
+}
+
+set_supabase_value() {
+  # set_supabase_value <name> <value>: one plain line of the Supabase settings file
+  grep -v "^$1=" "$SUPA_DIR/.env" > "$SUPA_DIR/.env.new" || true
+  printf '%s=%s\n' "$1" "$2" >> "$SUPA_DIR/.env.new"
+  chmod 600 "$SUPA_DIR/.env.new"
+  mv "$SUPA_DIR/.env.new" "$SUPA_DIR/.env"
+}
+
+files_complete() {
+  grep -E '^FILES_(COMPLETE|INCOMPLETE)' "$LOG_FILE" 2> /dev/null | tail -n 1 | grep -q '^FILES_COMPLETE'
+}
+
+# answers_locally <host> <path>: status the stack itself gives for that host
+# name, whatever the rest of the world still has cached.
+answers_locally() {
+  curl -sS -o /dev/null -w '%{http_code}' --max-time 15 --resolve "$1:443:127.0.0.1" "https://$1$2" 2> /dev/null || true
+}
+
+cutover() {
+  local mode="${1:-}" files_rule="${2:-}" problems=0
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate cutover plan|apply [incomplete-files-ok]" >&2
+      exit 2
+      ;;
+  esac
+  local old_url new_url="https://$CANONICAL_HOST" old_host
+  old_url="$(stack_value PUBLIC_SITE_URL)"
+  old_host="${old_url#https://}"
+  echo "== $(date -u +%FT%TZ) cutover $mode"
+  echo "now: address=$old_url DEPLOY_ENV=$(stack_value DEPLOY_ENV) PAYMENT_MODE=$(stack_value PAYMENT_MODE)"
+  dns_report
+
+  if [ "$old_url" = "$new_url" ]; then
+    echo "the stack already serves $new_url"
+    exit 0
+  fi
+  [ "$(stack_value DEPLOY_ENV)" = "production" ] && [ "$(stack_value PAYMENT_MODE)" = "production" ] || {
+    echo "  the stack still runs with the staging settings (owis-migrate promote apply)"
+    problems=1
+  }
+  if ! files_complete; then
+    if [ "$files_rule" = "incomplete-files-ok" ]; then
+      echo "  note: the stored files are not all here yet; going on as asked"
+    else
+      echo "  the stored files are not all here yet (owis-migrate files-copy)"
+      problems=1
+    fi
+  fi
+  points_here "$CANONICAL_HOST" || {
+    echo "  $CANONICAL_HOST does not point at this server yet"
+    problems=1
+  }
+  points_here "$WWW_HOST" || {
+    echo "  $WWW_HOST does not point at this server yet (it needs an A record, not a CNAME)"
+    problems=1
+  }
+  echo "would set: address $new_url; $WWW_HOST and $old_host redirect to it; search engines allowed; sign-in links and stored file addresses follow"
+  if [ "$mode" = "plan" ]; then
+    [ "$problems" -eq 0 ] && echo "CUTOVER_PLAN_OK. Nothing was changed." || echo "CUTOVER_NOT_READY. Nothing was changed."
+    return 0
+  fi
+  [ "$problems" -eq 0 ] || {
+    echo "CUTOVER_NOT_READY. Nothing was changed."
+    exit 1
+  }
+
+  local stamp before_stack before_supabase
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  before_stack="$DIR/stack-settings.before-cutover.$stamp"
+  before_supabase="$DIR/supabase-settings.before-cutover.$stamp"
+  cp -p "$STACK_ENV_FILE" "$before_stack"
+  cp -p "$SUPA_DIR/.env" "$before_supabase"
+  undo_cutover() {
+    cp -p "$before_stack" "$STACK_ENV_FILE"
+    cp -p "$before_supabase" "$SUPA_DIR/.env"
+    (cd "$SUPA_DIR" && docker compose up -d --wait --wait-timeout 300 db auth rest storage api-gw > /dev/null 2>&1) || true
+    rewrite_urls "$new_url/storage/v1" "$old_url/storage/v1" apply || true
+    "$DEPLOY_TOOL" rebuild || echo "the rebuild with the old settings failed too: look at the stack now" >&2
+    echo "the settings from before were put back" >&2
+  }
+
+  set_stack_value PUBLIC_SITE_URL "$new_url"
+  set_stack_value SITE_ADDRESS "$CANONICAL_HOST"
+  set_stack_value REDIRECT_ADDRESSES "$WWW_HOST, $old_host"
+  set_stack_value ROBOTS_TAG "all"
+  stack_config_check production production || {
+    cp -p "$before_stack" "$STACK_ENV_FILE"
+    echo "CUTOVER_FAILED before anything was restarted" >&2
+    exit 1
+  }
+
+  # Sign-in service: links in its e-mails and the addresses it accepts.
+  set_supabase_value SUPABASE_PUBLIC_URL "$new_url"
+  set_supabase_value API_EXTERNAL_URL "$new_url/auth/v1"
+  set_supabase_value SITE_URL "$new_url"
+  set_supabase_value ADDITIONAL_REDIRECT_URLS "$new_url/**"
+  (cd "$SUPA_DIR" && docker compose up -d --wait --wait-timeout 300 db auth rest storage api-gw > /dev/null) || {
+    undo_cutover
+    echo "CUTOVER_FAILED: the sign-in service did not restart" >&2
+    exit 1
+  }
+
+  # Uploaded files are stored in the content with their full address.
+  rewrite_urls "$old_url/storage/v1" "$new_url/storage/v1" apply
+
+  if ! "$DEPLOY_TOOL" rebuild; then
+    undo_cutover
+    echo "CUTOVER_FAILED: the stack runs with the settings from before" >&2
+    exit 1
+  fi
+
+  # The certificate for the new names is requested on the first start.
+  local code="" attempt
+  for attempt in $(seq 1 36); do
+    code="$(answers_locally "$CANONICAL_HOST" /api/healthz)"
+    [ "$code" = "200" ] && break
+    sleep 5
+  done
+  echo "https://$CANONICAL_HOST/api/healthz: HTTP ${code:-none}"
+  echo "https://$CANONICAL_HOST/: HTTP $(answers_locally "$CANONICAL_HOST" /)"
+  echo "https://$CANONICAL_HOST/api/payments/config: HTTP $(answers_locally "$CANONICAL_HOST" /api/payments/config)"
+  echo "https://$WWW_HOST/news: HTTP $(answers_locally "$WWW_HOST" /news) (a redirect is expected)"
+  echo "https://$old_host/news: HTTP $(answers_locally "$old_host" /news) (a redirect is expected)"
+  if [ "$code" = "200" ]; then
+    echo "CUTOVER_OK. The settings from before are kept in $(basename "$before_stack") and $(basename "$before_supabase")"
+  else
+    echo "CUTOVER_UNCONFIRMED: the stack started but $CANONICAL_HOST does not answer over HTTPS yet (certificate?). Nothing was undone." >&2
+    exit 1
+  fi
+}
+
 # Long jobs: one at a time, with their output kept in the log file.
 logged() {
   exec 9> "$LOCK_FILE"
@@ -1185,6 +1411,12 @@ case "$COMMAND" in
   promote)
     logged promote "${2:-}"
     ;;
+  dns)
+    dns_report
+    ;;
+  cutover)
+    logged cutover "${2:-}" "${3:-}"
+    ;;
   files-test)
     files_test
     ;;
@@ -1192,7 +1424,7 @@ case "$COMMAND" in
     logged files_copy "${2:-0}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
