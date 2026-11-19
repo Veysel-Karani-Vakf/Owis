@@ -1,0 +1,45 @@
+name: Verify Hostinger Staging SSH
+
+on:
+  push:
+    branches:
+      - infra/hostinger-staging
+    paths:
+      - .github/workflows/verify-hostinger-staging.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check-ssh:
+    name: Check secure VPS connection
+    runs-on: ubuntu-latest
+    environment: hostinger-staging
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify SSH connection
+        shell: bash
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 "$HOME/.ssh"
+
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+
+          ssh \
+            -i "$HOME/.ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'test "$(id -un)" = "owisdeploy" && echo SSH_OK'
