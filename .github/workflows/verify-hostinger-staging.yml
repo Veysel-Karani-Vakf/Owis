@@ -36,10 +36,27 @@ jobs:
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
 
-          ssh \
-            -i "$HOME/.ssh/id_ed25519" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" \
-            'test "$(id -un)" = "owisdeploy" && echo SSH_OK'
+          # Diagnostics: only the public fingerprint is printed, never key material.
+          if ! ssh-keygen -y -P '' -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub" 2> "$RUNNER_TEMP/keycheck.err"; then
+            echo "::error::The key in VPS_SSH_PRIVATE_KEY cannot be used without interaction (passphrase-protected or not a valid private key)."
+            sed 's/^/keycheck: /' "$RUNNER_TEMP/keycheck.err"
+            exit 1
+          fi
+          echo "Deploy key public fingerprint:"
+          ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $1, $2, $NF}'
+
+          ssh_args=(
+            -i "$HOME/.ssh/id_ed25519"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            "$VPS_USER@$VPS_HOST"
+          )
+
+          if ! ssh "${ssh_args[@]}" 'test "$(id -un)" = "owisdeploy" && echo SSH_OK'; then
+            echo "::group::SSH authentication debug"
+            ssh -v "${ssh_args[@]}" true 2>&1 \
+              | grep -E 'Offering public key|Server accepts key|Authentications that can continue|Authenticated to|Permission denied|send_pubkey' || true
+            echo "::endgroup::"
+            exit 1
+          fi
