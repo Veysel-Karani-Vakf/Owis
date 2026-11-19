@@ -20,15 +20,19 @@ export default function PageHero({ title, description, image, imageAlt, breadcru
 
   return (
     <section id={id} className="relative isolate flex min-h-[420px] items-end overflow-hidden bg-dark-950 pt-28 md:min-h-[460px] md:pt-32">
-      <motion.img
-        src={image}
-        alt={imageAlt ?? ''}
-        aria-hidden={imageAlt ? undefined : true}
-        initial={{ scale: shouldReduceMotion ? 1 : 1.04, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: shouldReduceMotion ? 0.01 : 1.1, ease: heroEase }}
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
-      />
+      {/* Without a hero image (no CMS image and no featured article yet) the
+          section keeps its dark gradient instead of showing a broken picture. */}
+      {image ? (
+        <motion.img
+          src={image}
+          alt={imageAlt ?? ''}
+          aria-hidden={imageAlt ? undefined : true}
+          initial={{ scale: shouldReduceMotion ? 1 : 1.04, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: shouldReduceMotion ? 0.01 : 1.1, ease: heroEase }}
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+        />
+      ) : null}
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-950/85 via-dark-950/70 to-dark-950/55" />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_42%,rgba(218,8,18,0.28),transparent_34%)]" />
 
