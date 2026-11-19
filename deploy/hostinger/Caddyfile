@@ -1,0 +1,53 @@
+# Edge for the Hostinger VPS: serves the SPA, and fronts the API functions and
+# the self-hosted Supabase gateway on the same origin.
+#
+# SITE_ADDRESS decides TLS: a hostname (staging.example.org) gets an automatic
+# certificate; ":80" serves plain HTTP (CI and local runs).
+
+{
+	admin off
+}
+
+# Container health check only; not published outside the container.
+:8081 {
+	respond /healthz "ok" 200
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Robots-Tag "{$ROBOTS_TAG:noindex, nofollow}"
+		-Server
+	}
+
+	# Parity with vercel.json: /donate-now moved permanently to /donate.
+	redir /donate-now /donate permanent
+
+	# Self-hosted Supabase, on the exact paths supabase-js calls. Only these
+	# three prefixes are forwarded, so the gateway's dashboard stays private.
+	@supabase path /auth/v1/* /rest/v1/* /storage/v1/*
+	handle @supabase {
+		reverse_proxy {$SUPABASE_GATEWAY:supabase-gw:8000}
+	}
+
+	# API functions. Request bodies are streamed through untouched, which the
+	# bank callback relies on to verify the gateway hash.
+	handle /api/* {
+		request_body {
+			max_size 5MB
+		}
+		reverse_proxy api:3000
+	}
+
+	# Everything else is the single-page app.
+	handle {
+		root * /srv
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}
