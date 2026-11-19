@@ -1600,19 +1600,31 @@ server_ipv4() {
 # dns_answer <host>: what the domain's own name servers say (no cache in
 # between), as "A 1.2.3.4 ttl=300" lines or "CNAME ttl=300".
 dns_answer() {
-  python3 - "$1" $DOMAIN_NAME_SERVERS <<'PYTHON'
+  dns_ask first "$1"
+}
+
+# dns_answer_paths <host>: one line for every way of reaching the name
+# servers (each of them, over IPv4 and over IPv6) that answered: "A 1.2.3.4",
+# "CNAME" or "none". Right after a record changes, some of these can go on
+# giving the answer from before for as long as the old record let it be kept.
+dns_answer_paths() {
+  dns_ask paths "$1"
+}
+
+dns_ask() {
+  python3 - "$2" "$1" $DOMAIN_NAME_SERVERS <<'PYTHON'
 import random, socket, struct, sys
 
-name, servers = sys.argv[1], sys.argv[2:]
+name, mode, servers = sys.argv[1], sys.argv[2], sys.argv[3:]
 
 
-def ask(server, name):
+def ask(server, name, family=socket.AF_INET, address=None):
     query = struct.pack(">HHHHHH", random.randrange(65536), 0, 1, 0, 0, 0)
     query += b"".join(bytes([len(part)]) + part.encode() for part in name.strip(".").split("."))
     query += b"\x00" + struct.pack(">HH", 1, 1)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(family, socket.SOCK_DGRAM)
     sock.settimeout(6)
-    sock.sendto(query, (socket.gethostbyname(server), 53))
+    sock.sendto(query, address or (socket.gethostbyname(server), 53))
     data, _ = sock.recvfrom(4096)
     sock.close()
     questions, answers = struct.unpack(">HH", data[4:8])
@@ -1642,6 +1654,24 @@ def ask(server, name):
     return found
 
 
+if mode == "paths":
+    seen = set()
+    for server in servers:
+        try:
+            addresses = socket.getaddrinfo(server, 53, type=socket.SOCK_DGRAM)
+        except Exception:
+            continue
+        for family, _type, _proto, _canon, address in addresses:
+            if (family, address[0]) in seen:
+                continue
+            seen.add((family, address[0]))
+            try:
+                found = ask(server, name, family, address)
+            except Exception:  # this way of reaching it does not work from here
+                continue
+            print(", ".join(sorted(set(line.split(" ttl=")[0] for line in found))) or "none")
+    sys.exit(0)
+
 last = None
 for server in servers:
     try:
@@ -1661,14 +1691,30 @@ dns_report() {
   echo "this server: $here"
   for host in "$CANONICAL_HOST" "$WWW_HOST" "staging.$CANONICAL_HOST"; do
     echo "$host: $(dns_answer "$host" | paste -sd, - || true)"
+    dns_settling "$host" || true
   done
 }
 
 points_here() {
-  # points_here <host>: true when its name servers give this server's address, and nothing else
-  local answer
-  answer="$(dns_answer "$1" | cut -d' ' -f1,2 | sort -u || true)"
-  [ "$answer" = "A $(server_ipv4)" ]
+  # points_here <host>: true when the domain's name servers give this server's
+  # address, and nothing else, for the host. Every way of reaching them is
+  # asked: one that already gives only this server's address shows that the
+  # zone itself has changed, even while another still repeats the old answer.
+  dns_answer_paths "$1" | grep -qxF "A $(server_ipv4)"
+}
+
+dns_settling() {
+  # dns_settling <host>: says so, and is true, when the name servers do not
+  # all give the same answer for the host yet.
+  local answers
+  answers="$(dns_answer_paths "$1" | sort -u | paste -sd'|' - || true)"
+  case "$answers" in
+    *"|"*)
+      echo "  note: the name servers do not all give the same answer for $1 yet (${answers//|/ | }); the old one fades within the old record's lifetime, and visitors and the certificate can take that long"
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 set_supabase_value() {
@@ -1732,6 +1778,8 @@ cutover() {
     echo "  $WWW_HOST does not point at this server yet (it needs an A record, not a CNAME)"
     problems=1
   }
+  dns_settling "$CANONICAL_HOST" || true
+  dns_settling "$WWW_HOST" || true
   echo "would set: address $new_url; $WWW_HOST and $old_host redirect to it; search engines allowed; sign-in links and stored file addresses follow"
   if [ "$mode" = "plan" ]; then
     [ "$problems" -eq 0 ] && echo "CUTOVER_PLAN_OK. Nothing was changed." || echo "CUTOVER_NOT_READY. Nothing was changed."
