@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+# Proves that a backup can be restored, without touching the running site.
+# Root-owned, installed in /usr/local/sbin by install-backups.sh and run every
+# week by a systemd timer (and by hand whenever you want proof).
+#
+#   owis-restore-test run [staging]
+#
+# It takes the newest archive (or the one named in OWIS_RESTORE_ARCHIVE) and:
+#   1. checks the checksum of the encrypted file,
+#   2. decrypts and unpacks it into a private temporary folder,
+#   3. checks every part against the checksums in its MANIFEST,
+#   4. starts a scratch PostgreSQL from the same image, with no network at all,
+#   5. restores the dump into it,
+#   6. compares the row count of every table with the counts taken at backup time,
+#   7. checks that the security policies came back,
+#   8. unpacks the uploaded files and checks that every file the restored
+#      database knows about is really there.
+# The scratch database and the temporary folder are removed afterwards. The
+# result is recorded in /var/backups/owis/<environment>/last-restore-test.
+set -euo pipefail
+umask 077
+
+COMMAND="${1:-}"
+ENV_NAME="${2:-staging}"
+case "$ENV_NAME" in
+  staging | production) ;;
+  *)
+    echo "unknown environment" >&2
+    exit 2
+    ;;
+esac
+
+ROOT="/opt/owis"
+KEY_FILE="$ROOT/backup.key"
+BACKUP_DIR="/var/backups/owis/$ENV_NAME"
+RESULT_FILE="$BACKUP_DIR/last-restore-test"
+SCRATCH="scratch-restore-test-$ENV_NAME"
+LOCK_FILE="/run/owis-restore-test-$ENV_NAME.lock"
+
+COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') ORDER BY 1"
+
+work=""
+archive=""
+step_name="starting"
+
+record() {
+  # record <result> [detail...]
+  local result="$1"
+  shift
+  {
+    echo "timestamp=$(date -u +%FT%TZ)"
+    echo "epoch=$(date -u +%s)"
+    echo "archive=$(basename "${archive:-none}")"
+    echo "result=$result"
+    for line in "$@"; do echo "$line"; done
+  } > "$RESULT_FILE.new"
+  mv "$RESULT_FILE.new" "$RESULT_FILE"
+}
+
+cleanup() {
+  local code=$?
+  docker rm -f "$SCRATCH" > /dev/null 2>&1 || true
+  [ -n "$work" ] && rm -rf "$work"
+  if [ "$code" -ne 0 ]; then
+    record failed "failed_step=$step_name" || true
+    echo "RESTORE TEST FAILED at: $step_name" >&2
+  fi
+  exit "$code"
+}
+
+step() {
+  step_name="$1"
+  echo "-- $1"
+}
+
+manifest() {
+  sed -n "s/^$1=//p" "$work/payload/MANIFEST" | head -n 1
+}
+
+scratch_psql() {
+  docker exec -i "$SCRATCH" psql -v ON_ERROR_STOP=1 -q -h 127.0.0.1 -U supabase_admin -d postgres "$@"
+}
+
+run() {
+  [ -s "$KEY_FILE" ] || {
+    echo "missing $KEY_FILE" >&2
+    exit 1
+  }
+  archive="${OWIS_RESTORE_ARCHIVE:-$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "owis-$ENV_NAME-*.tar.gpg" | sort | tail -n 1)}"
+  [ -n "$archive" ] && [ -s "$archive" ] || {
+    echo "no backup archive found in $BACKUP_DIR" >&2
+    exit 1
+  }
+  trap cleanup EXIT
+  work="$(mktemp -d /var/tmp/owis-restore.XXXXXX)"
+  mkdir "$work/gnupg" "$work/payload" "$work/files"
+  echo "== $(date -u +%FT%TZ) restore test of $(basename "$archive")"
+
+  step "checksum of the encrypted archive"
+  (cd "$(dirname "$archive")" && sha256sum --status -c "$(basename "$archive").sha256")
+
+  step "decrypt and unpack"
+  gpg --homedir "$work/gnupg" --batch --quiet --pinentry-mode loopback \
+    --passphrase-file "$KEY_FILE" -d "$archive" | tar -C "$work/payload" -xf -
+
+  step "checksums inside the archive"
+  local part
+  for part in db.dump counts.tsv storage.tar config.tar; do
+    [ "$(manifest "sha256_$part")" = "$(sha256sum "$work/payload/$part" | cut -d' ' -f1)" ] || {
+      echo "checksum mismatch: $part" >&2
+      exit 1
+    }
+  done
+
+  step "settings are present"
+  tar -tf "$work/payload/config.tar" | grep -q "supabase-$ENV_NAME/.env$"
+  tar -tf "$work/payload/config.tar" | grep -q "$ENV_NAME.env$"
+
+  step "start a scratch PostgreSQL (same image, no network)"
+  local image password ready
+  image="$(manifest postgres_image)"
+  password="$(openssl rand -hex 24)"
+  docker rm -f "$SCRATCH" > /dev/null 2>&1 || true
+  docker run -d --name "$SCRATCH" --network none \
+    -e POSTGRES_PASSWORD="$password" -e PGPASSWORD="$password" \
+    -e JWT_SECRET="$(openssl rand -hex 32)" -e JWT_EXP=3600 \
+    "$image" > /dev/null
+  ready=0
+  for _ in $(seq 1 90); do
+    # The image first runs its own setup on a private socket; the scratch
+    # database is ready once it answers on TCP twice in a row.
+    if docker exec "$SCRATCH" psql -q -h 127.0.0.1 -U supabase_admin -d postgres -c 'select 1' > /dev/null 2>&1; then
+      ready=$((ready + 1))
+      [ "$ready" -ge 2 ] && break
+    else
+      ready=0
+    fi
+    sleep 2
+  done
+  [ "$ready" -ge 2 ] || {
+    docker logs --tail 30 "$SCRATCH" >&2 || true
+    exit 1
+  }
+
+  step "restore the database dump"
+  docker cp -q "$work/payload/db.dump" "$SCRATCH:/tmp/db.dump"
+  # Schemas themselves already exist in a fresh Supabase database and are kept;
+  # everything inside them is dropped and recreated from the dump.
+  docker exec "$SCRATCH" sh -c 'pg_restore -l /tmp/db.dump | grep -v " SCHEMA - " > /tmp/db.toc'
+  local restore_errors=0
+  if ! docker exec "$SCRATCH" pg_restore -h 127.0.0.1 -U supabase_admin -d postgres \
+    --clean --if-exists -L /tmp/db.toc /tmp/db.dump > "$work/restore.log" 2>&1; then
+    restore_errors="$(grep -c 'pg_restore: error:' "$work/restore.log" || true)"
+    echo "pg_restore reported $restore_errors error(s):" >&2
+    grep -A 3 'pg_restore: error:' "$work/restore.log" | cut -c1-300 | head -n 60 >&2 || true
+    exit 1
+  fi
+
+  step "row counts match the backup snapshot"
+  scratch_psql -At -F "$(printf '\t')" -c "$COUNTS_SQL" > "$work/restored.tsv"
+  local missing
+  missing="$(grep -Fvx -f "$work/restored.tsv" "$work/payload/counts.tsv" || true)"
+  if [ -n "$missing" ]; then
+    echo "tables whose restored row count differs from the backup:" >&2
+    echo "$missing" >&2
+    exit 1
+  fi
+  local tables rows
+  tables="$(wc -l < "$work/payload/counts.tsv" | tr -d ' ')"
+  rows="$(awk -F '\t' '{ total += $2 } END { print total + 0 }' "$work/payload/counts.tsv")"
+  [ "$tables" = "$(manifest tables)" ] && [ "$rows" = "$(manifest rows)" ]
+
+  step "security policies came back"
+  local policies
+  policies="$(scratch_psql -At -c "select count(*) from pg_policies where schemaname in ('public', 'storage')")"
+  [ "$policies" = "$(manifest policies)" ] || {
+    echo "policies: backup had $(manifest policies), restored database has $policies" >&2
+    exit 1
+  }
+  [ "$(scratch_psql -At -c "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'is_admin'")" -ge 1 ]
+
+  step "uploaded files are all there"
+  tar -C "$work/files" -xf "$work/payload/storage.tar"
+  local files_found objects object_missing=0 bucket name version
+  files_found="$(find "$work/files" -type f | wc -l | tr -d ' ')"
+  [ "$files_found" = "$(manifest storage_files)" ] || {
+    echo "files: manifest says $(manifest storage_files), archive holds $files_found" >&2
+    exit 1
+  }
+  objects=0
+  while IFS="$(printf '\t')" read -r bucket name version; do
+    [ -n "$bucket" ] || continue
+    objects=$((objects + 1))
+    if [ ! -f "$work/files/storage/stub/stub/$bucket/$name/$version" ]; then
+      object_missing=$((object_missing + 1))
+      echo "missing file for $bucket/$name" >&2
+    fi
+  done < <(scratch_psql -At -F "$(printf '\t')" -c "select bucket_id, name, version from storage.objects order by 1, 2")
+  [ "$object_missing" -eq 0 ]
+
+  record ok "tables=$tables" "rows=$rows" "policies=$policies" "files=$files_found" "objects=$objects" "postgres_image=$image"
+  step_name="done"
+  echo "RESTORE TEST PASSED: $tables tables, $rows rows, $policies policies, $objects stored objects, $files_found files"
+}
+
+[ "$(id -u)" -eq 0 ] || {
+  echo "must run as root" >&2
+  exit 1
+}
+
+case "$COMMAND" in
+  run)
+    exec 9> "$LOCK_FILE"
+    flock -n 9 || {
+      echo "another restore test is running" >&2
+      exit 4
+    }
+    run
+    ;;
+  *)
+    echo "usage: owis-restore-test run [staging]" >&2
+    exit 2
+    ;;
+esac

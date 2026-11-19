@@ -4,7 +4,7 @@
 # it only through owis-deploy-gate and a single sudoers rule.
 #
 #   owis-deploy-staging deploy <40-hex commit>
-#   owis-deploy-staging status
+#   owis-deploy-staging status      what runs, health, disk, memory, backups
 #
 # What a push can and cannot change: the images are built from the commit, but
 # the compose file is the root-owned copy in /opt/owis/app and the settings are
@@ -34,6 +34,18 @@ current_tag() {
 status() {
   echo "deployed: $(current_tag | grep . || echo none)"
   IMAGE_TAG="$(current_tag | grep . || echo local)" compose ps
+  # key=value facts for the monitor workflow. Nothing here is secret.
+  echo "containers_total=$(docker ps -a --format '{{.Names}}' | grep -c -E '^(supabase-|owis-)' || true)"
+  echo "containers_healthy=$(docker ps --filter health=healthy --format '{{.Names}}' | grep -c -E '^(supabase-|owis-)' || true)"
+  echo "containers_not_healthy=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E '^(supabase-|owis-)' | grep -v '(healthy)' | cut -d' ' -f1 | tr '\n' ',' || true)"
+  echo "disk_used_percent=$(df -P / | awk 'NR == 2 { print $5 + 0 }')"
+  echo "mem_available_mb=$(awk '/^MemAvailable:/ { print int($2 / 1024) }' /proc/meminfo)"
+  echo "load_1m=$(cut -d' ' -f1 /proc/loadavg)"
+  if [ -x /usr/local/sbin/owis-backup ]; then
+    /usr/local/sbin/owis-backup status staging
+  else
+    echo "backup_configured=no"
+  fi
 }
 
 deploy() {

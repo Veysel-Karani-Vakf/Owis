@@ -1,0 +1,263 @@
+#!/usr/bin/env bash
+# Backup of one OWIS environment on this server. Root-owned, installed in
+# /usr/local/sbin by install-backups.sh and started every day by a systemd
+# timer.
+#
+#   owis-backup run [staging]      make a backup now
+#   owis-backup status [staging]   key=value facts for monitoring, no secrets
+#
+# Each run writes one archive, encrypted with the key in /opt/owis/backup.key:
+#   db.dump       pg_dump (custom format) of the schemas public, auth, storage
+#   counts.tsv    row count of every table, read in the same snapshot as the dump
+#   storage.tar   every uploaded file (public images and private documents)
+#   config.tar    the settings needed to rebuild the stack, secrets included
+#   MANIFEST      versions, sizes and checksums of the above
+#
+# Nothing in an archive can be read without the key, and the key is never
+# printed. Keep a copy of the key outside this server: without it the copies
+# stored elsewhere are useless. owis-restore-test proves an archive restores.
+set -euo pipefail
+umask 077
+
+COMMAND="${1:-}"
+ENV_NAME="${2:-staging}"
+case "$ENV_NAME" in
+  staging | production) ;;
+  *)
+    echo "unknown environment" >&2
+    exit 2
+    ;;
+esac
+
+ROOT="/opt/owis"
+SUPA_DIR="$ROOT/supabase-$ENV_NAME"
+DB_CONTAINER="supabase-db"
+KEY_FILE="$ROOT/backup.key"
+OFFSITE_CONF="$ROOT/backup-offsite.conf"
+BACKUP_DIR="/var/backups/owis/$ENV_NAME"
+STATE_FILE="$BACKUP_DIR/last-success"
+OFFSITE_STATE_FILE="$BACKUP_DIR/last-offsite"
+RESTORE_STATE_FILE="$BACKUP_DIR/last-restore-test"
+KEEP_DAYS="${OWIS_BACKUP_KEEP_DAYS:-14}"
+LOCK_FILE="/run/owis-backup-$ENV_NAME.lock"
+
+# Row count of every table in the three schemas, as "schema.table<TAB>count".
+# query_to_xml lets plain SQL count each table inside the current snapshot.
+COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') ORDER BY 1"
+
+state_value() {
+  # state_value <file> <key>
+  [ -r "$1" ] && sed -n "s/^$2=//p" "$1" | head -n 1 || true
+}
+
+offsite_remote() {
+  [ -r "$OFFSITE_CONF" ] && sed -n 's/^OFFSITE_RCLONE_REMOTE=//p' "$OFFSITE_CONF" | head -n 1 || true
+}
+
+sha256_of() {
+  sha256sum "$1" | cut -d' ' -f1
+}
+
+run() {
+  [ -s "$KEY_FILE" ] || {
+    echo "missing $KEY_FILE (run install-backups.sh)" >&2
+    exit 1
+  }
+  install -d -m 700 "$BACKUP_DIR"
+
+  local stamp work payload archive
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  work="$(mktemp -d "$BACKUP_DIR/.work.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$work'; docker exec '$DB_CONTAINER' rm -f /tmp/owis-backup.dump /tmp/owis-backup.counts > /dev/null 2>&1 || true" EXIT
+  payload="$work/payload"
+  mkdir "$payload" "$work/gnupg"
+  archive="$BACKUP_DIR/owis-$ENV_NAME-$stamp.tar.gpg"
+
+  echo "== $(date -u +%FT%TZ) backup of $ENV_NAME"
+
+  # 1. Database. The dump and the row counts read the same exported snapshot, so
+  #    the counts describe exactly what is inside the dump even while the site
+  #    is being used.
+  docker exec "$DB_CONTAINER" rm -f /tmp/owis-backup.dump /tmp/owis-backup.counts
+  docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -q -U supabase_admin -h localhost -d postgres <<SQL
+BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY;
+SELECT pg_export_snapshot() AS snap \gset
+\setenv OWIS_SNAPSHOT :snap
+\! pg_dump -U supabase_admin -h localhost -d postgres -Fc -Z 6 --snapshot="\$OWIS_SNAPSHOT" -n public -n auth -n storage -f /tmp/owis-backup.dump
+\pset tuples_only on
+\pset format unaligned
+\pset fieldsep '\t'
+\o /tmp/owis-backup.counts
+$COUNTS_SQL;
+\o
+COMMIT;
+SQL
+  docker exec "$DB_CONTAINER" test -s /tmp/owis-backup.dump
+  docker exec "$DB_CONTAINER" sh -c 'pg_restore -l /tmp/owis-backup.dump > /dev/null'
+  docker cp -q "$DB_CONTAINER:/tmp/owis-backup.dump" "$payload/db.dump"
+  docker cp -q "$DB_CONTAINER:/tmp/owis-backup.counts" "$payload/counts.tsv"
+  docker exec "$DB_CONTAINER" rm -f /tmp/owis-backup.dump /tmp/owis-backup.counts
+  [ -s "$payload/db.dump" ] && [ -s "$payload/counts.tsv" ]
+
+  local tables rows policies
+  tables="$(wc -l < "$payload/counts.tsv" | tr -d ' ')"
+  rows="$(awk -F '\t' '{ total += $2 } END { print total + 0 }' "$payload/counts.tsv")"
+  policies="$(docker exec "$DB_CONTAINER" psql -At -U supabase_admin -h localhost -d postgres \
+    -c "select count(*) from pg_policies where schemaname in ('public', 'storage')")"
+
+  # 2. Uploaded files, straight from the storage volume.
+  tar -C "$SUPA_DIR/volumes" -cf "$payload/storage.tar" storage
+  local storage_files
+  storage_files="$(tar -tf "$payload/storage.tar" | grep -vc '/$' || true)"
+
+  # 3. Settings needed to rebuild the stack. They contain secrets, which is why
+  #    they only ever exist inside the encrypted archive.
+  local item
+  local -a config_items=()
+  for item in \
+    "opt/owis/supabase-$ENV_NAME/.env" \
+    "opt/owis/supabase-$ENV_NAME/docker-compose.yml" \
+    "opt/owis/supabase-$ENV_NAME/docker-compose.owis.yml" \
+    "opt/owis/$ENV_NAME.env" \
+    "opt/owis/$ENV_NAME.current" \
+    "opt/owis/$ENV_NAME.migrated" \
+    "opt/owis/app"; do
+    [ -e "/$item" ] && config_items+=("$item")
+  done
+  tar -C / -cf "$payload/config.tar" "${config_items[@]}"
+
+  # 4. Manifest, then one encrypted archive.
+  {
+    echo "format=1"
+    echo "created=$(date -u +%FT%TZ)"
+    echo "environment=$ENV_NAME"
+    echo "host=$(hostname)"
+    echo "postgres_image=$(docker inspect -f '{{.Config.Image}}' "$DB_CONTAINER")"
+    echo "deployed_tag=$(cat "$ROOT/$ENV_NAME.current" 2> /dev/null || echo unknown)"
+    echo "tables=$tables"
+    echo "rows=$rows"
+    echo "policies=$policies"
+    echo "storage_files=$storage_files"
+    for item in db.dump counts.tsv storage.tar config.tar; do
+      echo "bytes_$item=$(stat -c %s "$payload/$item")"
+      echo "sha256_$item=$(sha256_of "$payload/$item")"
+    done
+  } > "$payload/MANIFEST"
+
+  tar -C "$payload" -cf - MANIFEST db.dump counts.tsv storage.tar config.tar \
+    | gpg --homedir "$work/gnupg" --batch --quiet --yes --pinentry-mode loopback \
+      --passphrase-file "$KEY_FILE" --symmetric --cipher-algo AES256 --compress-algo none \
+      -o "$archive.partial"
+
+  # 5. Read it back before calling it a backup.
+  local listed
+  listed="$(gpg --homedir "$work/gnupg" --batch --quiet --pinentry-mode loopback \
+    --passphrase-file "$KEY_FILE" -d "$archive.partial" | tar -tf - | sort | tr '\n' ' ')"
+  [ "$listed" = "MANIFEST config.tar counts.tsv db.dump storage.tar " ] || {
+    echo "archive does not read back correctly" >&2
+    rm -f "$archive.partial"
+    exit 1
+  }
+  mv "$archive.partial" "$archive"
+  (cd "$BACKUP_DIR" && sha256sum "$(basename "$archive")" > "$(basename "$archive").sha256")
+
+  {
+    echo "timestamp=$(date -u +%FT%TZ)"
+    echo "epoch=$(date -u +%s)"
+    echo "archive=$(basename "$archive")"
+    echo "bytes=$(stat -c %s "$archive")"
+    echo "tables=$tables"
+    echo "rows=$rows"
+    echo "storage_files=$storage_files"
+  } > "$STATE_FILE.new"
+  mv "$STATE_FILE.new" "$STATE_FILE"
+  echo "backup written: $(basename "$archive") ($(stat -c %s "$archive") bytes, $tables tables, $rows rows, $storage_files files)"
+
+  # 6. Retention. Only after a good backup, so a failing job never eats history.
+  find "$BACKUP_DIR" -maxdepth 1 -type f -name "owis-$ENV_NAME-*.tar.gpg*" -mtime "+$KEEP_DAYS" -delete
+
+  # 7. Copy outside this server, when a destination has been configured.
+  local remote
+  remote="$(offsite_remote)"
+  if [ -n "$remote" ]; then
+    command -v rclone > /dev/null || {
+      echo "off-site copy is configured but rclone is not installed" >&2
+      exit 1
+    }
+    rclone copy "$BACKUP_DIR" "$remote" --config "$ROOT/rclone.conf" \
+      --include "$(basename "$archive")" --include "$(basename "$archive").sha256"
+    {
+      echo "timestamp=$(date -u +%FT%TZ)"
+      echo "epoch=$(date -u +%s)"
+      echo "archive=$(basename "$archive")"
+    } > "$OFFSITE_STATE_FILE.new"
+    mv "$OFFSITE_STATE_FILE.new" "$OFFSITE_STATE_FILE"
+    echo "off-site copy done"
+  else
+    echo "off-site copy: not configured"
+  fi
+}
+
+status() {
+  local now epoch
+  now="$(date -u +%s)"
+  if [ ! -s "$KEY_FILE" ]; then
+    echo "backup_configured=no"
+    return 0
+  fi
+  echo "backup_configured=yes"
+  echo "backup_timer=$(systemctl is-active "owis-backup-$ENV_NAME.timer" 2> /dev/null || true)"
+  epoch="$(state_value "$STATE_FILE" epoch)"
+  if [ -n "$epoch" ]; then
+    echo "backup_last_success=$(state_value "$STATE_FILE" timestamp)"
+    echo "backup_age_hours=$(((now - epoch) / 3600))"
+    echo "backup_bytes=$(state_value "$STATE_FILE" bytes)"
+    echo "backup_rows=$(state_value "$STATE_FILE" rows)"
+    echo "backup_storage_files=$(state_value "$STATE_FILE" storage_files)"
+  else
+    echo "backup_last_success=never"
+  fi
+  echo "backup_archives_kept=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "owis-$ENV_NAME-*.tar.gpg" 2> /dev/null | wc -l | tr -d ' ')"
+  if [ -n "$(offsite_remote)" ]; then
+    epoch="$(state_value "$OFFSITE_STATE_FILE" epoch)"
+    if [ -n "$epoch" ]; then
+      echo "backup_offsite_age_hours=$(((now - epoch) / 3600))"
+    else
+      echo "backup_offsite_age_hours=never"
+    fi
+  else
+    echo "backup_offsite=not-configured"
+  fi
+  epoch="$(state_value "$RESTORE_STATE_FILE" epoch)"
+  if [ -n "$epoch" ]; then
+    echo "restore_test_result=$(state_value "$RESTORE_STATE_FILE" result)"
+    echo "restore_test_last_run=$(state_value "$RESTORE_STATE_FILE" timestamp)"
+    echo "restore_test_age_days=$(((now - epoch) / 86400))"
+  else
+    echo "restore_test_result=never-run"
+  fi
+}
+
+[ "$(id -u)" -eq 0 ] || {
+  echo "must run as root" >&2
+  exit 1
+}
+
+case "$COMMAND" in
+  run)
+    exec 9> "$LOCK_FILE"
+    flock -n 9 || {
+      echo "another backup is running" >&2
+      exit 4
+    }
+    run
+    ;;
+  status)
+    status
+    ;;
+  *)
+    echo "usage: owis-backup run|status [staging]" >&2
+    exit 2
+    ;;
+esac

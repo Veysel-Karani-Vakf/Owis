@@ -1,0 +1,10 @@
+[Unit]
+Description=OWIS staging restore test (restores the newest backup into a scratch database)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/owis-restore-test run staging
+Nice=10
+IOSchedulingClass=idle

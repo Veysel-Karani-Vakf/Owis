@@ -1,0 +1,10 @@
+[Unit]
+Description=OWIS staging backup (database, uploaded files, settings)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/owis-backup run staging
+Nice=10
+IOSchedulingClass=idle
