@@ -4,7 +4,9 @@
 # it only through owis-deploy-gate and a single sudoers rule.
 #
 #   owis-deploy-staging deploy <40-hex commit>
-#   owis-deploy-staging status      what runs, health, disk, memory, backups
+#   owis-deploy-staging status           what runs, health, disk, memory, backups
+#   owis-deploy-staging rollback-drill   root only: proves that a build which
+#                                        cannot start is refused and undone
 #
 # What a push can and cannot change: the images are built from the commit, but
 # the compose file is the root-owned copy in /opt/owis/app and the settings are
@@ -22,6 +24,7 @@ ENV_FILE="$ROOT/staging.env"
 STATE_FILE="$ROOT/staging.current"
 LOG_FILE="/var/log/owis-deploy-staging.log"
 LOCK_FILE="/run/owis-deploy-staging.lock"
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-240}"
 
 compose() {
   docker compose --project-directory "$REPO/deploy/hostinger" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
@@ -48,6 +51,70 @@ status() {
   fi
 }
 
+# Starts the images tagged <tag>. If they do not all become healthy in time,
+# the images tagged <previous> are started again and the call fails.
+activate() {
+  local tag="$1" previous="$2"
+  if IMAGE_TAG="$tag" compose up -d --wait --wait-timeout "$WAIT_TIMEOUT"; then
+    return 0
+  fi
+  echo "start failed for ${tag}" >&2
+  IMAGE_TAG="$tag" compose ps >&2 || true
+  IMAGE_TAG="$tag" compose logs --no-color --tail=25 >&2 || true
+  if [ -n "$previous" ] && docker image inspect "owis-web:${previous}" "owis-api:${previous}" > /dev/null 2>&1; then
+    echo "rolling back to ${previous}" >&2
+    if IMAGE_TAG="$previous" compose up -d --wait --wait-timeout "$WAIT_TIMEOUT" >&2; then
+      echo "rolled back to ${previous}" >&2
+    else
+      echo "ROLLBACK FAILED: ${previous} did not become healthy either" >&2
+    fi
+  fi
+  return 1
+}
+
+# Proves the safety net above with a build that cannot start: a copy of the
+# running images whose API exits at once. The same activate() a deployment uses
+# must refuse it and bring the running build back. The site answers again
+# within about a minute; do not run this on a live production site.
+rollback_drill() {
+  local previous drill="rollback-drill" rc=0 started seconds image health service
+  previous="$(current_tag)"
+  [ -n "$previous" ] || {
+    echo "nothing is deployed yet" >&2
+    exit 1
+  }
+  echo "== $(date -u +%FT%TZ) rollback drill (running: ${previous})"
+  docker tag "owis-web:${previous}" "owis-web:${drill}"
+  printf 'FROM owis-api:%s\nCMD ["node", "-e", "process.exit(1)"]\n' "$previous" \
+    | docker build -q -t "owis-api:${drill}" - > /dev/null
+  started="$(date +%s)"
+  WAIT_TIMEOUT=60 activate "$drill" "$previous" || rc=$?
+  seconds=$(($(date +%s) - started))
+  if [ "$rc" -eq 0 ]; then
+    # Should be impossible; whatever happened, do not leave the drill running.
+    IMAGE_TAG="$previous" compose up -d --wait --wait-timeout 240 >&2 || true
+  fi
+  docker rmi "owis-web:${drill}" "owis-api:${drill}" > /dev/null 2>&1 || true
+
+  [ "$rc" -ne 0 ] || {
+    echo "ROLLBACK DRILL FAILED: the broken build was accepted" >&2
+    exit 1
+  }
+  [ "$(current_tag)" = "$previous" ] || {
+    echo "ROLLBACK DRILL FAILED: the recorded build changed" >&2
+    exit 1
+  }
+  for service in api web; do
+    image="$(docker inspect -f '{{.Config.Image}}' "owis-staging-${service}-1")"
+    health="$(docker inspect -f '{{.State.Health.Status}}' "owis-staging-${service}-1")"
+    [ "$image" = "owis-${service}:${previous}" ] && [ "$health" = "healthy" ] || {
+      echo "ROLLBACK DRILL FAILED: ${service} is ${image} (${health})" >&2
+      exit 1
+    }
+  done
+  echo "ROLLBACK DRILL PASSED in ${seconds}s: the broken build was refused, ${previous} is running and healthy"
+}
+
 deploy() {
   local sha="$1" tag previous
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || {
@@ -66,21 +133,13 @@ deploy() {
   fi
   git -C "$REPO" checkout --quiet --force --detach "$sha"
 
-  export IMAGE_TAG="$tag"
   echo "building images ${tag}"
-  compose build --quiet
+  IMAGE_TAG="$tag" compose build --quiet
 
-  if compose up -d --wait --wait-timeout 240; then
+  if activate "$tag" "$previous"; then
     echo "$tag" > "$STATE_FILE"
     echo "deployed ${tag}"
   else
-    echo "start failed for ${tag}" >&2
-    compose ps >&2 || true
-    compose logs --no-color --tail=25 >&2 || true
-    if [ -n "$previous" ] && docker image inspect "owis-web:${previous}" "owis-api:${previous}" > /dev/null 2>&1; then
-      echo "rolling back to ${previous}" >&2
-      IMAGE_TAG="$previous" compose up -d --wait --wait-timeout 240 >&2 || true
-    fi
     exit 1
   fi
 
@@ -114,8 +173,17 @@ case "${1:-}" in
     [ "$#" -eq 1 ] || exit 2
     status
     ;;
+  rollback-drill)
+    [ "$#" -eq 1 ] || exit 2
+    exec 9> "$LOCK_FILE"
+    flock -n 9 || {
+      echo "a deployment is running" >&2
+      exit 4
+    }
+    rollback_drill 2>&1 | tee -a "$LOG_FILE"
+    ;;
   *)
-    echo "usage: owis-deploy-staging deploy <commit> | status" >&2
+    echo "usage: owis-deploy-staging deploy <commit> | status | rollback-drill" >&2
     exit 2
     ;;
 esac
