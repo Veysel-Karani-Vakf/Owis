@@ -88,7 +88,9 @@ Every push to `infra/hostinger-staging` runs `Staging CI`: type checks, the
 production-fallback guards, the whole stack on the runner (including the mock
 donation flow), and only then a deployment through the restricted deploy key.
 If the new containers do not become healthy the server goes back to the
-previous images by itself.
+previous images by itself. `owis-deploy-staging rollback-drill` (root only)
+proves that safety net with a build that cannot start; the staging API is
+unavailable for about a minute while it runs.
 
 Database migrations are deliberately **not** part of a deployment. After CI
 has proved a new file in `supabase/migrations` on a fresh database, apply it on
@@ -96,7 +98,7 @@ the server as root:
 
 ```sh
 docker exec -i supabase-db psql -v ON_ERROR_STOP=1 --single-transaction \
-  -U supabase_admin -h localhost -d postgres \
+  -U postgres -h localhost -d postgres \
   < /opt/owis/repo/supabase/migrations/00NN_name.sql
 ```
 
@@ -140,8 +142,9 @@ Restoring for real, on a rebuilt server:
 prints what is deployed, container health, disk, memory, the age of the last
 backup and the result of the last restore test. The `Staging monitor` workflow
 reads it, checks the site and its certificate, and fails when something needs
-attention. GitHub only runs its daily schedule from the default branch; until
-this branch is merged, start it by hand from the Actions tab.
+attention. GitHub offers the manual button and the daily schedule only for
+workflows on the default branch; until this branch is merged, the monitor runs
+when its own file changes, and every deployment prints the same status.
 
 ## Not done yet
 
