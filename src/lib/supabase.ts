@@ -25,6 +25,8 @@ if (import.meta.env.VITE_DEPLOY_ENV === 'staging' && url.includes(PRODUCTION_PRO
 
 export const MEDIA_BUCKET = import.meta.env.VITE_SUPABASE_MEDIA_BUCKET || 'media';
 export const isSupabaseConfigured = Boolean(url && anonKey);
+/** Base URL of the Supabase instance this build talks to (no trailing slash). */
+export const SUPABASE_URL = url.replace(/\/+$/, '');
 
 const clientOptions = {
   auth: {
