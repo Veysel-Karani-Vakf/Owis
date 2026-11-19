@@ -135,15 +135,29 @@ function firstHeader(req: IncomingMessage, name: string): string | undefined {
   return raw?.split(',')[0]?.trim() || undefined;
 }
 
-// Public Supabase project URL; same fallback the browser bundle uses.
-const FALLBACK_SUPABASE_URL = 'https://goyqlyrtclpywvolayzu.supabase.co';
+// The production Supabase project. It is a fallback only on Vercel (the current
+// production host, where it has always been implicit). Anywhere else (the
+// Hostinger VPS, Docker, CI) the URL must be configured explicitly, and a
+// staging deployment refuses to talk to the production project at all.
+const PRODUCTION_SUPABASE_REF = 'goyqlyrtclpywvolayzu';
+const FALLBACK_SUPABASE_URL = `https://${PRODUCTION_SUPABASE_REF}.supabase.co`;
+
+function runningOnVercel(): boolean {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
+}
 
 export function supabaseUrl(): string {
-  return (
-    process.env.SUPABASE_URL?.trim() ||
-    process.env.VITE_SUPABASE_URL?.trim() ||
-    FALLBACK_SUPABASE_URL
-  );
+  const configured = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
+  const value = configured || (runningOnVercel() ? FALLBACK_SUPABASE_URL : '');
+  if (!value) {
+    throw new Error(
+      'SUPABASE_URL is required outside Vercel; refusing to fall back to the production Supabase project.',
+    );
+  }
+  if (process.env.DEPLOY_ENV?.trim().toLowerCase() === 'staging' && value.includes(PRODUCTION_SUPABASE_REF)) {
+    throw new Error('A staging deployment refuses to use the production Supabase project.');
+  }
+  return value;
 }
 
 /** Secret service-role key: bypasses RLS, so it must never reach the bundle. */
