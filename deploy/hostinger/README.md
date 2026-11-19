@@ -82,9 +82,70 @@ docker compose up -d studio meta
 docker compose stop studio meta
 ```
 
+## Deployments and database changes
+
+Every push to `infra/hostinger-staging` runs `Staging CI`: type checks, the
+production-fallback guards, the whole stack on the runner (including the mock
+donation flow), and only then a deployment through the restricted deploy key.
+If the new containers do not become healthy the server goes back to the
+previous images by itself.
+
+Database migrations are deliberately **not** part of a deployment. After CI
+has proved a new file in `supabase/migrations` on a fresh database, apply it on
+the server as root:
+
+```sh
+docker exec -i supabase-db psql -v ON_ERROR_STOP=1 --single-transaction \
+  -U supabase_admin -h localhost -d postgres \
+  < /opt/owis/repo/supabase/migrations/00NN_name.sql
+```
+
+## Backups and restore
+
+Installed once as root, from the root-owned checkout:
+
+```sh
+bash /opt/owis/repo/deploy/hostinger/server/install-backups.sh
+```
+
+| What | When | How |
+| --- | --- | --- |
+| `owis-backup run staging` | every day, 01:30 UTC | database (schemas `public`, `auth`, `storage`), every uploaded file, and the settings needed to rebuild the stack, in one encrypted archive under `/var/backups/owis/staging` (14 days kept) |
+| `owis-restore-test run staging` | every Sunday, 03:00 UTC | decrypts the newest archive, restores it into a scratch PostgreSQL with no network, and compares every table's row count, the security policies and every stored file with what the backup recorded |
+
+The archives are encrypted with `/opt/owis/backup.key` (root only). **Copy that
+key to a password manager.** It is never printed by the scripts, and an archive
+kept anywhere else cannot be opened without it.
+
+Copies outside the server are made when `/opt/owis/backup-offsite.conf`
+contains `OFFSITE_RCLONE_REMOTE=<remote>:<path>` and `/opt/owis/rclone.conf`
+describes that remote. Until then the archives exist on this server only.
+
+Restoring for real, on a rebuilt server:
+
+1. Run `bootstrap-staging.sh` (or restore `config.tar` from the archive to keep
+   the same keys), so that the five Supabase services exist and are healthy.
+2. Decrypt the archive:
+   `gpg --pinentry-mode loopback --passphrase-file /opt/owis/backup.key -d owis-staging-<time>.tar.gpg | tar -xf -`
+3. Stop `auth`, `rest` and `storage`, then restore the dump exactly as the
+   restore test does:
+   `pg_restore -l db.dump | grep -v " SCHEMA - " > db.toc` and
+   `pg_restore -U supabase_admin -h localhost -d postgres --clean --if-exists -L db.toc db.dump`
+4. Unpack `storage.tar` into `/opt/owis/supabase-staging/volumes/`.
+5. Start the services again and run `owis-deploy-staging status`.
+
+## Monitoring
+
+`owis-deploy-staging status` (also reachable by the deploy key as `status`)
+prints what is deployed, container health, disk, memory, the age of the last
+backup and the result of the last restore test. The `Staging monitor` workflow
+reads it, checks the site and its certificate, and fails when something needs
+attention. GitHub only runs its daily schedule from the default branch; until
+this branch is merged, start it by hand from the Actions tab.
+
 ## Not done yet
 
-- Daily off-server backups and a tested restore.
+- A destination outside the server for the encrypted backups.
 - Outgoing mail (SMTP) for password resets.
 - Moving production data, accounts and files.
 - Bank test and production payment configuration.
