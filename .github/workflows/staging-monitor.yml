@@ -88,10 +88,21 @@ jobs:
             at_most "hours since the last good backup" "$(value backup_age_hours)" 26
             if [ "$(value restore_test_result)" = "ok" ]; then ok "last restore test passed ($(value restore_test_last_run))"; else fail "restore test: $(value restore_test_result)"; fi
             at_most "days since the last restore test" "$(value restore_test_age_days)" 8
-            if [ "$(value backup_offsite)" = "not-configured" ]; then
-              echo "::warning::Backups are not copied outside the server yet (no destination configured)."
+            if [ "$(value backup_alert)" = "yes" ]; then
+              fail "a backup or its off-site copy failed at $(value backup_last_failure); see /var/log/owis-backup-staging.log on the server"
             else
-              at_most "hours since the last off-site copy" "$(value backup_offsite_age_hours)" 26
+              ok "no failed backup run is pending"
+            fi
+            if [ "$(value backup_offsite)" = "not-configured" ]; then
+              echo "::warning::Backups are not copied outside the server yet (no destination connected)."
+            else
+              at_most "hours since the last verified off-site copy" "$(value backup_offsite_age_hours)" 26
+              if [ "$(value offsite_restore_test_result)" = "ok" ]; then
+                ok "the off-site copy was downloaded and restored successfully"
+                at_most "days since the off-site restore test" "$(value offsite_restore_test_age_days)" 8
+              else
+                fail "off-site restore test: $(value offsite_restore_test_result)"
+              fi
             fi
           else
             fail "backups are not configured on the server"
