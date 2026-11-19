@@ -1,0 +1,295 @@
+name: Staging CI
+
+# Proves the Hostinger setup before anything reaches the VPS: type checks, the
+# production-fallback guards, both images, and the whole stack (trimmed
+# self-hosted Supabase + web + api) running on the runner with test data only.
+
+on:
+  push:
+    branches:
+      - infra/hostinger-staging
+    paths-ignore:
+      - "**.md"
+      - .github/workflows/verify-hostinger-staging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PRODUCTION_SUPABASE_URL: https://goyqlyrtclpywvolayzu.supabase.co
+
+jobs:
+  checks:
+    name: Types and production guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck (app)
+        run: npm run typecheck
+
+      - name: Typecheck (api)
+        run: npm run typecheck:api
+
+      - name: Lint (reported, not blocking yet)
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build must fail without Supabase settings
+        run: |
+          set -euo pipefail
+          if env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY npx vite build > build-no-env.log 2>&1; then
+            echo "::error::A build without Supabase settings succeeded."
+            exit 1
+          fi
+          grep -q "Refusing to fall back to the production Supabase project" build-no-env.log
+          echo "ok: build refused without Supabase settings"
+
+      - name: Staging build must refuse the production project
+        run: |
+          set -euo pipefail
+          if VITE_DEPLOY_ENV=staging VITE_SUPABASE_URL="$PRODUCTION_SUPABASE_URL" VITE_SUPABASE_ANON_KEY=placeholder \
+            npx vite build > build-prod.log 2>&1; then
+            echo "::error::A staging build pointing at production succeeded."
+            exit 1
+          fi
+          grep -q "must not point at the production Supabase project" build-prod.log
+          echo "ok: staging build refused the production project"
+
+      - name: Staging build with explicit settings
+        env:
+          VITE_DEPLOY_ENV: staging
+          VITE_SUPABASE_URL: http://localhost
+          VITE_SUPABASE_ANON_KEY: placeholder
+        run: npm run build
+
+      - name: API host must refuse unsafe configurations
+        run: |
+          set -euo pipefail
+          node deploy/hostinger/build-api.mjs
+
+          refuses() {
+            label="$1"
+            shift
+            if env "$@" timeout 10 node dist-api/server.cjs > api-guard.log 2>&1; then
+              echo "::error::${label}: the API host started."
+              exit 1
+            fi
+            grep -q "Refusing to start" api-guard.log || {
+              echo "::error::${label}: unexpected failure"
+              cat api-guard.log
+              exit 1
+            }
+            echo "ok: ${label}"
+          }
+
+          refuses "no DEPLOY_ENV" SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "no SUPABASE_URL" DEPLOY_ENV=staging SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "no service role key" DEPLOY_ENV=staging SUPABASE_URL=http://localhost
+          refuses "staging pointing at production" DEPLOY_ENV=staging SUPABASE_URL="$PRODUCTION_SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "staging with a live payment mode" DEPLOY_ENV=staging SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production
+
+  stack:
+    name: Images and full stack
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUBLIC_SITE_URL: http://localhost
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare self-hosted Supabase (pinned official release)
+        run: |
+          set -euo pipefail
+          docker compose version
+          docker network create owis-edge
+          sh deploy/hostinger/supabase-setup.sh "$RUNNER_TEMP/supabase" "$PUBLIC_SITE_URL"
+          # Throwaway secrets, generated for this run only. Kept out of the log anyway.
+          for key in JWT_SECRET ANON_KEY SERVICE_ROLE_KEY POSTGRES_PASSWORD DASHBOARD_PASSWORD; do
+            value="$(grep "^${key}=" "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+            echo "::add-mask::${value}"
+          done
+
+      - name: Start Supabase (five services)
+        working-directory: ${{ runner.temp }}/supabase
+        run: |
+          set -euo pipefail
+          docker compose up -d --quiet-pull --wait --wait-timeout 300 db auth rest storage api-gw
+          docker compose ps
+
+      - name: Apply database migrations
+        run: |
+          set -euo pipefail
+          sql() {
+            docker exec -i supabase-db psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 "$@"
+          }
+          # Storage creates its own tables on first start; the migrations add buckets and policies to them.
+          for attempt in $(seq 1 30); do
+            ready="$(sql -Atc "select (to_regclass('storage.buckets') is not null and to_regclass('storage.objects') is not null)::int" || true)"
+            [ "$ready" = "1" ] && break
+            sleep 2
+          done
+          [ "$ready" = "1" ]
+          for file in $(ls supabase/migrations/*.sql | sort); do
+            echo "-> ${file}"
+            sql --single-transaction -q -f - < "${file}"
+          done
+          echo "public tables: $(sql -Atc "select count(*) from information_schema.tables where table_schema = 'public'")"
+          echo "RLS policies:  $(sql -Atc "select count(*) from pg_policies where schemaname in ('public', 'storage')")"
+          echo "buckets:       $(sql -Atc "select string_agg(id || (case when public then ' (public)' else ' (private)' end), ', ' order by id) from storage.buckets")"
+
+      - name: Configure the application stack
+        run: |
+          set -euo pipefail
+          anon="$(grep '^ANON_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          service="$(grep '^SERVICE_ROLE_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          {
+            echo "DEPLOY_ENV=staging"
+            echo "SITE_ADDRESS=:80"
+            echo "PUBLIC_SITE_URL=${PUBLIC_SITE_URL}"
+            echo "SUPABASE_ANON_KEY=${anon}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${service}"
+            echo "PAYMENT_MODE=mock"
+            echo "IMAGE_TAG=ci"
+          } > deploy/hostinger/.env
+
+      - name: Build images
+        working-directory: deploy/hostinger
+        run: docker compose build
+
+      - name: Start web and api
+        working-directory: deploy/hostinger
+        run: |
+          set -euo pipefail
+          docker compose up -d --wait --wait-timeout 180
+          docker compose ps
+
+      - name: Smoke tests through the public edge
+        run: |
+          set -euo pipefail
+          base="$PUBLIC_SITE_URL"
+          anon="$(grep '^ANON_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          service="$(grep '^SERVICE_ROLE_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          body="$RUNNER_TEMP/body"
+          failures=0
+
+          # expect <label> <status[|status]> <url> [curl options]
+          expect() {
+            label="$1"; want="$2"; url="$3"; shift 3
+            got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 "$@" "$url" || true)"
+            if case "|${want}|" in *"|${got}|"*) true ;; *) false ;; esac; then
+              echo "ok    ${label} (${got})"
+            else
+              echo "::error::${label}: expected ${want}, got ${got}"
+              head -c 400 "$body" || true
+              echo
+              failures=$((failures + 1))
+            fi
+          }
+          contains() {
+            grep -q -- "$2" "$body" || {
+              echo "::error::${1}: response does not contain ${2}"
+              failures=$((failures + 1))
+            }
+          }
+
+          echo "== Site =="
+          expect "home page" 200 "$base/"
+          contains "home page" 'id="root"'
+          expect "SPA deep link" 200 "$base/projects/ci-deep-link"
+          contains "SPA deep link" 'id="root"'
+          expect "donate-now redirect" 301 "$base/donate-now"
+
+          echo "== API functions =="
+          expect "api health" 200 "$base/api/healthz"
+          contains "api health" '"env":"staging"'
+          expect "api unknown route" 404 "$base/api/does-not-exist"
+          expect "payments config" 200 "$base/api/payments/config"
+          echo "payments config: $(head -c 300 "$body")"
+
+          echo "== Supabase paths =="
+          expect "auth health" 200 "$base/auth/v1/health" -H "apikey: $anon"
+          expect "rest without a key is rejected" 401 "$base/rest/v1/site_pages?select=*&limit=1"
+          expect "rest public table" 200 "$base/rest/v1/site_pages?select=*&limit=1" -H "apikey: $anon" -H "Authorization: Bearer $anon"
+          expect "storage buckets" 200 "$base/storage/v1/bucket" -H "apikey: $service" -H "Authorization: Bearer $service"
+          contains "storage buckets" '"media"'
+          contains "storage buckets" '"submissions"'
+
+          echo "== Storage =="
+          printf 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -d > "$RUNNER_TEMP/pixel.png"
+          expect "upload to the public bucket" 200 "$base/storage/v1/object/media/ci/pixel.png" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          expect "public file is readable without a key" 200 "$base/storage/v1/object/public/media/ci/pixel.png"
+          expect "upload to the private bucket" 200 "$base/storage/v1/object/submissions/ci/pixel.png" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          expect "private file is not public" "400|404" "$base/storage/v1/object/public/submissions/ci/pixel.png"
+
+          echo "== Admin sign-in and RLS =="
+          email="ci-admin@example.test"
+          password="$(openssl rand -hex 16)"
+          echo "::add-mask::${password}"
+          expect "create admin account" 200 "$base/auth/v1/admin/users" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" \
+            -d "{\"email\":\"${email}\",\"password\":\"${password}\",\"email_confirm\":true,\"app_metadata\":{\"role\":\"admin\"}}"
+          expect "password sign-in" 200 "$base/auth/v1/token?grant_type=password" -X POST \
+            -H "apikey: $anon" -H "Content-Type: application/json" \
+            -d "{\"email\":\"${email}\",\"password\":\"${password}\"}"
+          token="$(jq -r '.access_token // empty' "$body")"
+          if [ -n "$token" ]; then
+            echo "::add-mask::${token}"
+            expect "admin reads a protected table" 200 "$base/rest/v1/donation_payments?select=id&limit=1" \
+              -H "apikey: $anon" -H "Authorization: Bearer $token"
+          else
+            echo "::error::sign-in returned no access token"
+            failures=$((failures + 1))
+          fi
+          got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 -H "apikey: $anon" -H "Authorization: Bearer $anon" "$base/rest/v1/donation_payments?select=id&limit=1" || true)"
+          if { [ "$got" = "200" ] && [ "$(cat "$body")" = "[]" ]; } || [ "$got" = "401" ] || [ "$got" = "403" ]; then
+            echo "ok    protected table is closed to anonymous visitors (${got})"
+          else
+            echo "::error::donation_payments is readable anonymously (${got})"
+            failures=$((failures + 1))
+          fi
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
+          echo "All checks passed."
+
+      - name: Resource usage
+        if: always()
+        run: |
+          {
+            echo "### Containers"
+            echo '```'
+            docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
+            echo '```'
+            echo "### Host memory (MB)"
+            echo '```'
+            free -m
+            echo '```'
+            echo "### Images"
+            echo '```'
+            docker images --format 'table {{.Repository}}:{{.Tag}}\t{{.Size}}' | grep -E 'owis-|supabase|postgrest|envoy|gotrue' || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          (cd "$RUNNER_TEMP/supabase" && docker compose ps -a && docker compose logs --no-color --tail=60 db auth rest storage api-gw) || true
+          (cd deploy/hostinger && docker compose ps -a && docker compose logs --no-color --tail=80) || true
