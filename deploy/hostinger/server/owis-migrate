@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+# Moves the live site's data from the hosted Supabase project to this server.
+# Root-owned, installed in /usr/local/sbin by install-backups.sh.
+#
+#   owis-migrate secrets       you type the source database password and the
+#                              production settings yourself (hidden input);
+#                              run it from your own terminal over ssh -t
+#   owis-migrate source-test   connect to the source and print what is there
+#
+# Nothing here writes to the source: it is only ever read. The values typed
+# into "secrets" are stored root-only in /opt/owis/migrate and never printed.
+set -euo pipefail
+umask 077
+
+COMMAND="${1:-}"
+ROOT="/opt/owis"
+DIR="$ROOT/migrate"
+DB_CONTAINER="supabase-db"
+
+# Where the source lives. None of this is secret; the password is.
+SOURCE_REF="goyqlyrtclpywvolayzu"
+SOURCE_HOST="aws-0-ap-northeast-2.pooler.supabase.com" # session pooler (IPv4)
+SOURCE_PORT="5432"
+SOURCE_USER="postgres.$SOURCE_REF"
+SOURCE_SERVICE_FILE="$DIR/source.service"
+SOURCE_KEY_FILE="$DIR/source.service-role-key"
+PRODUCTION_ENV_FILE="$DIR/production.env"
+DEFAULT_GATE_URL="https://sanalpos.isbank.com.tr/fim/est3Dgate"
+
+need_terminal() {
+  [ -t 0 ] && [ -t 1 ] || {
+    echo "run this from your own terminal (ssh -t ...), not from a script" >&2
+    exit 2
+  }
+}
+
+# ask_hidden <variable name> <prompt>: reads one line without echo.
+ask_hidden() {
+  local __value
+  printf '%s: ' "$2"
+  read -r -s __value || true
+  echo
+  printf -v "$1" '%s' "$__value"
+}
+
+env_value() {
+  [ -r "$PRODUCTION_ENV_FILE" ] && sed -n "s/^$1=//p" "$PRODUCTION_ENV_FILE" | head -n 1 || true
+}
+
+set_env_value() {
+  # set_env_value <name> <value>: replaces or appends one line.
+  touch "$PRODUCTION_ENV_FILE"
+  grep -v "^$1=" "$PRODUCTION_ENV_FILE" > "$PRODUCTION_ENV_FILE.new" || true
+  printf '%s=%s\n' "$1" "$2" >> "$PRODUCTION_ENV_FILE.new"
+  mv "$PRODUCTION_ENV_FILE.new" "$PRODUCTION_ENV_FILE"
+}
+
+state_line() {
+  # state_line <label> <file or value test result>
+  if [ "$2" = "yes" ]; then echo "  set      $1"; else echo "  MISSING  $1"; fi
+}
+
+show_state() {
+  echo "Stored so far (values are never shown):"
+  state_line "source database password" "$([ -s "$SOURCE_SERVICE_FILE" ] && echo yes || echo no)"
+  state_line "source service_role key (needed for the private files)" "$([ -s "$SOURCE_KEY_FILE" ] && echo yes || echo no)"
+  state_line "PAYMENT_CLIENT_ID" "$([ -n "$(env_value PAYMENT_CLIENT_ID)" ] && echo yes || echo no)"
+  state_line "PAYMENT_STORE_KEY" "$([ -n "$(env_value PAYMENT_STORE_KEY)" ] && echo yes || echo no)"
+  state_line "PAYMENT_GATE_URL" "$([ -n "$(env_value PAYMENT_GATE_URL)" ] && echo yes || echo no)"
+}
+
+secrets() {
+  need_terminal
+  install -d -m 700 "$DIR"
+  local value
+  echo "Type or paste each value and press Enter. Nothing you type is shown."
+  echo "Press Enter on an empty line to leave a value as it is."
+  echo
+
+  echo "1/5  Supabase > Project Settings > Database: the database password."
+  echo "     (If it is unknown it can be reset on that page. Type it carefully:"
+  echo "     Supabase blocks an address for a while after a few wrong attempts.)"
+  ask_hidden value "     database password"
+  if [ -n "$value" ]; then
+    {
+      echo "[owis_source]"
+      echo "host=$SOURCE_HOST"
+      echo "port=$SOURCE_PORT"
+      echo "user=$SOURCE_USER"
+      echo "dbname=postgres"
+      echo "sslmode=require"
+      echo "password=$value"
+    } > "$SOURCE_SERVICE_FILE"
+  fi
+
+  echo "2/5  Supabase > Project Settings > API keys: the service_role key"
+  echo "     (only used to read the private uploaded documents)."
+  ask_hidden value "     service_role key"
+  [ -z "$value" ] || printf '%s\n' "$value" > "$SOURCE_KEY_FILE"
+
+  echo "3/5  Vercel > Settings > Environment Variables: PAYMENT_CLIENT_ID."
+  ask_hidden value "     PAYMENT_CLIENT_ID"
+  [ -z "$value" ] || set_env_value PAYMENT_CLIENT_ID "$value"
+
+  echo "4/5  Vercel: PAYMENT_STORE_KEY."
+  ask_hidden value "     PAYMENT_STORE_KEY"
+  [ -z "$value" ] || set_env_value PAYMENT_STORE_KEY "$value"
+
+  echo "5/5  Vercel: PAYMENT_GATE_URL. Enter alone keeps the bank's production"
+  echo "     address ($DEFAULT_GATE_URL)."
+  ask_hidden value "     PAYMENT_GATE_URL"
+  if [ -n "$value" ]; then
+    set_env_value PAYMENT_GATE_URL "$value"
+  elif [ -z "$(env_value PAYMENT_GATE_URL)" ]; then
+    set_env_value PAYMENT_GATE_URL "$DEFAULT_GATE_URL"
+  fi
+  unset value
+  echo
+  show_state
+  echo
+  echo "SECRETS_STORED. Nothing has been connected or changed yet."
+}
+
+# Runs a PostgreSQL client program inside the database container against the
+# source. The service file travels through stdin and the container's own
+# settings (its local password among them) are removed from the environment, so
+# they can never be sent to the source by mistake.
+source_pg() {
+  [ -s "$SOURCE_SERVICE_FILE" ] || {
+    echo "the source database password has not been entered yet (owis-migrate secrets)" >&2
+    return 3
+  }
+  docker exec -i "$DB_CONTAINER" sh -c 'umask 077; cat > /tmp/owis-source.service' < "$SOURCE_SERVICE_FILE"
+  local rc=0
+  docker exec -i "$DB_CONTAINER" env -u PGPASSWORD -u PGHOST -u PGPORT -u PGUSER -u PGDATABASE \
+    PGSERVICEFILE=/tmp/owis-source.service PGCONNECT_TIMEOUT=20 "$@" || rc=$?
+  docker exec "$DB_CONTAINER" rm -f /tmp/owis-source.service
+  return "$rc"
+}
+
+source_test() {
+  local out rc=0
+  out="$(source_pg psql "service=owis_source" -v ON_ERROR_STOP=1 -At -c "
+    select 'connected as ' || current_user || ' to PostgreSQL ' || current_setting('server_version');
+    select 'database size ' || pg_size_pretty(pg_database_size(current_database()));
+    select 'public tables ' || count(*) from pg_tables where schemaname = 'public';
+    select 'news ' || count(*) from public.news;
+    select 'donation_payments ' || count(*) from public.donation_payments;
+    select 'auth users ' || count(*) from auth.users;
+    select 'stored files ' || count(*) || ', ' || pg_size_pretty(coalesce(sum((metadata->>'size')::bigint), 0)) from storage.objects;
+  " 2>&1)" || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    echo "$out"
+    echo "SOURCE_OK"
+    return 0
+  fi
+  # Show the reason, never the connection details.
+  echo "$out" | grep -E 'FATAL|ERROR|error|timeout|not been entered' | head -n 3 | cut -c1-200 >&2 || true
+  if grep -q 'password authentication failed' <<< "$out"; then
+    echo "The password was refused. Do not retry blindly: enter it again with" >&2
+    echo "owis-migrate secrets, then test once." >&2
+  fi
+  echo "SOURCE_FAILED" >&2
+  return 1
+}
+
+[ "$(id -u)" -eq 0 ] || {
+  echo "must run as root" >&2
+  exit 1
+}
+
+case "$COMMAND" in
+  secrets)
+    secrets
+    ;;
+  state)
+    show_state
+    ;;
+  source-test)
+    source_test
+    ;;
+  *)
+    echo "usage: owis-migrate secrets | state | source-test" >&2
+    exit 2
+    ;;
+esac

@@ -40,7 +40,7 @@ command -v rclone > /dev/null || {
 }
 
 install -m 750 -o root -g root \
-  "$here/owis-backup" "$here/owis-restore-test" "$here/owis-deploy-staging" /usr/local/sbin/
+  "$here/owis-backup" "$here/owis-restore-test" "$here/owis-deploy-staging" "$here/owis-migrate" /usr/local/sbin/
 
 cat > /etc/logrotate.d/owis << 'ROTATE'
 /var/log/owis-backup-*.log /var/log/owis-restore-test-*.log {
