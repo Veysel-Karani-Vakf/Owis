@@ -399,7 +399,7 @@ SQL
 # Content fingerprint of every site table and of the login accounts, as
 # "schema.table rows md5". Two databases with the same lines hold the same rows.
 # (Addresses of stored files are compared as the source writes them.)
-FINGERPRINT_SQL="set timezone = 'UTC'; select format('%I.%I', schemaname, tablename) || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) || '' '' || md5(coalesce(string_agg(h,  order by h), )) as c from (select md5(replace(row_to_json(x)::text, %L, %L)) as h from %I.%I x) s', 'https://staging.veysvakfi.org/storage/v1', 'https://goyqlyrtclpywvolayzu.supabase.co/storage/v1', schemaname, tablename), false, true, '')))[1]::text from pg_tables where schemaname = 'public' or (schemaname = 'auth' and tablename in ('users','identities')) order by 1"
+FINGERPRINT_SQL="set timezone = 'UTC'; select format('%I.%I', schemaname, tablename) || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) || '' '' || md5(coalesce(string_agg(h, '''' order by h), '''')) as c from (select md5(replace(row_to_json(x)::text, %L, %L)) as h from %I.%I x) s', 'https://staging.veysvakfi.org/storage/v1', 'https://goyqlyrtclpywvolayzu.supabase.co/storage/v1', schemaname, tablename), false, true, '')))[1]::text from pg_tables where schemaname = 'public' or (schemaname = 'auth' and tablename in ('users','identities')) order by 1"
 SOURCE_BASELINE_FILE="$DIR/source.baseline"
 
 # Whether the old site has received anything since the baseline (the state the
