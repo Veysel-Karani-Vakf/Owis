@@ -2,13 +2,29 @@
 # Moves the live site's data from the hosted Supabase project to this server.
 # Root-owned, installed in /usr/local/sbin by install-backups.sh.
 #
-#   owis-migrate secrets       you type the source database password and the
-#                              production settings yourself (hidden input);
-#                              run it from your own terminal over ssh -t
-#   owis-migrate source-test   connect to the source and print what is there
+#   owis-migrate secrets        you type the source database password and the
+#                               production settings yourself (hidden input);
+#                               run it from your own terminal over ssh -t
+#   owis-migrate state          which values are stored (never the values)
+#   owis-migrate source-test    connect to the source and print what is there
+#   owis-migrate source-dump    full dump of the source (schemas public, auth,
+#                               storage) kept as an encrypted archive in
+#                               /var/backups/owis/source, plus a working copy
+#   owis-migrate import plan    show what an import would replace; changes nothing
+#   owis-migrate import apply   back up this server's database, then replace the
+#                               site's tables and the login accounts with the
+#                               dumped ones, in one transaction, and compare
+#   owis-migrate urls <from> <to> [apply]
+#                               count (and with "apply" rewrite) stored addresses
+#                               that start with <from>, e.g. the old project's
+#   owis-migrate payment-check  compare the stored merchant number with the one
+#                               the imported payments were made with
+#   owis-migrate files-test     ask the source for one stored file of each kind
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
+# The import is data only: tables, policies and functions on this server come
+# from supabase/migrations, and are compared with the source, not copied.
 set -euo pipefail
 umask 077
 
@@ -26,6 +42,21 @@ SOURCE_SERVICE_FILE="$DIR/source.service"
 SOURCE_KEY_FILE="$DIR/source.service-role-key"
 PRODUCTION_ENV_FILE="$DIR/production.env"
 DEFAULT_GATE_URL="https://sanalpos.isbank.com.tr/fim/est3Dgate"
+
+# The stack on this server keeps its internal label "staging" (paths, backup
+# names) whatever it serves.
+TARGET_ENV="staging"
+KEY_FILE="$ROOT/backup.key"
+WORK_DIR="$DIR/work"
+SOURCE_BACKUP_DIR="/var/backups/owis/source"
+IMPORT_STATE_FILE="$DIR/imported"
+LOG_FILE="/var/log/owis-migrate.log"
+LOCK_FILE="/run/owis-migrate.lock"
+
+# Row count of every readable table in the three schemas ("schema.table<TAB>count").
+COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') AND has_table_privilege(format('%I.%I', schemaname, tablename), 'SELECT') ORDER BY 1"
+# One line per row-level policy with a fingerprint of its definition.
+POLICIES_SQL="SELECT schemaname || '.' || tablename || '.' || policyname, md5(concat_ws('|', permissive, roles::text, cmd, qual, with_check)) FROM pg_policies WHERE schemaname IN ('public', 'storage') ORDER BY 1"
 
 need_terminal() {
   [ -t 0 ] && [ -t 1 ] || {
@@ -164,6 +195,431 @@ source_test() {
   return 1
 }
 
+target_psql() {
+  docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U supabase_admin -h localhost -d postgres "$@"
+}
+
+sha256_of() {
+  sha256sum "$1" | cut -d' ' -f1
+}
+
+latest_copy() {
+  # Directory of the newest working copy made by source-dump, or nothing.
+  local stamp
+  stamp="$(cat "$WORK_DIR/latest" 2> /dev/null || true)"
+  [ -n "$stamp" ] && [ -s "$WORK_DIR/source-$stamp/db.dump" ] && echo "$WORK_DIR/source-$stamp" || true
+}
+
+# Full dump of the source. The dump, the row counts and the policy fingerprints
+# read one exported snapshot, so they describe the same moment.
+source_dump() {
+  [ -s "$KEY_FILE" ] || {
+    echo "missing $KEY_FILE (run install-backups.sh)" >&2
+    exit 1
+  }
+  install -d -m 700 "$SOURCE_BACKUP_DIR" "$WORK_DIR"
+  local stamp work payload archive copy item
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  work="$(mktemp -d "$WORK_DIR/.dump.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$work'; docker exec '$DB_CONTAINER' sh -c 'rm -f /tmp/owis-source.*' > /dev/null 2>&1 || true" EXIT
+  payload="$work/payload"
+  mkdir "$payload" "$work/gnupg"
+  archive="$SOURCE_BACKUP_DIR/owis-source-$stamp.tar.gpg"
+
+  echo "== $(date -u +%FT%TZ) dump of the source database"
+  docker exec "$DB_CONTAINER" sh -c 'rm -f /tmp/owis-source.dump /tmp/owis-source.counts /tmp/owis-source.policies /tmp/owis-source.rc /tmp/owis-source.skipped'
+  source_pg psql "service=owis_source" -v ON_ERROR_STOP=1 -q <<SQL
+BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY;
+SET LOCAL search_path = public, extensions;
+SELECT pg_export_snapshot() AS snap \gset
+SELECT coalesce(string_agg(format('--exclude-table=%I.%I', schemaname, tablename), ' '), '') AS excl FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') AND NOT has_table_privilege(format('%I.%I', schemaname, tablename), 'SELECT') \gset
+\setenv OWIS_SNAPSHOT :snap
+\setenv OWIS_EXCLUDE :excl
+\! echo "\$OWIS_EXCLUDE" > /tmp/owis-source.skipped
+\! pg_dump -d "service=owis_source" -Fc -Z 6 --snapshot="\$OWIS_SNAPSHOT" -n public -n auth -n storage \$OWIS_EXCLUDE -f /tmp/owis-source.dump; echo "\$?" > /tmp/owis-source.rc
+\pset tuples_only on
+\pset format unaligned
+\pset fieldsep '\t'
+\o /tmp/owis-source.counts
+$COUNTS_SQL;
+\o /tmp/owis-source.policies
+$POLICIES_SQL;
+\o
+COMMIT;
+SQL
+  [ "$(docker exec "$DB_CONTAINER" cat /tmp/owis-source.rc 2> /dev/null || echo 1)" = "0" ] || {
+    echo "pg_dump did not finish; nothing was kept" >&2
+    exit 1
+  }
+  docker exec "$DB_CONTAINER" sh -c 'pg_restore -l /tmp/owis-source.dump | grep -q "TABLE DATA public news "'
+  docker cp -q "$DB_CONTAINER:/tmp/owis-source.dump" "$payload/db.dump"
+  docker cp -q "$DB_CONTAINER:/tmp/owis-source.counts" "$payload/counts.tsv"
+  docker cp -q "$DB_CONTAINER:/tmp/owis-source.policies" "$payload/policies.tsv"
+  docker cp -q "$DB_CONTAINER:/tmp/owis-source.skipped" "$payload/skipped.txt"
+  docker exec "$DB_CONTAINER" sh -c 'rm -f /tmp/owis-source.*'
+  [ -s "$payload/db.dump" ] && [ -s "$payload/counts.tsv" ]
+  if grep -q . "$payload/skipped.txt"; then
+    echo "not readable with this account, left out: $(tr -s ' ' < "$payload/skipped.txt" | sed 's/--exclude-table=//g')"
+  fi
+
+  local tables rows policies
+  tables="$(wc -l < "$payload/counts.tsv" | tr -d ' ')"
+  rows="$(awk -F '\t' '{ total += $2 } END { print total + 0 }' "$payload/counts.tsv")"
+  policies="$(wc -l < "$payload/policies.tsv" | tr -d ' ')"
+  {
+    echo "format=1"
+    echo "created=$(date -u +%FT%TZ)"
+    echo "source=hosted project $SOURCE_REF"
+    echo "taken_from=$(hostname)"
+    echo "tables=$tables"
+    echo "rows=$rows"
+    echo "policies=$policies"
+    for item in db.dump counts.tsv policies.tsv skipped.txt; do
+      echo "bytes_$item=$(stat -c %s "$payload/$item")"
+      echo "sha256_$item=$(sha256_of "$payload/$item")"
+    done
+  } > "$payload/MANIFEST"
+
+  tar -C "$payload" -cf - MANIFEST db.dump counts.tsv policies.tsv skipped.txt \
+    | gpg --homedir "$work/gnupg" --batch --quiet --yes --pinentry-mode loopback \
+      --passphrase-file "$KEY_FILE" --symmetric --cipher-algo AES256 --compress-algo none \
+      -o "$archive.partial"
+  local listed
+  listed="$(gpg --homedir "$work/gnupg" --batch --quiet --pinentry-mode loopback \
+    --passphrase-file "$KEY_FILE" -d "$archive.partial" | tar -tf - | sort | tr '\n' ' ')"
+  [ "$listed" = "MANIFEST counts.tsv db.dump policies.tsv skipped.txt " ] || {
+    echo "archive does not read back correctly" >&2
+    rm -f "$archive.partial"
+    exit 1
+  }
+  mv "$archive.partial" "$archive"
+  (cd "$SOURCE_BACKUP_DIR" && sha256sum "$(basename "$archive")" > "$(basename "$archive").sha256")
+
+  # Working copy for the import: the same files, root only.
+  copy="$WORK_DIR/source-$stamp"
+  mv "$payload" "$copy"
+  echo "$stamp" > "$WORK_DIR/latest"
+
+  awk -F '\t' '$1 ~ /^public\./ || $1 == "auth.users" || $1 == "auth.identities" || $1 == "storage.objects" { printf "  %-34s %s\n", $1, $2 }' "$copy/counts.tsv"
+  echo "SOURCE_DUMP_OK archive=$(basename "$archive") bytes=$(stat -c %s "$archive") tables=$tables rows=$rows policies=$policies"
+}
+
+# Tables an import replaces: every table of the site, and the login accounts.
+import_tables() {
+  # import_tables <working copy>
+  awk -F '\t' '$1 ~ /^public\./ || $1 == "auth.users" || $1 == "auth.identities" { print $1 }' "$1/counts.tsv"
+}
+
+import_data() {
+  local mode="${1:-}" copy
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate import plan|apply" >&2
+      exit 2
+      ;;
+  esac
+  copy="$(latest_copy)"
+  [ -n "$copy" ] || {
+    echo "no working copy of the source yet (owis-migrate source-dump)" >&2
+    exit 1
+  }
+  echo "== $(date -u +%FT%TZ) import $mode, from $(basename "$copy")"
+
+  local tables name bad=0
+  tables="$(import_tables "$copy")"
+  while read -r name; do
+    [[ "$name" =~ ^(public|auth)\.[a-z_][a-z0-9_]*$ ]] || {
+      echo "unexpected table name in the source: $name" >&2
+      bad=1
+    }
+  done <<< "$tables"
+  [ "$bad" -eq 0 ] || exit 1
+
+  # 1. Same set of site tables on both sides.
+  local source_public target_public
+  source_public="$(grep '^public\.' <<< "$tables" | sort)"
+  target_public="$(target_psql -At -c "select 'public.' || tablename from pg_tables where schemaname = 'public' order by 1" | sort)"
+  if [ "$source_public" != "$target_public" ]; then
+    echo "the site tables differ between the source and this server:" >&2
+    diff <(echo "$source_public") <(echo "$target_public") >&2 || true
+    exit 1
+  fi
+
+  # 2. What emptying these tables reaches through foreign keys. Anything outside
+  #    the site's own tables and the login system stops the import.
+  local reached outside extra
+  reached="$(target_psql -At <<'SQL'
+WITH RECURSIVE hit(oid) AS (
+  SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE c.relkind IN ('r', 'p')
+     AND (n.nspname = 'public' OR (n.nspname = 'auth' AND c.relname IN ('users', 'identities')))
+  UNION
+  SELECT k.conrelid FROM pg_constraint k JOIN hit ON k.confrelid = hit.oid WHERE k.contype = 'f'
+)
+SELECT n.nspname || '.' || c.relname
+  FROM hit JOIN pg_class c ON c.oid = hit.oid JOIN pg_namespace n ON n.oid = c.relnamespace
+ ORDER BY 1;
+SQL
+  )"
+  outside="$(grep -v -E '^(public|auth)\.' <<< "$reached" || true)"
+  [ -z "$outside" ] || {
+    echo "refused: emptying the tables would also empty: $outside" >&2
+    exit 1
+  }
+  extra="$(comm -23 <(sort <<< "$reached") <(sort <<< "$tables") | tr '\n' ' ')"
+
+  # 3. Before / after picture.
+  local now
+  now="$(target_psql -At -F $'\t' -c "$COUNTS_SQL")"
+  echo "table                               source   here now"
+  while read -r name; do
+    printf '  %-34s %6s   %6s\n' "$name" \
+      "$(awk -F '\t' -v t="$name" '$1 == t { print $2 }' "$copy/counts.tsv")" \
+      "$(awk -F '\t' -v t="$name" '$1 == t { print $2 }' <<< "$now")"
+  done <<< "$tables"
+  echo "also emptied here (sign-in sessions and tokens of the test accounts): ${extra:-none}"
+  echo "source rows that are not brought over (they only matter inside the old project):"
+  awk -F '\t' '$1 ~ /^auth\./ && $1 != "auth.users" && $1 != "auth.identities" && $2 > 0 { printf "  %-34s %s\n", $1, $2 }' "$copy/counts.tsv"
+  echo "stored files are a separate step: storage.objects in the source has $(awk -F '\t' '$1 == "storage.objects" { print $2 }' "$copy/counts.tsv") rows"
+
+  if [ "$mode" = "plan" ]; then
+    echo "IMPORT_PLAN_OK. Nothing was changed."
+    return 0
+  fi
+
+  # 4. Independent backup of this server before anything is replaced.
+  local backup_line
+  backup_line="$(/usr/local/sbin/owis-backup run "$TARGET_ENV" | grep '^backup written:' || true)"
+  [ -n "$backup_line" ] || {
+    echo "the backup of this server failed; nothing was changed" >&2
+    exit 1
+  }
+  echo "this server before the import: $backup_line"
+
+  # 5. The data, as SQL, from the dump: only the chosen tables and the site's
+  #    sequences.
+  # shellcheck disable=SC2064
+  trap "docker exec '$DB_CONTAINER' sh -c 'rm -f /tmp/owis-import.*' > /dev/null 2>&1 || true" EXIT
+  docker cp -q "$copy/db.dump" "$DB_CONTAINER:/tmp/owis-import.dump"
+  docker exec "$DB_CONTAINER" sh -c 'pg_restore -l /tmp/owis-import.dump' \
+    | awk '($4 == "TABLE" && $5 == "DATA" && ($6 == "public" || ($6 == "auth" && ($7 == "users" || $7 == "identities")))) || ($4 == "SEQUENCE" && $5 == "SET" && $6 == "public")' \
+    | docker exec -i "$DB_CONTAINER" sh -c 'cat > /tmp/owis-import.list'
+  local expected listed
+  expected="$(wc -l <<< "$tables" | tr -d ' ')"
+  listed="$(docker exec "$DB_CONTAINER" grep -c ' TABLE DATA ' /tmp/owis-import.list || true)"
+  [ "$listed" = "$expected" ] || {
+    echo "the dump holds data for $listed of the $expected tables; nothing was changed" >&2
+    exit 1
+  }
+  docker exec "$DB_CONTAINER" sh -c 'pg_restore --data-only -L /tmp/owis-import.list -f /tmp/owis-import.sql /tmp/owis-import.dump'
+
+  # 6. One transaction: empty, load, commit. Triggers and foreign-key checks
+  #    are off inside it, so every row arrives exactly as it was. Any error
+  #    leaves this server untouched.
+  local truncate_list out rc=0
+  truncate_list="$(paste -sd, <<< "$tables")"
+  out="$(mktemp "$WORK_DIR/.import.XXXXXX")"
+  {
+    echo "BEGIN;"
+    echo "SET LOCAL session_replication_role = replica;"
+    echo "SET LOCAL lock_timeout = '30s';"
+    echo "TRUNCATE TABLE $truncate_list CASCADE;"
+    docker exec "$DB_CONTAINER" cat /tmp/owis-import.sql
+    echo
+    echo "COMMIT;"
+  } | target_psql -q > "$out" 2>&1 || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    # The reason only: an error's context lines can quote a row.
+    grep -E '^(ERROR|FATAL|psql:)' "$out" | head -n 5 | cut -c1-300 >&2 || true
+    rm -f "$out"
+    echo "the import failed and was rolled back; this server is unchanged" >&2
+    exit 1
+  fi
+  grep -c '^NOTICE:  truncate cascades' "$out" | sed 's/^/tables emptied through foreign keys: /' || true
+  rm -f "$out"
+  docker exec "$DB_CONTAINER" sh -c 'rm -f /tmp/owis-import.*'
+
+  # 7. Compare.
+  local after mismatch=0 want have
+  after="$(target_psql -At -F $'\t' -c "$COUNTS_SQL")"
+  while read -r name; do
+    want="$(awk -F '\t' -v t="$name" '$1 == t { print $2 }' "$copy/counts.tsv")"
+    have="$(awk -F '\t' -v t="$name" '$1 == t { print $2 }' <<< "$after")"
+    if [ "$want" = "$have" ]; then
+      printf '  ok        %-34s %s\n' "$name" "$have"
+    else
+      printf '  MISMATCH  %-34s source %s, here %s\n' "$name" "$want" "$have"
+      mismatch=1
+    fi
+  done <<< "$tables"
+  [ "$mismatch" -eq 0 ] || {
+    echo "IMPORT_MISMATCH: the row counts differ (the backup taken above restores the previous state)" >&2
+    exit 1
+  }
+
+  # Policies are not copied; they must simply be the same on both sides.
+  local here_policies
+  here_policies="$(target_psql -At -F $'\t' -c "SET search_path = public, extensions" -c "$POLICIES_SQL" | grep -v '^SET$')"
+  if [ "$here_policies" = "$(cat "$copy/policies.tsv")" ]; then
+    echo "access policies: $(wc -l < "$copy/policies.tsv" | tr -d ' ') on both sides, identical"
+  else
+    echo "access policies differ (name: < source, > here):"
+    diff <(cut -f1,2 "$copy/policies.tsv") <(echo "$here_policies") | grep -E '^[<>]' | cut -c1-120 || true
+  fi
+
+  {
+    echo "timestamp=$(date -u +%FT%TZ)"
+    echo "source_copy=$(basename "$copy")"
+    echo "backup_before=${backup_line#backup written: }"
+  } > "$IMPORT_STATE_FILE"
+  echo "IMPORT_OK"
+}
+
+# Counts, and with "apply" rewrites, stored addresses that start with <from>.
+# Uploaded pictures are saved in the content with their full address, so they
+# still point at the old project after an import.
+rewrite_urls() {
+  local from="${1:-}" to="${2:-}" mode="${3:-count}"
+  local origin='^https://[a-z0-9.-]+$'
+  [[ "$from" =~ $origin ]] && [[ "$to" =~ $origin ]] && [ "$from" != "$to" ] || {
+    echo "usage: owis-migrate urls https://old.example https://new.example [apply]" >&2
+    exit 2
+  }
+  case "$mode" in
+    count | apply) ;;
+    *) exit 2 ;;
+  esac
+  echo "== $(date -u +%FT%TZ) addresses $from -> $to ($mode)"
+  target_psql -q -v from="$from" -v to="$to" -v mode="$mode" <<'SQL' 2>&1 | sed -n -e 's/^NOTICE:  //p' -e '/^ERROR/p' -e '/^FATAL/p'
+BEGIN;
+SET LOCAL session_replication_role = replica;
+SELECT set_config('owis.url_from', :'from', true) AS a, set_config('owis.url_to', :'to', true) AS b, set_config('owis.url_mode', :'mode', true) AS c \gset ignored_
+DO $$
+DECLARE
+  r record;
+  n bigint;
+  total bigint := 0;
+  url_from text := current_setting('owis.url_from');
+  url_to text := current_setting('owis.url_to');
+  apply boolean := current_setting('owis.url_mode') = 'apply';
+BEGIN
+  FOR r IN
+    SELECT c.relname AS t, a.attname AS col, format_type(a.atttypid, a.atttypmod) AS typ
+      FROM pg_attribute a
+      JOIN pg_class c ON c.oid = a.attrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relkind = 'r' AND a.attnum > 0 AND NOT a.attisdropped
+       AND a.attgenerated = ''
+       AND a.atttypid::regtype::text IN ('text', 'character varying', 'jsonb', 'json', 'text[]', 'character varying[]')
+     ORDER BY 1, 2
+  LOOP
+    EXECUTE format('SELECT count(*) FROM public.%I WHERE %I::text LIKE %L', r.t, r.col, '%' || url_from || '/%') INTO n;
+    IF n > 0 THEN
+      total := total + n;
+      IF apply THEN
+        EXECUTE format('UPDATE public.%I SET %I = replace(%I::text, %L, %L)::%s WHERE %I::text LIKE %L',
+          r.t, r.col, r.col, url_from || '/', url_to || '/', r.typ, r.col, '%' || url_from || '/%');
+        RAISE NOTICE 'rewritten  % row(s) in %.%', n, r.t, r.col;
+      ELSE
+        RAISE NOTICE 'found      % row(s) in %.%', n, r.t, r.col;
+      END IF;
+    END IF;
+  END LOOP;
+  RAISE NOTICE 'URLS_% total=%', CASE WHEN apply THEN 'REWRITTEN' ELSE 'COUNTED' END, total;
+END $$;
+COMMIT;
+SQL
+}
+
+# Compares what was typed into "secrets" with the imported payment history,
+# without showing either side.
+payment_check() {
+  local stored used key gate
+  stored="$(env_value PAYMENT_CLIENT_ID)"
+  key="$(env_value PAYMENT_STORE_KEY)"
+  gate="$(env_value PAYMENT_GATE_URL)"
+  used="$(target_psql -At -c "select distinct raw_response->>'clientid' from public.donation_payments where gateway_mode = 'production' and raw_response ? 'clientid'")"
+  if [ -z "$stored" ]; then
+    echo "PAYMENT_CLIENT_ID  MISSING"
+  elif [ -z "$used" ]; then
+    echo "PAYMENT_CLIENT_ID  set; no live payment here to compare it with (import first)"
+  elif grep -qxF -- "$stored" <<< "$used"; then
+    echo "PAYMENT_CLIENT_ID  MATCH: the same merchant number the live payments were made with"
+  else
+    echo "PAYMENT_CLIENT_ID  DIFFERENT from the merchant number of the live payments: enter it again"
+  fi
+  if [ -z "$key" ]; then
+    echo "PAYMENT_STORE_KEY  MISSING"
+  elif [ "$key" = "$stored" ] || grep -qxF -- "$key" <<< "$used"; then
+    echo "PAYMENT_STORE_KEY  WRONG: it is the merchant number, not the store key"
+  elif [[ "$key" =~ [[:space:]] ]] || [[ "$key" == TEST_* ]]; then
+    echo "PAYMENT_STORE_KEY  SUSPECT: it contains a space or is a placeholder"
+  else
+    echo "PAYMENT_STORE_KEY  set; only the bank can confirm it (it accepts or refuses a signed request)"
+  fi
+  case "$gate" in
+    "$DEFAULT_GATE_URL") echo "PAYMENT_GATE_URL   the bank's production address" ;;
+    https://*) echo "PAYMENT_GATE_URL   set to another https address: $(cut -d/ -f3 <<< "$gate")" ;;
+    *) echo "PAYMENT_GATE_URL   MISSING or not https" ;;
+  esac
+}
+
+# Asks the source's file service for the smallest file of each bucket, with the
+# service_role key. 200 means the files can be copied now.
+files_test() {
+  [ -s "$SOURCE_KEY_FILE" ] || {
+    echo "the source service_role key has not been entered yet (owis-migrate secrets)" >&2
+    exit 3
+  }
+  command -v python3 > /dev/null && command -v curl > /dev/null || {
+    echo "python3 and curl are needed" >&2
+    exit 1
+  }
+  local headers bucket name encoded code
+  headers="$(mktemp "$DIR/.headers.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -f '$headers'" EXIT
+  {
+    printf 'apikey: %s\n' "$(head -n 1 "$SOURCE_KEY_FILE")"
+    printf 'Authorization: Bearer %s\n' "$(head -n 1 "$SOURCE_KEY_FILE")"
+  } > "$headers"
+  for bucket in media submissions; do
+    name="$(source_pg psql "service=owis_source" -At -c "select name from storage.objects where bucket_id = '$bucket' and (metadata->>'size')::bigint > 0 order by (metadata->>'size')::bigint, name limit 1")"
+    [ -n "$name" ] || {
+      echo "$bucket: no file listed"
+      continue
+    }
+    encoded="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$name")"
+    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 -H @"$headers" \
+      "https://$SOURCE_REF.supabase.co/storage/v1/object/authenticated/$bucket/$encoded" || true)"
+    case "$code" in
+      200) echo "$bucket: HTTP 200, readable" ;;
+      402) echo "$bucket: HTTP 402, the project's file service is still restricted (quota)" ;;
+      *) echo "$bucket: HTTP $code" ;;
+    esac
+  done
+}
+
+# Long jobs: one at a time, with their output kept in the log file.
+logged() {
+  exec 9> "$LOCK_FILE"
+  flock -n 9 || {
+    echo "another owis-migrate job is running" >&2
+    exit 4
+  }
+  echo "==== $(date -u +%FT%TZ) $COMMAND ${*:2}" >> "$LOG_FILE"
+  set +e
+  (
+    set -e
+    "$@"
+  ) 2>&1 | tee -a "$LOG_FILE"
+  local rc="${PIPESTATUS[0]}"
+  set -e
+  return "$rc"
+}
+
 [ "$(id -u)" -eq 0 ] || {
   echo "must run as root" >&2
   exit 1
@@ -179,8 +635,23 @@ case "$COMMAND" in
   source-test)
     source_test
     ;;
+  source-dump)
+    logged source_dump
+    ;;
+  import)
+    logged import_data "${2:-}"
+    ;;
+  urls)
+    logged rewrite_urls "${2:-}" "${3:-}" "${4:-count}"
+    ;;
+  payment-check)
+    payment_check
+    ;;
+  files-test)
+    files_test
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | source-test" >&2
+    echo "usage: owis-migrate secrets | state | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | files-test" >&2
     exit 2
     ;;
 esac
