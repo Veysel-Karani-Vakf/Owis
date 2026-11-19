@@ -13,6 +13,7 @@ on:
     paths-ignore:
       - "**.md"
       - .github/workflows/verify-hostinger-staging.yml
+      - .github/workflows/staging-monitor.yml
   workflow_dispatch:
 
 permissions:
@@ -269,6 +270,23 @@ jobs:
             failures=$((failures + 1))
           fi
 
+          echo "== Visitor forms (anonymous) =="
+          as_visitor=(-H "apikey: $anon" -H "Authorization: Bearer $anon" -H "Content-Type: application/json")
+          expect "newsletter sign-up" 201 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"  CI-Reader@Example.test "}'
+          expect "the same address again is a duplicate, whatever the letter case" 409 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"ci-reader@example.test"}'
+          expect "newsletter refuses text that is not an address" 400 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"not-an-email"}'
+          expect "newsletter refuses an empty value" 400 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":""}'
+          expect "visitors cannot publish content" "401|403" "$base/rest/v1/news" -X POST "${as_visitor[@]}" -d '{"slug":"ci-visitor","title":{"ar":"x"}}'
+          expect "visitors cannot upload to the media library" "400|401|403" "$base/storage/v1/object/media/ci/visitor.png" -X POST \
+            -H "apikey: $anon" -H "Authorization: Bearer $anon" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 -H "apikey: $anon" -H "Authorization: Bearer $anon" "$base/rest/v1/newsletter_subscribers?select=email&limit=1" || true)"
+          if { [ "$got" = "200" ] && [ "$(cat "$body")" = "[]" ]; } || [ "$got" = "401" ] || [ "$got" = "403" ]; then
+            echo "ok    the subscriber list is closed to anonymous visitors (${got})"
+          else
+            echo "::error::newsletter_subscribers is readable anonymously (${got})"
+            failures=$((failures + 1))
+          fi
+
           [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
           echo "All checks passed."
 
@@ -328,6 +346,19 @@ jobs:
           # deployment of a commit that is on the staging branch.
           ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ServerAliveInterval=30 "$VPS_USER@$VPS_HOST" "deploy ${GITHUB_SHA}"
+
+      - name: Server status after the deployment
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" status | tee "$RUNNER_TEMP/status.txt"
+          grep -q "^deployed: ${GITHUB_SHA:0:12}\$" "$RUNNER_TEMP/status.txt" || {
+            echo "::error::the server does not report this commit as deployed"
+            exit 1
+          }
 
       - name: Check the live staging site
         run: |

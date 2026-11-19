@@ -1,0 +1,112 @@
+name: Staging monitor
+
+# Asks the staging server how it is doing and fails loudly when something needs
+# attention: a container that is not healthy, a full disk, low memory, a backup
+# older than a day, a restore test that did not pass, a certificate about to
+# expire, or a site that does not answer.
+#
+# Run it by hand from the Actions tab (choose the infra/hostinger-staging
+# branch). The daily schedule below only starts working once this file is on
+# the default branch, because GitHub runs schedules from the default branch
+# only; a failed scheduled run is e-mailed to the repository owner.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Server, backups and site
+    if: github.ref == 'refs/heads/infra/hostinger-staging'
+    runs-on: ubuntu-latest
+    environment: hostinger-staging
+    timeout-minutes: 10
+    env:
+      STAGING_HOST: staging.veysvakfi.org
+    steps:
+      - name: Ask the server for its status
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
+          # The key can only ask the gate for "verify", "status" or a deployment.
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" status | tee "$RUNNER_TEMP/status.txt"
+
+      - name: Judge the status
+        run: |
+          set -euo pipefail
+          status="$RUNNER_TEMP/status.txt"
+          failures=0
+          value() { sed -n "s/^$1=//p" "$status" | head -n 1; }
+          fail() { echo "::error::$1"; failures=$((failures + 1)); }
+          ok() { echo "ok    $1"; }
+          # at_most <label> <value> <limit>
+          at_most() {
+            if [ -n "$2" ] && [ "$2" -eq "$2" ] 2> /dev/null && [ "$2" -le "$3" ]; then ok "$1: $2 (limit $3)"; else fail "$1: ${2:-unknown} (limit $3)"; fi
+          }
+          at_least() {
+            if [ -n "$2" ] && [ "$2" -eq "$2" ] 2> /dev/null && [ "$2" -ge "$3" ]; then ok "$1: $2 (at least $3)"; else fail "$1: ${2:-unknown} (at least $3)"; fi
+          }
+
+          echo "== Containers =="
+          at_least "healthy containers" "$(value containers_healthy)" 7
+          if [ -z "$(value containers_not_healthy)" ]; then ok "no container is unhealthy"; else fail "not healthy: $(value containers_not_healthy)"; fi
+
+          echo "== Resources =="
+          at_most "disk used %" "$(value disk_used_percent)" 80
+          at_least "memory available (MB)" "$(value mem_available_mb)" 800
+
+          echo "== Backups =="
+          if [ "$(value backup_configured)" = "yes" ]; then
+            ok "backups are configured (timer: $(value backup_timer))"
+            [ "$(value backup_timer)" = "active" ] || fail "the daily backup timer is not active"
+            at_most "hours since the last good backup" "$(value backup_age_hours)" 26
+            if [ "$(value restore_test_result)" = "ok" ]; then ok "last restore test passed ($(value restore_test_last_run))"; else fail "restore test: $(value restore_test_result)"; fi
+            at_most "days since the last restore test" "$(value restore_test_age_days)" 8
+            if [ "$(value backup_offsite)" = "not-configured" ]; then
+              echo "::warning::Backups are not copied outside the server yet (no destination configured)."
+            else
+              at_most "hours since the last off-site copy" "$(value backup_offsite_age_hours)" 26
+            fi
+          else
+            fail "backups are not configured on the server"
+          fi
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
+
+      - name: Site, certificate and response time
+        run: |
+          set -euo pipefail
+          failures=0
+          fail() { echo "::error::$1"; failures=$((failures + 1)); }
+          base="https://$STAGING_HOST"
+
+          for path in / /news /donate /api/healthz /api/payments/config /storage/v1/status; do
+            read -r code seconds < <(curl -sS -o /dev/null -w '%{http_code} %{time_total}\n' --max-time 20 "$base$path" || echo "000 0")
+            if [ "$code" = "200" ]; then echo "ok    $path ${seconds}s"; else fail "$path answered $code"; fi
+            awk -v s="$seconds" 'BEGIN { exit !(s < 3) }' || fail "$path took ${seconds}s"
+          done
+
+          end="$(echo | openssl s_client -servername "$STAGING_HOST" -connect "$STAGING_HOST:443" 2> /dev/null | openssl x509 -noout -enddate | cut -d= -f2)"
+          days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+          if [ "$days" -ge 14 ]; then echo "ok    certificate valid for $days more days"; else fail "certificate expires in $days days"; fi
+
+          curl -sS --max-time 20 "$base/api/payments/config" | grep -q '"mode":"mock"' || fail "staging payments are not in mock mode"
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
