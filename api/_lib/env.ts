@@ -3,6 +3,13 @@ import type { IncomingMessage } from 'node:http';
 export type PaymentMode = 'mock' | 'test' | 'production';
 
 /**
+ * What PAYMENT_MODE asks for: one of the gateway modes, or 'disabled' when
+ * online payments are switched off altogether (the checkout then shows a
+ * notice and the other ways to give; nothing is recorded or sent to a bank).
+ */
+export type PaymentSetting = PaymentMode | 'disabled';
+
+/**
  * Storefront limits and presets. Donation opportunities and custom amounts are
  * expressed in US Dollars. Before the bank form is created, the server converts
  * the selected USD amount to TRY using İş Bankası USD "Banka Alış".
@@ -47,10 +54,22 @@ function configuredValue(name: string): string | undefined {
   return value;
 }
 
-export function paymentMode(): PaymentMode {
+export function paymentSetting(): PaymentSetting {
   const raw = (process.env.PAYMENT_MODE ?? 'mock').trim().toLowerCase();
-  if (raw === 'test' || raw === 'production') return raw;
+  if (raw === 'test' || raw === 'production' || raw === 'disabled') return raw;
   return 'mock';
+}
+
+/** True when online payments are switched off (PAYMENT_MODE=disabled). */
+export function paymentsDisabled(): boolean {
+  return paymentSetting() === 'disabled';
+}
+
+export function paymentMode(): PaymentMode {
+  const setting = paymentSetting();
+  // Switched off is never the simulated bank: anything that would still sign
+  // or verify a payment then fails on the missing bank values instead.
+  return setting === 'disabled' ? 'production' : setting;
 }
 
 /**
