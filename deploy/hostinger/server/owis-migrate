@@ -12,6 +12,11 @@
 #   owis-migrate source-dump    full dump of the source (schemas public, auth,
 #                               storage) kept as an encrypted archive in
 #                               /var/backups/owis/source, plus a working copy
+#   owis-migrate source-changes [baseline]
+#                               has anything been added or changed in the source
+#                               since the baseline was taken? (content fingerprint
+#                               of every site table and of the login accounts);
+#                               "baseline" records the present state
 #   owis-migrate import plan    show what an import would replace; changes nothing
 #   owis-migrate import apply   back up this server's database, then replace the
 #                               site's tables and the login accounts with the
@@ -389,6 +394,44 @@ SQL
 
   awk -F '\t' '$1 ~ /^public\./ || $1 == "auth.users" || $1 == "auth.identities" || $1 == "storage.objects" { printf "  %-34s %s\n", $1, $2 }' "$copy/counts.tsv"
   echo "SOURCE_DUMP_OK archive=$(basename "$archive") bytes=$(stat -c %s "$archive") tables=$tables rows=$rows policies=$policies"
+}
+
+# Content fingerprint of every site table and of the login accounts, as
+# "schema.table rows md5". Two databases with the same lines hold the same rows.
+# (Addresses of stored files are compared as the source writes them.)
+FINGERPRINT_SQL="set timezone = 'UTC'; select format('%I.%I', schemaname, tablename) || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) || '' '' || md5(coalesce(string_agg(h,  order by h), )) as c from (select md5(replace(row_to_json(x)::text, %L, %L)) as h from %I.%I x) s', 'https://staging.veysvakfi.org/storage/v1', 'https://goyqlyrtclpywvolayzu.supabase.co/storage/v1', schemaname, tablename), false, true, '')))[1]::text from pg_tables where schemaname = 'public' or (schemaname = 'auth' and tablename in ('users','identities')) order by 1"
+SOURCE_BASELINE_FILE="$DIR/source.baseline"
+
+# Whether the old site has received anything since the baseline (the state the
+# import was verified against). Nothing new means no second import is needed
+# before the domain is switched, and work done on this server is not replaced.
+source_changes() {
+  local now
+  now="$(source_pg psql "service=owis_source" -At -c "$FINGERPRINT_SQL" | grep -v '^SET$')"
+  [ -n "$now" ] || {
+    echo "the source did not answer" >&2
+    exit 1
+  }
+  if [ "${1:-}" = "baseline" ]; then
+    printf '%s
+' "$now" > "$SOURCE_BASELINE_FILE"
+    echo "SOURCE_BASELINE_RECORDED: $(wc -l < "$SOURCE_BASELINE_FILE" | tr -d ' ') tables at $(date -u +%FT%TZ)"
+    return 0
+  fi
+  [ -s "$SOURCE_BASELINE_FILE" ] || {
+    echo "no baseline yet (owis-migrate source-changes baseline)" >&2
+    exit 1
+  }
+  echo "baseline taken: $(date -u -r "$SOURCE_BASELINE_FILE" +%FT%TZ)"
+  if [ "$now" = "$(cat "$SOURCE_BASELINE_FILE")" ]; then
+    echo "SOURCE_UNCHANGED: nothing was added or changed in the old database since the baseline"
+    return 0
+  fi
+  echo "changed since the baseline (table: rows then -> rows now):"
+  join -a1 -a2 -e missing -o 0,1.2,1.3,2.2,2.3 <(sort "$SOURCE_BASELINE_FILE") <(sort <<< "$now")     | awk '$2 != $4 || $3 != $5 { printf "  %-34s %s -> %s
+", $1, $2, $4 }'
+  echo "SOURCE_CHANGED"
+  return 3
 }
 
 # Tables an import replaces: every table of the site, and the login accounts.
@@ -1430,6 +1473,9 @@ case "$COMMAND" in
   source-dump)
     logged source_dump
     ;;
+  source-changes)
+    source_changes "${2:-}"
+    ;;
   import)
     logged import_data "${2:-}"
     ;;
@@ -1464,7 +1510,7 @@ case "$COMMAND" in
     logged files_copy "${2:-0}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
