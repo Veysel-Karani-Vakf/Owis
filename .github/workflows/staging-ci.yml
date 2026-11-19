@@ -2,7 +2,9 @@ name: Staging CI
 
 # Proves the Hostinger setup before anything reaches the VPS: type checks, the
 # production-fallback guards, both images, and the whole stack (trimmed
-# self-hosted Supabase + web + api) running on the runner with test data only.
+# self-hosted Supabase + web + api) running on the runner with test data only,
+# including the donation flow against the mock bank. Only then is the commit
+# deployed to the staging VPS and the live site checked.
 
 on:
   push:
@@ -18,7 +20,7 @@ permissions:
 
 concurrency:
   group: staging-ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   PRODUCTION_SUPABASE_URL: https://goyqlyrtclpywvolayzu.supabase.co
@@ -270,6 +272,9 @@ jobs:
           [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
           echo "All checks passed."
 
+      - name: Donation flow against the mock bank
+        run: BASE_URL="$PUBLIC_SITE_URL" node deploy/hostinger/tests/mock-payment.mjs
+
       - name: Resource usage
         if: always()
         run: |
@@ -293,3 +298,86 @@ jobs:
         run: |
           (cd "$RUNNER_TEMP/supabase" && docker compose ps -a && docker compose logs --no-color --tail=60 db auth rest storage api-gw) || true
           (cd deploy/hostinger && docker compose ps -a && docker compose logs --no-color --tail=80) || true
+
+  deploy:
+    name: Deploy to the staging VPS
+    needs: stack
+    if: github.ref == 'refs/heads/infra/hostinger-staging'
+    runs-on: ubuntu-latest
+    environment: hostinger-staging
+    timeout-minutes: 25
+    concurrency:
+      group: deploy-hostinger-staging
+      cancel-in-progress: false
+    env:
+      STAGING_URL: https://staging.veysvakfi.org
+    steps:
+      - name: Deploy this commit
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
+          # The key is bound to a gate on the server: it can only ask for a
+          # deployment of a commit that is on the staging branch.
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "$VPS_USER@$VPS_HOST" "deploy ${GITHUB_SHA}"
+
+      - name: Check the live staging site
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/body"
+          failures=0
+
+          expect() {
+            label="$1"; want="$2"; url="$3"; shift 3
+            got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 "$@" "$url" || true)"
+            if case "|${want}|" in *"|${got}|"*) true ;; *) false ;; esac; then
+              echo "ok    ${label} (${got})"
+            else
+              echo "::error::${label}: expected ${want}, got ${got}"
+              head -c 300 "$body" || true
+              echo
+              failures=$((failures + 1))
+            fi
+          }
+          contains() {
+            grep -q -- "$2" "$body" || {
+              echo "::error::${1}: response does not contain ${2}"
+              failures=$((failures + 1))
+            }
+          }
+
+          # A first deployment also has to obtain its certificate.
+          for attempt in $(seq 1 36); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$STAGING_URL/api/healthz" || true)"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+
+          expect "home page over HTTPS" 200 "$STAGING_URL/"
+          contains "home page" 'id="root"'
+          expect "plain HTTP redirects to HTTPS" "301|308" "http://staging.veysvakfi.org/"
+          expect "SPA deep link" 200 "$STAGING_URL/projects/ci-deep-link"
+          expect "donate-now redirect" 301 "$STAGING_URL/donate-now"
+          expect "api health" 200 "$STAGING_URL/api/healthz"
+          contains "api health" '"env":"staging"'
+          expect "payments run against the mock bank" 200 "$STAGING_URL/api/payments/config"
+          contains "payments config" '"mode":"mock"'
+          expect "database API refuses requests without a key" 401 "$STAGING_URL/rest/v1/"
+          expect "storage is up" 200 "$STAGING_URL/storage/v1/status"
+          if curl -sSI --max-time 20 "$STAGING_URL/" | grep -qi '^x-robots-tag:.*noindex'; then
+            echo "ok    staging is hidden from search engines"
+          else
+            echo "::error::X-Robots-Tag noindex header is missing"
+            failures=$((failures + 1))
+          fi
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
+          echo "Staging is live: $STAGING_URL"
