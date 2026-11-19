@@ -5,7 +5,10 @@
 # All values come from the .env file next to this one. Nothing secret lives in
 # this file or in the repository.
 
-name: owis-${DEPLOY_ENV:-staging}
+# The stack's own label on the host (container and volume names). It is not
+# the environment: the stack that began as staging keeps its name when it is
+# switched to production settings, so its certificates and volumes stay.
+name: owis-${STACK_NAME:-staging}
 
 services:
   web:
@@ -23,6 +26,10 @@ services:
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS}
+      # Other names of the site (www, a former address) that answer with a
+      # redirect to PUBLIC_SITE_URL. Unset: no such name.
+      REDIRECT_ADDRESSES: ${REDIRECT_ADDRESSES:-http://redirect.invalid}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?set PUBLIC_SITE_URL}
       SUPABASE_GATEWAY: supabase-gw:8000
       ROBOTS_TAG: ${ROBOTS_TAG:-noindex, nofollow}
     ports:

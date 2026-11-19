@@ -72,3 +72,10 @@
 		}
 	}
 }
+
+# Other names of the site: a permanent redirect to the main address, path and
+# query kept. With nothing configured the block answers a name nobody asks for
+# over plain HTTP, so no certificate is ever requested for it.
+{$REDIRECT_ADDRESSES:http://redirect.invalid} {
+	redir {$PUBLIC_SITE_URL:http://localhost}{uri} permanent
+}
