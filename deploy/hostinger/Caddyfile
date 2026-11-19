@@ -19,6 +19,11 @@
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
+		# The site is never meant to be framed by another site; the dashboard's
+		# own live preview is same-origin and keeps working.
+		X-Frame-Options SAMEORIGIN
+		# Browsers ignore this over plain HTTP (CI, local runs).
+		Strict-Transport-Security "max-age=31536000"
 		X-Robots-Tag "{$ROBOTS_TAG:noindex, nofollow}"
 		-Server
 	}
@@ -42,12 +47,28 @@
 		reverse_proxy api:3000
 	}
 
+	# Build output with a content hash in the file name: cached for a year. A
+	# name that does not exist is a plain 404, never the page shell, so a
+	# browser holding an old page fails cleanly instead of loading HTML as
+	# a script.
+	handle /assets/* {
+		root * /srv
+		@present file
+		header @present Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
 	# Everything else is the single-page app.
 	handle {
 		root * /srv
-		@hashed path /assets/*
-		header @hashed Cache-Control "public, max-age=31536000, immutable"
-		try_files {path} /index.html
-		file_server
+		route {
+			try_files {path} /index.html
+			# The page shell is revalidated on every visit, so a deployment is
+			# picked up at once (Vercel does the same). Without this, browsers
+			# may keep an old shell that points at files which no longer exist.
+			header / Cache-Control "no-cache"
+			header /index.html Cache-Control "no-cache"
+			file_server
+		}
 	}
 }
