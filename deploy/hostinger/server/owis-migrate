@@ -52,6 +52,10 @@
 #   owis-migrate files-auto on|off|status
 #                               retry files-copy every 10 minutes until every
 #                               file is here, then verify and stop by itself
+#   owis-migrate files-recover <directory> [apply]
+#                               find, in a directory of this server, files that
+#                               are byte for byte stored files of the source
+#                               (size and recorded MD5) and put them in place
 #   owis-migrate files-verify   proof for every file: same name, size and type,
 #                               same content (checksums), and the same access
 #                               rules (public pictures, private attachments)
@@ -1226,6 +1230,127 @@ PYTHON
   return "$rc"
 }
 
+# Looks in a directory of this server (for example the site's own repository)
+# for files that are, byte for byte, stored files of the source: same size and
+# the MD5 the source recorded for them. Such a file is the original, whatever
+# its name there, so it can be put in place under the source's name before the
+# old project hands anything out. Nothing is guessed: no match, no file.
+files_recover() {
+  local dir="${1:-}" mode="${2:-plan}"
+  [ -n "$dir" ] && [ -d "$dir" ] || {
+    echo "usage: owis-migrate files-recover <directory> [apply]" >&2
+    exit 2
+  }
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate files-recover <directory> [apply]" >&2
+      exit 2
+      ;;
+  esac
+  install -d -m 700 "$FILES_DIR" "$WORK_DIR"
+  local list="$WORK_DIR/objects.source.json" here="$WORK_DIR/objects.here.json"
+  echo "== $(date -u +%FT%TZ) search for stored files in $dir ($mode)"
+  if source_pg psql "service=owis_source" -At -c "$OBJECTS_SQL" > "$list.new" 2> /dev/null && [ -s "$list.new" ]; then
+    mv "$list.new" "$list"
+  else
+    rm -f "$list.new"
+  fi
+  [ -s "$list" ] || {
+    echo "no list of the source files" >&2
+    exit 1
+  }
+  target_psql -At -c "$OBJECTS_SQL" > "$here"
+
+  python3 - "$list" "$here" "$FILES_DIR" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" "$dir" "$mode" <<'PYTHON'
+import hashlib, json, os, re, shutil, sys, urllib.error, urllib.parse, urllib.request
+
+list_path, here_path, files_dir, storage, env_file, directory, mode = sys.argv[1:8]
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'")
+source = json.load(open(list_path)) or []
+here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(here_path)) or [])}
+
+
+def file_md5(path):
+    md5 = hashlib.md5()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+
+def checksum(o):
+    etag = (o.get("etag") or "").strip('"')
+    return etag if re.fullmatch(r"[0-9a-f]{32}", etag) else ""
+
+
+missing = [o for o in source if here.get((o["bucket"], o["name"])) != o["size"]]
+wanted = [o for o in missing if checksum(o)]
+sizes = {o["size"] for o in wanted}
+
+# Only files with a wanted size are read at all.
+found = {}
+scanned = 0
+for root, dirs, files in os.walk(directory):
+    dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+    for name in files:
+        path = os.path.join(root, name)
+        if os.path.islink(path) or not os.path.isfile(path):
+            continue
+        scanned += 1
+        size = os.path.getsize(path)
+        if size in sizes:
+            found.setdefault((size, file_md5(path)), path)
+
+matches = [(o, found[(o["size"], checksum(o))]) for o in wanted if (o["size"], checksum(o)) in found]
+placed = 0
+failed = 0
+for o, path in matches:
+    print("  original  %s/%s  =  %s" % (o["bucket"], o["name"], os.path.relpath(path, directory)))
+    if mode != "apply":
+        continue
+    dest = os.path.join(files_dir, o["bucket"], *o["name"].split("/"))
+    os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+    shutil.copyfile(path, dest)
+    headers = {
+        "apikey": service,
+        "Authorization": "Bearer " + service,
+        "Content-Type": o.get("type") or "application/octet-stream",
+        "Content-Length": str(os.path.getsize(dest)),
+        "x-upsert": "true",
+    }
+    if o.get("cache"):
+        headers["cache-control"] = o["cache"]
+    try:
+        with open(dest, "rb") as body:
+            request = urllib.request.Request(
+                "%s/object/%s/%s" % (storage, o["bucket"], urllib.parse.quote(o["name"], safe="/")),
+                data=body, method="POST", headers=headers)
+            with urllib.request.urlopen(request, timeout=900) as response:
+                response.read()
+        placed += 1
+    except Exception as error:
+        failed += 1
+        print("  FAILED    %s/%s: %s" % (o["bucket"], o["name"], str(error)[:160]))
+
+by_bucket = {}
+for o, _ in matches:
+    by_bucket[o["bucket"]] = by_bucket.get(o["bucket"], 0) + 1
+print("files of the source not here yet: %d (%d of them carry a checksum that can be matched)" % (len(missing), len(wanted)))
+print("files looked at in the directory: %d" % scanned)
+print("originals found there: %d%s" % (len(matches), (" (" + ", ".join("%s %d" % kv for kv in sorted(by_bucket.items())) + ")") if matches else ""))
+if mode == "apply":
+    print("put in place under the source's names: %d, failed: %d" % (placed, failed))
+    print("FILES_RECOVERED %d" % placed)
+else:
+    print("FILES_RECOVER_PLAN %d. Nothing was changed." % len(matches))
+sys.exit(1 if failed else 0)
+PYTHON
+}
+
 # Keeps trying files-copy until the old project hands the files out.
 files_auto() {
   local unit="owis-files-copy"
@@ -1760,8 +1885,11 @@ case "$COMMAND" in
   files-verify)
     logged files_verify
     ;;
+  files-recover)
+    logged files_recover "${2:-}" "${3:-plan}"
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-verify | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
