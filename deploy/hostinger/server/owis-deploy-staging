@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Deploys one commit of the staging branch on this server. Root-owned,
+# installed in /usr/local/sbin by bootstrap-staging.sh. The deploy key reaches
+# it only through owis-deploy-gate and a single sudoers rule.
+#
+#   owis-deploy-staging deploy <40-hex commit>
+#   owis-deploy-staging status
+#
+# What a push can and cannot change: the images are built from the commit, but
+# the compose file is the root-owned copy in /opt/owis/app and the settings are
+# in /opt/owis/staging.env. A commit therefore cannot change how containers are
+# run on this host, and never sees the secrets file.
+#
+# Database migrations are deliberately not part of a deploy.
+set -euo pipefail
+
+BRANCH="infra/hostinger-staging"
+ROOT="/opt/owis"
+REPO="$ROOT/repo"
+COMPOSE_FILE="$ROOT/app/docker-compose.yml"
+ENV_FILE="$ROOT/staging.env"
+STATE_FILE="$ROOT/staging.current"
+LOG_FILE="/var/log/owis-deploy-staging.log"
+LOCK_FILE="/run/owis-deploy-staging.lock"
+
+compose() {
+  docker compose --project-directory "$REPO/deploy/hostinger" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+}
+
+current_tag() {
+  cat "$STATE_FILE" 2> /dev/null || true
+}
+
+status() {
+  echo "deployed: $(current_tag | grep . || echo none)"
+  IMAGE_TAG="$(current_tag | grep . || echo local)" compose ps
+}
+
+deploy() {
+  local sha="$1" tag previous
+  [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || {
+    echo "bad commit id" >&2
+    exit 2
+  }
+  tag="${sha:0:12}"
+  previous="$(current_tag)"
+
+  echo "== $(date -u +%FT%TZ) deploy ${sha} (running: ${previous:-none})"
+
+  git -C "$REPO" fetch --quiet origin "$BRANCH"
+  if ! git -C "$REPO" merge-base --is-ancestor "$sha" FETCH_HEAD; then
+    echo "refused: ${sha} is not on ${BRANCH}" >&2
+    exit 3
+  fi
+  git -C "$REPO" checkout --quiet --force --detach "$sha"
+
+  export IMAGE_TAG="$tag"
+  echo "building images ${tag}"
+  compose build --quiet
+
+  if compose up -d --wait --wait-timeout 240; then
+    echo "$tag" > "$STATE_FILE"
+    echo "deployed ${tag}"
+  else
+    echo "start failed for ${tag}" >&2
+    compose ps >&2 || true
+    compose logs --no-color --tail=25 >&2 || true
+    if [ -n "$previous" ] && docker image inspect "owis-web:${previous}" "owis-api:${previous}" > /dev/null 2>&1; then
+      echo "rolling back to ${previous}" >&2
+      IMAGE_TAG="$previous" compose up -d --wait --wait-timeout 240 >&2 || true
+    fi
+    exit 1
+  fi
+
+  # Keep the running build and the one before it for rollback; drop older ones.
+  docker images --format '{{.Repository}}:{{.Tag}}' \
+    | grep -E '^owis-(web|api):' \
+    | grep -v -e ":${tag}\$" -e ":${previous:-none}\$" \
+    | xargs -r docker rmi > /dev/null 2>&1 || true
+  docker builder prune -f --filter 'until=168h' > /dev/null 2>&1 || true
+}
+
+[ "$(id -u)" -eq 0 ] || {
+  echo "must run as root" >&2
+  exit 1
+}
+
+case "${1:-}" in
+  deploy)
+    [ "$#" -eq 2 ] || {
+      echo "usage: owis-deploy-staging deploy <commit>" >&2
+      exit 2
+    }
+    exec 9> "$LOCK_FILE"
+    flock -n 9 || {
+      echo "another deployment is running" >&2
+      exit 4
+    }
+    deploy "$2" 2>&1 | tee -a "$LOG_FILE"
+    ;;
+  status)
+    [ "$#" -eq 1 ] || exit 2
+    status
+    ;;
+  *)
+    echo "usage: owis-deploy-staging deploy <commit> | status" >&2
+    exit 2
+    ;;
+esac
