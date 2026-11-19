@@ -23,7 +23,12 @@ import paymentsCreate from '../payments/create';
 import paymentsDirect from '../payments/direct';
 import paymentsMockGate from '../payments/mock-gate';
 import paymentsStatus from '../payments/status';
-import { paymentMode, supabaseServiceRoleKey, supabaseUrl } from '../_lib/env';
+import {
+  bankCredentialsConfigured,
+  paymentSetting,
+  supabaseServiceRoleKey,
+  supabaseUrl,
+} from '../_lib/env';
 import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
 
 type Handler = (req: ApiRequest, res: ApiResponse) => void | Promise<void>;
@@ -56,8 +61,21 @@ function validateConfiguration(): DeployEnv {
   const deployEnv = requireDeployEnv();
   supabaseUrl(); // throws when missing, and when staging points at production
   supabaseServiceRoleKey(); // throws when missing
-  if (deployEnv === 'staging' && paymentMode() !== 'mock') {
-    throw new Error('A staging deployment only runs with PAYMENT_MODE=mock.');
+  const payments = paymentSetting();
+  if (deployEnv === 'staging' && payments !== 'mock' && payments !== 'disabled') {
+    throw new Error('A staging deployment only runs with PAYMENT_MODE=mock (or disabled).');
+  }
+  // Production never takes a donation it cannot really charge: not through the
+  // simulated bank, and not with bank values that are missing or placeholders.
+  if (deployEnv === 'production' && payments === 'mock') {
+    throw new Error(
+      'A production deployment never runs the simulated bank: set PAYMENT_MODE to production (with the bank values) or to disabled.',
+    );
+  }
+  if (deployEnv === 'production' && payments !== 'disabled' && !bankCredentialsConfigured()) {
+    throw new Error(
+      'PAYMENT_MODE needs PAYMENT_CLIENT_ID, PAYMENT_STORE_KEY and PAYMENT_GATE_URL; use PAYMENT_MODE=disabled until the bank values are set.',
+    );
   }
   return deployEnv;
 }
@@ -119,7 +137,7 @@ function main(): void {
 
   const port = Number(process.env.PORT ?? 3000);
   server.listen(port, '0.0.0.0', () => {
-    console.log(`api listening on :${port} (${deployEnv}, payments: ${paymentMode()})`);
+    console.log(`api listening on :${port} (${deployEnv}, payments: ${paymentSetting()})`);
   });
 
   const shutdown = (): void => {
