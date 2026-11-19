@@ -21,10 +21,17 @@
 #                               that start with <from>, e.g. the old project's
 #   owis-migrate payment-check  compare the stored merchant number with the one
 #                               the imported payments were made with
+#   owis-migrate payment-adopt  take the merchant number from the imported paid
+#                               payments and the bank's documented address; drop
+#                               a stored store key that cannot be one
+#   owis-migrate store-key      you type the bank's store key (hidden input)
 #   owis-migrate files-test     ask the source for one stored file of each kind
 #   owis-migrate files-copy [n] copy the stored files (all, or the first n that
 #                               are missing) into this server's storage; keeps
 #                               the downloaded originals in /opt/owis/migrate/files
+#   owis-migrate files-auto on|off|status
+#                               retry files-copy every 10 minutes until every
+#                               file is here, then stop by itself
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
@@ -633,6 +640,70 @@ payment_check() {
   esac
 }
 
+remove_env_value() {
+  [ -r "$PRODUCTION_ENV_FILE" ] || return 0
+  grep -v "^$1=" "$PRODUCTION_ENV_FILE" > "$PRODUCTION_ENV_FILE.new" || true
+  mv "$PRODUCTION_ENV_FILE.new" "$PRODUCTION_ENV_FILE"
+}
+
+# The merchant number is not a secret the site keeps to itself: every paid
+# payment records the one it was made with. Taking it from there avoids typing.
+payment_adopt() {
+  local used count key gate
+  install -d -m 700 "$DIR"
+  used="$(target_psql -At -c "select distinct raw_response->>'clientid' from public.donation_payments where gateway_mode = 'production' and status = 'paid' and raw_response ? 'clientid'")"
+  count="$(grep -c . <<< "$used" || true)"
+  if [ "$count" = "1" ] && [[ "$used" =~ ^[0-9A-Za-z_-]{4,40}$ ]]; then
+    if [ "$(env_value PAYMENT_CLIENT_ID)" = "$used" ]; then
+      echo "PAYMENT_CLIENT_ID  already the merchant number of the paid live payments"
+    else
+      set_env_value PAYMENT_CLIENT_ID "$used"
+      echo "PAYMENT_CLIENT_ID  taken from the paid live payments (they all share one merchant number)"
+    fi
+  else
+    echo "PAYMENT_CLIENT_ID  not changed: the paid live payments show $count merchant number(s)"
+  fi
+
+  gate="$(env_value PAYMENT_GATE_URL)"
+  if [[ "$gate" =~ ^https://[A-Za-z0-9.-]+/[A-Za-z0-9./_-]*$ ]]; then
+    echo "PAYMENT_GATE_URL   kept: $(cut -d/ -f3 <<< "$gate")"
+  else
+    set_env_value PAYMENT_GATE_URL "$DEFAULT_GATE_URL"
+    echo "PAYMENT_GATE_URL   set to the bank's production address"
+  fi
+
+  key="$(env_value PAYMENT_STORE_KEY)"
+  if [ -z "$key" ]; then
+    echo "PAYMENT_STORE_KEY  MISSING: owis-migrate store-key"
+  elif has_control "$key" || [[ "$key" =~ [[:space:]] ]] || [ "$key" = "$(env_value PAYMENT_CLIENT_ID)" ] || [[ "$key" == TEST_* ]]; then
+    remove_env_value PAYMENT_STORE_KEY
+    echo "PAYMENT_STORE_KEY  removed, it was not a key (control characters or the merchant number): owis-migrate store-key"
+  else
+    echo "PAYMENT_STORE_KEY  set; only the bank can confirm it"
+  fi
+}
+
+# One hidden question, for the only value that has to be typed.
+store_key() {
+  need_terminal
+  install -d -m 700 "$DIR"
+  local value
+  printf '\033[?2004l'
+  echo "Vercel > the project > Settings > Environment Variables > PAYMENT_STORE_KEY."
+  echo "Paste the value and press Enter. Nothing you type is shown."
+  ask_hidden value "PAYMENT_STORE_KEY"
+  [ -n "$value" ] || {
+    echo "nothing was entered; nothing changed"
+    exit 1
+  }
+  if [ "$value" = "$(env_value PAYMENT_CLIENT_ID)" ] || [[ "$value" =~ ^https?:// ]] || [[ "$value" =~ [[:space:]] ]]; then
+    echo "that is the merchant number, an address or text with spaces, not the store key; nothing changed"
+    exit 1
+  fi
+  set_env_value PAYMENT_STORE_KEY "$value"
+  echo "STORE_KEY_STORED (${#value} characters). The bank confirms it at the first signed request."
+}
+
 # Asks the source's file service for the smallest file of each bucket, with the
 # service_role key. 200 means the files can be copied now.
 files_test() {
@@ -832,7 +903,8 @@ PYTHON
 
   # What is here now, against the source list.
   target_psql -At -c "$OBJECTS_SQL" > "$here"
-  python3 - "$list" "$here" <<'PYTHON'
+  local complete=0
+  python3 - "$list" "$here" <<'PYTHON' || complete=$?
 import json, sys
 source = json.load(open(sys.argv[1])) or []
 here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(sys.argv[2])) or [])}
@@ -840,8 +912,59 @@ same = sum(1 for o in source if here.get((o["bucket"], o["name"])) == o["size"])
 total = sum(o["size"] for o in source if o["size"] > 0)
 print("here with the same size: %d of %d files (%d MB in the source)" % (same, len(source), total // 1048576))
 print("FILES_COMPLETE" if same == len(source) else "FILES_INCOMPLETE")
+sys.exit(0 if same == len(source) else 7)
 PYTHON
+  if [ "$complete" -eq 0 ] && systemctl is-enabled owis-files-copy.timer > /dev/null 2>&1; then
+    systemctl disable --now owis-files-copy.timer > /dev/null 2>&1 || true
+    echo "every file is here: the automatic retry is switched off"
+  fi
   return "$rc"
+}
+
+# Keeps trying files-copy until the old project hands the files out.
+files_auto() {
+  local unit="owis-files-copy"
+  case "${1:-status}" in
+    on)
+      cat > "/etc/systemd/system/$unit.service" <<'UNIT'
+[Unit]
+Description=OWIS: copy the stored files from the old project once it allows it
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/owis-migrate files-copy
+# 5: the old project still refuses; 1: some files failed. Both are retried.
+SuccessExitStatus=1 5
+UNIT
+      cat > "/etc/systemd/system/$unit.timer" <<'UNIT'
+[Unit]
+Description=OWIS: retry the copy of the stored files every 10 minutes
+
+[Timer]
+OnCalendar=*:0/10
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
+UNIT
+      systemctl daemon-reload
+      systemctl enable --now "$unit.timer" > /dev/null 2>&1
+      echo "FILES_AUTO_ON: files-copy runs every 10 minutes until every file is here"
+      ;;
+    off)
+      systemctl disable --now "$unit.timer" > /dev/null 2>&1 || true
+      echo "FILES_AUTO_OFF"
+      ;;
+    status)
+      echo "timer: $(systemctl is-active "$unit.timer" 2> /dev/null || true)"
+      grep -E '^(== |copied=|FILES_|here with)' "$LOG_FILE" 2> /dev/null | tail -n 4 || true
+      ;;
+    *)
+      echo "usage: owis-migrate files-auto on|off|status" >&2
+      exit 2
+      ;;
+  esac
 }
 
 # Long jobs: one at a time, with their output kept in the log file.
@@ -892,6 +1015,15 @@ case "$COMMAND" in
   payment-check)
     payment_check
     ;;
+  payment-adopt)
+    payment_adopt
+    ;;
+  store-key)
+    store_key
+    ;;
+  files-auto)
+    files_auto "${2:-status}"
+    ;;
   files-test)
     files_test
     ;;
@@ -899,7 +1031,7 @@ case "$COMMAND" in
     logged files_copy "${2:-0}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | files-test | files-copy [n]" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | files-test | files-copy [n] | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
