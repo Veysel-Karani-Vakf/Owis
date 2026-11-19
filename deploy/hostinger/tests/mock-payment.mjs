@@ -1,5 +1,6 @@
 // End-to-end test of the donation flow against the built-in mock bank:
-// create -> card form -> 3-D challenge -> callback -> status.
+// create -> card form -> 3-D challenge -> callback -> status, plus the ways a
+// donor can back out (cancel on the card form, decline on the 3-D page).
 //
 //   BASE_URL=http://localhost node deploy/hostinger/tests/mock-payment.mjs
 //
@@ -87,10 +88,14 @@ async function startPayment(label) {
   check(`${label}: donation created`, /^[0-9a-f]{32}$/.test(body.oid) && body.gateUrl === `${base}/api/payments/mock-gate`, body.gateUrl);
 
   const cardForm = await postForm(body.gateUrl, body.fields);
-  check(`${label}: mock bank shows its card form`, cardForm.status === 200 && (await cardForm.text()).includes('name="pan"'));
+  const cardFormHtml = await cardForm.text();
+  check(`${label}: mock bank shows its card form`, cardForm.status === 200 && cardFormHtml.includes('name="pan"'));
   check(`${label}: record is pending`, (await paymentStatus(body.oid)).status === 'pending');
-  return body;
+  return { ...body, cardFormHtml };
 }
+
+/** The form behind the bank's red "cancel / decline" button on a page. */
+const backOutForm = (html) => parseForms(html).find((form) => form.inner.includes('class="decline"'));
 
 function submitCard(payment, pan) {
   return postForm(payment.gateUrl, { ...payment.fields, pan, cardHolderName: 'CI TESTER', expiry, cv2: '123' });
@@ -114,6 +119,14 @@ async function approvedPayment() {
   const replay = await postForm(approveForm.action, approveForm.fields);
   const afterReplay = await paymentStatus(payment.oid);
   check('approve: a repeated callback changes nothing', replay.status === 303 && afterReplay.status === 'paid' && afterReplay.authCode === paid.authCode);
+
+  // Nor may a late "cancelled" callback for the same order undo a paid donation.
+  const lateCancel = backOutForm(payment.cardFormHtml);
+  if (lateCancel) {
+    await postForm(lateCancel.action, lateCancel.fields);
+    const afterCancel = await paymentStatus(payment.oid);
+    check('approve: a late cancel does not undo a paid donation', afterCancel.status === 'paid' && afterCancel.authCode === paid.authCode, JSON.stringify(afterCancel));
+  }
 }
 
 async function tamperedCallback() {
@@ -141,10 +154,35 @@ async function declinedPayment() {
   check('decline: record is failed, not paid', callback.status === 303 && failed.status === 'failed', JSON.stringify(failed));
 }
 
+async function cancelledOnCardForm() {
+  const payment = await startPayment('cancel');
+  const cancelForm = backOutForm(payment.cardFormHtml);
+  check('cancel: card form offers a way back to the site', Boolean(cancelForm) && cancelForm.action === CALLBACK_URL, cancelForm?.action);
+  if (!cancelForm) return;
+  const callback = await postForm(cancelForm.action, cancelForm.fields);
+  const location = callback.headers.get('location') ?? '';
+  check('cancel: donor lands on the result page', callback.status === 303 && location.includes(`/donate/result?oid=${payment.oid}`), location);
+  const cancelled = await paymentStatus(payment.oid);
+  check('cancel: record is failed, not paid', cancelled.status === 'failed' && !cancelled.authCode, JSON.stringify(cancelled));
+}
+
+async function declinedOnChallenge() {
+  const payment = await startPayment('3-D decline');
+  const challenge = await submitCard(payment, APPROVE_CARD);
+  const declineForm = backOutForm(await challenge.text());
+  check('3-D decline: challenge page offers a decline button', Boolean(declineForm) && declineForm.action === CALLBACK_URL, declineForm?.action);
+  if (!declineForm) return;
+  const callback = await postForm(declineForm.action, declineForm.fields);
+  const declined = await paymentStatus(payment.oid);
+  check('3-D decline: record is failed, not paid', callback.status === 303 && declined.status === 'failed' && !declined.authCode, JSON.stringify(declined));
+}
+
 try {
   await approvedPayment();
   await tamperedCallback();
   await declinedPayment();
+  await cancelledOnCardForm();
+  await declinedOnChallenge();
 } catch (error) {
   failures += 1;
   console.log(`::error::${error instanceof Error ? error.message : String(error)}`);
