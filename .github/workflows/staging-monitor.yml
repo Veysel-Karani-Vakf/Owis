@@ -12,7 +12,7 @@ name: Staging monitor
 # every deployment. Once on the default branch, a failed scheduled run is
 # e-mailed to the repository owner.
 #
-# Last run requested: 2026-11-19
+# Last run requested: 2026-11-19 (address and payment mode now come from the server)
 
 on:
   workflow_dispatch:
@@ -115,7 +115,14 @@ jobs:
           set -euo pipefail
           failures=0
           fail() { echo "::error::$1"; failures=$((failures + 1)); }
-          base="https://$STAGING_HOST"
+          # The server says which address it serves and how payments are set.
+          value() { sed -n "s/^$1=//p" "$RUNNER_TEMP/status.txt" | head -n 1; }
+          base="$(value public_site_url)"
+          base="${base:-https://$STAGING_HOST}"
+          host="${base#https://}"
+          mode="$(value payment_mode)"
+          mode="${mode:-mock}"
+          echo "checking $base (payments: $mode)"
 
           for path in / /news /donate /api/healthz /api/payments/config /storage/v1/status; do
             read -r code seconds < <(curl -sS -o /dev/null -w '%{http_code} %{time_total}\n' --max-time 20 "$base$path" || echo "000 0")
@@ -123,10 +130,11 @@ jobs:
             awk -v s="$seconds" 'BEGIN { exit !(s < 3) }' || fail "$path took ${seconds}s"
           done
 
-          end="$(echo | openssl s_client -servername "$STAGING_HOST" -connect "$STAGING_HOST:443" 2> /dev/null | openssl x509 -noout -enddate | cut -d= -f2)"
+          end="$(echo | openssl s_client -servername "$host" -connect "$host:443" 2> /dev/null | openssl x509 -noout -enddate | cut -d= -f2)"
           days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
           if [ "$days" -ge 14 ]; then echo "ok    certificate valid for $days more days"; else fail "certificate expires in $days days"; fi
 
-          curl -sS --max-time 20 "$base/api/payments/config" | grep -q '"mode":"mock"' || fail "staging payments are not in mock mode"
+          config="$(curl -sS --max-time 20 "$base/api/payments/config" || true)"
+          grep -q "\"mode\":\"$mode\"" <<< "$config" || fail "payments do not report the mode the server is set to ($mode)"
 
           [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }

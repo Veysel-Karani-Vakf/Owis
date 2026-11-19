@@ -382,11 +382,31 @@ jobs:
             exit 1
           }
 
-      - name: Check the live staging site
+      - name: Check the live site
         run: |
           set -euo pipefail
           body="$RUNNER_TEMP/body"
           failures=0
+
+          # The server says which address it serves and with which settings:
+          # staging with the simulated bank, or production with the real one.
+          # Nothing here pays or writes: the checks only read.
+          setting() { sed -n "s/^$1=//p" "$RUNNER_TEMP/status.txt" | head -n 1; }
+          LIVE_URL="$(setting public_site_url)"
+          LIVE_URL="${LIVE_URL:-$STAGING_URL}"
+          deploy_env="$(setting deploy_env)"
+          deploy_env="${deploy_env:-staging}"
+          payment_mode="$(setting payment_mode)"
+          payment_mode="${payment_mode:-mock}"
+          robots="$(setting robots_tag)"
+          echo "checking $LIVE_URL as $deploy_env (payments: $payment_mode)"
+          case "$deploy_env/$payment_mode" in
+            staging/mock | production/production) ;;
+            *)
+              echo "::error::unexpected settings: $deploy_env with payment mode $payment_mode"
+              failures=$((failures + 1))
+              ;;
+          esac
 
           expect() {
             label="$1"; want="$2"; url="$3"; shift 3
@@ -409,29 +429,36 @@ jobs:
 
           # A first deployment also has to obtain its certificate.
           for attempt in $(seq 1 36); do
-            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$STAGING_URL/api/healthz" || true)"
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$LIVE_URL/api/healthz" || true)"
             [ "$code" = "200" ] && break
             sleep 5
           done
 
-          expect "home page over HTTPS" 200 "$STAGING_URL/"
+          expect "home page over HTTPS" 200 "$LIVE_URL/"
           contains "home page" 'id="root"'
-          expect "plain HTTP redirects to HTTPS" "301|308" "http://staging.veysvakfi.org/"
-          expect "SPA deep link" 200 "$STAGING_URL/projects/ci-deep-link"
-          expect "donate-now redirect" 301 "$STAGING_URL/donate-now"
-          expect "api health" 200 "$STAGING_URL/api/healthz"
-          contains "api health" '"env":"staging"'
-          expect "payments run against the mock bank" 200 "$STAGING_URL/api/payments/config"
-          contains "payments config" '"mode":"mock"'
-          expect "database API refuses requests without a key" 401 "$STAGING_URL/rest/v1/"
-          expect "storage is up" 200 "$STAGING_URL/storage/v1/status"
-          live_headers="$(curl -sSI --max-time 20 "$STAGING_URL/" || true)"
-          if grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
-            echo "ok    staging is hidden from search engines"
-          else
-            echo "::error::X-Robots-Tag noindex header is missing"
+          expect "plain HTTP redirects to HTTPS" "301|308" "http://${LIVE_URL#https://}/"
+          expect "SPA deep link" 200 "$LIVE_URL/projects/ci-deep-link"
+          expect "donate-now redirect" 301 "$LIVE_URL/donate-now"
+          expect "api health" 200 "$LIVE_URL/api/healthz"
+          contains "api health" "\"env\":\"${deploy_env}\""
+          expect "payments configuration" 200 "$LIVE_URL/api/payments/config"
+          contains "payments config" "\"mode\":\"${payment_mode}\""
+          expect "database API refuses requests without a key" 401 "$LIVE_URL/rest/v1/"
+          expect "storage is up" 200 "$LIVE_URL/storage/v1/status"
+          live_headers="$(curl -sSI --max-time 20 "$LIVE_URL/" || true)"
+          if [ -z "$robots" ] || grep -qi 'noindex' <<< "$robots"; then
+            if grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
+              echo "ok    the site is hidden from search engines, as set"
+            else
+              echo "::error::X-Robots-Tag noindex header is missing"
+              failures=$((failures + 1))
+            fi
+          elif grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
+            echo "::error::the site is set to be indexed but still answers with noindex"
             failures=$((failures + 1))
+          else
+            echo "ok    the site is open to search engines, as set"
           fi
 
           [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
-          echo "Staging is live: $STAGING_URL"
+          echo "The site is live: $LIVE_URL ($deploy_env)"
