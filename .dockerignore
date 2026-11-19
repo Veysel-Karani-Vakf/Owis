@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+dist
+dist-ssr
+dist-api
+.env
+.env.*
+!.env.example
+*.local
+*.log
+.vscode
+.idea
+.claude
+scripts/backups
+deploy/hostinger/.env
+deploy/hostinger/api.env
