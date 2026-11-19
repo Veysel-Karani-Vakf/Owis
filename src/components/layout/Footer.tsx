@@ -72,11 +72,17 @@ export default function Footer() {
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    // Persist the subscriber; ignore duplicates (unique email constraint).
-    await supabase.from('newsletter_subscribers').upsert(
-      { email: email.trim().toLowerCase(), locale },
-      { onConflict: 'email', ignoreDuplicates: true },
-    );
+    // Persist the subscriber with a plain insert. Visitors may add a row but not
+    // read the table, and an upsert has to read it to resolve the conflict, so
+    // row level security rejected every subscription. A repeated address just
+    // hits the unique email constraint (23505), which is fine for the visitor.
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email: email.trim().toLowerCase(), locale });
+    if (error && error.code !== '23505') {
+      console.error('newsletter subscription failed:', error.message);
+      return;
+    }
     setSubscribed(true);
     setEmail('');
     setTimeout(() => setSubscribed(false), 3000);
