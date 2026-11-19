@@ -6,5 +6,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/owis-restore-test run staging
+# Does nothing until an off-site destination is connected.
+ExecStart=/usr/local/sbin/owis-restore-test offsite staging
 Nice=10
 IOSchedulingClass=idle

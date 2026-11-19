@@ -3,7 +3,10 @@
 # Root-owned, installed in /usr/local/sbin by install-backups.sh and run every
 # week by a systemd timer (and by hand whenever you want proof).
 #
-#   owis-restore-test run [staging]
+#   owis-restore-test run [staging]       the newest archive on this server
+#   owis-restore-test offsite [staging]   the newest archive in the off-site copy:
+#                                         downloaded again first, so it proves the
+#                                         copy outside this server can be restored
 #
 # It takes the newest archive (or the one named in OWIS_RESTORE_ARCHIVE) and:
 #   1. checks the checksum of the encrypted file,
@@ -34,13 +37,18 @@ ROOT="/opt/owis"
 KEY_FILE="$ROOT/backup.key"
 BACKUP_DIR="/var/backups/owis/$ENV_NAME"
 RESULT_FILE="$BACKUP_DIR/last-restore-test"
+OFFSITE_CONF="$ROOT/backup-offsite.conf"
+RCLONE_CONF="$ROOT/rclone.conf"
+LOG_FILE="/var/log/owis-restore-test-$ENV_NAME.log"
 SCRATCH="scratch-restore-test-$ENV_NAME"
 LOCK_FILE="/run/owis-restore-test-$ENV_NAME.lock"
 
 COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') ORDER BY 1"
 
 work=""
+download_dir=""
 archive=""
+source_name="local"
 step_name="starting"
 
 record() {
@@ -51,6 +59,7 @@ record() {
     echo "timestamp=$(date -u +%FT%TZ)"
     echo "epoch=$(date -u +%s)"
     echo "archive=$(basename "${archive:-none}")"
+    echo "source=$source_name"
     echo "result=$result"
     for line in "$@"; do echo "$line"; done
   } > "$RESULT_FILE.new"
@@ -61,6 +70,7 @@ cleanup() {
   local code=$?
   docker rm -f "$SCRATCH" > /dev/null 2>&1 || true
   [ -n "$work" ] && rm -rf "$work"
+  [ -n "$download_dir" ] && rm -rf "$download_dir"
   if [ "$code" -ne 0 ]; then
     record failed "failed_step=$step_name" || true
     echo "RESTORE TEST FAILED at: $step_name" >&2
@@ -97,7 +107,19 @@ run() {
   echo "== $(date -u +%FT%TZ) restore test of $(basename "$archive")"
 
   step "checksum of the encrypted archive"
-  (cd "$(dirname "$archive")" && sha256sum --status -c "$(basename "$archive").sha256")
+  local local_sum
+  local_sum="$BACKUP_DIR/$(basename "$archive").sha256"
+  if [ -s "$archive.sha256" ]; then
+    (cd "$(dirname "$archive")" && sha256sum --status -c "$(basename "$archive").sha256")
+  elif [ -s "$local_sum" ]; then
+    # A downloaded copy must be byte for byte what this server wrote.
+    [ "$(cut -d' ' -f1 "$local_sum")" = "$(sha256sum "$archive" | cut -d' ' -f1)" ] || {
+      echo "the downloaded archive differs from the one written here" >&2
+      exit 1
+    }
+  else
+    echo "   no checksum file for this archive; decryption and the manifest check it instead"
+  fi
 
   step "decrypt and unpack"
   gpg --homedir "$work/gnupg" --batch --quiet --pinentry-mode loopback \
@@ -203,22 +225,57 @@ run() {
   echo "RESTORE TEST PASSED: $tables tables, $rows rows, $policies policies, $objects stored objects, $files_found files"
 }
 
+# Downloads the newest archive from the off-site copy into a private temporary
+# folder and puts it through the very same restore test.
+run_offsite() {
+  local remote latest
+  remote="$(sed -n 's/^OFFSITE_RCLONE_REMOTE=//p' "$OFFSITE_CONF" 2> /dev/null | head -n 1 || true)"
+  if [ -z "$remote" ]; then
+    echo "off-site copy is not configured; nothing to test"
+    exit 0
+  fi
+  source_name="offsite"
+  RESULT_FILE="$BACKUP_DIR/last-offsite-restore-test"
+  archive="(not downloaded)"
+  trap cleanup EXIT
+  step "download the newest archive from the off-site copy"
+  download_dir="$(mktemp -d /var/tmp/owis-offsite.XXXXXX)"
+  latest="$(rclone --config "$RCLONE_CONF" lsf "$remote" --files-only --include "owis-$ENV_NAME-*.tar.gpg" | sort | tail -n 1)"
+  [ -n "$latest" ] || {
+    echo "there is no archive in the off-site copy" >&2
+    exit 1
+  }
+  rclone --config "$RCLONE_CONF" copy "$remote" "$download_dir" --include "$latest" --retries 3
+  [ -s "$download_dir/$latest" ]
+  echo "   downloaded $latest ($(stat -c %s "$download_dir/$latest") bytes)"
+  OWIS_RESTORE_ARCHIVE="$download_dir/$latest"
+  run
+}
+
 [ "$(id -u)" -eq 0 ] || {
   echo "must run as root" >&2
   exit 1
 }
 
 case "$COMMAND" in
-  run)
+  run | offsite)
     exec 9> "$LOCK_FILE"
     flock -n 9 || {
       echo "another restore test is running" >&2
       exit 4
     }
-    run
+    echo "==== $(date -u +%FT%TZ) $COMMAND $ENV_NAME" >> "$LOG_FILE"
+    set +e
+    (
+      set -e
+      if [ "$COMMAND" = "run" ]; then run; else run_offsite; fi
+    ) 2>&1 | tee -a "$LOG_FILE"
+    rc="${PIPESTATUS[0]}"
+    set -e
+    exit "$rc"
     ;;
   *)
-    echo "usage: owis-restore-test run [staging]" >&2
+    echo "usage: owis-restore-test run|offsite [staging]" >&2
     exit 2
     ;;
 esac

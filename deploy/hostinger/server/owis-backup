@@ -3,8 +3,15 @@
 # /usr/local/sbin by install-backups.sh and started every day by a systemd
 # timer.
 #
-#   owis-backup run [staging]      make a backup now
-#   owis-backup status [staging]   key=value facts for monitoring, no secrets
+#   owis-backup run [staging]              make a backup now (and copy it off-site
+#                                          when a destination is connected)
+#   owis-backup status [staging]           key=value facts for monitoring, no secrets
+#   owis-backup offsite-connect [staging] [restricted|full]
+#                                          connect Google Drive; asks for consent in
+#                                          YOUR browser, run it from your own terminal
+#   owis-backup offsite-sync [staging]     upload every local archive the remote lacks
+#   owis-backup key-show                   show the encryption key on your own terminal
+#   owis-backup key-check                  compare a saved copy of the key (hidden input)
 #
 # Each run writes one archive, encrypted with the key in /opt/owis/backup.key:
 #   db.dump       pg_dump (custom format) of the schemas public, auth, storage
@@ -14,8 +21,14 @@
 #   MANIFEST      versions, sizes and checksums of the above
 #
 # Nothing in an archive can be read without the key, and the key is never
-# printed. Keep a copy of the key outside this server: without it the copies
-# stored elsewhere are useless. owis-restore-test proves an archive restores.
+# printed by a scheduled run. Keep a copy of the key outside this server:
+# without it the copies stored elsewhere are useless. owis-restore-test proves
+# an archive restores.
+#
+# Off-site copies: only the encrypted archives are uploaded, each one checked to
+# be an AES-256 encrypted file first. The key and the Google Drive token
+# (/opt/owis/rclone.conf) never leave this server and are not part of any
+# archive. Local archives are copied, never moved.
 set -euo pipefail
 umask 077
 
@@ -34,10 +47,16 @@ SUPA_DIR="$ROOT/supabase-$ENV_NAME"
 DB_CONTAINER="supabase-db"
 KEY_FILE="$ROOT/backup.key"
 OFFSITE_CONF="$ROOT/backup-offsite.conf"
+RCLONE_CONF="$ROOT/rclone.conf"
+RCLONE_REMOTE="owis-gdrive"
+OFFSITE_FOLDER="OWIS-Encrypted-Backups"
 BACKUP_DIR="/var/backups/owis/$ENV_NAME"
 STATE_FILE="$BACKUP_DIR/last-success"
 OFFSITE_STATE_FILE="$BACKUP_DIR/last-offsite"
 RESTORE_STATE_FILE="$BACKUP_DIR/last-restore-test"
+OFFSITE_RESTORE_STATE_FILE="$BACKUP_DIR/last-offsite-restore-test"
+FAILURE_FILE="$BACKUP_DIR/last-failure"
+LOG_FILE="/var/log/owis-backup-$ENV_NAME.log"
 KEEP_DAYS="${OWIS_BACKUP_KEEP_DAYS:-14}"
 LOCK_FILE="/run/owis-backup-$ENV_NAME.lock"
 
@@ -56,6 +75,155 @@ offsite_remote() {
 
 sha256_of() {
   sha256sum "$1" | cut -d' ' -f1
+}
+
+rclone_do() {
+  rclone --config "$RCLONE_CONF" "$@"
+}
+
+# True only for an OpenPGP file encrypted with a passphrase and AES-256, which
+# is what this script writes. Anything else is never uploaded.
+is_encrypted_archive() {
+  # is_encrypted_archive <file> <scratch gnupg home>
+  local packets
+  packets="$(gpg --homedir "$2" --batch --pinentry-mode cancel --list-packets "$1" 2> /dev/null | head -n 3 || true)"
+  grep -q '^:symkey enc packet:.*cipher 9' <<< "$packets"
+}
+
+# Copies every local archive the remote does not have yet, then compares the
+# two sides. Copy, never move: nothing local is touched.
+offsite_sync() {
+  local remote scratch list file refused=0 count
+  remote="$(offsite_remote)"
+  if [ -z "$remote" ]; then
+    echo "off-site copy: not configured"
+    return 0
+  fi
+  command -v rclone > /dev/null || {
+    echo "off-site copy is configured but rclone is not installed" >&2
+    return 1
+  }
+  [ -s "$RCLONE_CONF" ] || {
+    echo "off-site copy is configured but $RCLONE_CONF is missing" >&2
+    return 1
+  }
+
+  scratch="$(mktemp -d "$BACKUP_DIR/.offsite.XXXXXX")"
+  mkdir "$scratch/gnupg"
+  list="$scratch/upload.list"
+  : > "$list"
+  for file in "$BACKUP_DIR"/owis-"$ENV_NAME"-*.tar.gpg; do
+    [ -f "$file" ] || continue
+    if is_encrypted_archive "$file" "$scratch/gnupg"; then
+      basename "$file" >> "$list"
+    else
+      echo "REFUSED: $(basename "$file") is not an encrypted archive and stays here" >&2
+      refused=$((refused + 1))
+    fi
+  done
+  count="$(wc -l < "$list" | tr -d ' ')"
+
+  local rc=0
+  if [ "$count" -gt 0 ]; then
+    # --immutable: an archive that is already there is never overwritten.
+    rclone_do copy "$BACKUP_DIR" "$remote" --files-from "$list" --immutable \
+      --retries 5 --low-level-retries 10 --stats-one-line --stats 0 || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      # Sizes and checksums of every archive, local against remote.
+      rclone_do check "$BACKUP_DIR" "$remote" --files-from "$list" --one-way > "$scratch/check.log" 2>&1 || rc=$?
+      [ "$rc" -eq 0 ] || tail -n 5 "$scratch/check.log" >&2
+    fi
+  fi
+  local newest
+  newest="$(sort "$list" | tail -n 1)"
+  rm -rf "$scratch"
+
+  [ "$rc" -eq 0 ] || {
+    echo "off-site copy FAILED (rclone exit $rc)" >&2
+    return 1
+  }
+  [ "$refused" -eq 0 ] || return 1
+  {
+    echo "timestamp=$(date -u +%FT%TZ)"
+    echo "epoch=$(date -u +%s)"
+    echo "archive=$newest"
+    echo "archives=$count"
+  } > "$OFFSITE_STATE_FILE.new"
+  mv "$OFFSITE_STATE_FILE.new" "$OFFSITE_STATE_FILE"
+  echo "off-site copy done: $count archive(s) verified on the remote, newest $newest"
+}
+
+need_terminal() {
+  [ -t 0 ] && [ -t 1 ] || {
+    echo "run this from your own terminal (ssh -t ...), not from a script" >&2
+    exit 2
+  }
+}
+
+# One-time connection to Google Drive. rclone starts a small page on this
+# server's 127.0.0.1:53682; reach it through an SSH tunnel from your own
+# computer, sign in to Google there and approve. The token is written to
+# /opt/owis/rclone.conf (root only) and is never shown.
+offsite_connect() {
+  local mode="${1:-restricted}" scope
+  case "$mode" in
+    restricted) scope="drive.file" ;; # only files this connection creates
+    full) scope="drive" ;;            # every file of the Google account
+    *)
+      echo "usage: owis-backup offsite-connect [staging] [restricted|full]" >&2
+      exit 2
+      ;;
+  esac
+  need_terminal
+  command -v rclone > /dev/null || {
+    echo "rclone is not installed (run install-backups.sh)" >&2
+    exit 1
+  }
+  touch "$RCLONE_CONF"
+  chmod 600 "$RCLONE_CONF"
+
+  echo "Connecting Google Drive with access: $mode ($scope)."
+  echo "Open the link that appears below in the browser of THIS computer"
+  echo "(the one you started ssh from), sign in to Google and approve."
+  echo
+  rclone_do config create "$RCLONE_REMOTE" drive scope "$scope" config_is_local true > /dev/null
+
+  local remote="$RCLONE_REMOTE:$OFFSITE_FOLDER/$ENV_NAME"
+  rclone_do mkdir "$remote"
+  rclone_do lsf "$RCLONE_REMOTE:$OFFSITE_FOLDER/" > /dev/null
+  printf 'OFFSITE_RCLONE_REMOTE=%s\n' "$remote" > "$OFFSITE_CONF.new"
+  chmod 600 "$OFFSITE_CONF.new"
+  mv "$OFFSITE_CONF.new" "$OFFSITE_CONF"
+  echo
+  echo "OFFSITE_CONNECTED: $OFFSITE_FOLDER/$ENV_NAME is reachable. Nothing has been uploaded yet."
+}
+
+key_show() {
+  need_terminal
+  [ -s "$KEY_FILE" ] || exit 1
+  echo "The backup encryption key is the single line between the markers."
+  echo "Copy it into your password manager, then press Enter: the screen is cleared."
+  echo "----- key -----"
+  head -n 1 "$KEY_FILE"
+  echo "----- end -----"
+  read -r _ || true
+  printf '\033[2J\033[3J\033[H'
+  echo "Cleared. Check your saved copy with: owis-backup key-check"
+}
+
+key_check() {
+  need_terminal
+  [ -s "$KEY_FILE" ] || exit 1
+  local given
+  printf 'Paste the saved key (it stays hidden) and press Enter: '
+  read -r -s given || true
+  echo
+  if [ -n "$given" ] && [ "$given" = "$(head -n 1 "$KEY_FILE")" ]; then
+    echo "MATCH: your saved copy opens the backups."
+  else
+    echo "NO MATCH: the saved copy is different. Run key-show and save it again."
+    exit 1
+  fi
 }
 
 run() {
@@ -177,26 +345,8 @@ SQL
   # 6. Retention. Only after a good backup, so a failing job never eats history.
   find "$BACKUP_DIR" -maxdepth 1 -type f -name "owis-$ENV_NAME-*.tar.gpg*" -mtime "+$KEEP_DAYS" -delete
 
-  # 7. Copy outside this server, when a destination has been configured.
-  local remote
-  remote="$(offsite_remote)"
-  if [ -n "$remote" ]; then
-    command -v rclone > /dev/null || {
-      echo "off-site copy is configured but rclone is not installed" >&2
-      exit 1
-    }
-    rclone copy "$BACKUP_DIR" "$remote" --config "$ROOT/rclone.conf" \
-      --include "$(basename "$archive")" --include "$(basename "$archive").sha256"
-    {
-      echo "timestamp=$(date -u +%FT%TZ)"
-      echo "epoch=$(date -u +%s)"
-      echo "archive=$(basename "$archive")"
-    } > "$OFFSITE_STATE_FILE.new"
-    mv "$OFFSITE_STATE_FILE.new" "$OFFSITE_STATE_FILE"
-    echo "off-site copy done"
-  else
-    echo "off-site copy: not configured"
-  fi
+  # 7. Copy outside this server, when a destination has been connected.
+  offsite_sync
 }
 
 status() {
@@ -220,14 +370,30 @@ status() {
   fi
   echo "backup_archives_kept=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "owis-$ENV_NAME-*.tar.gpg" 2> /dev/null | wc -l | tr -d ' ')"
   if [ -n "$(offsite_remote)" ]; then
+    echo "backup_offsite=configured"
     epoch="$(state_value "$OFFSITE_STATE_FILE" epoch)"
     if [ -n "$epoch" ]; then
+      echo "backup_offsite_last_success=$(state_value "$OFFSITE_STATE_FILE" timestamp)"
       echo "backup_offsite_age_hours=$(((now - epoch) / 3600))"
+      echo "backup_offsite_archives=$(state_value "$OFFSITE_STATE_FILE" archives)"
     else
       echo "backup_offsite_age_hours=never"
     fi
+    epoch="$(state_value "$OFFSITE_RESTORE_STATE_FILE" epoch)"
+    if [ -n "$epoch" ]; then
+      echo "offsite_restore_test_result=$(state_value "$OFFSITE_RESTORE_STATE_FILE" result)"
+      echo "offsite_restore_test_age_days=$(((now - epoch) / 86400))"
+    else
+      echo "offsite_restore_test_result=never-run"
+    fi
   else
     echo "backup_offsite=not-configured"
+  fi
+  if [ -s "$FAILURE_FILE" ]; then
+    echo "backup_last_failure=$(state_value "$FAILURE_FILE" timestamp)"
+    echo "backup_alert=yes"
+  else
+    echo "backup_alert=no"
   fi
   epoch="$(state_value "$RESTORE_STATE_FILE" epoch)"
   if [ -n "$epoch" ]; then
@@ -244,20 +410,60 @@ status() {
   exit 1
 }
 
+# Runs one job with its output also appended to the log file, and remembers a
+# failure until the next clean run so that "status" (and the monitor) show it.
+logged() {
+  local rc
+  echo "==== $(date -u +%FT%TZ) $COMMAND $ENV_NAME" >> "$LOG_FILE"
+  set +e
+  (
+    set -e
+    "$@"
+  ) 2>&1 | tee -a "$LOG_FILE"
+  rc="${PIPESTATUS[0]}"
+  set -e
+  if [ "$rc" -eq 0 ]; then
+    rm -f "$FAILURE_FILE"
+  else
+    echo "FAILED: $COMMAND $ENV_NAME (exit $rc), see $LOG_FILE" | tee -a "$LOG_FILE" >&2
+    {
+      echo "timestamp=$(date -u +%FT%TZ)"
+      echo "epoch=$(date -u +%s)"
+      echo "command=$COMMAND"
+      echo "exit=$rc"
+    } > "$FAILURE_FILE" 2> /dev/null || true
+  fi
+  return "$rc"
+}
+
 case "$COMMAND" in
-  run)
+  run | offsite-sync)
+    install -d -m 700 "$BACKUP_DIR"
     exec 9> "$LOCK_FILE"
     flock -n 9 || {
       echo "another backup is running" >&2
       exit 4
     }
-    run
+    if [ "$COMMAND" = "run" ]; then
+      logged run
+    else
+      logged offsite_sync
+    fi
     ;;
   status)
     status
     ;;
+  offsite-connect)
+    offsite_connect "${3:-restricted}"
+    ;;
+  key-show)
+    key_show
+    ;;
+  key-check)
+    key_check
+    ;;
   *)
-    echo "usage: owis-backup run|status [staging]" >&2
+    echo "usage: owis-backup run|status|offsite-connect|offsite-sync|key-show|key-check [staging]" >&2
     exit 2
     ;;
 esac
