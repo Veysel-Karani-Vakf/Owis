@@ -64,10 +64,14 @@ export async function submitParticipateForm(payload: ParticipateSubmissionPayloa
     for (const [fieldId, files] of Object.entries(payload.files)) {
       for (const file of files) {
         const rand = Math.abs(hashString(file.name + file.size + file.lastModified)).toString(36);
-        const path = `${payload.formId}/${rand}-${slugify(file.name) || 'file'}`;
+        // Visitors may add files to this bucket but not overwrite them (insert-only
+        // policy), and an upsert was rejected by row level security. Every upload
+        // gets its own path instead, so a retry or an identical file never collides.
+        const unique = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+        const path = `${payload.formId}/${unique}-${rand}-${slugify(file.name) || 'file'}`;
         const { error } = await supabase.storage
           .from(SUBMISSIONS_BUCKET)
-          .upload(path, file, { cacheControl: '3600', upsert: true });
+          .upload(path, file, { cacheControl: '3600', upsert: false });
         if (error) throw error;
         uploaded.push({ fieldId, name: file.name, size: file.size, type: file.type, path, bucket: SUBMISSIONS_BUCKET });
       }
