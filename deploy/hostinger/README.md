@@ -119,9 +119,37 @@ The archives are encrypted with `/opt/owis/backup.key` (root only). **Copy that
 key to a password manager.** It is never printed by the scripts, and an archive
 kept anywhere else cannot be opened without it.
 
-Copies outside the server are made when `/opt/owis/backup-offsite.conf`
-contains `OFFSITE_RCLONE_REMOTE=<remote>:<path>` and `/opt/owis/rclone.conf`
-describes that remote. Until then the archives exist on this server only.
+### Copy outside the server (Google Drive)
+
+Only the encrypted archives are uploaded, each one checked to be an AES-256
+encrypted file first; they are copied, never moved, and compared with the
+remote afterwards. The key and the Google token (`/opt/owis/rclone.conf`, root
+only) stay on the server and are not part of any archive.
+
+Connecting needs a person: Google asks for consent in a browser. From your own
+computer, with a tunnel to the small page rclone opens on the server:
+
+```sh
+ssh -t -L 53682:127.0.0.1:53682 owisadmin@<server> "sudo owis-backup offsite-connect staging"
+```
+
+Open the link it prints in your browser, sign in and approve. The default
+access is `restricted` (Google's `drive.file`): the connection can only see
+files it created itself, so a stolen token cannot read the rest of the Drive.
+The price is that it cannot use a folder made by hand; it creates its own
+`OWIS-Encrypted-Backups/staging`. `... offsite-connect staging full` grants the
+whole Drive instead and uses an existing folder of that name.
+
+| Command | What it does |
+| --- | --- |
+| `owis-backup offsite-sync staging` | uploads every local archive the remote lacks, then verifies them |
+| `owis-restore-test offsite staging` | downloads the newest remote archive and restores it into the scratch database |
+| `owis-backup key-show` / `key-check` | show the key on your own terminal / compare a saved copy (hidden input) |
+
+After that the daily backup uploads its archive by itself and the weekly
+restore test also tests the remote copy. A failed run is written to
+`/var/log/owis-backup-staging.log`, and `status` reports `backup_alert=yes`
+until the next clean run.
 
 Restoring for real, on a rebuilt server:
 
@@ -148,7 +176,8 @@ when its own file changes, and every deployment prints the same status.
 
 ## Not done yet
 
-- A destination outside the server for the encrypted backups.
+- An alert that reaches a person when a backup fails (needs a mail or
+  notification channel).
 - Outgoing mail (SMTP) for password resets.
 - Moving production data, accounts and files.
 - Bank test and production payment configuration.
