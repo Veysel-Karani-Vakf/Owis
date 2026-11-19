@@ -106,6 +106,52 @@ jobs:
           refuses "no service role key" DEPLOY_ENV=staging SUPABASE_URL=http://localhost
           refuses "staging pointing at production" DEPLOY_ENV=staging SUPABASE_URL="$PRODUCTION_SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY=placeholder
           refuses "staging with a live payment mode" DEPLOY_ENV=staging SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production
+          refuses "production with the simulated bank" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=mock
+          refuses "production with a live payment mode and no bank values" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production
+          refuses "production with placeholder bank values" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production PAYMENT_CLIENT_ID=TEST_CLIENT_ID PAYMENT_STORE_KEY=TEST_STORE_KEY PAYMENT_GATE_URL=TEST_GATEWAY_URL
+
+      - name: API host with online payments switched off
+        run: |
+          set -euo pipefail
+          # Production settings without bank values: the host starts, says that
+          # payments are off, and takes no payment through any door.
+          env DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder \
+            PAYMENT_MODE=disabled PORT=3999 node dist-api/server.cjs > api-off.log 2>&1 &
+          api_pid=$!
+          base="http://127.0.0.1:3999"
+          for attempt in $(seq 1 20); do
+            curl -fs -o /dev/null "$base/api/healthz" && break
+            sleep 0.5
+          done
+          failures=0
+          health="$(curl -sS "$base/api/healthz" || true)"
+          grep -q '"env":"production"' <<< "$health" || { echo "::error::payments off: the host is not up ($health)"; failures=$((failures + 1)); }
+          config="$(curl -sS "$base/api/payments/config" || true)"
+          if grep -q '"mode":"disabled"' <<< "$config"; then
+            echo "ok: the configuration reports payments as switched off"
+          else
+            echo "::error::payments off: the configuration says $config"
+            failures=$((failures + 1))
+          fi
+          for route in create direct; do
+            code="$(curl -sS -o api-off.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+              -d '{"slug":"ci","amount":10,"locale":"en","donor":{"name":"CI check"}}' "$base/api/payments/$route" || true)"
+            if [ "$code" = "503" ] && grep -q 'payments-disabled' api-off.json; then
+              echo "ok: $route refuses (503 payments-disabled)"
+            else
+              echo "::error::payments off: $route answered $code"
+              failures=$((failures + 1))
+            fi
+          done
+          code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$base/api/payments/mock-gate" || true)"
+          if [ "$code" = "404" ]; then
+            echo "ok: the simulated bank is not there (404)"
+          else
+            echo "::error::payments off: the simulated bank answered $code"
+            failures=$((failures + 1))
+          fi
+          kill "$api_pid" 2> /dev/null || true
+          [ "$failures" -eq 0 ] || { cat api-off.log; exit 1; }
 
   stack:
     name: Images and full stack
@@ -389,7 +435,8 @@ jobs:
           failures=0
 
           # The server says which address it serves and with which settings:
-          # staging with the simulated bank, or production with the real one.
+          # staging with the simulated bank, or production with the real one or
+          # with online payments switched off until the bank values are set.
           # Nothing here pays or writes: the checks only read.
           setting() { sed -n "s/^$1=//p" "$RUNNER_TEMP/status.txt" | head -n 1; }
           LIVE_URL="$(setting public_site_url)"
@@ -401,7 +448,7 @@ jobs:
           robots="$(setting robots_tag)"
           echo "checking $LIVE_URL as $deploy_env (payments: $payment_mode)"
           case "$deploy_env/$payment_mode" in
-            staging/mock | production/production) ;;
+            staging/mock | production/production | production/disabled) ;;
             *)
               echo "::error::unexpected settings: $deploy_env with payment mode $payment_mode"
               failures=$((failures + 1))
