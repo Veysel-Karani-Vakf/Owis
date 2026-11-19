@@ -51,7 +51,10 @@
 #                               the downloaded originals in /opt/owis/migrate/files
 #   owis-migrate files-auto on|off|status
 #                               retry files-copy every 10 minutes until every
-#                               file is here, then stop by itself
+#                               file is here, then verify and stop by itself
+#   owis-migrate files-verify   proof for every file: same name, size and type,
+#                               same content (checksums), and the same access
+#                               rules (public pictures, private attachments)
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
@@ -87,8 +90,9 @@ LOCK_FILE="/run/owis-migrate.lock"
 FILES_DIR="$DIR/files"
 SOURCE_STORAGE_URL="${OWIS_SOURCE_STORAGE_URL:-https://$SOURCE_REF.supabase.co/storage/v1}"
 TARGET_STORAGE_URL="${OWIS_TARGET_STORAGE_URL:-http://127.0.0.1:8000/storage/v1}"
-# Every stored file as one JSON list: bucket, name, size, type, cache setting.
-OBJECTS_SQL="select coalesce(json_agg(json_build_object('bucket', bucket_id, 'name', name, 'size', coalesce((metadata->>'size')::bigint, -1), 'type', metadata->>'mimetype', 'cache', metadata->>'cacheControl') order by bucket_id, name), '[]'::json) from storage.objects"
+# Every stored file as one JSON list: bucket, name, size, type, cache setting
+# and the checksum the storage service recorded for it.
+OBJECTS_SQL="select coalesce(json_agg(json_build_object('bucket', bucket_id, 'name', name, 'size', coalesce((metadata->>'size')::bigint, -1), 'type', metadata->>'mimetype', 'cache', metadata->>'cacheControl', 'etag', metadata->>'eTag') order by bucket_id, name), '[]'::json) from storage.objects"
 
 # Row count of every readable table in the three schemas ("schema.table<TAB>count").
 COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') AND has_table_privilege(format('%I.%I', schemaname, tablename), 'SELECT') ORDER BY 1"
@@ -831,7 +835,7 @@ files_copy() {
 
   python3 - "$list" "$here" "$FILES_DIR" "$SOURCE_STORAGE_URL" "$TARGET_STORAGE_URL" \
     "$SOURCE_KEY_FILE" "$ROOT/$TARGET_ENV.env" "$limit" <<'PYTHON' || rc=$?
-import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+import hashlib, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 
 list_path, here_path, files_dir, source_url, target_url, source_key_file, env_file, limit = sys.argv[1:9]
 limit = int(limit)
@@ -867,16 +871,29 @@ def download(o, dest):
         headers={"apikey": source_key, "Authorization": "Bearer " + source_key},
     )
     part = dest + ".part"
-    with urllib.request.urlopen(request, timeout=300) as response, open(part, "wb") as out:
-        while True:
-            chunk = response.read(1 << 20)
-            if not chunk:
-                break
-            out.write(chunk)
-    got = os.path.getsize(part)
-    if got != o["size"]:
-        os.remove(part)
-        raise RuntimeError("downloaded %d bytes, expected %d" % (got, o["size"]))
+    # The source records an MD5 for a file uploaded in one piece. A download
+    # that does not carry it is fetched once more; if it still differs the file
+    # is kept and named, and the verification decides.
+    etag = (o.get("etag") or "").strip('"')
+    expected = etag if re.fullmatch(r"[0-9a-f]{32}", etag) else ""
+    for attempt in (1, 2):
+        md5 = hashlib.md5()
+        with urllib.request.urlopen(request, timeout=300) as response, open(part, "wb") as out:
+            while True:
+                chunk = response.read(1 << 20)
+                if not chunk:
+                    break
+                out.write(chunk)
+                md5.update(chunk)
+        got = os.path.getsize(part)
+        if got != o["size"]:
+            os.remove(part)
+            raise RuntimeError("downloaded %d bytes, expected %d" % (got, o["size"]))
+        if not expected or expected == md5.hexdigest():
+            break
+    else:
+        print("  note      %s/%s: the download does not carry the source's checksum (kept; see the verification)"
+              % (o["bucket"], o["name"]), flush=True)
     os.replace(part, dest)
 
 
@@ -972,10 +989,240 @@ print("here with the same size: %d of %d files (%d MB in the source)" % (same, l
 print("FILES_COMPLETE" if same == len(source) else "FILES_INCOMPLETE")
 sys.exit(0 if same == len(source) else 7)
 PYTHON
-  if [ "$complete" -eq 0 ] && systemctl is-enabled owis-files-copy.timer > /dev/null 2>&1; then
-    systemctl disable --now owis-files-copy.timer > /dev/null 2>&1 || true
-    echo "every file is here: the automatic retry is switched off"
+  if [ "$complete" -eq 0 ]; then
+    files_verify || rc=$?
+    if systemctl is-enabled owis-files-copy.timer > /dev/null 2>&1; then
+      systemctl disable --now owis-files-copy.timer > /dev/null 2>&1 || true
+      echo "every file is here: the automatic retry is switched off"
+    fi
   fi
+  return "$rc"
+}
+
+# Proof that the stored files arrived intact and with the same access rules.
+# For every file of the source: same bucket, name, size and type here; the kept
+# download carries the source's own checksum (where the source has one); what
+# this server hands out is byte for byte that download. Then the access rules:
+# pictures and videos answer without a key, private attachments are refused
+# without one and open with the signed link an administrator gets.
+files_verify() {
+  command -v python3 > /dev/null || {
+    echo "python3 is needed" >&2
+    exit 1
+  }
+  install -d -m 700 "$FILES_DIR" "$WORK_DIR"
+  local list="$WORK_DIR/objects.source.json" here="$WORK_DIR/objects.here.json" admin_id rc=0
+  echo "== $(date -u +%FT%TZ) verification of the stored files"
+  # The source list: fresh when the old database answers, else the last one read.
+  if source_pg psql "service=owis_source" -At -c "$OBJECTS_SQL" > "$list.new" 2> /dev/null && [ -s "$list.new" ]; then
+    mv "$list.new" "$list"
+  else
+    rm -f "$list.new"
+    echo "the old database did not answer: using the list read at $(date -u -r "$list" +%FT%TZ 2> /dev/null || echo 'no earlier time')"
+  fi
+  [ -s "$list" ] || {
+    echo "no list of the source files" >&2
+    exit 1
+  }
+  target_psql -At -c "$OBJECTS_SQL" > "$here"
+  admin_id="$(target_psql -At -c "select user_id from public.admin_users order by 1 limit 1" 2> /dev/null || true)"
+
+  python3 - "$list" "$here" "$FILES_DIR" "$TARGET_STORAGE_URL" "$(stack_value PUBLIC_SITE_URL)" \
+    "$ROOT/$TARGET_ENV.env" "$ROOT/supabase-$TARGET_ENV/.env" "$admin_id" <<'PYTHON' || rc=$?
+import base64, hashlib, hmac, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
+
+list_path, here_path, files_dir, storage, site, env_file, supabase_env, admin_id = sys.argv[1:9]
+site = site.rstrip("/")
+
+
+def setting(path, name):
+    for line in open(path):
+        if line.startswith(name + "="):
+            return line.split("=", 1)[1].strip().strip("'")
+    return ""
+
+
+service = setting(env_file, "SUPABASE_SERVICE_ROLE_KEY")
+anon = setting(env_file, "SUPABASE_ANON_KEY")
+secret = setting(supabase_env, "JWT_SECRET")
+source = json.load(open(list_path)) or []
+here = {(o["bucket"], o["name"]): o for o in (json.load(open(here_path)) or [])}
+
+
+def quoted(name):
+    return urllib.parse.quote(name, safe="/")
+
+
+def fetch(method, url, headers=None, body=None, digest=False):
+    """Returns (status, md5 or body). Nothing is kept in memory when digest is asked."""
+    data = json.dumps(body).encode() if body is not None else None
+    send = dict(headers or {})
+    if data is not None:
+        send["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=data, method=method, headers=send)
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            if not digest:
+                return response.status, response.read()
+            md5 = hashlib.md5()
+            while True:
+                chunk = response.read(1 << 20)
+                if not chunk:
+                    break
+                md5.update(chunk)
+            return response.status, md5.hexdigest()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read(500)
+    except Exception as error:
+        return 0, str(error).encode()
+
+
+def file_md5(path):
+    md5 = hashlib.md5()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+
+def b64(data):
+    return base64.urlsafe_b64encode(data).rstrip(b"=")
+
+
+def admin_token():
+    now = int(time.time())
+    head = b64(b'{"alg":"HS256","typ":"JWT"}')
+    body = b64(json.dumps({"sub": admin_id, "role": "authenticated", "aud": "authenticated", "iss": "supabase",
+                           "iat": now, "exp": now + 300}, separators=(",", ":")).encode())
+    return (head + b"." + body + b"." + b64(hmac.new(secret.encode(), head + b"." + body, hashlib.sha256).digest())).decode()
+
+
+service_headers = {"apikey": service, "Authorization": "Bearer " + service}
+problems = []
+count = {"present": 0, "type": 0, "content": 0, "checksum": 0, "with_checksum": 0, "public": 0, "private": 0}
+by_bucket = {}
+
+for o in source:
+    key = (o["bucket"], o["name"])
+    label = "%s/%s" % key
+    by_bucket.setdefault(o["bucket"], [0, 0])
+    by_bucket[o["bucket"]][0] += 1
+    by_bucket[o["bucket"]][1] += max(o["size"], 0)
+    mine = here.get(key)
+    if not mine or mine["size"] != o["size"]:
+        problems.append("%s: %s" % (label, "not here" if not mine else "size %s here, %s in the source" % (mine["size"], o["size"])))
+        continue
+    count["present"] += 1
+    if (mine.get("type") or "") == (o.get("type") or ""):
+        count["type"] += 1
+    else:
+        problems.append("%s: type %s here, %s in the source" % (label, mine.get("type"), o.get("type")))
+
+    kept = os.path.join(files_dir, o["bucket"], *o["name"].split("/"))
+    if not os.path.isfile(kept) or os.path.getsize(kept) != o["size"]:
+        problems.append("%s: the kept download is missing or has another size" % label)
+        continue
+    kept_md5 = file_md5(kept)
+    etag = (o.get("etag") or "").strip('"')
+    if re.fullmatch(r"[0-9a-f]{32}", etag):
+        count["with_checksum"] += 1
+        if etag == kept_md5:
+            count["checksum"] += 1
+        else:
+            problems.append("%s: the download does not carry the source's checksum" % label)
+    status, served = fetch("GET", "%s/object/authenticated/%s/%s" % (storage, o["bucket"], quoted(o["name"])),
+                           service_headers, digest=True)
+    if status == 200 and served == kept_md5:
+        count["content"] += 1
+    else:
+        problems.append("%s: what this server hands out differs from the download (HTTP %s)" % (label, status))
+
+    # Access without any key, through the site's own address.
+    status, _ = fetch("GET", "%s/storage/v1/object/public/%s/%s" % (site, o["bucket"], quoted(o["name"])),
+                      {"Range": "bytes=0-0"})
+    if o["bucket"] == "media":
+        if status in (200, 206):
+            count["public"] += 1
+        else:
+            problems.append("%s: not served to visitors (HTTP %s)" % (label, status))
+    else:
+        if status in (400, 401, 403, 404):
+            count["private"] += 1
+        elif status in (200, 206):
+            problems.append("%s: a private attachment is served without a key" % label)
+        else:
+            problems.append("%s: no clear answer when asked without a key (HTTP %s)" % (label, status))
+
+total = len(source)
+total_bytes = sum(max(o["size"], 0) for o in source)
+public_total = by_bucket.get("media", [0, 0])[0]
+private_total = total - public_total
+
+# Private attachments the way the dashboard opens them: a signed link asked for
+# by a signed-in administrator. A visitor must not get one, nor a listing.
+private = [o for o in source if o["bucket"] != "media"]
+sample = private[:: max(1, len(private) // 5)][:5] if private else []
+signed_ok = 0
+visitor_signed = 0
+token = admin_token() if (secret and admin_id) else ""
+for o in sample:
+    path = "%s/object/sign/%s/%s" % (storage, o["bucket"], quoted(o["name"]))
+    status, body = fetch("POST", path, {"apikey": anon, "Authorization": "Bearer " + token}, {"expiresIn": 60})
+    link = ""
+    try:
+        link = json.loads(body).get("signedURL", "") if status == 200 else ""
+    except ValueError:
+        pass
+    kept = os.path.join(files_dir, o["bucket"], *o["name"].split("/"))
+    if link:
+        status, served = fetch("GET", site + "/storage/v1" + link, digest=True)
+        if status == 200 and os.path.isfile(kept) and served == file_md5(kept):
+            signed_ok += 1
+        else:
+            problems.append("%s/%s: the administrator's signed link does not open it (HTTP %s)" % (o["bucket"], o["name"], status))
+    else:
+        problems.append("%s/%s: an administrator gets no signed link (HTTP %s)" % (o["bucket"], o["name"], status))
+    status, body = fetch("POST", path, {"apikey": anon, "Authorization": "Bearer " + anon}, {"expiresIn": 60})
+    if status == 200:
+        visitor_signed += 1
+        problems.append("%s/%s: a visitor can get a signed link" % (o["bucket"], o["name"]))
+status, body = fetch("POST", storage + "/object/list/submissions", {"apikey": anon, "Authorization": "Bearer " + anon},
+                     {"prefix": "", "limit": 5})
+listing = []
+try:
+    listing = json.loads(body) if status == 200 else []
+except ValueError:
+    pass
+if listing:
+    problems.append("a visitor can list the private attachments")
+
+extra = sorted("%s/%s" % key for key in here if key not in {(o["bucket"], o["name"]) for o in source})
+
+print("files in the source: %d (%d bytes): %s" % (
+    total, total_bytes, ", ".join("%s %d files %d bytes" % (b, n, s) for b, (n, s) in sorted(by_bucket.items()))))
+print("here with the same bucket, name and size: %d of %d" % (count["present"], total))
+print("same type: %d of %d" % (count["type"], total))
+print("the download carries the source's own checksum: %d of %d that have one" % (count["checksum"], count["with_checksum"]))
+print("this server hands out exactly the download (md5): %d of %d" % (count["content"], total))
+print("pictures and videos served to visitors: %d of %d" % (count["public"], public_total))
+print("private attachments refused without a key: %d of %d" % (count["private"], private_total))
+print("private attachments opened with an administrator's signed link: %d of %d tried" % (signed_ok, len(sample)))
+print("a visitor gets a signed link or a listing: %s" % ("no" if not visitor_signed and not listing else "YES"))
+print("files here that are not in the source (earlier tests): %d%s" % (len(extra), (" - " + ", ".join(extra[:10])) if extra else ""))
+for line in problems[:25]:
+    print("  PROBLEM  " + line)
+if len(problems) > 25:
+    print("  ... and %d more" % (len(problems) - 25))
+good = (not problems and count["present"] == total and count["content"] == total and count["type"] == total
+        and count["checksum"] == count["with_checksum"] and count["public"] == public_total
+        and count["private"] == private_total and signed_ok == len(sample))
+print(("FILES_VERIFIED %d/%d" % (count["content"], total)) if good else ("FILES_NOT_VERIFIED %d/%d" % (count["content"], total)))
+sys.exit(0 if good else 6)
+PYTHON
+  {
+    echo "timestamp=$(date -u +%FT%TZ)"
+    echo "result=$([ "$rc" -eq 0 ] && echo ok || echo failed)"
+  } > "$DIR/files.verified"
   return "$rc"
 }
 
@@ -1016,7 +1263,8 @@ UNIT
       ;;
     status)
       echo "timer: $(systemctl is-active "$unit.timer" 2> /dev/null || true)"
-      grep -E '^(== |copied=|FILES_|here with)' "$LOG_FILE" 2> /dev/null | tail -n 4 || true
+      echo "attempts: $(grep -c '^== .* copy of the stored files' "$LOG_FILE" 2> /dev/null || true)"
+      grep -E '^(== .* (copy|verification) of the stored files|copied=|FILES_|here with)' "$LOG_FILE" 2> /dev/null | tail -n 5 || true
       ;;
     *)
       echo "usage: owis-migrate files-auto on|off|status" >&2
@@ -1509,8 +1757,11 @@ case "$COMMAND" in
   files-copy)
     logged files_copy "${2:-0}"
     ;;
+  files-verify)
+    logged files_verify
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-verify | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
