@@ -71,17 +71,27 @@ async function paymentStatus(oid) {
 
 /** Creates a pending donation and opens the mock bank's card form for it. */
 async function startPayment(label) {
-  const created = await fetch(`${base}/api/payments/create`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      amount: 25,
-      locale: 'en',
-      titleSnapshot: 'CI test donation',
-      donor: { name: 'CI Tester', email: 'ci-tester@example.test' },
-    }),
-  });
-  const body = await created.json().catch(() => ({}));
+  // create() reads the live USD/TRY rate from the bank's public rates page and
+  // answers 500 when that page does not reply. From a CI runner that happens
+  // now and then, so a 500 is retried a few times before it counts as a failure.
+  let created;
+  let body = {};
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    created = await fetch(`${base}/api/payments/create`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        amount: 25,
+        locale: 'en',
+        titleSnapshot: 'CI test donation',
+        donor: { name: 'CI Tester', email: 'ci-tester@example.test' },
+      }),
+    });
+    body = await created.json().catch(() => ({}));
+    if (created.status !== 500 || attempt === 5) break;
+    console.log(`note  ${label}: create answered 500 (attempt ${attempt} of 5), trying again`);
+    await new Promise((resolve) => setTimeout(resolve, 8000));
+  }
   if (!created.ok || !body.ok) {
     throw new Error(`${label}: create returned ${created.status} ${JSON.stringify(body)}`);
   }
