@@ -120,14 +120,18 @@ function DonationCard({
       >
         <div className="relative">
           <div className="relative aspect-square overflow-hidden bg-primary-50">
-            <img
-              src={opportunity.image}
-              alt={opportunity.imageAlt}
-              width={600}
-              height={600}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
-            />
+            {/* A card can be saved without a picture; the tinted box is kept
+                instead of a broken image. */}
+            {opportunity.image ? (
+              <img
+                src={opportunity.image}
+                alt={opportunity.imageAlt}
+                width={600}
+                height={600}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
+              />
+            ) : null}
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 left-[-30%] w-1/4 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/card:translate-x-[560%] motion-reduce:hidden"
@@ -211,14 +215,16 @@ function FeaturedDonationCard({
         className="group/card overflow-hidden rounded-[26px] border border-[rgba(127,29,45,0.11)] bg-white text-start shadow-[0_20px_52px_rgba(40,12,18,0.09)] transition-all duration-300 hover:border-primary-200 hover:shadow-[0_26px_64px_rgba(40,12,18,0.13)]"
       >
         <div className="relative aspect-square overflow-hidden bg-primary-50 lg:aspect-auto lg:h-full lg:min-h-[420px]">
-          <img
-            src={opportunity.image}
-            alt={opportunity.imageAlt}
-            width={880}
-            height={880}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.045] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
-          />
+          {opportunity.image ? (
+            <img
+              src={opportunity.image}
+              alt={opportunity.imageAlt}
+              width={880}
+              height={880}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-[1.045] motion-reduce:transition-none motion-reduce:group-hover/card:scale-100"
+            />
+          ) : null}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-[-30%] w-1/4 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/card:translate-x-[560%] motion-reduce:hidden"
