@@ -4,6 +4,7 @@ import {
   PAYMENT_LIMITS,
   paymentClientId,
   paymentGateUrl,
+  paymentsDisabled,
   paymentStoreKey,
   siteOrigin,
 } from '../_lib/env';
@@ -17,7 +18,7 @@ import {
 } from '../_lib/http';
 import { buildGateRequestFields, newOrderId } from '../_lib/nestpay';
 
-type DirectErrorCode = 'invalid-amount' | 'unavailable' | 'server-error';
+type DirectErrorCode = 'invalid-amount' | 'unavailable' | 'server-error' | 'payments-disabled';
 
 function fail(res: ApiResponse, status: number, error: DirectErrorCode): void {
   sendJson(res, status, { ok: false, error });
@@ -46,6 +47,13 @@ function anonymousDonorName(locale: PaymentLocale): string {
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     methodNotAllowed(res, 'POST');
+    return;
+  }
+
+  // Online payments are switched off (PAYMENT_MODE=disabled): nothing is
+  // recorded and nothing is sent to a bank.
+  if (paymentsDisabled()) {
+    fail(res, 503, 'payments-disabled');
     return;
   }
 
