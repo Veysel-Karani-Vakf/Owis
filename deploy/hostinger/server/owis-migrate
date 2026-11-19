@@ -6,6 +6,8 @@
 #                               production settings yourself (hidden input);
 #                               run it from your own terminal over ssh -t
 #   owis-migrate state          which values are stored (never the values)
+#   owis-migrate repair         remove what a paste can add around a stored value
+#                               (terminal control codes); shows no value
 #   owis-migrate source-test    connect to the source and print what is there
 #   owis-migrate source-dump    full dump of the source (schemas public, auth,
 #                               storage) kept as an encrypted archive in
@@ -20,6 +22,9 @@
 #   owis-migrate payment-check  compare the stored merchant number with the one
 #                               the imported payments were made with
 #   owis-migrate files-test     ask the source for one stored file of each kind
+#   owis-migrate files-copy [n] copy the stored files (all, or the first n that
+#                               are missing) into this server's storage; keeps
+#                               the downloaded originals in /opt/owis/migrate/files
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
@@ -52,6 +57,11 @@ SOURCE_BACKUP_DIR="/var/backups/owis/source"
 IMPORT_STATE_FILE="$DIR/imported"
 LOG_FILE="/var/log/owis-migrate.log"
 LOCK_FILE="/run/owis-migrate.lock"
+FILES_DIR="$DIR/files"
+SOURCE_STORAGE_URL="${OWIS_SOURCE_STORAGE_URL:-https://$SOURCE_REF.supabase.co/storage/v1}"
+TARGET_STORAGE_URL="${OWIS_TARGET_STORAGE_URL:-http://127.0.0.1:8000/storage/v1}"
+# Every stored file as one JSON list: bucket, name, size, type, cache setting.
+OBJECTS_SQL="select coalesce(json_agg(json_build_object('bucket', bucket_id, 'name', name, 'size', coalesce((metadata->>'size')::bigint, -1), 'type', metadata->>'mimetype', 'cache', metadata->>'cacheControl') order by bucket_id, name), '[]'::json) from storage.objects"
 
 # Row count of every readable table in the three schemas ("schema.table<TAB>count").
 COUNTS_SQL="SELECT format('%I.%I', schemaname, tablename), (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', schemaname, tablename), false, true, '')))[1]::text FROM pg_tables WHERE schemaname IN ('public', 'auth', 'storage') AND has_table_privilege(format('%I.%I', schemaname, tablename), 'SELECT') ORDER BY 1"
@@ -65,12 +75,32 @@ need_terminal() {
   }
 }
 
-# ask_hidden <variable name> <prompt>: reads one line without echo.
+# Prints the value without what a terminal can wrap around pasted text
+# (bracketed-paste markers, arrow or Insert keys) and without blanks around it.
+clean_value() {
+  local v
+  v="$(printf '%s' "$1" | LC_ALL=C sed -E $'s/\x1b\\[[0-9;]*[A-Za-z~]//g')"
+  v="${v#"${v%%[![:space:]]*}"}"
+  v="${v%"${v##*[![:space:]]}"}"
+  printf '%s' "$v"
+}
+
+has_control() {
+  [ -n "$(printf '%s' "$1" | LC_ALL=C tr -d '\040-\176\200-\377')" ]
+}
+
+# ask_hidden <variable name> <prompt>: reads one line without echo. A value
+# that still holds control characters after cleaning is asked for again.
 ask_hidden() {
   local __value
-  printf '%s: ' "$2"
-  read -r -s __value || true
-  echo
+  while true; do
+    printf '%s: ' "$2"
+    read -r -s __value || true
+    echo
+    __value="$(clean_value "$__value")"
+    has_control "$__value" || break
+    echo "     that contained control characters (a key pressed during the paste?); once more"
+  done
   printf -v "$1" '%s' "$__value"
 }
 
@@ -104,6 +134,8 @@ secrets() {
   need_terminal
   install -d -m 700 "$DIR"
   local value
+  # Ask the terminal not to wrap pasted text in control codes.
+  printf '\033[?2004l'
   echo "Type or paste each value and press Enter. Nothing you type is shown."
   echo "Press Enter on an empty line to leave a value as it is."
   echo
@@ -150,6 +182,38 @@ secrets() {
   show_state
   echo
   echo "SECRETS_STORED. Nothing has been connected or changed yet."
+}
+
+# Cleans the values already stored, in place. Never prints one.
+repair() {
+  local name old new token
+  if [ -s "$SOURCE_KEY_FILE" ]; then
+    old="$(head -n 1 "$SOURCE_KEY_FILE")"
+    token="$(printf '%s' "$old" | LC_ALL=C grep -oE 'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}' | head -n 1 || true)"
+    [ -n "$token" ] || token="$(clean_value "$old")"
+    if [ "$token" = "$old" ]; then
+      echo "  clean     source service_role key"
+    elif [ -z "$token" ] || has_control "$token"; then
+      echo "  RE-ENTER  source service_role key (it cannot be cleaned)"
+    else
+      printf '%s\n' "$token" > "$SOURCE_KEY_FILE.new"
+      mv "$SOURCE_KEY_FILE.new" "$SOURCE_KEY_FILE"
+      echo "  repaired  source service_role key (stray characters from the paste removed)"
+    fi
+  fi
+  for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
+    old="$(env_value "$name")"
+    [ -n "$old" ] || continue
+    new="$(clean_value "$old")"
+    if [ "$new" = "$old" ]; then
+      echo "  clean     $name"
+    elif [ -z "$new" ] || has_control "$new"; then
+      echo "  RE-ENTER  $name (it cannot be cleaned)"
+    else
+      set_env_value "$name" "$new"
+      echo "  repaired  $name (stray characters from the paste removed)"
+    fi
+  done
 }
 
 # Runs a PostgreSQL client program inside the database container against the
@@ -541,6 +605,9 @@ payment_check() {
   key="$(env_value PAYMENT_STORE_KEY)"
   gate="$(env_value PAYMENT_GATE_URL)"
   used="$(target_psql -At -c "select distinct raw_response->>'clientid' from public.donation_payments where gateway_mode = 'production' and raw_response ? 'clientid'")"
+  if has_control "$stored$key$gate"; then
+    echo "one of the stored payment values holds control characters from a paste: run owis-migrate repair"
+  fi
   if [ -z "$stored" ]; then
     echo "PAYMENT_CLIENT_ID  MISSING"
   elif [ -z "$used" ]; then
@@ -554,8 +621,8 @@ payment_check() {
     echo "PAYMENT_STORE_KEY  MISSING"
   elif [ "$key" = "$stored" ] || grep -qxF -- "$key" <<< "$used"; then
     echo "PAYMENT_STORE_KEY  WRONG: it is the merchant number, not the store key"
-  elif [[ "$key" =~ [[:space:]] ]] || [[ "$key" == TEST_* ]]; then
-    echo "PAYMENT_STORE_KEY  SUSPECT: it contains a space or is a placeholder"
+  elif has_control "$key" || [[ "$key" =~ [[:space:]] ]] || [[ "$key" == TEST_* ]]; then
+    echo "PAYMENT_STORE_KEY  SUSPECT: it contains a control character or a space, or is a placeholder: enter it again"
   else
     echo "PAYMENT_STORE_KEY  set; only the bank can confirm it (it accepts or refuses a signed request)"
   fi
@@ -580,7 +647,7 @@ files_test() {
   local headers bucket name encoded code
   headers="$(mktemp "$DIR/.headers.XXXXXX")"
   # shellcheck disable=SC2064
-  trap "rm -f '$headers'" EXIT
+  trap "rm -f '$headers' '$headers.body'" EXIT
   {
     printf 'apikey: %s\n' "$(head -n 1 "$SOURCE_KEY_FILE")"
     printf 'Authorization: Bearer %s\n' "$(head -n 1 "$SOURCE_KEY_FILE")"
@@ -592,14 +659,189 @@ files_test() {
       continue
     }
     encoded="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$name")"
-    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 -H @"$headers" \
-      "https://$SOURCE_REF.supabase.co/storage/v1/object/authenticated/$bucket/$encoded" || true)"
-    case "$code" in
-      200) echo "$bucket: HTTP 200, readable" ;;
-      402) echo "$bucket: HTTP 402, the project's file service is still restricted (quota)" ;;
-      *) echo "$bucket: HTTP $code" ;;
-    esac
+    code="$(curl -sS -o "$headers.body" -w '%{http_code}' --max-time 60 -H @"$headers" \
+      "$SOURCE_STORAGE_URL/object/authenticated/$bucket/$encoded" || true)"
+    if [ "$code" = "200" ]; then
+      echo "$bucket: HTTP 200, readable"
+    else
+      echo "$bucket: HTTP $code $(python3 -c 'import json, sys
+raw = open(sys.argv[1], "rb").read(2000)
+try:
+    body = json.loads(raw)
+    print(" ".join(str(body.get(k, "")) for k in ("statusCode", "error", "message"))[:160])
+except Exception:
+    print(raw[:120].decode("utf-8", "replace").replace("\n", " "))' "$headers.body" 2> /dev/null || true)"
+    fi
+    rm -f "$headers.body"
   done
+}
+
+# Copies the stored files: each one is downloaded from the source with the
+# service_role key, kept under /opt/owis/migrate/files, and uploaded through
+# this server's own storage service under the same bucket and name. A file that
+# is already here with the same size is skipped, so the job can be repeated.
+files_copy() {
+  local limit="${1:-0}"
+  [[ "$limit" =~ ^[0-9]+$ ]] || {
+    echo "usage: owis-migrate files-copy [how many]" >&2
+    exit 2
+  }
+  [ -s "$SOURCE_KEY_FILE" ] || {
+    echo "the source service_role key has not been entered yet (owis-migrate secrets)" >&2
+    exit 3
+  }
+  command -v python3 > /dev/null || {
+    echo "python3 is needed" >&2
+    exit 1
+  }
+  install -d -m 700 "$FILES_DIR" "$WORK_DIR"
+  local list="$WORK_DIR/objects.source.json" here="$WORK_DIR/objects.here.json" rc=0
+  echo "== $(date -u +%FT%TZ) copy of the stored files"
+  source_pg psql "service=owis_source" -At -c "$OBJECTS_SQL" > "$list"
+  target_psql -At -c "$OBJECTS_SQL" > "$here"
+
+  python3 - "$list" "$here" "$FILES_DIR" "$SOURCE_STORAGE_URL" "$TARGET_STORAGE_URL" \
+    "$SOURCE_KEY_FILE" "$ROOT/$TARGET_ENV.env" "$limit" <<'PYTHON' || rc=$?
+import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+
+list_path, here_path, files_dir, source_url, target_url, source_key_file, env_file, limit = sys.argv[1:9]
+limit = int(limit)
+source_key = open(source_key_file).readline().strip()
+target_key = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        target_key = line.split("=", 1)[1].strip()
+if not target_key:
+    sys.exit("this server's service key is missing from its settings")
+
+objects = json.load(open(list_path)) or []
+here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(here_path)) or [])}
+
+
+def quoted(name):
+    return urllib.parse.quote(name, safe="/")
+
+
+def local_path(o):
+    parts = o["name"].split("/")
+    if o["name"].startswith("/") or any(p in ("", ".", "..") for p in parts):
+        return None
+    return os.path.join(files_dir, o["bucket"], *parts)
+
+
+def download(o, dest):
+    if os.path.isfile(dest) and os.path.getsize(dest) == o["size"]:
+        return
+    os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+    request = urllib.request.Request(
+        "%s/object/authenticated/%s/%s" % (source_url, o["bucket"], quoted(o["name"])),
+        headers={"apikey": source_key, "Authorization": "Bearer " + source_key},
+    )
+    part = dest + ".part"
+    with urllib.request.urlopen(request, timeout=300) as response, open(part, "wb") as out:
+        while True:
+            chunk = response.read(1 << 20)
+            if not chunk:
+                break
+            out.write(chunk)
+    got = os.path.getsize(part)
+    if got != o["size"]:
+        os.remove(part)
+        raise RuntimeError("downloaded %d bytes, expected %d" % (got, o["size"]))
+    os.replace(part, dest)
+
+
+def upload(o, src):
+    headers = {
+        "apikey": target_key,
+        "Authorization": "Bearer " + target_key,
+        "Content-Type": o.get("type") or "application/octet-stream",
+        "Content-Length": str(os.path.getsize(src)),
+        "x-upsert": "true",
+    }
+    if o.get("cache"):
+        headers["cache-control"] = o["cache"]
+    with open(src, "rb") as body:
+        request = urllib.request.Request(
+            "%s/object/%s/%s" % (target_url, o["bucket"], quoted(o["name"])),
+            data=body, method="POST", headers=headers,
+        )
+        with urllib.request.urlopen(request, timeout=900) as response:
+            response.read()
+
+
+def reason(error):
+    if isinstance(error, urllib.error.HTTPError):
+        try:
+            body = json.loads(error.read(2000) or b"{}")
+            detail = " ".join(str(body.get(k, "")) for k in ("statusCode", "error", "message")).strip()
+        except Exception:
+            detail = ""
+        return ("HTTP %d %s" % (error.code, detail))[:200]
+    return str(error)[:200]
+
+
+copied = already = skipped = failed = 0
+copied_bytes = 0
+blocked = False
+todo = []
+for o in objects:
+    if here.get((o["bucket"], o["name"])) == o["size"]:
+        already += 1
+    elif o["size"] < 0 or local_path(o) is None:
+        skipped += 1
+        print("  skipped   %s/%s (no size or an unusable name)" % (o["bucket"], o["name"]))
+    else:
+        todo.append(o)
+if limit:
+    todo = todo[:limit]
+print("%d files in the source, %d already here, %d to copy now" % (len(objects), already, len(todo)), flush=True)
+
+for index, o in enumerate(todo, 1):
+    dest = local_path(o)
+    error = None
+    for attempt in range(1, 4):
+        try:
+            download(o, dest)
+            upload(o, dest)
+            error = None
+            break
+        except Exception as exc:  # every failure is reported below
+            error = exc
+            if isinstance(exc, urllib.error.HTTPError) and exc.code in (400, 401, 402, 403, 404):
+                break
+            time.sleep(3 * attempt)
+    if error is None:
+        copied += 1
+        copied_bytes += o["size"]
+    else:
+        failed += 1
+        print("  FAILED    %s/%s: %s" % (o["bucket"], o["name"], reason(error)), flush=True)
+        if copied == 0 and failed >= 3:
+            blocked = True
+            break
+    if index % 20 == 0:
+        print("  ... %d of %d" % (index, len(todo)), flush=True)
+
+print("copied=%d bytes=%d already_here=%d skipped=%d failed=%d" % (copied, copied_bytes, already, skipped, failed))
+if blocked:
+    print("FILES_BLOCKED: the first files all failed; nothing more was tried")
+    sys.exit(5)
+sys.exit(1 if failed else 0)
+PYTHON
+
+  # What is here now, against the source list.
+  target_psql -At -c "$OBJECTS_SQL" > "$here"
+  python3 - "$list" "$here" <<'PYTHON'
+import json, sys
+source = json.load(open(sys.argv[1])) or []
+here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(sys.argv[2])) or [])}
+same = sum(1 for o in source if here.get((o["bucket"], o["name"])) == o["size"])
+total = sum(o["size"] for o in source if o["size"] > 0)
+print("here with the same size: %d of %d files (%d MB in the source)" % (same, len(source), total // 1048576))
+print("FILES_COMPLETE" if same == len(source) else "FILES_INCOMPLETE")
+PYTHON
+  return "$rc"
 }
 
 # Long jobs: one at a time, with their output kept in the log file.
@@ -632,6 +874,9 @@ case "$COMMAND" in
   state)
     show_state
     ;;
+  repair)
+    repair
+    ;;
   source-test)
     source_test
     ;;
@@ -650,8 +895,11 @@ case "$COMMAND" in
   files-test)
     files_test
     ;;
+  files-copy)
+    logged files_copy "${2:-0}"
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | files-test" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | files-test | files-copy [n]" >&2
     exit 2
     ;;
 esac
