@@ -177,12 +177,14 @@ export default function DonateCheckoutPage() {
           id="cms-checkout-hero"
           className="relative isolate overflow-hidden bg-dark-950 pt-24 md:pt-28"
         >
-          <img
-            src={opportunity.image}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45"
-          />
+          {opportunity.image ? (
+            <img
+              src={opportunity.image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45"
+            />
+          ) : null}
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-950/90 via-dark-950/78 to-dark-950/68" />
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_22%_45%,rgba(218,8,18,0.24),transparent_34%)]" />
 
@@ -209,12 +211,14 @@ export default function DonateCheckoutPage() {
               <div className="text-start">
                 <div className="overflow-hidden rounded-[20px] border border-primary-100 bg-white shadow-[0_14px_38px_rgba(40,12,18,0.07)]">
                   <div className="relative h-40 overflow-hidden bg-primary-50 sm:h-44 lg:h-[205px]">
-                    <img
-                      src={opportunity.image}
-                      alt={opportunity.imageAlt}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
+                    {opportunity.image ? (
+                      <img
+                        src={opportunity.image}
+                        alt={opportunity.imageAlt}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
                   </div>
                   <div className="p-4 md:p-5">
                     <p className="text-[11px] font-bold text-primary-700">{content.summary.heading}</p>
