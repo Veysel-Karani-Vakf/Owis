@@ -149,6 +149,9 @@ deploy() {
     | grep -v -e ":${tag}\$" -e ":${previous:-none}\$" \
     | xargs -r docker rmi > /dev/null 2>&1 || true
   docker builder prune -f --filter 'until=168h' > /dev/null 2>&1 || true
+  # Every build also leaves untagged intermediate layers behind (about 1 GB a
+  # time). Those younger than a day keep the next build fast; older ones go.
+  docker image prune -f --filter 'until=24h' > /dev/null 2>&1 || true
 }
 
 [ "$(id -u)" -eq 0 ] || {
