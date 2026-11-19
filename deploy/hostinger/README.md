@@ -174,10 +174,50 @@ attention. GitHub offers the manual button and the daily schedule only for
 workflows on the default branch; until this branch is merged, the monitor runs
 when its own file changes, and every deployment prints the same status.
 
+## The live data and the production settings
+
+`owis-migrate` (root only, `/usr/local/sbin`) moved the live site here. Every
+command prints what it does; none of them writes to the old project.
+
+| Command | What it does |
+| --- | --- |
+| `secrets`, `store-key`, `repair`, `state` | values typed by the owner (hidden input), kept root-only in `/opt/owis/migrate`, never printed |
+| `source-test`, `source-dump` | read the old database; the dump is kept as an encrypted archive in `/var/backups/owis/source` |
+| `import plan`, `import apply` | back up this server, then replace the site tables and the login accounts in one transaction and compare row counts and access policies |
+| `source-changes [baseline]` | content fingerprint of every table against a recorded baseline: has the old site received anything since? |
+| `urls <from> <to> [apply]` | rewrite stored file addresses (they are saved in the content with their full address) |
+| `files-test`, `files-copy`, `files-auto on\|off\|status` | copy the stored files through this server's own storage service; `files-auto` retries every 10 minutes until all are here |
+| `promote plan\|apply [payments-off]` | switch the stack from the staging settings to the production ones |
+| `dns`, `cutover plan\|apply` | the last step, once the domain's records point here: certificate, redirects, sign-in links, stored file addresses |
+
+The stack keeps its internal label `staging` (paths, container and backup
+names) after it serves the official site; `DEPLOY_ENV` in
+`/opt/owis/staging.env` says what it really is, and `owis-deploy-staging status`
+reports it. A push to the branch still builds, tests and deploys it, and the
+checks after the deployment follow what the server reports.
+
+### Online payments
+
+`PAYMENT_MODE` decides what the donation checkout does:
+
+| Value | Behaviour |
+| --- | --- |
+| `mock` | simulated bank; only accepted when `DEPLOY_ENV=staging` |
+| `test`, `production` | the bank's gateway; needs `PAYMENT_CLIENT_ID`, `PAYMENT_STORE_KEY`, `PAYMENT_GATE_URL`, and the API refuses to start in production without them |
+| `disabled` | no online payment at all: the checkout shows a notice with the bank accounts, `/api/payments/create` and `/direct` answer 503, nothing is recorded or sent to a bank |
+
+Production never runs the simulated bank. To switch the bank on later: type the
+store key with `owis-migrate store-key`, then `owis-migrate promote apply`.
+
+`deploy/hostinger/tests/admin-api-check.py` (run as root on the server) checks
+what a visitor may read, that an administrator can add, change and remove
+records and files, and that the sign-in service refuses unknown accounts.
+
 ## Not done yet
 
 - An alert that reaches a person when a backup fails (needs a mail or
   notification channel).
 - Outgoing mail (SMTP) for password resets.
-- Moving production data, accounts and files.
-- Bank test and production payment configuration.
+- Bank production payments: waiting for the store key (`PAYMENT_MODE=disabled`
+  until then).
+- The domain: `owis-migrate cutover apply` after the DNS records are changed.
