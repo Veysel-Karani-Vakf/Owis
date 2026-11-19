@@ -219,9 +219,11 @@ jobs:
           contains "SPA deep link" 'id="root"'
           expect "donate-now redirect" 301 "$base/donate-now"
           expect "a missing build file is a 404, not the page shell" 404 "$base/assets/does-not-exist.js"
+          # Headers are read into a variable first: with pipefail, "curl | grep -q"
+          # fails at random when grep stops reading before curl has finished.
           page_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base/news" | tr 'A-Z' 'a-z')"
           for wanted in 'cache-control: no-cache' 'x-frame-options: sameorigin' 'x-content-type-options: nosniff' 'strict-transport-security: max-age='; do
-            if printf '%s' "$page_headers" | grep -q -- "$wanted"; then
+            if grep -q -- "$wanted" <<< "$page_headers"; then
               echo "ok    page header ${wanted}"
             else
               echo "::error::page header missing: ${wanted}"
@@ -230,7 +232,9 @@ jobs:
           done
           expect "home page" 200 "$base/"
           asset="$(grep -o '/assets/[A-Za-z0-9._-]*\.js' "$body" | head -n 1 || true)"
-          if [ -n "$asset" ] && curl -sS -D - -o /dev/null --max-time 20 "$base$asset" | tr 'A-Z' 'a-z' | grep -q 'cache-control: public, max-age=31536000, immutable'; then
+          asset_headers=""
+          [ -z "$asset" ] || asset_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base$asset" | tr 'A-Z' 'a-z')"
+          if grep -q 'cache-control: public, max-age=31536000, immutable' <<< "$asset_headers"; then
             echo "ok    build files are cached for a year (${asset})"
           else
             echo "::error::build file ${asset:-not found} is not served with a long cache lifetime"
@@ -421,7 +425,8 @@ jobs:
           contains "payments config" '"mode":"mock"'
           expect "database API refuses requests without a key" 401 "$STAGING_URL/rest/v1/"
           expect "storage is up" 200 "$STAGING_URL/storage/v1/status"
-          if curl -sSI --max-time 20 "$STAGING_URL/" | grep -qi '^x-robots-tag:.*noindex'; then
+          live_headers="$(curl -sSI --max-time 20 "$STAGING_URL/" || true)"
+          if grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
             echo "ok    staging is hidden from search engines"
           else
             echo "::error::X-Robots-Tag noindex header is missing"
