@@ -25,12 +25,15 @@
 #                               payments and the bank's documented address; drop
 #                               a stored store key that cannot be one
 #   owis-migrate store-key      you type the bank's store key (hidden input)
-#   owis-migrate promote plan|apply
+#   owis-migrate promote plan|apply [payments-off]
 #                               switch this server's stack from the staging
 #                               settings (simulated bank) to the production ones
 #                               (the real bank, with the stored values), rebuild
 #                               and check; the settings before are kept, and put
-#                               back if the new build does not start
+#                               back if the new build does not start. With
+#                               "payments-off" no bank value is needed: online
+#                               payments are switched off and the checkout shows
+#                               a notice with the bank accounts instead
 #   owis-migrate dns            what the domain's own name servers answer now
 #   owis-migrate cutover plan|apply
 #                               the last step, after the DNS records point here:
@@ -1004,6 +1007,12 @@ set_stack_value() {
   mv "$STACK_ENV_FILE.new" "$STACK_ENV_FILE"
 }
 
+remove_stack_value() {
+  grep -v "^$1=" "$STACK_ENV_FILE" > "$STACK_ENV_FILE.new" || true
+  chmod 600 "$STACK_ENV_FILE.new"
+  mv "$STACK_ENV_FILE.new" "$STACK_ENV_FILE"
+}
+
 # What docker compose will really hand to the containers, compared with what is
 # meant. Catches a value that the settings file would silently alter.
 stack_config_check() {
@@ -1032,6 +1041,10 @@ if want_mode == "production":
         got = (api.get(key) or "").replace("$$", "$")
         if not wanted.get(key) or got != wanted[key]:
             problems.append("%s does not arrive as stored" % key)
+if want_mode == "disabled":
+    for key in ("PAYMENT_CLIENT_ID", "PAYMENT_STORE_KEY", "PAYMENT_GATE_URL"):
+        if not (api.get(key) or "").startswith("TEST_"):
+            problems.append("%s is still handed to the site although payments are off" % key)
 for problem in problems:
     print("  " + problem)
 sys.exit(1 if problems else 0)
@@ -1046,32 +1059,35 @@ live_answer() {
 # From the staging settings to the production ones, on the address the stack
 # already answers on. The domain is a separate, later step.
 promote() {
-  local mode="${1:-}" name value problems=0
-  case "$mode" in
-    plan | apply) ;;
+  local mode="${1:-}" payments="${2:-on}" name value problems=0 target_mode="production"
+  case "$mode/$payments" in
+    plan/on | apply/on) ;;
+    plan/payments-off | apply/payments-off) target_mode="disabled" ;;
     *)
-      echo "usage: owis-migrate promote plan|apply" >&2
+      echo "usage: owis-migrate promote plan|apply [payments-off]" >&2
       exit 2
       ;;
   esac
-  echo "== $(date -u +%FT%TZ) promote $mode"
+  echo "== $(date -u +%FT%TZ) promote $mode (online payments: $target_mode)"
   echo "now: DEPLOY_ENV=$(stack_value DEPLOY_ENV) PAYMENT_MODE=$(stack_value PAYMENT_MODE) address=$(stack_value PUBLIC_SITE_URL)"
 
   [ -s "$IMPORT_STATE_FILE" ] || {
     echo "  the live data has not been imported yet (owis-migrate import apply)"
     problems=1
   }
-  for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
-    value="$(env_value "$name")"
-    if [ -z "$value" ]; then
-      echo "  $name is missing"
-      problems=1
-    elif has_control "$value" || [[ "$value" == *"'"* ]]; then
-      echo "  $name holds a character that cannot be stored (enter it again)"
-      problems=1
-    fi
-  done
-  payment_check | grep -E 'DIFFERENT|WRONG|SUSPECT|MISSING' | sed 's/^/  /' && problems=1
+  if [ "$target_mode" = "production" ]; then
+    for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
+      value="$(env_value "$name")"
+      if [ -z "$value" ]; then
+        echo "  $name is missing"
+        problems=1
+      elif has_control "$value" || [[ "$value" == *"'"* ]]; then
+        echo "  $name holds a character that cannot be stored (enter it again)"
+        problems=1
+      fi
+    done
+    payment_check | grep -E 'DIFFERENT|WRONG|SUSPECT|MISSING' | sed 's/^/  /' && problems=1
+  fi
   grep -q 'name: owis-\${STACK_NAME:-staging}' "$STACK_COMPOSE_FILE" || {
     echo "  $STACK_COMPOSE_FILE is the old copy: it would rename the stack (install the current one first)"
     problems=1
@@ -1080,11 +1096,19 @@ promote() {
     echo "  $DEPLOY_TOOL is the old copy (no rebuild command)"
     problems=1
   }
+  if [ "$target_mode" = "disabled" ] && ! grep -q 'paymentsDisabled' "$ROOT/repo/api/_lib/env.ts" 2> /dev/null; then
+    echo "  the deployed build does not know PAYMENT_MODE=disabled yet (deploy the current branch first)"
+    problems=1
+  fi
   [ "$problems" -eq 0 ] || {
     echo "PROMOTE_NOT_READY. Nothing was changed."
     exit 1
   }
-  echo "would set: DEPLOY_ENV=production PAYMENT_MODE=production, merchant number, store key and bank address from the stored values"
+  if [ "$target_mode" = "production" ]; then
+    echo "would set: DEPLOY_ENV=production PAYMENT_MODE=production, merchant number, store key and bank address from the stored values"
+  else
+    echo "would set: DEPLOY_ENV=production PAYMENT_MODE=disabled; no bank value is handed to the site, the checkout shows the notice and the bank accounts"
+  fi
   echo "kept as they are: the address, the certificate, the database, the files, the search-engine setting ($(stack_value ROBOTS_TAG))"
   if [ "$mode" = "plan" ]; then
     echo "PROMOTE_PLAN_OK. Nothing was changed."
@@ -1099,11 +1123,15 @@ promote() {
   }
 
   set_stack_value DEPLOY_ENV production
-  set_stack_value PAYMENT_MODE production
+  set_stack_value PAYMENT_MODE "$target_mode"
   for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
-    set_stack_value "$name" "$(env_value "$name")"
+    if [ "$target_mode" = "production" ]; then
+      set_stack_value "$name" "$(env_value "$name")"
+    else
+      remove_stack_value "$name"
+    fi
   done
-  stack_config_check production production || {
+  stack_config_check production "$target_mode" || {
     restore_settings
     echo "PROMOTE_FAILED before anything was restarted" >&2
     exit 1
@@ -1116,17 +1144,26 @@ promote() {
     exit 1
   fi
 
-  local health config gate
+  local health config gate create
   health="$(live_answer /api/healthz)"
   config="$(live_answer /api/payments/config)"
   gate="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -X POST "$(stack_value PUBLIC_SITE_URL)/api/payments/mock-gate" || true)"
   echo "health: $(cut -c1-80 <<< "$health")"
   echo "payments: $(cut -c1-60 <<< "$config")"
   echo "simulated bank page: HTTP $gate (404 means it is switched off)"
-  if grep -q '"env":"production"' <<< "$health" && grep -q '"mode":"production"' <<< "$config"; then
+  if [ "$target_mode" = "disabled" ]; then
+    # An empty request: refused with 503 when payments are off, before anything is read or stored.
+    create="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -X POST -H 'Content-Type: application/json' -d '{}' "$(stack_value PUBLIC_SITE_URL)/api/payments/create" || true)"
+    echo "starting a payment: HTTP $create (503 means refused because payments are off)"
+    [ "$create" = "503" ] || health=""
+  fi
+  if grep -q '"env":"production"' <<< "$health" && grep -q "\"mode\":\"$target_mode\"" <<< "$config"; then
     echo "PROMOTE_OK. The settings from before are kept in $(basename "$before")"
   else
-    echo "PROMOTE_UNCONFIRMED: the stack started but does not report production (see above)" >&2
+    echo "the stack started but does not report what was set (see above)" >&2
+    restore_settings
+    "$DEPLOY_TOOL" rebuild || echo "the rebuild with the old settings failed too: look at the stack now" >&2
+    echo "PROMOTE_FAILED: the stack runs with the settings from before" >&2
     exit 1
   fi
 }
@@ -1256,10 +1293,13 @@ cutover() {
     echo "the stack already serves $new_url"
     exit 0
   fi
-  [ "$(stack_value DEPLOY_ENV)" = "production" ] && [ "$(stack_value PAYMENT_MODE)" = "production" ] || {
+  local payments_now
+  payments_now="$(stack_value PAYMENT_MODE)"
+  [ "$(stack_value DEPLOY_ENV)" = "production" ] && { [ "$payments_now" = "production" ] || [ "$payments_now" = "disabled" ]; } || {
     echo "  the stack still runs with the staging settings (owis-migrate promote apply)"
     problems=1
   }
+  [ "$payments_now" != "disabled" ] || echo "  note: online payments are switched off; the checkout shows the notice and the bank accounts"
   if ! files_complete; then
     if [ "$files_rule" = "incomplete-files-ok" ]; then
       echo "  note: the stored files are not all here yet; going on as asked"
@@ -1305,7 +1345,7 @@ cutover() {
   set_stack_value SITE_ADDRESS "$CANONICAL_HOST"
   set_stack_value REDIRECT_ADDRESSES "$WWW_HOST, $old_host"
   set_stack_value ROBOTS_TAG "all"
-  stack_config_check production production || {
+  stack_config_check production "$payments_now" || {
     cp -p "$before_stack" "$STACK_ENV_FILE"
     echo "CUTOVER_FAILED before anything was restarted" >&2
     exit 1
@@ -1409,7 +1449,7 @@ case "$COMMAND" in
     files_auto "${2:-status}"
     ;;
   promote)
-    logged promote "${2:-}"
+    logged promote "${2:-}" "${3:-on}"
     ;;
   dns)
     dns_report
@@ -1424,7 +1464,7 @@ case "$COMMAND" in
     logged files_copy "${2:-0}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
