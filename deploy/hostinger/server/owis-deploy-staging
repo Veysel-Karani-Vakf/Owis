@@ -5,6 +5,8 @@
 #
 #   owis-deploy-staging deploy <40-hex commit>
 #   owis-deploy-staging status           what runs, health, disk, memory, backups
+#   owis-deploy-staging rebuild          root only: build and start the deployed
+#                                        commit again after a settings change
 #   owis-deploy-staging rollback-drill   root only: proves that a build which
 #                                        cannot start is refused and undone
 #
@@ -34,10 +36,19 @@ current_tag() {
   cat "$STATE_FILE" 2> /dev/null || true
 }
 
+# One public setting of the stack (never a key), without its quotes.
+setting() {
+  sed -n "s/^$1=//p" "$ENV_FILE" | head -n 1 | sed -e "s/^'\\(.*\\)'\$/\\1/"
+}
+
 status() {
   echo "deployed: $(current_tag | grep . || echo none)"
   IMAGE_TAG="$(current_tag | grep . || echo local)" compose ps
   # key=value facts for the monitor workflow. Nothing here is secret.
+  echo "deploy_env=$(setting DEPLOY_ENV)"
+  echo "public_site_url=$(setting PUBLIC_SITE_URL)"
+  echo "payment_mode=$(setting PAYMENT_MODE)"
+  echo "robots_tag=$(setting ROBOTS_TAG)"
   echo "containers_total=$(docker ps -a --format '{{.Names}}' | grep -c -E '^(supabase-|owis-)' || true)"
   echo "containers_healthy=$(docker ps --filter health=healthy --format '{{.Names}}' | grep -c -E '^(supabase-|owis-)' || true)"
   echo "containers_not_healthy=$(docker ps -a --format '{{.Names}} {{.Status}}' | grep -E '^(supabase-|owis-)' | grep -v '(healthy)' | cut -d' ' -f1 | tr '\n' ',' || true)"
@@ -115,6 +126,27 @@ rollback_drill() {
   echo "ROLLBACK DRILL PASSED in ${seconds}s: the broken build was refused, ${previous} is running and healthy"
 }
 
+# Builds the deployed commit again with the settings as they are now (the
+# public address and the environment are compiled into the pages) and starts it.
+rebuild() {
+  local tag
+  tag="$(current_tag)"
+  [ -n "$tag" ] || {
+    echo "nothing is deployed yet" >&2
+    exit 1
+  }
+  echo "== $(date -u +%FT%TZ) rebuild ${tag} with the current settings"
+  IMAGE_TAG="$tag" compose build --quiet
+  if IMAGE_TAG="$tag" compose up -d --wait --wait-timeout "$WAIT_TIMEOUT"; then
+    echo "rebuilt ${tag}"
+  else
+    echo "start failed after the rebuild" >&2
+    IMAGE_TAG="$tag" compose ps >&2 || true
+    IMAGE_TAG="$tag" compose logs --no-color --tail=25 >&2 || true
+    exit 1
+  fi
+}
+
 deploy() {
   local sha="$1" tag previous
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || {
@@ -176,6 +208,15 @@ case "${1:-}" in
     [ "$#" -eq 1 ] || exit 2
     status
     ;;
+  rebuild)
+    [ "$#" -eq 1 ] || exit 2
+    exec 9> "$LOCK_FILE"
+    flock -w 900 9 || {
+      echo "a deployment is running" >&2
+      exit 4
+    }
+    rebuild 2>&1 | tee -a "$LOG_FILE"
+    ;;
   rollback-drill)
     [ "$#" -eq 1 ] || exit 2
     exec 9> "$LOCK_FILE"
@@ -186,7 +227,7 @@ case "${1:-}" in
     rollback_drill 2>&1 | tee -a "$LOG_FILE"
     ;;
   *)
-    echo "usage: owis-deploy-staging deploy <commit> | status | rollback-drill" >&2
+    echo "usage: owis-deploy-staging deploy <commit> | status | rebuild | rollback-drill" >&2
     exit 2
     ;;
 esac

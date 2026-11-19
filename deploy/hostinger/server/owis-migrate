@@ -25,6 +25,12 @@
 #                               payments and the bank's documented address; drop
 #                               a stored store key that cannot be one
 #   owis-migrate store-key      you type the bank's store key (hidden input)
+#   owis-migrate promote plan|apply
+#                               switch this server's stack from the staging
+#                               settings (simulated bank) to the production ones
+#                               (the real bank, with the stored values), rebuild
+#                               and check; the settings before are kept, and put
+#                               back if the new build does not start
 #   owis-migrate files-test     ask the source for one stored file of each kind
 #   owis-migrate files-copy [n] copy the stored files (all, or the first n that
 #                               are missing) into this server's storage; keeps
@@ -967,6 +973,158 @@ UNIT
   esac
 }
 
+STACK_ENV_FILE="$ROOT/$TARGET_ENV.env"
+STACK_COMPOSE_FILE="$ROOT/app/docker-compose.yml"
+DEPLOY_TOOL="/usr/local/sbin/owis-deploy-staging"
+
+# One setting of the stack on this server, without its quotes.
+stack_value() {
+  sed -n "s/^$1=//p" "$STACK_ENV_FILE" | head -n 1 | sed -e "s/^'\(.*\)'\$/\1/"
+}
+
+# set_stack_value <name> <value>: stored single-quoted, which docker compose
+# reads literally (no variable expansion, no comment). A value with a quote or
+# a line break cannot be stored that way and is refused.
+set_stack_value() {
+  case "$2" in
+    *"'"* | *$'\n'*)
+      echo "the value of $1 contains a quote or a line break and cannot be stored safely" >&2
+      return 1
+      ;;
+  esac
+  grep -v "^$1=" "$STACK_ENV_FILE" > "$STACK_ENV_FILE.new" || true
+  printf "%s='%s'\n" "$1" "$2" >> "$STACK_ENV_FILE.new"
+  chmod 600 "$STACK_ENV_FILE.new"
+  mv "$STACK_ENV_FILE.new" "$STACK_ENV_FILE"
+}
+
+# What docker compose will really hand to the containers, compared with what is
+# meant. Catches a value that the settings file would silently alter.
+stack_config_check() {
+  # stack_config_check <expected environment> <expected payment mode>
+  docker compose --project-directory "$ROOT/repo/deploy/hostinger" -f "$STACK_COMPOSE_FILE" \
+    --env-file "$STACK_ENV_FILE" config --format json \
+    | python3 -c '
+import json, sys
+config = json.load(sys.stdin)
+want_env, want_mode, secrets_file = sys.argv[1:4]
+wanted = {}
+for line in open(secrets_file):
+    if "=" in line:
+        key, value = line.rstrip("\n").split("=", 1)
+        wanted[key] = value
+api = config["services"]["api"]["environment"]
+problems = []
+if config.get("name") != "owis-staging":
+    problems.append("the stack would be renamed to %s" % config.get("name"))
+if api.get("DEPLOY_ENV") != want_env:
+    problems.append("DEPLOY_ENV is %s" % api.get("DEPLOY_ENV"))
+if api.get("PAYMENT_MODE") != want_mode:
+    problems.append("PAYMENT_MODE is %s" % api.get("PAYMENT_MODE"))
+if want_mode == "production":
+    for key in ("PAYMENT_CLIENT_ID", "PAYMENT_STORE_KEY", "PAYMENT_GATE_URL"):
+        got = (api.get(key) or "").replace("$$", "$")
+        if not wanted.get(key) or got != wanted[key]:
+            problems.append("%s does not arrive as stored" % key)
+for problem in problems:
+    print("  " + problem)
+sys.exit(1 if problems else 0)
+' "$1" "$2" "$PRODUCTION_ENV_FILE"
+}
+
+live_answer() {
+  # live_answer <path>: the body the public address gives, or nothing.
+  curl -sS --max-time 20 "$(stack_value PUBLIC_SITE_URL)$1" 2> /dev/null || true
+}
+
+# From the staging settings to the production ones, on the address the stack
+# already answers on. The domain is a separate, later step.
+promote() {
+  local mode="${1:-}" name value problems=0
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate promote plan|apply" >&2
+      exit 2
+      ;;
+  esac
+  echo "== $(date -u +%FT%TZ) promote $mode"
+  echo "now: DEPLOY_ENV=$(stack_value DEPLOY_ENV) PAYMENT_MODE=$(stack_value PAYMENT_MODE) address=$(stack_value PUBLIC_SITE_URL)"
+
+  [ -s "$IMPORT_STATE_FILE" ] || {
+    echo "  the live data has not been imported yet (owis-migrate import apply)"
+    problems=1
+  }
+  for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
+    value="$(env_value "$name")"
+    if [ -z "$value" ]; then
+      echo "  $name is missing"
+      problems=1
+    elif has_control "$value" || [[ "$value" == *"'"* ]]; then
+      echo "  $name holds a character that cannot be stored (enter it again)"
+      problems=1
+    fi
+  done
+  payment_check | grep -E 'DIFFERENT|WRONG|SUSPECT|MISSING' | sed 's/^/  /' && problems=1
+  grep -q 'name: owis-\${STACK_NAME:-staging}' "$STACK_COMPOSE_FILE" || {
+    echo "  $STACK_COMPOSE_FILE is the old copy: it would rename the stack (install the current one first)"
+    problems=1
+  }
+  grep -q ' rebuild)' "$DEPLOY_TOOL" || {
+    echo "  $DEPLOY_TOOL is the old copy (no rebuild command)"
+    problems=1
+  }
+  [ "$problems" -eq 0 ] || {
+    echo "PROMOTE_NOT_READY. Nothing was changed."
+    exit 1
+  }
+  echo "would set: DEPLOY_ENV=production PAYMENT_MODE=production, merchant number, store key and bank address from the stored values"
+  echo "kept as they are: the address, the certificate, the database, the files, the search-engine setting ($(stack_value ROBOTS_TAG))"
+  if [ "$mode" = "plan" ]; then
+    echo "PROMOTE_PLAN_OK. Nothing was changed."
+    return 0
+  fi
+
+  local before="$DIR/stack-settings.before-promote.$(date -u +%Y%m%dT%H%M%SZ)"
+  cp -p "$STACK_ENV_FILE" "$before"
+  restore_settings() {
+    cp -p "$before" "$STACK_ENV_FILE"
+    echo "the settings from before were put back" >&2
+  }
+
+  set_stack_value DEPLOY_ENV production
+  set_stack_value PAYMENT_MODE production
+  for name in PAYMENT_CLIENT_ID PAYMENT_STORE_KEY PAYMENT_GATE_URL; do
+    set_stack_value "$name" "$(env_value "$name")"
+  done
+  stack_config_check production production || {
+    restore_settings
+    echo "PROMOTE_FAILED before anything was restarted" >&2
+    exit 1
+  }
+
+  if ! "$DEPLOY_TOOL" rebuild; then
+    restore_settings
+    "$DEPLOY_TOOL" rebuild || echo "the rebuild with the old settings failed too: look at the stack now" >&2
+    echo "PROMOTE_FAILED: the stack runs with the settings from before" >&2
+    exit 1
+  fi
+
+  local health config gate
+  health="$(live_answer /api/healthz)"
+  config="$(live_answer /api/payments/config)"
+  gate="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -X POST "$(stack_value PUBLIC_SITE_URL)/api/payments/mock-gate" || true)"
+  echo "health: $(cut -c1-80 <<< "$health")"
+  echo "payments: $(cut -c1-60 <<< "$config")"
+  echo "simulated bank page: HTTP $gate (404 means it is switched off)"
+  if grep -q '"env":"production"' <<< "$health" && grep -q '"mode":"production"' <<< "$config"; then
+    echo "PROMOTE_OK. The settings from before are kept in $(basename "$before")"
+  else
+    echo "PROMOTE_UNCONFIRMED: the stack started but does not report production (see above)" >&2
+    exit 1
+  fi
+}
+
 # Long jobs: one at a time, with their output kept in the log file.
 logged() {
   exec 9> "$LOCK_FILE"
@@ -1024,6 +1182,9 @@ case "$COMMAND" in
   files-auto)
     files_auto "${2:-status}"
     ;;
+  promote)
+    logged promote "${2:-}"
+    ;;
   files-test)
     files_test
     ;;
@@ -1031,7 +1192,7 @@ case "$COMMAND" in
     logged files_copy "${2:-0}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | files-test | files-copy [n] | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply | files-test | files-copy [n] | files-auto on|off|status" >&2
     exit 2
     ;;
 esac
