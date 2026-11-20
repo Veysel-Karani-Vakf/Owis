@@ -17,12 +17,17 @@
  * - page_location and page_referrer keep only campaign parameters (utm_*,
  *   Google Ads click ids) and drop the #fragment, so amount, oid, error and
  *   search terms never leave the browser.
- * - On the payment routes (checkout and result) only the sanitized page_view
+ * - On the payment routes (checkout and result) only what the app sends itself
  *   goes out. Everything the tag would collect there by itself (form
  *   interactions, outbound clicks such as the WhatsApp receipt link that
  *   carries the donor's name and payment reference, scrolls, automatic
  *   user-provided data detection) is blocked with Google's opt-out flag,
  *   which gtag checks as each event is queued.
+ *   The app sends three things from there, all with the sanitized address:
+ *   the page_view, begin_checkout when a checkout page opens, and purchase
+ *   once the bank has confirmed a donation (amount, currency and a one-way
+ *   reference that cannot be turned back into the payment's own reference).
+ *   The last two go to Analytics only.
  */
 
 const MEASUREMENT_ID = 'G-CVWM3EXR7D';
@@ -66,10 +71,15 @@ export function isAdminPath(pathname: string): boolean {
   return pathname.startsWith('/admin');
 }
 
-/** Checkout and the bank's return page: only a sanitized page_view is sent there. */
+/** Checkout and the bank's return page: only what the app sends itself goes out there. */
 export function isPaymentPath(pathname: string): boolean {
   const path = pathname.toLowerCase().replace(/\/+$/, '');
   return path === '/donate/result' || path === '/donate/checkout' || path.startsWith('/donate/checkout/');
+}
+
+/** A checkout page: opening one is the start of a donation. */
+function isCheckoutPath(pathname: string): boolean {
+  return pathname.toLowerCase().replace(/\/+$/, '').startsWith('/donate/checkout/');
 }
 
 /** Origin + path + campaign parameters only. Payment pages keep no query at all. */
@@ -232,6 +242,15 @@ export function trackPageView(): void {
       setOptOut(false);
       gtag('set', { page_location: pageLocation, page_title: pageTitle, page_referrer: pageReferrer });
       gtag('event', 'page_view', params);
+      // Opening a checkout page counts as the start of a donation. Sent to
+      // Analytics only, with the same sanitized address and no amount.
+      if (isCheckoutPath(pathname)) {
+        gtag('event', 'begin_checkout', {
+          send_to: MEASUREMENT_ID,
+          page_location: pageLocation,
+          page_title: pageTitle,
+        });
+      }
       lastPageLocation = pageLocation;
     }
 
@@ -239,6 +258,71 @@ export function trackPageView(): void {
   } catch {
     // A tracking failure must never surface to visitors.
   }
+}
+
+/**
+ * A reference for Google that cannot be turned back into the payment's own
+ * reference. That one opens the donor's result page (name and amount) to
+ * whoever holds it, so it never leaves the browser. The same payment always
+ * gives the same value, which is all that is needed to count it once.
+ */
+async function donationReference(oid: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`owis-donation:${oid}`);
+  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest).slice(0, 12), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/** Resolves once gtag.js itself has loaded, or after five seconds at the latest. */
+async function tagLoaded(): Promise<void> {
+  const loaded = () => 'google_tag_manager' in window;
+  for (let waited = 0; waited < 5000 && !loaded(); waited += 100) {
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
+}
+
+const reportedDonations = new Set<string>();
+
+/**
+ * One `purchase` for a donation the bank has confirmed, sent from the result
+ * page to Analytics only. It carries the amount, its currency and the one-way
+ * reference: no name, no contact detail, no payment reference. Reloading the
+ * result page does not report the donation again.
+ */
+export function trackDonationPaid(payment: { oid: string; amount: number; currency: string; mode: string }): void {
+  if (status !== 'on') return;
+  if (payment.mode !== 'production') return;
+  if (!Number.isFinite(payment.amount) || payment.amount <= 0) return;
+  void (async () => {
+    try {
+      const reference = await donationReference(payment.oid);
+      if (reportedDonations.has(reference)) return;
+      reportedDonations.add(reference);
+      const storageKey = `vkv-donation-reported:${reference}`;
+      try {
+        if (window.localStorage.getItem(storageKey)) return;
+        window.localStorage.setItem(storageKey, '1');
+      } catch {
+        // Storage unavailable (private mode): this document still reports once.
+      }
+      // gtag reads the opt-out flag when it takes an event in, so the event is
+      // handed over only once the tag is there to take it.
+      await tagLoaded();
+      if (status !== 'on') return;
+      const { href, pathname, search } = window.location;
+      setOptOut(false);
+      gtag('event', 'purchase', {
+        send_to: MEASUREMENT_ID,
+        transaction_id: reference,
+        value: payment.amount,
+        currency: payment.currency || 'USD',
+        page_location: sanitizePageUrl(href),
+        page_title: scrubTitle(document.title, search),
+      });
+      setOptOut(isPaymentPath(pathname));
+    } catch {
+      // A tracking failure must never surface to visitors.
+    }
+  })();
 }
 
 /** The dashboard was opened in this tab: send nothing more from this document. */
