@@ -49,9 +49,12 @@
 #   owis-migrate files-copy [n] copy the stored files (all, or the first n that
 #                               are missing) into this server's storage; keeps
 #                               the downloaded originals in /opt/owis/migrate/files
-#   owis-migrate files-auto on|off|status
-#                               retry files-copy every 10 minutes until every
-#                               file is here, then verify and stop by itself
+#   owis-migrate files-auto on|follow|off|status
+#                               on: retry files-copy every 10 minutes until
+#                               every file is here, then verify and stop by
+#                               itself. follow: keep running after that, for
+#                               files that pages opened before the move still
+#                               put into the old storage
 #   owis-migrate files-recover <directory> [apply]
 #                               find, in a directory of this server, files that
 #                               are byte for byte stored files of the source
@@ -79,6 +82,7 @@ SOURCE_PORT="5432"
 SOURCE_USER="postgres.$SOURCE_REF"
 SOURCE_SERVICE_FILE="$DIR/source.service"
 SOURCE_KEY_FILE="$DIR/source.service-role-key"
+FOLLOW_FILE="$DIR/files.follow"
 PRODUCTION_ENV_FILE="$DIR/production.env"
 DEFAULT_GATE_URL="https://sanalpos.isbank.com.tr/fim/est3Dgate"
 
@@ -836,6 +840,8 @@ files_copy() {
   echo "== $(date -u +%FT%TZ) copy of the stored files"
   source_pg psql "service=owis_source" -At -c "$OBJECTS_SQL" > "$list"
   target_psql -At -c "$OBJECTS_SQL" > "$here"
+  local here_before
+  here_before="$(sha256_of "$here")"
 
   python3 - "$list" "$here" "$FILES_DIR" "$SOURCE_STORAGE_URL" "$TARGET_STORAGE_URL" \
     "$SOURCE_KEY_FILE" "$ROOT/$TARGET_ENV.env" "$limit" <<'PYTHON' || rc=$?
@@ -994,8 +1000,13 @@ print("FILES_COMPLETE" if same == len(source) else "FILES_INCOMPLETE")
 sys.exit(0 if same == len(source) else 7)
 PYTHON
   if [ "$complete" -eq 0 ]; then
-    files_verify || rc=$?
-    if systemctl is-enabled owis-files-copy.timer > /dev/null 2>&1; then
+    if [ -e "$FOLLOW_FILE" ] && [ "$here_before" = "$(sha256_of "$here")" ]; then
+      # Following: this run brought nothing, so there is nothing new to prove.
+      echo "following the old storage: nothing new there"
+    else
+      files_verify || rc=$?
+    fi
+    if [ ! -e "$FOLLOW_FILE" ] && systemctl is-enabled owis-files-copy.timer > /dev/null 2>&1; then
       systemctl disable --now owis-files-copy.timer > /dev/null 2>&1 || true
       echo "every file is here: the automatic retry is switched off"
     fi
@@ -1212,7 +1223,7 @@ print("pictures and videos served to visitors: %d of %d" % (count["public"], pub
 print("private attachments refused without a key: %d of %d" % (count["private"], private_total))
 print("private attachments opened with an administrator's signed link: %d of %d tried" % (signed_ok, len(sample)))
 print("a visitor gets a signed link or a listing: %s" % ("no" if not visitor_signed and not listing else "YES"))
-print("files here that are not in the source (earlier tests): %d%s" % (len(extra), (" - " + ", ".join(extra[:10])) if extra else ""))
+print("files here that are not in the source (put here after the move, or earlier tests): %d%s" % (len(extra), (" - " + ", ".join(extra[:10])) if extra else ""))
 for line in problems[:25]:
     print("  PROBLEM  " + line)
 if len(problems) > 25:
@@ -1351,11 +1362,14 @@ sys.exit(1 if failed else 0)
 PYTHON
 }
 
-# Keeps trying files-copy until the old project hands the files out.
+# Keeps trying files-copy until the old project hands the files out. With
+# "follow" it goes on afterwards: a page that was opened before the move still
+# puts a visitor's uploads into the old storage, while the form itself reaches
+# this server, so those files have to be fetched as they appear.
 files_auto() {
   local unit="owis-files-copy"
   case "${1:-status}" in
-    on)
+    on | follow)
       cat > "/etc/systemd/system/$unit.service" <<'UNIT'
 [Unit]
 Description=OWIS: copy the stored files from the old project once it allows it
@@ -1380,19 +1394,27 @@ WantedBy=timers.target
 UNIT
       systemctl daemon-reload
       systemctl enable --now "$unit.timer" > /dev/null 2>&1
-      echo "FILES_AUTO_ON: files-copy runs every 10 minutes until every file is here"
+      if [ "$1" = "follow" ]; then
+        date -u +%FT%TZ > "$FOLLOW_FILE"
+        echo "FILES_AUTO_FOLLOW: files-copy runs every 10 minutes and stays on (owis-migrate files-auto off ends it)"
+      else
+        rm -f "$FOLLOW_FILE"
+        echo "FILES_AUTO_ON: files-copy runs every 10 minutes until every file is here"
+      fi
       ;;
     off)
       systemctl disable --now "$unit.timer" > /dev/null 2>&1 || true
+      rm -f "$FOLLOW_FILE"
       echo "FILES_AUTO_OFF"
       ;;
     status)
       echo "timer: $(systemctl is-active "$unit.timer" 2> /dev/null || true)"
+      echo "mode: $([ -e "$FOLLOW_FILE" ] && echo "follow (stays on)" || echo "until every file is here")"
       echo "attempts: $(grep -c '^== .* copy of the stored files' "$LOG_FILE" 2> /dev/null || true)"
       grep -E '^(== .* (copy|verification) of the stored files|copied=|FILES_|here with)' "$LOG_FILE" 2> /dev/null | tail -n 5 || true
       ;;
     *)
-      echo "usage: owis-migrate files-auto on|off|status" >&2
+      echo "usage: owis-migrate files-auto on|follow|off|status" >&2
       exit 2
       ;;
   esac
@@ -1937,7 +1959,7 @@ case "$COMMAND" in
     logged files_recover "${2:-}" "${3:-plan}"
     ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|follow|off|status" >&2
     exit 2
     ;;
 esac
