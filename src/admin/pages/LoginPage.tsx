@@ -20,7 +20,7 @@ const inputClass =
 export default function LoginPage({ mode = 'login' }: LoginPageProps) {
   const s = useAdminStrings();
   const { locale, setLocale } = useI18n();
-  const { signIn, resetPassword, updatePassword, networkError } = useAuth();
+  const { signIn, resetPassword, updatePassword, networkError, session, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,6 +49,12 @@ export default function LoginPage({ mode = 'login' }: LoginPageProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const from = (location.state as { from?: string } | null)?.from ?? '/admin';
+
+  // Someone who is already signed in as an administrator has nothing to do
+  // on the login form (a bookmark of /admin/login, or the browser going back).
+  useEffect(() => {
+    if (mode === 'login' && !loading && session && isAdmin) navigate(from, { replace: true });
+  }, [mode, loading, session, isAdmin, from, navigate]);
 
   useEffect(() => {
     if (mode !== 'reset') return;
