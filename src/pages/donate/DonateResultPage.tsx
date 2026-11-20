@@ -6,6 +6,7 @@ import { contributeContactRoute, donateCheckoutRoute, donateRoute } from '@/data
 import { getDonateResultContent } from '@/data/donateCheckout';
 import { getParticipatePage } from '@/data/participate';
 import { useI18n } from '@/i18n/useI18n';
+import { trackDonationPaid } from '@/analytics/googleAnalytics';
 import { fetchPaymentStatus, type PaymentStatus } from '@/services/donationPayments';
 
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
@@ -82,6 +83,8 @@ export default function DonateResultPage() {
       }
       setPayment(loaded);
       setView(loaded.status === 'paid' ? 'success' : 'failure');
+      // Reported once per donation, with the amount and a one-way reference only.
+      if (loaded.status === 'paid') trackDonationPaid(loaded);
     };
 
     void load(0);
