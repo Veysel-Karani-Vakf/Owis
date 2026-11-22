@@ -23,6 +23,7 @@ import paymentsCreate from '../payments/create';
 import paymentsDirect from '../payments/direct';
 import paymentsMockGate from '../payments/mock-gate';
 import paymentsStatus from '../payments/status';
+import shareNews from '../share/news';
 import {
   bankCredentialsConfigured,
   paymentSetting,
@@ -45,7 +46,11 @@ const ROUTES = new Map<string, Handler>([
   ['/api/payments/direct', paymentsDirect],
   ['/api/payments/mock-gate', paymentsMockGate],
   ['/api/payments/status', paymentsStatus],
+  ['/api/share/news', shareNews],
 ]);
+
+/** Paths that carry their subject in the last segment: /api/share/news/<slug>. */
+const PREFIX_ROUTES: Array<[string, Handler]> = [['/api/share/news/', shareNews]];
 
 /** Vercel caps function payloads at 4.5 MB; stay in the same range. */
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
@@ -95,7 +100,7 @@ async function dispatch(req: IncomingMessage, res: ServerResponse, deployEnv: De
     return;
   }
 
-  const handler = ROUTES.get(path);
+  const handler = ROUTES.get(path) ?? PREFIX_ROUTES.find(([prefix]) => path.startsWith(prefix))?.[1];
   if (!handler) {
     sendJson(res, 404, { ok: false, error: 'not-found' });
     return;
