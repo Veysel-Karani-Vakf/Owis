@@ -58,6 +58,45 @@
 		file_server
 	}
 
+	# Link previews of news articles. The apps that build a card for a shared
+	# link (WhatsApp, Facebook, Telegram, X, LinkedIn...) do not run the page's
+	# script, so the page shell alone only ever gives them the site-wide card.
+	# For those apps the API writes the article's own title, summary and
+	# picture. Visitors are not affected; and an article the API does not know,
+	# or any failure there, gives the apps the ordinary page shell.
+	@linkPreview {
+		path_regexp ^/news/[^/]+/?$
+		header_regexp User-Agent (?i)(facebookexternalhit|facebot|meta-external|whatsapp|telegrambot|twitterbot|linkedinbot|slackbot|discordbot|skypeuripreview|microsoftpreview|pinterest|vkshare|viber|snapchat|redditbot|embedly|iframely|mastodon|bluesky|cardyb)
+	}
+	handle @linkPreview {
+		rewrite * /api/share{path}
+		reverse_proxy api:3000 {
+			@noCard status 3xx 4xx 5xx
+			handle_response @noCard {
+				root * /srv
+				rewrite * /index.html
+				header Cache-Control "no-cache"
+				file_server {
+					status 200
+				}
+			}
+		}
+	}
+
+	# The API not answering at all (a restart) is an error rather than a
+	# response: the link-preview apps get the page shell then too.
+	handle_errors {
+		@cardFallback path /api/share/news/*
+		handle @cardFallback {
+			root * /srv
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server {
+				status 200
+			}
+		}
+	}
+
 	# Everything else is the single-page app.
 	handle {
 		root * /srv
