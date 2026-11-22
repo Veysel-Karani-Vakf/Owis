@@ -62,6 +62,11 @@
 #   owis-migrate files-verify   proof for every file: same name, size and type,
 #                               same content (checksums), and the same access
 #                               rules (public pictures, private attachments)
+#   owis-migrate share-images plan|apply|force
+#                               light copies (JPEG, under 300 KB) of the news
+#                               pictures that are too heavy for link previews
+#   owis-migrate share-images auto on|off|status
+#                               make them every 15 minutes, for new articles
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
@@ -1420,6 +1425,269 @@ UNIT
   esac
 }
 
+# ---- link-preview pictures -------------------------------------------------
+# When a news link is shared, WhatsApp, Facebook and the others show the
+# article's picture, but WhatsApp leaves out pictures larger than about 300 KB
+# and none of them shows an SVG. For every published article whose picture is
+# heavier, or not a JPEG or PNG, a JPEG of at most 1200 pixels and under that
+# size is made and kept in the media bucket as share/news/<key>.jpg. <key> is
+# the first 16 hex digits of the SHA-256 of the picture's path on the site,
+# the same name the API's link preview looks for (api/_lib/shareCard.ts).
+# Pictures are converted by ImageMagick in a throwaway Alpine container, so
+# nothing is installed on this server; it only runs when there is work.
+SHARE_MAX_BYTES=$((300 * 1024))
+SHARE_TOOL_IMAGE="${OWIS_SHARE_TOOL_IMAGE:-alpine:3.22}"
+SHARE_SITE_ROOT="${OWIS_SHARE_SITE_ROOT:-$ROOT/repo/public}"
+NEWS_PICTURES_SQL="select coalesce(json_agg(json_build_object('slug', slug, 'image', image) order by slug), '[]'::json) from public.news where is_published and coalesce(image, '') <> ''"
+MEDIA_OBJECTS_SQL="select coalesce(json_agg(json_build_object('name', name, 'size', coalesce((metadata->>'size')::bigint, -1))), '[]'::json) from storage.objects where bucket_id = 'media'"
+
+share_images() {
+  local mode="${1:-plan}" rc=0
+  case "$mode" in
+    plan | apply | force) ;;
+    *)
+      echo "usage: owis-migrate share-images plan|apply|force|auto on|off|status" >&2
+      exit 2
+      ;;
+  esac
+  install -d -m 700 "$WORK_DIR"
+  local work
+  work="$(mktemp -d "$WORK_DIR/.share.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$work'" EXIT
+  mkdir "$work/in" "$work/out"
+  echo "== $(date -u +%FT%TZ) link-preview pictures ($mode)"
+  target_psql -At -c "$NEWS_PICTURES_SQL" > "$work/news.json"
+  target_psql -At -c "$MEDIA_OBJECTS_SQL" > "$work/media.json"
+
+  # Which pictures need a light copy; for apply and force, their originals go
+  # to $work/in/<key>.<extension>.
+  python3 - "$work" "$SHARE_SITE_ROOT" "$TARGET_STORAGE_URL" "$SHARE_MAX_BYTES" "$mode" <<'PYTHON' || rc=$?
+import hashlib, json, os, shutil, sys, urllib.parse, urllib.request
+
+work, site_root, storage, max_bytes, mode = sys.argv[1:6]
+max_bytes = int(max_bytes)
+news = json.load(open(os.path.join(work, "news.json"))) or []
+media = {o["name"]: o["size"] for o in (json.load(open(os.path.join(work, "media.json"))) or [])}
+PUBLIC_MEDIA = "/storage/v1/object/public/media/"
+READABLE = (".jpg", ".jpeg", ".png")
+
+
+def site_path(image):
+    """Same reduction as imageRef() in api/_lib/shareCard.ts."""
+    raw = (image or "").strip()
+    if not raw:
+        return None
+    if raw.lower().startswith(("http://", "https://")):
+        parts = urllib.parse.urlsplit(raw)
+        host = (parts.hostname or "").lower()
+        if host != "veysvakfi.org" and not host.endswith(".veysvakfi.org"):
+            return None  # on another site: not ours to copy
+        path = parts.path
+    else:
+        path = raw.split("?")[0].split("#")[0]
+    path = urllib.parse.unquote(path)
+    if not path:
+        return None
+    return path if path.startswith("/") else "/" + path
+
+
+def key_of(path):
+    return hashlib.sha256(path.encode("utf-8")).hexdigest()[:16]
+
+
+counts = {"pictures": 0, "fine": 0, "copied before": 0, "need": 0, "missing": 0, "svg": 0, "elsewhere": 0}
+todo, seen = [], set()
+for row in news:
+    path = site_path(row.get("image"))
+    if path is None:
+        counts["elsewhere"] += 1
+        continue
+    counts["pictures"] += 1
+    if path.lower().endswith(".svg"):
+        counts["svg"] += 1  # the preview uses the site-wide card for these
+        continue
+    key = key_of(path)
+    if key in seen:
+        counts["copied before"] += 1  # the same picture on another article
+        continue
+    seen.add(key)
+    if path.startswith(PUBLIC_MEDIA):
+        size = media.get(path[len(PUBLIC_MEDIA):])
+        source = ("storage", path)
+    else:
+        local = os.path.normpath(os.path.join(site_root, path.lstrip("/")))
+        inside = local.startswith(os.path.normpath(site_root) + os.sep)
+        size = os.path.getsize(local) if inside and os.path.isfile(local) else None
+        source = ("file", local)
+    if size is None or size < 0:
+        counts["missing"] += 1
+        print("  missing   %s (%s)" % (path, row.get("slug")))
+        continue
+    heavy = size > max_bytes
+    unreadable = not path.lower().endswith(READABLE)
+    if not heavy and not unreadable:
+        counts["fine"] += 1
+        continue
+    if ("share/news/%s.jpg" % key) in media and mode != "force":
+        counts["copied before"] += 1
+        continue
+    counts["need"] += 1
+    print("  needs one %s, %d KB%s (%s)" % (path, size // 1024, "" if not unreadable else ", not a JPEG or PNG", row.get("slug")))
+    todo.append((key, source, path))
+
+print("published articles with a picture on this site: %d" % counts["pictures"])
+print("  usable as they are: %d" % counts["fine"])
+print("  with a light copy already: %d" % counts["copied before"])
+print("  needing a light copy now: %d" % counts["need"])
+print("  SVG placeholders (the site-wide card is used): %d" % counts["svg"])
+print("  picture file not found: %d" % counts["missing"])
+if counts["elsewhere"]:
+    print("  pictures on another site (left as they are): %d" % counts["elsewhere"])
+
+if mode == "plan":
+    print("SHARE_PLAN_OK. Nothing was changed.")
+    sys.exit(0)
+
+failed = 0
+for key, (kind, where), path in todo:
+    extension = os.path.splitext(path)[1].lower() or ".img"
+    target = os.path.join(work, "in", key + extension)
+    try:
+        if kind == "file":
+            shutil.copyfile(where, target)
+        else:
+            quoted = "/".join(urllib.parse.quote(part) for part in where[len("/storage/v1"):].split("/"))
+            with urllib.request.urlopen(storage + quoted, timeout=120) as response, open(target, "wb") as out:
+                shutil.copyfileobj(response, out)
+    except Exception as error:  # reported, the others go on
+        failed += 1
+        print("  FAILED    %s: could not read the original (%s)" % (path, str(error)[:120]))
+json.dump([[key, path] for key, _, path in todo], open(os.path.join(work, "todo.json"), "w"))
+sys.exit(1 if failed else 0)
+PYTHON
+  [ "$mode" = "plan" ] && return "$rc"
+
+  if [ -n "$(ls -A "$work/in")" ]; then
+    command -v docker > /dev/null || {
+      echo "docker is needed to convert the pictures" >&2
+      return 1
+    }
+    # One container for the whole batch; it is removed when it ends.
+    docker run --rm -v "$work:/w" "$SHARE_TOOL_IMAGE" sh -c '
+      apk add --no-cache imagemagick > /dev/null 2>&1 || { echo "could not install ImageMagick in the container"; exit 1; }
+      cd /w
+      for f in in/*; do
+        k="${f##*/}"; k="${k%.*}"
+        magick "${f}[0]" -auto-orient -background white -alpha remove -alpha off -colorspace sRGB \
+          -resize "1200x1200>" -strip -interlace JPEG -sampling-factor 4:2:0 \
+          -define jpeg:extent=290kb "out/$k.jpg" || echo "  FAILED    $k: could not convert"
+      done' || rc=1
+  fi
+
+  # Store the copies under share/news/<key>.jpg in the public media bucket.
+  python3 - "$work" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" "$SHARE_MAX_BYTES" <<'PYTHON' || rc=$?
+import json, os, sys, urllib.request
+
+work, storage, env_file, max_bytes = sys.argv[1:5]
+max_bytes = int(max_bytes)
+todo = json.load(open(os.path.join(work, "todo.json"))) if os.path.exists(os.path.join(work, "todo.json")) else []
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'\"")
+if todo and not service:
+    sys.exit("this server's service key is missing from its settings")
+
+made = stored = failed = 0
+for key, path in todo:
+    copy = os.path.join(work, "out", key + ".jpg")
+    if not os.path.isfile(copy):
+        failed += 1
+        print("  FAILED    %s: no copy was made" % path)
+        continue
+    made += 1
+    size = os.path.getsize(copy)
+    if size > max_bytes:
+        failed += 1
+        print("  FAILED    %s: the copy is still %d KB" % (path, size // 1024))
+        continue
+    request = urllib.request.Request(
+        "%s/object/media/share/news/%s.jpg" % (storage, key),
+        data=open(copy, "rb").read(),
+        method="POST",
+        headers={
+            "apikey": service,
+            "Authorization": "Bearer " + service,
+            "Content-Type": "image/jpeg",
+            "cache-control": "max-age=86400",
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            response.read()
+        stored += 1
+        print("  stored    share/news/%s.jpg, %d KB, for %s" % (key, size // 1024, path))
+    except Exception as error:
+        failed += 1
+        print("  FAILED    %s: could not store the copy (%s)" % (path, str(error)[:120]))
+
+print("copies made=%d stored=%d failed=%d" % (made, stored, failed))
+print("SHARE_IMAGES_OK" if not failed else "SHARE_IMAGES_INCOMPLETE")
+sys.exit(1 if failed else 0)
+PYTHON
+  return "$rc"
+}
+
+# Runs share-images apply every 15 minutes (at 7, 22, 37 and 52 past the hour,
+# away from the file copy), so an article published with a heavy picture gets
+# its light copy without anyone asking for it.
+share_images_auto() {
+  local unit="owis-share-images"
+  case "${1:-status}" in
+    on)
+      cat > "/etc/systemd/system/$unit.service" <<'UNIT'
+[Unit]
+Description=OWIS: light copies of heavy news pictures for link previews
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/owis-migrate share-images apply
+# 4: another owis-migrate job holds the lock; the next run catches up.
+SuccessExitStatus=4
+UNIT
+      cat > "/etc/systemd/system/$unit.timer" <<'UNIT'
+[Unit]
+Description=OWIS: look for news pictures that need a light copy every 15 minutes
+
+[Timer]
+OnCalendar=*:07/15
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
+UNIT
+      systemctl daemon-reload
+      systemctl enable --now "$unit.timer" > /dev/null 2>&1
+      echo "SHARE_AUTO_ON: share-images apply runs every 15 minutes"
+      ;;
+    off)
+      systemctl disable --now "$unit.timer" > /dev/null 2>&1 || true
+      echo "SHARE_AUTO_OFF"
+      ;;
+    status)
+      echo "timer: $(systemctl is-active "$unit.timer" 2> /dev/null || true)"
+      grep -E '^(== .* link-preview pictures|copies made=|SHARE_)' "$LOG_FILE" 2> /dev/null | tail -n 4 || true
+      ;;
+    *)
+      echo "usage: owis-migrate share-images auto on|off|status" >&2
+      exit 2
+      ;;
+  esac
+}
+
 STACK_ENV_FILE="$ROOT/$TARGET_ENV.env"
 STACK_COMPOSE_FILE="$ROOT/app/docker-compose.yml"
 DEPLOY_TOOL="/usr/local/sbin/owis-deploy-staging"
@@ -1958,8 +2226,15 @@ case "$COMMAND" in
   files-recover)
     logged files_recover "${2:-}" "${3:-plan}"
     ;;
+  share-images)
+    if [ "${2:-}" = "auto" ]; then
+      share_images_auto "${3:-status}"
+    else
+      logged share_images "${2:-plan}"
+    fi
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|follow|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|follow|off|status | share-images plan|apply|force|auto on|off|status" >&2
     exit 2
     ;;
 esac
