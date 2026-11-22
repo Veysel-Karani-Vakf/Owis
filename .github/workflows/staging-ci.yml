@@ -311,6 +311,28 @@ jobs:
             -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
           expect "private file is not public" "400|404" "$base/storage/v1/object/public/submissions/ci/pixel.png"
 
+          echo "== Link previews =="
+          # The apps that build a card for a shared link do not run the page script:
+          # the page shell carries the site-wide card, and a news article gets its
+          # own card from the API when the request comes from one of those apps.
+          preview_ua="WhatsApp/2.24.20.80 A"
+          expect "page shell" 200 "$base/"
+          contains "page shell carries the site-wide card" 'property="og:image" content="https://veysvakfi.org/share/site.jpg"'
+          expect "the site-wide card picture" 200 "$base/share/site.jpg"
+          expect "a news article for the preview check" 201 "$base/rest/v1/news" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"slug":"ci-link-preview","title":{"ar":"خبر فحص البطاقة"},"excerpt":{"ar":"ملخص خبر الفحص"},"image":"/news/news-placeholder.svg","is_published":true}'
+          expect "the article as WhatsApp reads it" 200 "$base/news/ci-link-preview" -A "$preview_ua"
+          contains "article card title" 'property="og:title" content="خبر فحص البطاقة"'
+          contains "article card summary" 'property="og:description" content="ملخص خبر الفحص"'
+          contains "article card picture (an SVG gets the site-wide card)" "property=\"og:image\" content=\"${base}/share/site.jpg\""
+          contains "article card address" "property=\"og:url\" content=\"${base}/news/ci-link-preview\""
+          expect "the same article in a browser" 200 "$base/news/ci-link-preview"
+          contains "the same article in a browser is the app" 'id="root"'
+          expect "an unknown article as WhatsApp reads it" 200 "$base/news/ci-no-such-article" -A "$preview_ua"
+          contains "an unknown article falls back to the page shell" 'id="root"'
+          expect "the preview API for an unknown article" 404 "$base/api/share/news/ci-no-such-article"
+
           echo "== Admin sign-in and RLS =="
           email="ci-admin@example.test"
           password="$(openssl rand -hex 16)"
@@ -483,6 +505,8 @@ jobs:
 
           expect "home page over HTTPS" 200 "$LIVE_URL/"
           contains "home page" 'id="root"'
+          contains "home page carries the site-wide card" 'property="og:image" content="https://veysvakfi.org/share/site.jpg"'
+          expect "the site-wide link-preview card" 200 "$LIVE_URL/share/site.jpg"
           expect "plain HTTP redirects to HTTPS" "301|308" "http://${LIVE_URL#https://}/"
           expect "SPA deep link" 200 "$LIVE_URL/projects/ci-deep-link"
           expect "donate-now redirect" 301 "$LIVE_URL/donate-now"
