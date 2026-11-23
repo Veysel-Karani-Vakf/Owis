@@ -7,7 +7,7 @@ name: Verify Hostinger Staging SSH
 on:
   push:
     branches:
-      - infra/hostinger-staging
+      - main
     paths:
       - .github/workflows/verify-hostinger-staging.yml
   workflow_dispatch:
