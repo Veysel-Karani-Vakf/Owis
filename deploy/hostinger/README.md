@@ -84,9 +84,12 @@ docker compose stop studio meta
 
 ## Deployments and database changes
 
-Every push to `infra/hostinger-staging` runs `Staging CI`: type checks, the
-production-fallback guards, the whole stack on the runner (including the mock
-donation flow), and only then a deployment through the restricted deploy key.
+Every push to `main` runs `Staging CI`: type checks, the production-fallback
+guards, the whole stack on the runner (including the mock donation flow), and
+only then a deployment to veysvakfi.org through the restricted deploy key.
+Pull requests into `main` get the same checks without the deployment. (Until
+23 Nov 2026 the site deployed from `infra/hostinger-staging`; the server now
+refuses commits that are not on `main`.)
 If the new containers do not become healthy the server goes back to the
 previous images by itself. `owis-deploy-staging rollback-drill` (root only)
 proves that safety net with a build that cannot start; the staging API is
