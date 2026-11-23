@@ -4,16 +4,22 @@ name: Staging CI
 # production-fallback guards, both images, and the whole stack (trimmed
 # self-hosted Supabase + web + api) running on the runner with test data only,
 # including the donation flow against the mock bank. Only then is the commit
-# deployed to the staging VPS and the live site checked.
+# deployed to the VPS (veysvakfi.org) and the live site checked. Pushes to main
+# deploy; pull requests into main get the same checks without a deployment.
 
 on:
   push:
     branches:
-      - infra/hostinger-staging
+      - main
     paths-ignore:
       - "**.md"
       - .github/workflows/verify-hostinger-staging.yml
       - .github/workflows/staging-monitor.yml
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
   workflow_dispatch:
 
 permissions:
@@ -444,7 +450,7 @@ jobs:
   deploy:
     name: Deploy to the staging VPS
     needs: stack
-    if: github.ref == 'refs/heads/infra/hostinger-staging'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: hostinger-staging
     timeout-minutes: 25
