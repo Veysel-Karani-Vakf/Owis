@@ -5,14 +5,12 @@ name: Staging monitor
 # older than a day, a restore test that did not pass, a certificate about to
 # expire, or a site that does not answer.
 #
-# GitHub only offers the "Run workflow" button and the daily schedule for
-# workflows that are on the default branch. Until this branch is merged, the
-# monitor runs whenever this file itself changes (edit the line below to run
-# it), and the deploy job of Staging CI prints the same server status after
-# every deployment. Once on the default branch, a failed scheduled run is
-# e-mailed to the repository owner.
+# It runs every day at 04:23 UTC and from the "Run workflow" button, and a
+# failed scheduled run is e-mailed to the repository owner. It also runs when
+# this file changes on main (edit the line below to run it), and the deploy job
+# of Staging CI prints the same server status after every deployment.
 #
-# Last run requested: 2026-11-19 (address and payment mode now come from the server)
+# Last run requested: 2026-11-23 (the site now deploys from main)
 
 on:
   workflow_dispatch:
@@ -20,7 +18,7 @@ on:
     - cron: "23 4 * * *"
   push:
     branches:
-      - infra/hostinger-staging
+      - main
     paths:
       - .github/workflows/staging-monitor.yml
 
@@ -34,7 +32,7 @@ concurrency:
 jobs:
   monitor:
     name: Server, backups and site
-    if: github.ref == 'refs/heads/infra/hostinger-staging'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: hostinger-staging
     timeout-minutes: 10
