@@ -216,6 +216,7 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=${service}"
             echo "PAYMENT_MODE=mock"
             echo "IMAGE_TAG=ci"
+            echo "REDIRECT_ADDRESSES=http://blessedtree.veysvakfi.org, http://www.ci.test"
           } > deploy/hostinger/.env
 
       - name: Build images
@@ -265,6 +266,11 @@ jobs:
           contains "SPA deep link" 'id="root"'
           expect "donate-now redirect" 301 "$base/donate-now"
           expect "a missing build file is a 404, not the page shell" 404 "$base/assets/does-not-exist.js"
+          expect "donate-now with a final slash" 301 "$base/donate-now/"
+          expect "an address the site does not have" 404 "$base/ci-no-such-page"
+          contains "the 404 answer is the app's page not found" 'id="root"'
+          expect "a page of the app with a final slash" 200 "$base/news/"
+          expect "a page of the app in other letter case" 200 "$base/Library/Gallery"
           # Headers are read into a variable first: with pipefail, "curl | grep -q"
           # fails at random when grep stops reading before curl has finished.
           page_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base/news" | tr 'A-Z' 'a-z')"
@@ -332,6 +338,34 @@ jobs:
           expect "an unknown article as WhatsApp reads it" 200 "$base/news/ci-no-such-article" -A "$preview_ua"
           contains "an unknown article falls back to the page shell" 'id="root"'
           expect "the preview API for an unknown article" 404 "$base/api/share/news/ci-no-such-article"
+
+          echo "== Former addresses =="
+          # moved <label> <path> <target> [curl options]: a permanent redirect to the target.
+          moved() {
+            got="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "${@:4}" "$base$2" || true)"
+            if [ "$got" = "301 $3" ]; then
+              echo "ok $1"
+            else
+              echo "::error::$1: expected 301 to $3, got ${got}"
+              failures=$((failures + 1))
+            fi
+          }
+          moved "old volunteer page (Arabic address)" "/%D8%AA%D8%B7%D9%88%D8%B9-%D9%85%D8%B9%D9%86%D8%A7/" "$base/participate/volunteer"
+          moved "old volunteer page" "/volunteer-with-us/" "$base/participate/volunteer"
+          moved "old Waqf Share page" "/product/waqf-share/" "$base/projects/waqf-share"
+          moved "old Blessed Tree page" "/product/the-blessed-tree-project/" "$base/projects/blessed-tree"
+          moved "a redirect keeps campaign parameters" "/volunteer-with-us/?utm_source=ci&gclid=ci-click" "$base/participate/volunteer?utm_source=ci&gclid=ci-click"
+          moved "donate-now keeps the click id" "/donate-now/?gclid=ci-click" "$base/donate?gclid=ci-click"
+          expect "an archived article for the redirect check" 201 "$base/rest/v1/news" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"slug":"archive-99999-خبر-قديم-للفحص","title":{"ar":"خبر قديم للفحص"},"is_published":true}'
+          moved "an old article address" "/%D8%AE%D8%A8%D8%B1-%D9%82%D8%AF%D9%8A%D9%85-%D9%84%D9%84%D9%81%D8%AD%D8%B5/" \
+            "$base/news/archive-99999-%D8%AE%D8%A8%D8%B1-%D9%82%D8%AF%D9%8A%D9%85-%D9%84%D9%84%D9%81%D8%AD%D8%B5"
+          expect "a former-looking address that matches nothing" 404 "$base/ci-old-post-that-never-existed/"
+          contains "the 404 answer is the app's page not found" 'id="root"'
+          moved "the former Blessed Tree site" "/%D8%A7%D8%B3%D8%AA%D8%B9%D9%84%D9%85-%D8%B9%D9%86-%D8%B4%D8%AC%D8%B1%D8%AA%D9%83/" \
+            "$base/projects/blessed-tree" -H "Host: blessedtree.veysvakfi.org"
+          moved "another name of the site keeps path and query" "/news?ci=1" "$base/news?ci=1" -H "Host: www.ci.test"
 
           echo "== Admin sign-in and RLS =="
           email="ci-admin@example.test"
@@ -510,6 +544,14 @@ jobs:
           expect "plain HTTP redirects to HTTPS" "301|308" "http://${LIVE_URL#https://}/"
           expect "SPA deep link" 200 "$LIVE_URL/projects/ci-deep-link"
           expect "donate-now redirect" 301 "$LIVE_URL/donate-now"
+          expect "an address the site does not have" 404 "$LIVE_URL/ci-no-such-page"
+          got="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$LIVE_URL/volunteer-with-us/" || true)"
+          if [ "$got" = "301 $LIVE_URL/participate/volunteer" ]; then
+            echo "ok a former address moves to its new page"
+          else
+            echo "::error::former address: expected 301 to $LIVE_URL/participate/volunteer, got ${got}"
+            failures=$((failures + 1))
+          fi
           expect "api health" 200 "$LIVE_URL/api/healthz"
           contains "api health" "\"env\":\"${deploy_env}\""
           expect "payments configuration" 200 "$LIVE_URL/api/payments/config"
