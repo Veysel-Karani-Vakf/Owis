@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-time preparation of the staging environment on the VPS. Run as root:
 #
-#   git clone -b infra/hostinger-staging https://github.com/Veysel-Karani-Vakf/Owis /opt/owis/repo
+#   git clone -b main https://github.com/Veysel-Karani-Vakf/Owis /opt/owis/repo
 #   bash /opt/owis/repo/deploy/hostinger/server/bootstrap-staging.sh
 #
 # Safe to run again: each step checks what already exists. It never regenerates
