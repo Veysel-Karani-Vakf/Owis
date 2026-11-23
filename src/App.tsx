@@ -7,6 +7,7 @@ import ScrollRestoration from '@/components/internal/ScrollRestoration';
 import { useCmsSettled } from '@/cms/CmsProvider';
 import { isPreviewFrame } from '@/cms/preview';
 import { usePageViewTracking } from '@/analytics/usePageViewTracking';
+import ConsentBanner from '@/analytics/ConsentBanner';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
@@ -37,6 +38,7 @@ import AwardLandingPage from '@/pages/award/AwardLandingPage';
 import AwardApplyPage from '@/pages/award/AwardApplyPage';
 import AwardSuccessPage from '@/pages/award/AwardSuccessPage';
 import AwardGate from '@/components/award/AwardGate';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 function App() {
   const location = useLocation();
@@ -68,6 +70,8 @@ function App() {
           <ScrollRestoration />
           <Header />
 
+          {/* Keep this list in step with the page addresses in deploy/hostinger/Caddyfile
+              (@appPage): an address missing there answers 404. */}
           <div key={`${location.pathname}${location.search}`} className="page-transition">
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -107,13 +111,14 @@ function App() {
               <Route path="/volunteer-award" element={<AwardGate><AwardLandingPage /></AwardGate>} />
               <Route path="/volunteer-award/apply" element={<AwardGate><AwardApplyPage /></AwardGate>} />
               <Route path="/volunteer-award/success" element={<AwardGate><AwardSuccessPage /></AwardGate>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>
 
           <Footer />
           {/* The site assistant is a visitor feature; the dashboard preview frame hides it. */}
           {!preview && <SiteAssistant />}
+          {!preview && <ConsentBanner />}
         </>
       )}
     </>

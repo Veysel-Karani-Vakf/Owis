@@ -1,0 +1,577 @@
+name: Staging CI
+
+# Proves the Hostinger setup before anything reaches the VPS: type checks, the
+# production-fallback guards, both images, and the whole stack (trimmed
+# self-hosted Supabase + web + api) running on the runner with test data only,
+# including the donation flow against the mock bank. Only then is the commit
+# deployed to the staging VPS and the live site checked.
+
+on:
+  push:
+    branches:
+      - infra/hostinger-staging
+    paths-ignore:
+      - "**.md"
+      - .github/workflows/verify-hostinger-staging.yml
+      - .github/workflows/staging-monitor.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_SUPABASE_URL: https://goyqlyrtclpywvolayzu.supabase.co
+
+jobs:
+  checks:
+    name: Types and production guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck (app)
+        run: npm run typecheck
+
+      - name: Typecheck (api)
+        run: npm run typecheck:api
+
+      - name: Lint (reported, not blocking yet)
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build must fail without Supabase settings
+        run: |
+          set -euo pipefail
+          if env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY npx vite build > build-no-env.log 2>&1; then
+            echo "::error::A build without Supabase settings succeeded."
+            exit 1
+          fi
+          grep -q "Refusing to fall back to the production Supabase project" build-no-env.log
+          echo "ok: build refused without Supabase settings"
+
+      - name: Staging build must refuse the production project
+        run: |
+          set -euo pipefail
+          if VITE_DEPLOY_ENV=staging VITE_SUPABASE_URL="$PRODUCTION_SUPABASE_URL" VITE_SUPABASE_ANON_KEY=placeholder \
+            npx vite build > build-prod.log 2>&1; then
+            echo "::error::A staging build pointing at production succeeded."
+            exit 1
+          fi
+          grep -q "must not point at the production Supabase project" build-prod.log
+          echo "ok: staging build refused the production project"
+
+      - name: Staging build with explicit settings
+        env:
+          VITE_DEPLOY_ENV: staging
+          VITE_SUPABASE_URL: http://localhost
+          VITE_SUPABASE_ANON_KEY: placeholder
+        run: npm run build
+
+      - name: API host must refuse unsafe configurations
+        run: |
+          set -euo pipefail
+          node deploy/hostinger/build-api.mjs
+
+          refuses() {
+            label="$1"
+            shift
+            if env "$@" timeout 10 node dist-api/server.cjs > api-guard.log 2>&1; then
+              echo "::error::${label}: the API host started."
+              exit 1
+            fi
+            grep -q "Refusing to start" api-guard.log || {
+              echo "::error::${label}: unexpected failure"
+              cat api-guard.log
+              exit 1
+            }
+            echo "ok: ${label}"
+          }
+
+          refuses "no DEPLOY_ENV" SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "no SUPABASE_URL" DEPLOY_ENV=staging SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "no service role key" DEPLOY_ENV=staging SUPABASE_URL=http://localhost
+          refuses "staging pointing at production" DEPLOY_ENV=staging SUPABASE_URL="$PRODUCTION_SUPABASE_URL" SUPABASE_SERVICE_ROLE_KEY=placeholder
+          refuses "staging with a live payment mode" DEPLOY_ENV=staging SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production
+          refuses "production with the simulated bank" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=mock
+          refuses "production with a live payment mode and no bank values" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production
+          refuses "production with placeholder bank values" DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder PAYMENT_MODE=production PAYMENT_CLIENT_ID=TEST_CLIENT_ID PAYMENT_STORE_KEY=TEST_STORE_KEY PAYMENT_GATE_URL=TEST_GATEWAY_URL
+
+      - name: API host with online payments switched off
+        run: |
+          set -euo pipefail
+          # Production settings without bank values: the host starts, says that
+          # payments are off, and takes no payment through any door.
+          env DEPLOY_ENV=production SUPABASE_URL=http://localhost SUPABASE_SERVICE_ROLE_KEY=placeholder \
+            PAYMENT_MODE=disabled PORT=3999 node dist-api/server.cjs > api-off.log 2>&1 &
+          api_pid=$!
+          base="http://127.0.0.1:3999"
+          for attempt in $(seq 1 20); do
+            curl -fs -o /dev/null "$base/api/healthz" && break
+            sleep 0.5
+          done
+          failures=0
+          health="$(curl -sS "$base/api/healthz" || true)"
+          grep -q '"env":"production"' <<< "$health" || { echo "::error::payments off: the host is not up ($health)"; failures=$((failures + 1)); }
+          config="$(curl -sS "$base/api/payments/config" || true)"
+          if grep -q '"mode":"disabled"' <<< "$config"; then
+            echo "ok: the configuration reports payments as switched off"
+          else
+            echo "::error::payments off: the configuration says $config"
+            failures=$((failures + 1))
+          fi
+          for route in create direct; do
+            code="$(curl -sS -o api-off.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+              -d '{"slug":"ci","amount":10,"locale":"en","donor":{"name":"CI check"}}' "$base/api/payments/$route" || true)"
+            if [ "$code" = "503" ] && grep -q 'payments-disabled' api-off.json; then
+              echo "ok: $route refuses (503 payments-disabled)"
+            else
+              echo "::error::payments off: $route answered $code"
+              failures=$((failures + 1))
+            fi
+          done
+          code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$base/api/payments/mock-gate" || true)"
+          if [ "$code" = "404" ]; then
+            echo "ok: the simulated bank is not there (404)"
+          else
+            echo "::error::payments off: the simulated bank answered $code"
+            failures=$((failures + 1))
+          fi
+          kill "$api_pid" 2> /dev/null || true
+          [ "$failures" -eq 0 ] || { cat api-off.log; exit 1; }
+
+  stack:
+    name: Images and full stack
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUBLIC_SITE_URL: http://localhost
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare self-hosted Supabase (pinned official release)
+        run: |
+          set -euo pipefail
+          docker compose version
+          docker network create owis-edge
+          sh deploy/hostinger/supabase-setup.sh "$RUNNER_TEMP/supabase" "$PUBLIC_SITE_URL"
+          # Throwaway secrets, generated for this run only. Kept out of the log anyway.
+          for key in JWT_SECRET ANON_KEY SERVICE_ROLE_KEY POSTGRES_PASSWORD DASHBOARD_PASSWORD; do
+            value="$(grep "^${key}=" "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+            echo "::add-mask::${value}"
+          done
+
+      - name: Start Supabase (five services)
+        working-directory: ${{ runner.temp }}/supabase
+        run: |
+          set -euo pipefail
+          docker compose up -d --quiet-pull --wait --wait-timeout 300 db auth rest storage api-gw
+          docker compose ps
+
+      - name: Apply database migrations
+        run: |
+          set -euo pipefail
+          sql() {
+            docker exec -i supabase-db psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 "$@"
+          }
+          # Storage creates its own tables on first start; the migrations add buckets and policies to them.
+          for attempt in $(seq 1 30); do
+            ready="$(sql -Atc "select (to_regclass('storage.buckets') is not null and to_regclass('storage.objects') is not null)::int" || true)"
+            [ "$ready" = "1" ] && break
+            sleep 2
+          done
+          [ "$ready" = "1" ]
+          for file in $(ls supabase/migrations/*.sql | sort); do
+            echo "-> ${file}"
+            sql --single-transaction -q -f - < "${file}"
+          done
+          echo "public tables: $(sql -Atc "select count(*) from information_schema.tables where table_schema = 'public'")"
+          echo "RLS policies:  $(sql -Atc "select count(*) from pg_policies where schemaname in ('public', 'storage')")"
+          echo "buckets:       $(sql -Atc "select string_agg(id || (case when public then ' (public)' else ' (private)' end), ', ' order by id) from storage.buckets")"
+
+      - name: Configure the application stack
+        run: |
+          set -euo pipefail
+          anon="$(grep '^ANON_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          service="$(grep '^SERVICE_ROLE_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          {
+            echo "DEPLOY_ENV=staging"
+            echo "SITE_ADDRESS=:80"
+            echo "PUBLIC_SITE_URL=${PUBLIC_SITE_URL}"
+            echo "SUPABASE_ANON_KEY=${anon}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${service}"
+            echo "PAYMENT_MODE=mock"
+            echo "IMAGE_TAG=ci"
+            echo "REDIRECT_ADDRESSES=http://blessedtree.veysvakfi.org, http://www.ci.test"
+          } > deploy/hostinger/.env
+
+      - name: Build images
+        working-directory: deploy/hostinger
+        run: docker compose build
+
+      - name: Start web and api
+        working-directory: deploy/hostinger
+        run: |
+          set -euo pipefail
+          docker compose up -d --wait --wait-timeout 180
+          docker compose ps
+
+      - name: Smoke tests through the public edge
+        run: |
+          set -euo pipefail
+          base="$PUBLIC_SITE_URL"
+          anon="$(grep '^ANON_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          service="$(grep '^SERVICE_ROLE_KEY=' "$RUNNER_TEMP/supabase/.env" | head -n 1 | cut -d= -f2-)"
+          body="$RUNNER_TEMP/body"
+          failures=0
+
+          # expect <label> <status[|status]> <url> [curl options]
+          expect() {
+            label="$1"; want="$2"; url="$3"; shift 3
+            got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 "$@" "$url" || true)"
+            if case "|${want}|" in *"|${got}|"*) true ;; *) false ;; esac; then
+              echo "ok    ${label} (${got})"
+            else
+              echo "::error::${label}: expected ${want}, got ${got}"
+              head -c 400 "$body" || true
+              echo
+              failures=$((failures + 1))
+            fi
+          }
+          contains() {
+            grep -q -- "$2" "$body" || {
+              echo "::error::${1}: response does not contain ${2}"
+              failures=$((failures + 1))
+            }
+          }
+
+          echo "== Site =="
+          expect "home page" 200 "$base/"
+          contains "home page" 'id="root"'
+          expect "SPA deep link" 200 "$base/projects/ci-deep-link"
+          contains "SPA deep link" 'id="root"'
+          expect "donate-now redirect" 301 "$base/donate-now"
+          expect "a missing build file is a 404, not the page shell" 404 "$base/assets/does-not-exist.js"
+          expect "donate-now with a final slash" 301 "$base/donate-now/"
+          expect "an address the site does not have" 404 "$base/ci-no-such-page"
+          contains "the 404 answer is the app's page not found" 'id="root"'
+          expect "a page of the app with a final slash" 200 "$base/news/"
+          expect "a page of the app in other letter case" 200 "$base/Library/Gallery"
+          # Headers are read into a variable first: with pipefail, "curl | grep -q"
+          # fails at random when grep stops reading before curl has finished.
+          page_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base/news" | tr 'A-Z' 'a-z')"
+          for wanted in 'cache-control: no-cache' 'x-frame-options: sameorigin' 'x-content-type-options: nosniff' 'strict-transport-security: max-age='; do
+            if grep -q -- "$wanted" <<< "$page_headers"; then
+              echo "ok    page header ${wanted}"
+            else
+              echo "::error::page header missing: ${wanted}"
+              failures=$((failures + 1))
+            fi
+          done
+          expect "home page" 200 "$base/"
+          asset="$(grep -o '/assets/[A-Za-z0-9._-]*\.js' "$body" | head -n 1 || true)"
+          asset_headers=""
+          [ -z "$asset" ] || asset_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base$asset" | tr 'A-Z' 'a-z')"
+          if grep -q 'cache-control: public, max-age=31536000, immutable' <<< "$asset_headers"; then
+            echo "ok    build files are cached for a year (${asset})"
+          else
+            echo "::error::build file ${asset:-not found} is not served with a long cache lifetime"
+            failures=$((failures + 1))
+          fi
+
+          echo "== API functions =="
+          expect "api health" 200 "$base/api/healthz"
+          contains "api health" '"env":"staging"'
+          expect "api unknown route" 404 "$base/api/does-not-exist"
+          expect "payments config" 200 "$base/api/payments/config"
+          echo "payments config: $(head -c 300 "$body")"
+
+          echo "== Supabase paths =="
+          expect "auth health" 200 "$base/auth/v1/health" -H "apikey: $anon"
+          expect "rest without a key is rejected" 401 "$base/rest/v1/site_pages?select=*&limit=1"
+          expect "rest public table" 200 "$base/rest/v1/site_pages?select=*&limit=1" -H "apikey: $anon" -H "Authorization: Bearer $anon"
+          expect "storage buckets" 200 "$base/storage/v1/bucket" -H "apikey: $service" -H "Authorization: Bearer $service"
+          contains "storage buckets" '"media"'
+          contains "storage buckets" '"submissions"'
+
+          echo "== Storage =="
+          printf 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' | base64 -d > "$RUNNER_TEMP/pixel.png"
+          expect "upload to the public bucket" 200 "$base/storage/v1/object/media/ci/pixel.png" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          expect "public file is readable without a key" 200 "$base/storage/v1/object/public/media/ci/pixel.png"
+          expect "upload to the private bucket" 200 "$base/storage/v1/object/submissions/ci/pixel.png" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          expect "private file is not public" "400|404" "$base/storage/v1/object/public/submissions/ci/pixel.png"
+
+          echo "== Link previews =="
+          # The apps that build a card for a shared link do not run the page script:
+          # the page shell carries the site-wide card, and a news article gets its
+          # own card from the API when the request comes from one of those apps.
+          preview_ua="WhatsApp/2.24.20.80 A"
+          expect "page shell" 200 "$base/"
+          contains "page shell carries the site-wide card" 'property="og:image" content="https://veysvakfi.org/share/site.jpg"'
+          expect "the site-wide card picture" 200 "$base/share/site.jpg"
+          expect "a news article for the preview check" 201 "$base/rest/v1/news" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"slug":"ci-link-preview","title":{"ar":"خبر فحص البطاقة"},"excerpt":{"ar":"ملخص خبر الفحص"},"image":"/news/news-placeholder.svg","is_published":true}'
+          expect "the article as WhatsApp reads it" 200 "$base/news/ci-link-preview" -A "$preview_ua"
+          contains "article card title" 'property="og:title" content="خبر فحص البطاقة"'
+          contains "article card summary" 'property="og:description" content="ملخص خبر الفحص"'
+          contains "article card picture (an SVG gets the site-wide card)" "property=\"og:image\" content=\"${base}/share/site.jpg\""
+          contains "article card address" "property=\"og:url\" content=\"${base}/news/ci-link-preview\""
+          expect "the same article in a browser" 200 "$base/news/ci-link-preview"
+          contains "the same article in a browser is the app" 'id="root"'
+          expect "an unknown article as WhatsApp reads it" 200 "$base/news/ci-no-such-article" -A "$preview_ua"
+          contains "an unknown article falls back to the page shell" 'id="root"'
+          expect "the preview API for an unknown article" 404 "$base/api/share/news/ci-no-such-article"
+
+          echo "== Former addresses =="
+          # moved <label> <path> <target> [curl options]: a permanent redirect to the target.
+          moved() {
+            got="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "${@:4}" "$base$2" || true)"
+            if [ "$got" = "301 $3" ]; then
+              echo "ok $1"
+            else
+              echo "::error::$1: expected 301 to $3, got ${got}"
+              failures=$((failures + 1))
+            fi
+          }
+          moved "old volunteer page (Arabic address)" "/%D8%AA%D8%B7%D9%88%D8%B9-%D9%85%D8%B9%D9%86%D8%A7/" "$base/participate/volunteer"
+          moved "old volunteer page" "/volunteer-with-us/" "$base/participate/volunteer"
+          moved "old Waqf Share page" "/product/waqf-share/" "$base/projects/waqf-share"
+          moved "old Blessed Tree page" "/product/the-blessed-tree-project/" "$base/projects/blessed-tree"
+          moved "a redirect keeps campaign parameters" "/volunteer-with-us/?utm_source=ci&gclid=ci-click" "$base/participate/volunteer?utm_source=ci&gclid=ci-click"
+          moved "donate-now keeps the click id" "/donate-now/?gclid=ci-click" "$base/donate?gclid=ci-click"
+          expect "an archived article for the redirect check" 201 "$base/rest/v1/news" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+            -d '{"slug":"archive-99999-خبر-قديم-للفحص","title":{"ar":"خبر قديم للفحص"},"is_published":true}'
+          moved "an old article address" "/%D8%AE%D8%A8%D8%B1-%D9%82%D8%AF%D9%8A%D9%85-%D9%84%D9%84%D9%81%D8%AD%D8%B5/" \
+            "$base/news/archive-99999-%D8%AE%D8%A8%D8%B1-%D9%82%D8%AF%D9%8A%D9%85-%D9%84%D9%84%D9%81%D8%AD%D8%B5"
+          expect "a former-looking address that matches nothing" 404 "$base/ci-old-post-that-never-existed/"
+          contains "the 404 answer is the app's page not found" 'id="root"'
+          moved "the former Blessed Tree site" "/%D8%A7%D8%B3%D8%AA%D8%B9%D9%84%D9%85-%D8%B9%D9%86-%D8%B4%D8%AC%D8%B1%D8%AA%D9%83/" \
+            "$base/projects/blessed-tree" -H "Host: blessedtree.veysvakfi.org"
+          moved "another name of the site keeps path and query" "/news?ci=1" "$base/news?ci=1" -H "Host: www.ci.test"
+
+          echo "== Admin sign-in and RLS =="
+          email="ci-admin@example.test"
+          password="$(openssl rand -hex 16)"
+          echo "::add-mask::${password}"
+          expect "create admin account" 200 "$base/auth/v1/admin/users" -X POST \
+            -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: application/json" \
+            -d "{\"email\":\"${email}\",\"password\":\"${password}\",\"email_confirm\":true,\"app_metadata\":{\"role\":\"admin\"}}"
+          expect "password sign-in" 200 "$base/auth/v1/token?grant_type=password" -X POST \
+            -H "apikey: $anon" -H "Content-Type: application/json" \
+            -d "{\"email\":\"${email}\",\"password\":\"${password}\"}"
+          token="$(jq -r '.access_token // empty' "$body")"
+          if [ -n "$token" ]; then
+            echo "::add-mask::${token}"
+            expect "admin reads a protected table" 200 "$base/rest/v1/donation_payments?select=id&limit=1" \
+              -H "apikey: $anon" -H "Authorization: Bearer $token"
+          else
+            echo "::error::sign-in returned no access token"
+            failures=$((failures + 1))
+          fi
+          got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 -H "apikey: $anon" -H "Authorization: Bearer $anon" "$base/rest/v1/donation_payments?select=id&limit=1" || true)"
+          if { [ "$got" = "200" ] && [ "$(cat "$body")" = "[]" ]; } || [ "$got" = "401" ] || [ "$got" = "403" ]; then
+            echo "ok    protected table is closed to anonymous visitors (${got})"
+          else
+            echo "::error::donation_payments is readable anonymously (${got})"
+            failures=$((failures + 1))
+          fi
+
+          echo "== Visitor forms (anonymous) =="
+          as_visitor=(-H "apikey: $anon" -H "Authorization: Bearer $anon" -H "Content-Type: application/json")
+          expect "newsletter sign-up" 201 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"  CI-Reader@Example.test "}'
+          expect "the same address again is a duplicate, whatever the letter case" 409 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"ci-reader@example.test"}'
+          expect "newsletter refuses text that is not an address" 400 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":"not-an-email"}'
+          expect "newsletter refuses an empty value" 400 "$base/rest/v1/newsletter_subscribers" -X POST "${as_visitor[@]}" -d '{"email":""}'
+          expect "visitors cannot publish content" "401|403" "$base/rest/v1/news" -X POST "${as_visitor[@]}" -d '{"slug":"ci-visitor","title":{"ar":"x"}}'
+          expect "visitors cannot upload to the media library" "400|401|403" "$base/storage/v1/object/media/ci/visitor.png" -X POST \
+            -H "apikey: $anon" -H "Authorization: Bearer $anon" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
+          got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 -H "apikey: $anon" -H "Authorization: Bearer $anon" "$base/rest/v1/newsletter_subscribers?select=email&limit=1" || true)"
+          if { [ "$got" = "200" ] && [ "$(cat "$body")" = "[]" ]; } || [ "$got" = "401" ] || [ "$got" = "403" ]; then
+            echo "ok    the subscriber list is closed to anonymous visitors (${got})"
+          else
+            echo "::error::newsletter_subscribers is readable anonymously (${got})"
+            failures=$((failures + 1))
+          fi
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
+          echo "All checks passed."
+
+      - name: Donation flow against the mock bank
+        run: BASE_URL="$PUBLIC_SITE_URL" node deploy/hostinger/tests/mock-payment.mjs
+
+      - name: Resource usage
+        if: always()
+        run: |
+          {
+            echo "### Containers"
+            echo '```'
+            docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
+            echo '```'
+            echo "### Host memory (MB)"
+            echo '```'
+            free -m
+            echo '```'
+            echo "### Images"
+            echo '```'
+            docker images --format 'table {{.Repository}}:{{.Tag}}\t{{.Size}}' | grep -E 'owis-|supabase|postgrest|envoy|gotrue' || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          (cd "$RUNNER_TEMP/supabase" && docker compose ps -a && docker compose logs --no-color --tail=60 db auth rest storage api-gw) || true
+          (cd deploy/hostinger && docker compose ps -a && docker compose logs --no-color --tail=80) || true
+
+  deploy:
+    name: Deploy to the staging VPS
+    needs: stack
+    if: github.ref == 'refs/heads/infra/hostinger-staging'
+    runs-on: ubuntu-latest
+    environment: hostinger-staging
+    timeout-minutes: 25
+    concurrency:
+      group: deploy-hostinger-staging
+      cancel-in-progress: false
+    env:
+      STAGING_URL: https://staging.veysvakfi.org
+    steps:
+      - name: Deploy this commit
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/known_hosts" "$HOME/.ssh/id_ed25519"
+          # The key is bound to a gate on the server: it can only ask for a
+          # deployment of a commit that is on the staging branch.
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "$VPS_USER@$VPS_HOST" "deploy ${GITHUB_SHA}"
+
+      - name: Server status after the deployment
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" status | tee "$RUNNER_TEMP/status.txt"
+          grep -q "^deployed: ${GITHUB_SHA:0:12}\$" "$RUNNER_TEMP/status.txt" || {
+            echo "::error::the server does not report this commit as deployed"
+            exit 1
+          }
+
+      - name: Check the live site
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/body"
+          failures=0
+
+          # The server says which address it serves and with which settings:
+          # staging with the simulated bank, or production with the real one or
+          # with online payments switched off until the bank values are set.
+          # Nothing here pays or writes: the checks only read.
+          setting() { sed -n "s/^$1=//p" "$RUNNER_TEMP/status.txt" | head -n 1; }
+          LIVE_URL="$(setting public_site_url)"
+          LIVE_URL="${LIVE_URL:-$STAGING_URL}"
+          deploy_env="$(setting deploy_env)"
+          deploy_env="${deploy_env:-staging}"
+          payment_mode="$(setting payment_mode)"
+          payment_mode="${payment_mode:-mock}"
+          robots="$(setting robots_tag)"
+          echo "checking $LIVE_URL as $deploy_env (payments: $payment_mode)"
+          case "$deploy_env/$payment_mode" in
+            staging/mock | production/production | production/disabled) ;;
+            *)
+              echo "::error::unexpected settings: $deploy_env with payment mode $payment_mode"
+              failures=$((failures + 1))
+              ;;
+          esac
+
+          expect() {
+            label="$1"; want="$2"; url="$3"; shift 3
+            got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 "$@" "$url" || true)"
+            if case "|${want}|" in *"|${got}|"*) true ;; *) false ;; esac; then
+              echo "ok    ${label} (${got})"
+            else
+              echo "::error::${label}: expected ${want}, got ${got}"
+              head -c 300 "$body" || true
+              echo
+              failures=$((failures + 1))
+            fi
+          }
+          contains() {
+            grep -q -- "$2" "$body" || {
+              echo "::error::${1}: response does not contain ${2}"
+              failures=$((failures + 1))
+            }
+          }
+
+          # A first deployment also has to obtain its certificate.
+          for attempt in $(seq 1 36); do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$LIVE_URL/api/healthz" || true)"
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+
+          expect "home page over HTTPS" 200 "$LIVE_URL/"
+          contains "home page" 'id="root"'
+          contains "home page carries the site-wide card" 'property="og:image" content="https://veysvakfi.org/share/site.jpg"'
+          expect "the site-wide link-preview card" 200 "$LIVE_URL/share/site.jpg"
+          expect "plain HTTP redirects to HTTPS" "301|308" "http://${LIVE_URL#https://}/"
+          expect "SPA deep link" 200 "$LIVE_URL/projects/ci-deep-link"
+          expect "donate-now redirect" 301 "$LIVE_URL/donate-now"
+          expect "an address the site does not have" 404 "$LIVE_URL/ci-no-such-page"
+          got="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$LIVE_URL/volunteer-with-us/" || true)"
+          if [ "$got" = "301 $LIVE_URL/participate/volunteer" ]; then
+            echo "ok a former address moves to its new page"
+          else
+            echo "::error::former address: expected 301 to $LIVE_URL/participate/volunteer, got ${got}"
+            failures=$((failures + 1))
+          fi
+          expect "api health" 200 "$LIVE_URL/api/healthz"
+          contains "api health" "\"env\":\"${deploy_env}\""
+          expect "payments configuration" 200 "$LIVE_URL/api/payments/config"
+          contains "payments config" "\"mode\":\"${payment_mode}\""
+          expect "database API refuses requests without a key" 401 "$LIVE_URL/rest/v1/"
+          expect "storage is up" 200 "$LIVE_URL/storage/v1/status"
+          live_headers="$(curl -sSI --max-time 20 "$LIVE_URL/" || true)"
+          if [ -z "$robots" ] || grep -qi 'noindex' <<< "$robots"; then
+            if grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
+              echo "ok    the site is hidden from search engines, as set"
+            else
+              echo "::error::X-Robots-Tag noindex header is missing"
+              failures=$((failures + 1))
+            fi
+          elif grep -qi '^x-robots-tag:.*noindex' <<< "$live_headers"; then
+            echo "::error::the site is set to be indexed but still answers with noindex"
+            failures=$((failures + 1))
+          else
+            echo "ok    the site is open to search engines, as set"
+          fi
+
+          [ "$failures" -eq 0 ] || { echo "${failures} check(s) failed"; exit 1; }
+          echo "The site is live: $LIVE_URL ($deploy_env)"

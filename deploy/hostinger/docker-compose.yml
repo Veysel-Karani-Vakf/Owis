@@ -1,0 +1,90 @@
+# Application stack for the Hostinger VPS: web (Caddy + SPA) and api (Node).
+# Self-hosted Supabase runs as its own compose project from the pinned official
+# release (see supabase-setup.sh); the two meet on the `owis-edge` network.
+#
+# All values come from the .env file next to this one. Nothing secret lives in
+# this file or in the repository.
+
+# The stack's own label on the host (container and volume names). It is not
+# the environment: the stack that began as staging keeps its name when it is
+# switched to production settings, so its certificates and volumes stay.
+name: owis-${STACK_NAME:-staging}
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/hostinger/Dockerfile
+      target: web
+      args:
+        # Same origin: Caddy forwards /auth/v1, /rest/v1 and /storage/v1.
+        VITE_SUPABASE_URL: ${PUBLIC_SITE_URL:?set PUBLIC_SITE_URL}
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set SUPABASE_ANON_KEY}
+        VITE_SUPABASE_MEDIA_BUCKET: ${SUPABASE_MEDIA_BUCKET:-media}
+        VITE_DEPLOY_ENV: ${DEPLOY_ENV:?set DEPLOY_ENV}
+    image: owis-web:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS}
+      # Other names of the site (www, a former address) that answer with a
+      # redirect to PUBLIC_SITE_URL. Unset: no such name.
+      REDIRECT_ADDRESSES: ${REDIRECT_ADDRESSES:-http://redirect.invalid}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?set PUBLIC_SITE_URL}
+      SUPABASE_GATEWAY: supabase-gw:8000
+      ROBOTS_TAG: ${ROBOTS_TAG:-noindex, nofollow}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - edge
+    depends_on:
+      api:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/hostinger/Dockerfile
+      target: api
+    image: owis-api:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    environment:
+      DEPLOY_ENV: ${DEPLOY_ENV:?set DEPLOY_ENV}
+      PORT: "3000"
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?set PUBLIC_SITE_URL}
+      # Internal address of the Supabase gateway; never the hosted project.
+      SUPABASE_URL: http://supabase-gw:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}
+      PAYMENT_MODE: ${PAYMENT_MODE:-mock}
+      PAYMENT_CLIENT_ID: ${PAYMENT_CLIENT_ID:-TEST_CLIENT_ID}
+      PAYMENT_STORE_KEY: ${PAYMENT_STORE_KEY:-TEST_STORE_KEY}
+      PAYMENT_GATE_URL: ${PAYMENT_GATE_URL:-TEST_GATEWAY_URL}
+    # Optional extra variables (for example the assistant's AI provider keys).
+    env_file:
+      - path: ./api.env
+        required: false
+    networks:
+      - edge
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  edge:
+    name: owis-edge
+    external: true
+
+volumes:
+  caddy-data:
+  caddy-config:

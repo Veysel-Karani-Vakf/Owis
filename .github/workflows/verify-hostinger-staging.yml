@@ -1,0 +1,76 @@
+name: Verify Hostinger Staging SSH
+
+# Confirms that GitHub Actions can reach the VPS with the deploy key. The key
+# is bound to a gate on the server that accepts only "verify", "status" and
+# "deploy <commit>", so this sends "verify" and expects SSH_OK back.
+
+on:
+  push:
+    branches:
+      - infra/hostinger-staging
+    paths:
+      - .github/workflows/verify-hostinger-staging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-ssh:
+    name: Check secure VPS connection
+    runs-on: ubuntu-latest
+    environment: hostinger-staging
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify SSH connection
+        shell: bash
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KNOWN_HOSTS: ${{ vars.VPS_SSH_KNOWN_HOSTS }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 "$HOME/.ssh"
+
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+
+          # Diagnostics: only the public fingerprint is printed, never key material.
+          if ! ssh-keygen -y -P '' -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub" 2> "$RUNNER_TEMP/keycheck.err"; then
+            echo "::error::The key in VPS_SSH_PRIVATE_KEY cannot be used without interaction (passphrase-protected or not a valid private key)."
+            sed 's/^/keycheck: /' "$RUNNER_TEMP/keycheck.err"
+            exit 1
+          fi
+          echo "Deploy key public fingerprint:"
+          ssh-keygen -lf "$HOME/.ssh/id_ed25519.pub" | awk '{print $1, $2, $NF}'
+
+          ssh_args=(
+            -i "$HOME/.ssh/id_ed25519"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            "$VPS_USER@$VPS_HOST"
+          )
+
+          result="$(ssh "${ssh_args[@]}" verify || true)"
+          if [ "$result" != "SSH_OK" ]; then
+            echo "::group::SSH authentication debug"
+            ssh -v "${ssh_args[@]}" verify 2>&1 \
+              | grep -E 'Offering public key|Server accepts key|Authentications that can continue|Authenticated to|Permission denied|send_pubkey|denied' || true
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "$result"
+
+          # The key must not be able to do anything else.
+          if ssh "${ssh_args[@]}" 'id' > /dev/null 2>&1; then
+            echo "::error::The deploy key was allowed to run an arbitrary command."
+            exit 1
+          fi
+          echo "ok: arbitrary commands are refused"

@@ -1,0 +1,42 @@
+# OWIS override for the official self-hosted Supabase compose file.
+# supabase-setup.sh installs it as docker-compose.owis.yml and lists it in
+# COMPOSE_FILE, the mechanism the official setup uses for overrides.
+#
+# The site needs five services: db, auth, rest, storage and the API gateway.
+# Start exactly those:
+#   docker compose up -d --wait db auth rest storage api-gw
+#
+# The official file makes the gateway wait for Studio and makes Storage wait
+# for imgproxy. Neither is used here (no dashboard on the public edge, no image
+# transformations), so those two dependencies are replaced below. Studio and
+# meta can still be started on demand for administration.
+
+services:
+  api-gw:
+    depends_on: !override
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    # Reachable from the host for administration only; the public edge is Caddy.
+    ports: !override
+      - "127.0.0.1:${API_GW_HTTP_PORT:-8000}:8000/tcp"
+    networks:
+      owis-edge:
+        aliases:
+          - supabase-gw
+
+  storage:
+    depends_on: !override
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ENABLE_IMAGE_TRANSFORMATION: "false"
+
+networks:
+  owis-edge:
+    external: true

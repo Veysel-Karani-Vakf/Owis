@@ -22,6 +22,9 @@ function upsertMeta(selector: string, create: () => HTMLMetaElement, value: stri
   element.setAttribute('content', value);
 }
 
+/** The site-wide link-preview card (public/share/site.jpg), as in index.html. */
+const SITE_CARD = '/share/site.jpg';
+
 /** Site-relative paths become absolute; full URLs (e.g. an uploaded image) pass through. */
 function absoluteUrl(src: string) {
   return /^https?:\/\//i.test(src) ? src : `${window.location.origin}${src.startsWith('/') ? '' : '/'}${src}`;
@@ -87,16 +90,13 @@ export default function PageSeo({
         return meta;
       }, type);
 
-      if (image) {
-        const imageUrl = absoluteUrl(image);
-        upsertMeta("meta[property='og:image']", () => {
-          const meta = document.createElement('meta');
-          meta.setAttribute('property', 'og:image');
-          return meta;
-        }, imageUrl);
-      } else {
-        document.head.querySelector("meta[property='og:image']")?.remove();
-      }
+      // A page without a picture of its own keeps the site-wide card.
+      const imageUrl = absoluteUrl(image || SITE_CARD);
+      upsertMeta("meta[property='og:image']", () => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', 'og:image');
+        return meta;
+      }, imageUrl);
 
       const existingStructuredData = document.head.querySelector(
         "script[type='application/ld+json'][data-page-seo='true']"

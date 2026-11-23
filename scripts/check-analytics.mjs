@@ -1,4 +1,6 @@
 // End-to-end check of the GA4 integration against the production build.
+// (Only the GA4 hits are inspected; the Google Ads tag on the same page is
+// answered with 204 like every other Google host.)
 //
 //   npm run build && npm run test:analytics
 //
@@ -259,7 +261,8 @@ await settle();
   const doubles = perStep.filter((dl, i) => i > 0 && perStep[i - 1] === dl);
   check(doubles.length === 0, 'no back-to-back duplicate page_view');
 }
-for (const [path, target] of [['/no-such-page-xyz', '/'], ['/participate', '/participate/share-ideas']]) {
+// An unknown address now stays where it is and shows the app's page-not-found.
+for (const [path, target] of [['/no-such-page-xyz', '/no-such-page-xyz'], ['/participate', '/participate/share-ideas']]) {
   const page = await openPage(ctx, path);
   const id = idOf(page);
   await waitFor(() => pageViews(id).length > 0);

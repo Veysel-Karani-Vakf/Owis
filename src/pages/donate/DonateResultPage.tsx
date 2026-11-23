@@ -6,7 +6,9 @@ import { contributeContactRoute, donateCheckoutRoute, donateRoute } from '@/data
 import { getDonateResultContent } from '@/data/donateCheckout';
 import { getParticipatePage } from '@/data/participate';
 import { useI18n } from '@/i18n/useI18n';
+import { trackDonationPaid } from '@/analytics/googleAnalytics';
 import { fetchPaymentStatus, type PaymentStatus } from '@/services/donationPayments';
+import { resultReference } from './resultReference';
 
 const localeTags: Record<string, string> = { ar: 'ar', tr: 'tr-TR', en: 'en-US' };
 
@@ -47,7 +49,8 @@ export default function DonateResultPage() {
     (link) => link.kind === 'whatsapp',
   )?.href;
   const [searchParams] = useSearchParams();
-  const oid = searchParams.get('oid') ?? '';
+  // The bank's reference, taken out of the address before any tag loaded.
+  const oid = searchParams.get('oid') || resultReference();
   const flowError = searchParams.get('error');
 
   const [view, setView] = useState<ViewState>(flowError || !oid ? viewForFlowError(flowError, oid) : 'loading');
@@ -82,6 +85,8 @@ export default function DonateResultPage() {
       }
       setPayment(loaded);
       setView(loaded.status === 'paid' ? 'success' : 'failure');
+      // Reported once per donation, with the amount and a one-way reference only.
+      if (loaded.status === 'paid') trackDonationPaid(loaded);
     };
 
     void load(0);

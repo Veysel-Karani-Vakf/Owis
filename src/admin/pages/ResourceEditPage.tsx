@@ -298,12 +298,16 @@ function RecordEditor({ resource, id }: { resource: FullResourceDef; id: string 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving, resource, values, locale, hasSlug, baseline, isNew, id, s, toast, confirm]);
 
+  useUnsavedChanges(dirty, saveAndReport);
+  useSaveShortcut(dirty && !saving ? saveAndReport : null);
+
+  // Declared after useUnsavedChanges on purpose. Effects run in declaration
+  // order and the navigation blocker refreshes its `dirty` check in an effect,
+  // so redirecting from an earlier effect met the previous render's blocker:
+  // a record that had just been saved still raised "unsaved changes".
   useEffect(() => {
     if (redirectTo && !dirty) navigate(redirectTo, { replace: true });
   }, [redirectTo, dirty, navigate]);
-
-  useUnsavedChanges(dirty, saveAndReport);
-  useSaveShortcut(dirty && !saving ? saveAndReport : null);
 
   // The button is labelled with the list's name, so it always goes there —
   // not to wherever the editor came from (dashboard, search, another tab).

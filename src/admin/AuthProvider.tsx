@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
@@ -69,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
+  // The effect below owns `apply`; signIn reaches it through this ref.
+  const applyRef = useRef<((nextSession: Session | null) => Promise<void>) | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setNetworkError(result.networkError);
       setLoading(false);
     };
+    applyRef.current = apply;
 
     supabase.auth
       .getSession()
@@ -102,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false;
+      applyRef.current = null;
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -115,7 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       networkError,
       async signIn(email, password) {
         try {
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          // The login page moves on as soon as this resolves. The session and
+          // the access answer must be in place by then, or the guard sends a
+          // person who has just signed in back to an empty login form.
+          if (!error && data.session) await applyRef.current?.(data.session);
           return { error: error ? error.message : null, kind: classifyAuthError(error) };
         } catch (e) {
           return { error: e instanceof Error ? e.message : String(e), kind: 'network' };

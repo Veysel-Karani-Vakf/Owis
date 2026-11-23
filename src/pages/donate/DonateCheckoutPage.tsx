@@ -1,9 +1,10 @@
 import { AlertTriangle, FlaskConical, HandHeart, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import FadeContent from '@/components/effects/FadeContent';
 import PageSeo from '@/components/internal/PageSeo';
 import { isCmsSettled } from '@/cms/store';
+import { bankAccountsRoute } from '@/data/bankAccounts';
 import { donateRoute } from '@/data/donate';
 import { getDonateCheckoutContent } from '@/data/donateCheckout';
 import { useDonateContent } from '@/hooks/useCmsContent';
@@ -91,6 +92,8 @@ export default function DonateCheckoutPage() {
   }, []);
 
   const limits = config ?? DEFAULT_PAYMENT_CONFIG;
+  // Online payments switched off on the server: a notice replaces the form.
+  const paymentsPaused = config?.mode === 'disabled';
 
   if (!opportunity || !opportunity.available) {
     if (!isCmsSettled()) return null;
@@ -111,6 +114,8 @@ export default function DonateCheckoutPage() {
         return content.errors.email;
       case 'unavailable':
         return content.errors.unavailable;
+      case 'payments-disabled':
+        return content.paused.description;
       case 'network':
         return content.errors.network;
       default:
@@ -120,7 +125,7 @@ export default function DonateCheckoutPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || paymentsPaused) return;
 
     const nextErrors: FieldErrors = {};
     const amount = amountValue ?? NaN;
@@ -165,7 +170,8 @@ export default function DonateCheckoutPage() {
 
   // Only once the server has answered: a live deployment must never flash
   // "no real charge is made" at a donor who is about to be charged.
-  const showTestBanner = config !== null && config.mode !== 'production';
+  const showTestBanner =
+    config !== null && config.mode !== 'production' && config.mode !== 'disabled';
 
   return (
     <>
@@ -177,12 +183,14 @@ export default function DonateCheckoutPage() {
           id="cms-checkout-hero"
           className="relative isolate overflow-hidden bg-dark-950 pt-24 md:pt-28"
         >
-          <img
-            src={opportunity.image}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45"
-          />
+          {opportunity.image ? (
+            <img
+              src={opportunity.image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45"
+            />
+          ) : null}
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary-950/90 via-dark-950/78 to-dark-950/68" />
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_22%_45%,rgba(218,8,18,0.24),transparent_34%)]" />
 
@@ -209,12 +217,14 @@ export default function DonateCheckoutPage() {
               <div className="text-start">
                 <div className="overflow-hidden rounded-[20px] border border-primary-100 bg-white shadow-[0_14px_38px_rgba(40,12,18,0.07)]">
                   <div className="relative h-40 overflow-hidden bg-primary-50 sm:h-44 lg:h-[205px]">
-                    <img
-                      src={opportunity.image}
-                      alt={opportunity.imageAlt}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
+                    {opportunity.image ? (
+                      <img
+                        src={opportunity.image}
+                        alt={opportunity.imageAlt}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
                   </div>
                   <div className="p-4 md:p-5">
                     <p className="text-[11px] font-bold text-primary-700">{content.summary.heading}</p>
@@ -281,6 +291,36 @@ export default function DonateCheckoutPage() {
               threshold={0.1}
               once
             >
+              {paymentsPaused ? (
+                <div
+                  id="cms-checkout-paused"
+                  role="status"
+                  className="rounded-[20px] border border-amber-200 bg-white p-5 text-start shadow-[0_16px_42px_rgba(40,12,18,0.06)] md:p-6"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+                    <div>
+                      <h2 className="text-lg font-bold text-dark-950">{content.paused.title}</h2>
+                      <p className="mt-2 text-sm leading-relaxed text-dark-700">{content.paused.description}</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    <Link
+                      to={bankAccountsRoute}
+                      className="btn-border-run inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                    >
+                      <HandHeart className="h-5 w-5" aria-hidden="true" />
+                      {content.paused.bankAccounts}
+                    </Link>
+                    <Link
+                      to={donateRoute}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-primary-100 bg-white px-6 py-2.5 text-sm font-bold text-dark-800 transition-colors hover:border-primary-300 hover:text-primary-700"
+                    >
+                      {content.paused.backToDonate}
+                    </Link>
+                  </div>
+                </div>
+              ) : (
               <form
                 id="cms-checkout-form"
                 onSubmit={handleSubmit}
@@ -488,6 +528,7 @@ export default function DonateCheckoutPage() {
                   </div>
                 </fieldset>
               </form>
+              )}
             </FadeContent>
           </div>
         </section>

@@ -1,0 +1,36 @@
+#!/bin/sh
+# Forced command for the deploy key of the owisdeploy account. Whatever the
+# caller asks for arrives in SSH_ORIGINAL_COMMAND; exactly three requests are
+# honoured and everything else is refused. The account has no shell access
+# through this key, no sudo beyond the one deploy script, and no Docker group.
+#
+# Installed in /usr/local/sbin by bootstrap-staging.sh.
+set -eu
+
+request="${SSH_ORIGINAL_COMMAND:-}"
+
+deny() {
+  echo "denied" >&2
+  exit 2
+}
+
+case "$request" in
+  verify)
+    [ "$(id -un)" = "owisdeploy" ] || deny
+    echo SSH_OK
+    ;;
+  status)
+    exec sudo -n /usr/local/sbin/owis-deploy-staging status
+    ;;
+  "deploy "*)
+    sha="${request#deploy }"
+    case "$sha" in
+      "" | *[!0-9a-f]*) deny ;;
+    esac
+    [ "${#sha}" -eq 40 ] || deny
+    exec sudo -n /usr/local/sbin/owis-deploy-staging deploy "$sha"
+    ;;
+  *)
+    deny
+    ;;
+esac

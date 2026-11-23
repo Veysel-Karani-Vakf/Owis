@@ -1,6 +1,12 @@
 import { cmsNews, cmsPageContent } from '@/cms/adapters';
 import type { Locale } from '@/i18n/content';
 import type { BreadcrumbItem } from '@/data/about';
+import { SUPABASE_URL } from '@/lib/supabase';
+
+// Pictures uploaded through the dashboard live in the public media bucket of
+// whichever Supabase instance this build is configured for, so their links
+// follow that instance instead of naming a host.
+const MEDIA_PUBLIC_BASE = `${SUPABASE_URL}/storage/v1/object/public/media`;
 
 type LocalizedString = Partial<Record<Locale, string>> & { ar: string };
 type LocalizedParagraphs = Partial<Record<Locale, string[]>> & { ar: string[] };
@@ -290,7 +296,7 @@ const curatedNewsArticles = [
         "#وقف_أويس_القرني\n#وقفنا_معا_لنهضة_اليمن"
       ]
     },
-    "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507806.jpg-w2ncys.jpeg",
+    "image": `${MEDIA_PUBLIC_BASE}/images/a7507806.jpg-w2ncys.jpeg`,
     "imageAlt": {
       "ar": "وقف أويس القرني يحتفي بالكوكبة الثانية من رواد اليمن ويختتم ملتقاهم السابع بإسطنبول",
       "en": "Owais Al-Qarni Waqf Honors Second Cohort of Yemen Pioneers and Concludes Seventh Forum in Istanbul",
@@ -299,8 +305,8 @@ const curatedNewsArticles = [
     "gallery": [
       {
         "id": "item-1-157sxj",
-        "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507791.jpg-gdaeb9.jpeg",
-        "thumbnail": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507787.jpg-awly0j.jpeg",
+        "image": `${MEDIA_PUBLIC_BASE}/images/a7507791.jpg-gdaeb9.jpeg`,
+        "thumbnail": `${MEDIA_PUBLIC_BASE}/images/a7507787.jpg-awly0j.jpeg`,
         "sourceUrl": "https://veysvakfi.org/news/yemen-pioneers-7th-forum-2026",
         "title": {
           "ar": "",
@@ -317,8 +323,8 @@ const curatedNewsArticles = [
       },
       {
         "id": "item-2-ifuh0a",
-        "image": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507568.jpg-dxc7gl.jpeg",
-        "thumbnail": "https://goyqlyrtclpywvolayzu.supabase.co/storage/v1/object/public/media/images/a7507771.jpg-2v9vz4.jpeg",
+        "image": `${MEDIA_PUBLIC_BASE}/images/a7507568.jpg-dxc7gl.jpeg`,
+        "thumbnail": `${MEDIA_PUBLIC_BASE}/images/a7507771.jpg-2v9vz4.jpeg`,
         "sourceUrl": "https://veysvakfi.org/news/yemen-pioneers-7th-forum-2026",
         "title": {
           "ar": "",

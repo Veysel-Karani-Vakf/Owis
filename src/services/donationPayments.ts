@@ -3,7 +3,8 @@ import type { Locale } from '@/i18n/content';
 export type PaymentMode = 'mock' | 'test' | 'production';
 
 export type PaymentConfig = {
-  mode: PaymentMode;
+  /** 'disabled': online payments are switched off; the checkout shows a notice. */
+  mode: PaymentMode | 'disabled';
   currency: string;
   minAmount: number;
   maxAmount: number;
@@ -24,6 +25,7 @@ export type PaymentErrorCode =
   | 'invalid-email'
   | 'unavailable'
   | 'server-error'
+  | 'payments-disabled'
   | 'network';
 
 export class DonationPaymentError extends Error {

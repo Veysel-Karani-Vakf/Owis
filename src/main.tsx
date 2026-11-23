@@ -7,9 +7,15 @@ import { CmsProvider } from './cms/CmsProvider';
 import './index.css';
 import { localizedContent } from './i18n/content';
 import { initAnalytics } from './analytics/googleAnalytics';
+import { takeResultReferenceFromAddress } from './pages/donate/resultReference';
 
-// Google Analytics 4: loads gtag.js asynchronously on the public production
-// site only (never on /admin or inside the dashboard preview).
+// The payment reference the bank puts in the result page's address leaves it
+// before any tag loads (and before the router reads the address).
+takeResultReferenceFromAddress();
+
+// Google Analytics 4 and the Google Ads tag: gtag.js loads asynchronously on
+// the public production site only (never on /admin or inside the dashboard
+// preview).
 initAnalytics();
 
 // On phones (and with reduced motion) the landing hero shows its poster, so

@@ -1,0 +1,175 @@
+# Edge for the Hostinger VPS: serves the SPA, and fronts the API functions and
+# the self-hosted Supabase gateway on the same origin.
+#
+# SITE_ADDRESS decides TLS: a hostname (staging.example.org) gets an automatic
+# certificate; ":80" serves plain HTTP (CI and local runs).
+
+{
+	admin off
+}
+
+# Container health check only; not published outside the container.
+:8081 {
+	respond /healthz "ok" 200
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# The site is never meant to be framed by another site; the dashboard's
+		# own live preview is same-origin and keeps working.
+		X-Frame-Options SAMEORIGIN
+		# Browsers ignore this over plain HTTP (CI, local runs).
+		Strict-Transport-Security "max-age=31536000"
+		X-Robots-Tag "{$ROBOTS_TAG:noindex, nofollow}"
+		-Server
+	}
+
+	# /donate-now moved permanently to /donate (as in vercel.json), with or
+	# without the final slash. The query, such as a Google Ads click id, is kept.
+	@donateNow path_regexp (?i)^/donate-now/?$
+	redir @donateNow /donate{?query} permanent
+
+	# Self-hosted Supabase, on the exact paths supabase-js calls. Only these
+	# three prefixes are forwarded, so the gateway's dashboard stays private.
+	@supabase path /auth/v1/* /rest/v1/* /storage/v1/*
+	handle @supabase {
+		reverse_proxy {$SUPABASE_GATEWAY:supabase-gw:8000}
+	}
+
+	# API functions. Request bodies are streamed through untouched, which the
+	# bank callback relies on to verify the gateway hash.
+	handle /api/* {
+		request_body {
+			max_size 5MB
+		}
+		reverse_proxy api:3000
+	}
+
+	# Build output with a content hash in the file name: cached for a year. A
+	# name that does not exist is a plain 404, never the page shell, so a
+	# browser holding an old page fails cleanly instead of loading HTML as
+	# a script.
+	handle /assets/* {
+		root * /srv
+		@present file
+		header @present Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Link previews of news articles. The apps that build a card for a shared
+	# link (WhatsApp, Facebook, Telegram, X, LinkedIn...) do not run the page's
+	# script, so the page shell alone only ever gives them the site-wide card.
+	# For those apps the API writes the article's own title, summary and
+	# picture. Visitors are not affected; and an article the API does not know,
+	# or any failure there, gives the apps the ordinary page shell.
+	@linkPreview {
+		path_regexp ^/news/[^/]+/?$
+		header_regexp User-Agent (?i)(facebookexternalhit|facebot|meta-external|whatsapp|telegrambot|twitterbot|linkedinbot|slackbot|discordbot|skypeuripreview|microsoftpreview|pinterest|vkshare|viber|snapchat|redditbot|embedly|iframely|mastodon|bluesky|cardyb)
+	}
+	handle @linkPreview {
+		rewrite * /api/share{path}
+		reverse_proxy api:3000 {
+			@noCard status 3xx 4xx 5xx
+			handle_response @noCard {
+				root * /srv
+				rewrite * /index.html
+				header Cache-Control "no-cache"
+				file_server {
+					status 200
+				}
+			}
+		}
+	}
+
+	# The API not answering at all (a restart) is an error rather than a
+	# response: the link-preview apps get the page shell then too, and an
+	# unknown address still gets "page not found".
+	handle_errors {
+		@cardFallback path /api/share/news/*
+		handle @cardFallback {
+			root * /srv
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server {
+				status 200
+			}
+		}
+		# The same for the former site's addresses: "page not found", 404.
+		@legacyFallback path /api/legacy/redirect
+		handle @legacyFallback {
+			root * /srv
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server {
+				status 404
+			}
+		}
+	}
+
+	# Everything else is the single-page app: a file of the build, a page of
+	# the app, or an address the app does not have.
+	handle {
+		root * /srv
+
+		# A file (never a folder: "/news/" is the news page, not public/news/).
+		@file {
+			not path */
+			file
+		}
+		handle @file {
+			# The page shell is revalidated on every visit, so a deployment is
+			# picked up at once (Vercel does the same). Without this, browsers
+			# may keep an old shell that points at files which no longer exist.
+			header /index.html Cache-Control "no-cache"
+			file_server
+		}
+
+		# The app's pages: the routes in src/App.tsx, ignoring letter case and a
+		# final slash as React Router does. Keep the two lists in step: a page
+		# missing here answers 404 (the app still shows it).
+		@appPage path_regexp (?i)^/(?:about/(?:waqf|structure|administrative-structure|governance)|projects(?:/[^/]+)?|programs/[^/]+|programs/yemen-pioneers/pioneers(?:/[^/]+)?|pioneers(?:/[^/]+)?|news(?:/[^/]+)?|participate(?:/[^/]+)?|library(?:/(?:profile|forum|periodic-reports|waqf-books|waqf-literature|yemeni-figures|success-stories|gallery))?|library/(?:forum|yemeni-figures|success-stories)/[^/]+|donate(?:-now|/checkout/[^/]+|/result)?|bank-accounts|volunteer-award(?:/(?:apply|success))?|admin(?:/.*)?)?/?$
+		handle @appPage {
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server
+		}
+
+		# Any other address. The API knows the pages of the former site that
+		# moved here and answers those with a permanent redirect (passed on as
+		# it is); for everything else the visitor gets the app's "page not
+		# found" with status 404, so search engines drop the address.
+		handle {
+			rewrite * /api/legacy/redirect
+			reverse_proxy api:3000 {
+				header_up X-Original-URI {http.request.orig_uri}
+				@notMoved status 2xx 4xx 5xx
+				handle_response @notMoved {
+					root * /srv
+					rewrite * /index.html
+					header Cache-Control "no-cache"
+					file_server {
+						status 404
+					}
+				}
+			}
+		}
+	}
+}
+
+# Other names of the site: a permanent redirect to the main address, path and
+# query kept. With nothing configured the block answers a name nobody asks for
+# over plain HTTP, so no certificate is ever requested for it.
+{$REDIRECT_ADDRESSES:http://redirect.invalid} {
+	# The former Blessed Tree site: every address opens the project's page.
+	@blessedTree host blessedtree.veysvakfi.org
+	handle @blessedTree {
+		redir {$PUBLIC_SITE_URL:http://localhost}/projects/blessed-tree{?query} permanent
+	}
+	handle {
+		redir {$PUBLIC_SITE_URL:http://localhost}{uri} permanent
+	}
+}

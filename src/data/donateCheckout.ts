@@ -6,6 +6,8 @@ export type DonateCheckoutContent = {
   hero: { title: string; description: string };
   breadcrumbs: { home: string; donate: string };
   testBanner: { title: string; description: string };
+  /** Shown instead of the form while online payments are switched off. */
+  paused: { title: string; description: string; bankAccounts: string; backToDonate: string };
   summary: { heading: string; publishedValue: string };
   amount: {
     heading: string;
@@ -100,6 +102,13 @@ export const localizedDonateCheckout: Record<Locale, DonateCheckoutContent> = {
       title: 'وضع تجريبي',
       description: 'البوابة تعمل حالياً في وضع الاختبار — لن يتم خصم أي مبلغ حقيقي من أي بطاقة.',
     },
+    paused: {
+      title: 'التبرع الإلكتروني غير متاح مؤقتاً',
+      description:
+        'نعمل حالياً على تحديث بوابة الدفع بالبطاقة، ولن يُخصم أي مبلغ عبر الموقع في هذه الفترة. يمكنكم المساهمة الآن بالتحويل إلى حسابات الوقف البنكية، وسنعيد تفعيل الدفع الإلكتروني قريباً.',
+      bankAccounts: 'الحسابات البنكية للوقف',
+      backToDonate: 'العودة إلى فرص المساهمة',
+    },
     summary: { heading: 'ملخص المساهمة', publishedValue: 'القيمة المنشورة' },
     amount: {
       heading: 'مبلغ المساهمة',
@@ -154,6 +163,13 @@ export const localizedDonateCheckout: Record<Locale, DonateCheckoutContent> = {
       title: 'Test Modu',
       description: 'Odeme altyapisi su an test modundadir — hicbir karttan gercek tahsilat yapilmaz.',
     },
+    paused: {
+      title: 'Online bagis gecici olarak kapali',
+      description:
+        'Kartla odeme altyapisini guncelliyoruz; bu surede site uzerinden hicbir tahsilat yapilmaz. Katkinizi simdi vakfin banka hesaplarina havale ile ulastirabilirsiniz. Online odeme yakinda yeniden acilacak.',
+      bankAccounts: 'Vakfin banka hesaplari',
+      backToDonate: 'Katki firsatlarina don',
+    },
     summary: { heading: 'Katki Ozeti', publishedValue: 'Yayinlanan deger' },
     amount: {
       heading: 'Katki Tutari',
@@ -207,6 +223,13 @@ export const localizedDonateCheckout: Record<Locale, DonateCheckoutContent> = {
     testBanner: {
       title: 'Test Mode',
       description: 'The payment gateway currently runs in test mode — no real charge is made to any card.',
+    },
+    paused: {
+      title: 'Online contributions are temporarily unavailable',
+      description:
+        "We are updating the card payment gateway, and no charge is made through the site during this time. You can contribute now by bank transfer to the Waqf's accounts; online payment will be back soon.",
+      bankAccounts: "The Waqf's bank accounts",
+      backToDonate: 'Back to contribution opportunities',
     },
     summary: { heading: 'Contribution Summary', publishedValue: 'Published value' },
     amount: {

@@ -23,6 +23,11 @@ export function SlugInput({
 }) {
   const { locale } = useI18n();
   const [editing, setEditing] = useState(false);
+  // What is being typed. `slugify` trims a trailing separator, so feeding its
+  // result straight back into the box made it impossible to type "waqf-share":
+  // the "-" vanished before the next letter arrived. The parent still only
+  // ever receives a normalised slug.
+  const [draft, setDraft] = useState('');
 
   const label = (ar: string, tr: string, en: string) =>
     locale === 'ar' ? ar : locale === 'tr' ? tr : en;
@@ -51,7 +56,10 @@ export function SlugInput({
           </span>
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setDraft(slug);
+              setEditing(true);
+            }}
             className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
           >
             <Pencil size={13} />
@@ -70,8 +78,11 @@ export function SlugInput({
           dir="ltr"
           autoFocus
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
-          value={slug}
-          onChange={(event) => onChange(slugify(event.target.value))}
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            onChange(slugify(event.target.value));
+          }}
         />
         <button
           type="button"
