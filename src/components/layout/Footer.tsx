@@ -23,6 +23,7 @@ import { bankAccountsRoute } from '@/data/bankAccounts';
 import { participateRoutes } from '@/data/participate';
 import { supabase } from '@/lib/supabase';
 import type { SocialLinks } from '@/i18n/content';
+import { ConsentSettingsLink } from '@/analytics/ConsentBanner';
 
 type SocialIcon = ComponentType<{ className?: string }>;
 
@@ -291,6 +292,8 @@ export default function Footer() {
             {t('footer.yearSuffix')}
           </p>
         </div>
+
+        <ConsentSettingsLink />
 
         <div className="mt-5 text-center" dir="ltr">
           <a
