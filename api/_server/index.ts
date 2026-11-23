@@ -17,6 +17,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import assistantChat from '../assistant/chat';
 import assistantConfig from '../assistant/config';
 import awardApply from '../award/apply';
+import legacyRedirect from '../legacy/redirect';
 import paymentsCallback from '../payments/callback';
 import paymentsConfig from '../payments/config';
 import paymentsCreate from '../payments/create';
@@ -40,6 +41,7 @@ const ROUTES = new Map<string, Handler>([
   ['/api/assistant/chat', assistantChat],
   ['/api/assistant/config', assistantConfig],
   ['/api/award/apply', awardApply],
+  ['/api/legacy/redirect', legacyRedirect],
   ['/api/payments/callback', paymentsCallback],
   ['/api/payments/config', paymentsConfig],
   ['/api/payments/create', paymentsCreate],
