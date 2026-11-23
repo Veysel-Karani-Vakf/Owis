@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploys one commit of the staging branch on this server. Root-owned,
+# Deploys one commit of the main branch on this server. Root-owned,
 # installed in /usr/local/sbin by bootstrap-staging.sh. The deploy key reaches
 # it only through owis-deploy-gate and a single sudoers rule.
 #
@@ -18,7 +18,8 @@
 # Database migrations are deliberately not part of a deploy.
 set -euo pipefail
 
-BRANCH="infra/hostinger-staging"
+# The site deploys from main (until 23 Nov 2026 it was infra/hostinger-staging).
+BRANCH="main"
 ROOT="/opt/owis"
 REPO="$ROOT/repo"
 COMPOSE_FILE="$ROOT/app/docker-compose.yml"
