@@ -1,24 +1,42 @@
 /**
- * Google Analytics 4 (gtag.js) for the public site.
+ * Google tags for the public site, through one gtag.js: Google Analytics 4
+ * (G-CVWM3EXR7D) and the Google Ads tag (AW-460760222).
  *
- * One page-view strategy: the app reports every page itself, from React Router
- * (see usePageViewTracking), with a sanitized URL. gtag's automatic page_view
- * is switched off with `send_page_view: false`.
+ * Page views
+ * - Analytics: the app reports every page itself, from React Router (see
+ *   usePageViewTracking), with a sanitized URL, to Analytics only. gtag's
+ *   automatic page_view is switched off with `send_page_view: false`.
+ *   Google still sends Enhanced Measurement "browser history" page views when
+ *   `send_page_view` is false, so that option must stay OFF in the GA web
+ *   stream (Admin > Data streams > Enhanced measurement > Page views > Show
+ *   advanced settings > "Page changes based on browser history events"). If
+ *   it is on, every in-app navigation is counted twice.
+ * - Google Ads: its tag counts the first page itself and then every change of
+ *   address inside the app (the browser history events). The app sends it no
+ *   page_view of its own, which would count each page twice.
  *
- * Google still sends Enhanced Measurement "browser history" page views when
- * `send_page_view` is false, so that option must stay OFF in the GA web stream
- * (Admin > Data streams > Enhanced measurement > Page views > Show advanced
- * settings > "Page changes based on browser history events"). If it is on,
- * every in-app navigation is counted twice.
+ * Consent (Google Consent Mode v2)
+ * - analytics_storage is granted: visits are measured from the start.
+ * - ad_storage, ad_user_data and ad_personalization stay denied until the
+ *   visitor accepts advertising cookies in the banner (ConsentBanner). The
+ *   answer is kept in this browser for a year and applied before any tag
+ *   runs on later visits. While they are denied the Ads tag sends cookieless
+ *   pings only, with ad-click identifiers redacted, and neither tag collects
+ *   user-provided data (hashed emails or phone numbers read from forms).
  *
  * Privacy rules are enforced before anything is sent:
- * - The tag never loads on /admin, inside the dashboard preview (or any other
+ * - The tags never load on /admin, inside the dashboard preview (or any other
  *   frame), outside the production hosts, or in a dev build.
- * - page_location and page_referrer keep only campaign parameters (utm_*,
- *   Google Ads click ids) and drop the #fragment, so amount, oid, error and
- *   search terms never leave the browser.
+ * - The payment's own reference (oid) leaves the result page's address
+ *   before any tag loads (see pages/donate/resultReference.ts): the Ads tag
+ *   reads the address bar as it is. Google Ads therefore sees page paths and
+ *   their ordinary query (the amount offered on a checkout link, a library
+ *   search), never the payment reference.
+ * - For Analytics, page_location and page_referrer keep only campaign
+ *   parameters (utm_*, Google Ads click ids) and drop the #fragment, so
+ *   amount, error and search terms never reach it either.
  * - On the payment routes (checkout and result) only what the app sends itself
- *   goes out. Everything the tag would collect there by itself (form
+ *   goes to Analytics. Everything the tag would collect there by itself (form
  *   interactions, outbound clicks such as the WhatsApp receipt link that
  *   carries the donor's name and payment reference, scrolls, automatic
  *   user-provided data detection) is blocked with Google's opt-out flag,
@@ -27,13 +45,35 @@
  *   the page_view, begin_checkout when a checkout page opens, and purchase
  *   once the bank has confirmed a donation (amount, currency and a one-way
  *   reference that cannot be turned back into the payment's own reference).
- *   The last two go to Analytics only.
+ *
+ * Google Ads conversions: begin_checkout and purchase also go to Ads as
+ * conversions once their labels are filled in ADS_CONVERSION_LABELS below;
+ * an empty label sends nothing to Ads.
  */
 
 const MEASUREMENT_ID = 'G-CVWM3EXR7D';
+const ADS_ID = 'AW-460760222';
+
+/**
+ * Conversion labels of the Google Ads actions: the part after the slash in
+ * the action's event snippet, send_to: 'AW-460760222/<label>' (Google Ads >
+ * Goals > Conversions > the action > Tag setup > Use Google tag).
+ */
+const ADS_CONVERSION_LABELS: Record<'beginCheckout' | 'purchase', string> = {
+  beginCheckout: '',
+  purchase: '',
+};
+
 const TAG_SRC = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
 const PRODUCTION_HOSTS = new Set(['veysvakfi.org', 'www.veysvakfi.org']);
 const OPT_OUT_FLAG = `ga-disable-${MEASUREMENT_ID}`;
+
+/** The visitor's answer about advertising cookies, kept in this browser. */
+const CONSENT_STORAGE_KEY = 'vkv-ads-consent';
+/** After a year the visitor is asked again. */
+const CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+
+export type AdsConsent = 'granted' | 'denied';
 
 /** Query parameters GA needs for campaign attribution; every other one is dropped. */
 const CAMPAIGN_PARAMS = new Set([
@@ -122,11 +162,45 @@ function gtag(...args: unknown[]): void {
 }
 
 /**
- * Google's opt-out flag. gtag reads it when an event is queued, so an event
- * pushed while it is up is dropped and one pushed while it is down is kept.
+ * Google's opt-out flag for Analytics. gtag reads it when an event is queued,
+ * so an event pushed while it is up is dropped and one pushed while it is
+ * down is kept.
  */
 function setOptOut(on: boolean): void {
   (window as unknown as Record<string, unknown>)[OPT_OUT_FLAG] = on;
+}
+
+/** The visitor's answer, or null when there is none (or it is more than a year old). */
+function storedAdsConsent(): AdsConsent | null {
+  try {
+    const raw = window.localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { choice?: unknown; at?: unknown };
+    if (saved.choice !== 'granted' && saved.choice !== 'denied') return null;
+    if (typeof saved.at !== 'number' || Date.now() - saved.at > CONSENT_MAX_AGE_MS) return null;
+    return saved.choice;
+  } catch {
+    return null;
+  }
+}
+
+/** The three advertising signals of Consent Mode, all following the one answer. */
+function adsSignals(choice: AdsConsent): Record<string, AdsConsent> {
+  return { ad_storage: choice, ad_user_data: choice, ad_personalization: choice };
+}
+
+/** Clears the Ads tag's cookies (_gcl_*) when the visitor withdraws consent. */
+function removeAdCookies(): void {
+  const host = window.location.hostname;
+  const site = host.split('.').slice(-2).join('.');
+  const domains = ['', host, `.${host}`, `.${site}`];
+  for (const part of document.cookie.split(';')) {
+    const name = part.split('=')[0]?.trim() ?? '';
+    if (!name.startsWith('_gcl_')) continue;
+    for (const domain of domains) {
+      document.cookie = `${name}=; Max-Age=0; path=/${domain ? `; domain=${domain}` : ''}`;
+    }
+  }
 }
 
 function shouldTrackThisDocument(): boolean {
@@ -142,9 +216,9 @@ function shouldTrackThisDocument(): boolean {
 
 /**
  * Raises the opt-out flag before the URL changes to a payment or admin route,
- * so not even an automatic history event gets through with the raw URL
- * (checkout links carry ?amount=). Registered before gtag.js loads, so these
- * listeners run ahead of the tag's own.
+ * so not even an automatic Analytics history event gets through with the raw
+ * URL (checkout links carry ?amount=). Registered before gtag.js loads, so
+ * these listeners run ahead of the tag's own.
  */
 function guardSensitiveNavigation(): void {
   const isSensitive = (pathname: string) => isPaymentPath(pathname) || isAdminPath(pathname);
@@ -187,9 +261,14 @@ export function initAnalytics(): void {
       };
     }
 
-    // Blocks the property's automatic user-provided data detection (hashed
-    // emails, phone numbers and addresses read from forms such as checkout).
-    gtag('consent', 'default', { ad_user_data: 'denied' });
+    // Consent first, before any tag is configured: visits are measured, and
+    // the advertising signals follow the visitor's answer (denied until one is
+    // given). Denied ad_user_data also keeps the tags' automatic user-provided
+    // data detection off.
+    gtag('consent', 'default', { analytics_storage: 'granted', ...adsSignals(storedAdsConsent() ?? 'denied') });
+    // While advertising cookies are refused, ad-click identifiers are left out
+    // of the Ads tag's pings as well.
+    gtag('set', 'ads_data_redaction', true);
     gtag('js', new Date());
     // Every hit, including events the tag creates by itself, reports these
     // sanitized values instead of the raw address bar.
@@ -199,6 +278,7 @@ export function initAnalytics(): void {
       page_title: scrubTitle(document.title, search),
     });
     gtag('config', MEASUREMENT_ID, { send_page_view: false });
+    gtag('config', ADS_ID);
 
     if (!document.querySelector(`script[src="${TAG_SRC}"]`)) {
       const script = document.createElement('script');
@@ -211,6 +291,39 @@ export function initAnalytics(): void {
   } catch {
     status = 'stopped';
   }
+}
+
+/** True while the tags run on this page and the visitor has not answered the consent banner. */
+export function adsConsentPending(): boolean {
+  return status === 'on' && storedAdsConsent() === null;
+}
+
+/** True while the tags run on this page, so the answer can be given or changed here. */
+export function adsConsentAvailable(): boolean {
+  return status === 'on';
+}
+
+/** Records the visitor's answer about advertising cookies and applies it at once. */
+export function setAdsConsent(choice: AdsConsent): void {
+  try {
+    window.localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify({ choice, at: Date.now() }));
+  } catch {
+    // Storage unavailable (private mode): the answer still applies to this page.
+  }
+  if (status !== 'on') return;
+  try {
+    gtag('consent', 'update', adsSignals(choice));
+    if (choice === 'denied') removeAdCookies();
+  } catch {
+    // A tracking failure must never surface to visitors.
+  }
+}
+
+/** Sends a Google Ads conversion when its label is set; nothing otherwise. */
+function sendAdsConversion(action: keyof typeof ADS_CONVERSION_LABELS, params: Record<string, unknown>): void {
+  const label = ADS_CONVERSION_LABELS[action].trim();
+  if (!label) return;
+  gtag('event', 'conversion', { send_to: `${ADS_ID}/${label}`, ...params });
 }
 
 /**
@@ -229,6 +342,8 @@ export function trackPageView(): void {
       const pageTitle = scrubTitle(document.title, search);
       const pageReferrer = isFirstView ? firstReferrer : lastPageLocation ?? '';
       const params: Record<string, unknown> = {
+        // Analytics only: the Ads tag counts pages itself.
+        send_to: MEASUREMENT_ID,
         page_location: pageLocation,
         page_title: pageTitle,
         page_referrer: pageReferrer,
@@ -242,14 +357,16 @@ export function trackPageView(): void {
       setOptOut(false);
       gtag('set', { page_location: pageLocation, page_title: pageTitle, page_referrer: pageReferrer });
       gtag('event', 'page_view', params);
-      // Opening a checkout page counts as the start of a donation. Sent to
-      // Analytics only, with the same sanitized address and no amount.
+      // Opening a checkout page counts as the start of a donation: to
+      // Analytics with the same sanitized address and no amount, and to Google
+      // Ads as a conversion once its label is set.
       if (isCheckoutPath(pathname)) {
         gtag('event', 'begin_checkout', {
           send_to: MEASUREMENT_ID,
           page_location: pageLocation,
           page_title: pageTitle,
         });
+        sendAdsConversion('beginCheckout', {});
       }
       lastPageLocation = pageLocation;
     }
@@ -284,9 +401,10 @@ const reportedDonations = new Set<string>();
 
 /**
  * One `purchase` for a donation the bank has confirmed, sent from the result
- * page to Analytics only. It carries the amount, its currency and the one-way
- * reference: no name, no contact detail, no payment reference. Reloading the
- * result page does not report the donation again.
+ * page to Analytics, and to Google Ads as a conversion once its label is set.
+ * It carries the amount, its currency and the one-way reference: no name, no
+ * contact detail, no payment reference. Reloading the result page does not
+ * report the donation again.
  */
 export function trackDonationPaid(payment: { oid: string; amount: number; currency: string; mode: string }): void {
   if (status !== 'on') return;
@@ -309,15 +427,17 @@ export function trackDonationPaid(payment: { oid: string; amount: number; curren
       await tagLoaded();
       if (status !== 'on') return;
       const { href, pathname, search } = window.location;
+      const currency = payment.currency || 'USD';
       setOptOut(false);
       gtag('event', 'purchase', {
         send_to: MEASUREMENT_ID,
         transaction_id: reference,
         value: payment.amount,
-        currency: payment.currency || 'USD',
+        currency,
         page_location: sanitizePageUrl(href),
         page_title: scrubTitle(document.title, search),
       });
+      sendAdsConversion('purchase', { transaction_id: reference, value: payment.amount, currency });
       setOptOut(isPaymentPath(pathname));
     } catch {
       // A tracking failure must never surface to visitors.
