@@ -46,9 +46,11 @@
  *   once the bank has confirmed a donation (amount, currency and a one-way
  *   reference that cannot be turned back into the payment's own reference).
  *
- * Google Ads conversions: begin_checkout and purchase also go to Ads as
- * conversions once their labels are filled in ADS_CONVERSION_LABELS below;
- * an empty label sends nothing to Ads.
+ * Google Ads conversions: at the moment begin_checkout and purchase go to
+ * Analytics, a `conversion` goes to each Ads action in ADS_CONVERSION_LABELS
+ * below: begin-checkout with the amount the checkout link offers, purchase with
+ * the amount, currency and the same one-way transaction_id as in Analytics. An
+ * empty label sends nothing to Ads.
  */
 
 const MEASUREMENT_ID = 'G-CVWM3EXR7D';
@@ -60,9 +62,13 @@ const ADS_ID = 'AW-460760222';
  * Goals > Conversions > the action > Tag setup > Use Google tag).
  */
 const ADS_CONVERSION_LABELS: Record<'beginCheckout' | 'purchase', string> = {
-  beginCheckout: '',
-  purchase: '',
+  // Set up by the media team in Google Ads on 23 Nov 2026.
+  beginCheckout: '9hedCKiF7L0dEJ7J2tsB',
+  purchase: 'kFsdCKWF7L0dEJ7J2tsB',
 };
+
+/** The currency donations are taken in (the amounts on the site are in US dollars). */
+const DONATION_CURRENCY = 'USD';
 
 const TAG_SRC = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
 const PRODUCTION_HOSTS = new Set(['veysvakfi.org', 'www.veysvakfi.org']);
@@ -319,6 +325,16 @@ export function setAdsConsent(choice: AdsConsent): void {
   }
 }
 
+/**
+ * Value of the begin-checkout conversion: the amount the checkout link offers
+ * (?amount=, already in the address the Ads tag reads). Without one, Google
+ * Ads uses the action's default value.
+ */
+function checkoutValue(search: string): Record<string, unknown> {
+  const amount = Number(new URLSearchParams(search).get('amount'));
+  return Number.isFinite(amount) && amount > 0 ? { value: amount, currency: DONATION_CURRENCY } : {};
+}
+
 /** Sends a Google Ads conversion when its label is set; nothing otherwise. */
 function sendAdsConversion(action: keyof typeof ADS_CONVERSION_LABELS, params: Record<string, unknown>): void {
   const label = ADS_CONVERSION_LABELS[action].trim();
@@ -358,15 +374,15 @@ export function trackPageView(): void {
       gtag('set', { page_location: pageLocation, page_title: pageTitle, page_referrer: pageReferrer });
       gtag('event', 'page_view', params);
       // Opening a checkout page counts as the start of a donation: to
-      // Analytics with the same sanitized address and no amount, and to Google
-      // Ads as a conversion once its label is set.
+      // Analytics with the same sanitized address and no amount, and at the
+      // same moment to Google Ads as a conversion with the amount offered.
       if (isCheckoutPath(pathname)) {
         gtag('event', 'begin_checkout', {
           send_to: MEASUREMENT_ID,
           page_location: pageLocation,
           page_title: pageTitle,
         });
-        sendAdsConversion('beginCheckout', {});
+        sendAdsConversion('beginCheckout', checkoutValue(search));
       }
       lastPageLocation = pageLocation;
     }
