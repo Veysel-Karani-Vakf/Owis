@@ -28,8 +28,10 @@
 		-Server
 	}
 
-	# Parity with vercel.json: /donate-now moved permanently to /donate.
-	redir /donate-now /donate permanent
+	# /donate-now moved permanently to /donate (as in vercel.json), with or
+	# without the final slash. The query, such as a Google Ads click id, is kept.
+	@donateNow path_regexp (?i)^/donate-now/?$
+	redir @donateNow /donate{?query} permanent
 
 	# Self-hosted Supabase, on the exact paths supabase-js calls. Only these
 	# three prefixes are forwarded, so the gateway's dashboard stays private.
@@ -84,7 +86,8 @@
 	}
 
 	# The API not answering at all (a restart) is an error rather than a
-	# response: the link-preview apps get the page shell then too.
+	# response: the link-preview apps get the page shell then too, and an
+	# unknown address still gets "page not found".
 	handle_errors {
 		@cardFallback path /api/share/news/*
 		handle @cardFallback {
@@ -95,19 +98,64 @@
 				status 200
 			}
 		}
+		# The same for the former site's addresses: "page not found", 404.
+		@legacyFallback path /api/legacy/redirect
+		handle @legacyFallback {
+			root * /srv
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server {
+				status 404
+			}
+		}
 	}
 
-	# Everything else is the single-page app.
+	# Everything else is the single-page app: a file of the build, a page of
+	# the app, or an address the app does not have.
 	handle {
 		root * /srv
-		route {
-			try_files {path} /index.html
+
+		# A file (never a folder: "/news/" is the news page, not public/news/).
+		@file {
+			not path */
+			file
+		}
+		handle @file {
 			# The page shell is revalidated on every visit, so a deployment is
 			# picked up at once (Vercel does the same). Without this, browsers
 			# may keep an old shell that points at files which no longer exist.
-			header / Cache-Control "no-cache"
 			header /index.html Cache-Control "no-cache"
 			file_server
+		}
+
+		# The app's pages: the routes in src/App.tsx, ignoring letter case and a
+		# final slash as React Router does. Keep the two lists in step: a page
+		# missing here answers 404 (the app still shows it).
+		@appPage path_regexp (?i)^/(?:about/(?:waqf|structure|administrative-structure|governance)|projects(?:/[^/]+)?|programs/[^/]+|programs/yemen-pioneers/pioneers(?:/[^/]+)?|pioneers(?:/[^/]+)?|news(?:/[^/]+)?|participate(?:/[^/]+)?|library(?:/(?:profile|forum|periodic-reports|waqf-books|waqf-literature|yemeni-figures|success-stories|gallery))?|library/(?:forum|yemeni-figures|success-stories)/[^/]+|donate(?:-now|/checkout/[^/]+|/result)?|bank-accounts|volunteer-award(?:/(?:apply|success))?|admin(?:/.*)?)?/?$
+		handle @appPage {
+			rewrite * /index.html
+			header Cache-Control "no-cache"
+			file_server
+		}
+
+		# Any other address. The API knows the pages of the former site that
+		# moved here and answers those with a permanent redirect (passed on as
+		# it is); for everything else the visitor gets the app's "page not
+		# found" with status 404, so search engines drop the address.
+		handle {
+			rewrite * /api/legacy/redirect
+			reverse_proxy api:3000 {
+				header_up X-Original-URI {http.request.orig_uri}
+				@notMoved status 2xx 4xx 5xx
+				handle_response @notMoved {
+					root * /srv
+					rewrite * /index.html
+					header Cache-Control "no-cache"
+					file_server {
+						status 404
+					}
+				}
+			}
 		}
 	}
 }
@@ -116,5 +164,12 @@
 # query kept. With nothing configured the block answers a name nobody asks for
 # over plain HTTP, so no certificate is ever requested for it.
 {$REDIRECT_ADDRESSES:http://redirect.invalid} {
-	redir {$PUBLIC_SITE_URL:http://localhost}{uri} permanent
+	# The former Blessed Tree site: every address opens the project's page.
+	@blessedTree host blessedtree.veysvakfi.org
+	handle @blessedTree {
+		redir {$PUBLIC_SITE_URL:http://localhost}/projects/blessed-tree{?query} permanent
+	}
+	handle {
+		redir {$PUBLIC_SITE_URL:http://localhost}{uri} permanent
+	}
 }
