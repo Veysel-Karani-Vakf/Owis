@@ -67,6 +67,14 @@
 #                               pictures that are too heavy for link previews
 #   owis-migrate share-images auto on|off|status
 #                               make them every 15 minutes, for new articles
+#   owis-migrate optimize-images plan|apply|restore <name>
+#                               lighter pictures in the media bucket (the
+#                               originals are kept in media-originals)
+#   owis-migrate optimize-images auto on|off|status
+#                               the same every 15 minutes, for new uploads
+#   owis-migrate private-attachments plan|apply
+#                               old visitor attachments out of the public
+#                               bucket, into the private one
 #
 # Nothing here writes to the source: it is only ever read. The values typed
 # into "secrets" are stored root-only in /opt/owis/migrate and never printed.
@@ -864,6 +872,15 @@ if not target_key:
 
 objects = json.load(open(list_path)) or []
 here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(here_path)) or [])}
+# A picture made lighter here keeps its original in media-originals, and an old
+# visitor attachment moved out of media/submissions/ is in the private bucket
+# (owis-migrate optimize-images, private-attachments): those copies stand for
+# the file of the old storage, so it is not copied over them again.
+for (bucket, name), size in list(here.items()):
+    if bucket == "media-originals":
+        here[("media", name)] = size
+    elif bucket == "submissions":
+        here.setdefault(("media", "submissions/" + name), size)
 
 
 def quoted(name):
@@ -998,6 +1015,11 @@ PYTHON
 import json, sys
 source = json.load(open(sys.argv[1])) or []
 here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(sys.argv[2])) or [])}
+for (bucket, name), size in list(here.items()):
+    if bucket == "media-originals":
+        here[("media", name)] = size
+    elif bucket == "submissions":
+        here.setdefault(("media", "submissions/" + name), size)
 same = sum(1 for o in source if here.get((o["bucket"], o["name"])) == o["size"])
 total = sum(o["size"] for o in source if o["size"] > 0)
 print("here with the same size: %d of %d files (%d MB in the source)" % (same, len(source), total // 1048576))
@@ -1067,6 +1089,14 @@ anon = setting(env_file, "SUPABASE_ANON_KEY")
 secret = setting(supabase_env, "JWT_SECRET")
 source = json.load(open(list_path)) or []
 here = {(o["bucket"], o["name"]): o for o in (json.load(open(here_path)) or [])}
+# Stand-ins (see files_copy): the kept original of a picture made lighter here,
+# and an old visitor attachment moved to the private bucket.
+stand_in = {}
+for o in list(here.values()):
+    if o["bucket"] == "media-originals":
+        stand_in[("media", o["name"])] = o
+    elif o["bucket"] == "submissions":
+        stand_in[("media", "submissions/" + o["name"])] = o
 
 
 def quoted(name):
@@ -1118,6 +1148,7 @@ def admin_token():
 
 
 service_headers = {"apikey": service, "Authorization": "Bearer " + service}
+moved_out = set()
 problems = []
 count = {"present": 0, "type": 0, "content": 0, "checksum": 0, "with_checksum": 0, "public": 0, "private": 0}
 by_bucket = {}
@@ -1129,6 +1160,10 @@ for o in source:
     by_bucket[o["bucket"]][0] += 1
     by_bucket[o["bucket"]][1] += max(o["size"], 0)
     mine = here.get(key)
+    if (not mine or mine["size"] != o["size"]) and key in stand_in and stand_in[key]["size"] == o["size"]:
+        mine = stand_in[key]
+        if mine["bucket"] == "submissions":
+            moved_out.add(key)
     if not mine or mine["size"] != o["size"]:
         problems.append("%s: %s" % (label, "not here" if not mine else "size %s here, %s in the source" % (mine["size"], o["size"])))
         continue
@@ -1150,7 +1185,7 @@ for o in source:
             count["checksum"] += 1
         else:
             problems.append("%s: the download does not carry the source's checksum" % label)
-    status, served = fetch("GET", "%s/object/authenticated/%s/%s" % (storage, o["bucket"], quoted(o["name"])),
+    status, served = fetch("GET", "%s/object/authenticated/%s/%s" % (storage, mine["bucket"], quoted(mine["name"])),
                            service_headers, digest=True)
     if status == 200 and served == kept_md5:
         count["content"] += 1
@@ -1160,7 +1195,7 @@ for o in source:
     # Access without any key, through the site's own address.
     status, _ = fetch("GET", "%s/storage/v1/object/public/%s/%s" % (site, o["bucket"], quoted(o["name"])),
                       {"Range": "bytes=0-0"})
-    if o["bucket"] == "media":
+    if o["bucket"] == "media" and mine["bucket"] != "submissions":
         if status in (200, 206):
             count["public"] += 1
         else:
@@ -1175,7 +1210,7 @@ for o in source:
 
 total = len(source)
 total_bytes = sum(max(o["size"], 0) for o in source)
-public_total = by_bucket.get("media", [0, 0])[0]
+public_total = by_bucket.get("media", [0, 0])[0] - len(moved_out)
 private_total = total - public_total
 
 # Private attachments the way the dashboard opens them: a signed link asked for
@@ -1216,7 +1251,7 @@ except ValueError:
 if listing:
     problems.append("a visitor can list the private attachments")
 
-extra = sorted("%s/%s" % key for key in here if key not in {(o["bucket"], o["name"]) for o in source})
+extra = sorted("%s/%s" % key for key in here if key[0] != "media-originals" and key not in {(o["bucket"], o["name"]) for o in source})
 
 print("files in the source: %d (%d bytes): %s" % (
     total, total_bytes, ", ".join("%s %d files %d bytes" % (b, n, s) for b, (n, s) in sorted(by_bucket.items()))))
@@ -1288,6 +1323,15 @@ for line in open(env_file):
         service = line.split("=", 1)[1].strip().strip("'")
 source = json.load(open(list_path)) or []
 here = {(o["bucket"], o["name"]): o["size"] for o in (json.load(open(here_path)) or [])}
+# A picture made lighter here keeps its original in media-originals, and an old
+# visitor attachment moved out of media/submissions/ is in the private bucket
+# (owis-migrate optimize-images, private-attachments): those copies stand for
+# the file of the old storage, so it is not copied over them again.
+for (bucket, name), size in list(here.items()):
+    if bucket == "media-originals":
+        here[("media", name)] = size
+    elif bucket == "submissions":
+        here.setdefault(("media", "submissions/" + name), size)
 
 
 def file_md5(path):
@@ -1694,6 +1738,410 @@ UNIT
       exit 2
       ;;
   esac
+}
+
+# ---- lighter pictures ---------------------------------------------------------
+# Pictures uploaded straight from a camera (up to 24 MB and 6000 pixels wide)
+# make pages slow to open. Every picture in the media bucket heavier than
+# OPTIMIZE_MIN_BYTES is made lighter: at most OPTIMIZE_MAX_EDGE pixels on its
+# longer side, JPEG at quality 82 (a PNG with transparency stays a PNG, a WebP
+# stays a WebP). The lighter picture takes the original's place at the same
+# address, so no page or article changes.
+# Before that, the original is copied byte for byte into the private bucket
+# media-originals under the same name and read back; a picture is replaced only
+# once that copy is proven. Having an original there is also what marks a
+# picture as done, and files-copy and files-verify treat that original as the
+# picture of the old storage. "optimize-images restore <name>" puts an
+# original back. Pictures are converted by ImageMagick in a throwaway Alpine
+# container, like the link-preview pictures.
+OPTIMIZE_MIN_BYTES=$((400 * 1024))
+OPTIMIZE_MAX_EDGE=2048
+ORIGINALS_BUCKET="media-originals"
+OPTIMIZE_OBJECTS_SQL="select coalesce(json_agg(json_build_object('bucket', bucket_id, 'name', name, 'size', coalesce((metadata->>'size')::bigint, -1), 'type', metadata->>'mimetype', 'cache', metadata->>'cacheControl')), '[]'::json) from storage.objects where bucket_id in ('media', 'media-originals')"
+
+optimize_images() {
+  local mode="${1:-plan}" rc=0
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate optimize-images plan|apply|restore <name>|auto on|off|status" >&2
+      exit 2
+      ;;
+  esac
+  [ "$(target_psql -At -c "select count(*) from storage.buckets where id = '$ORIGINALS_BUCKET' and not public")" = "1" ] || {
+    echo "the private bucket $ORIGINALS_BUCKET is missing: apply supabase/migrations/0016 first" >&2
+    return 1
+  }
+  install -d -m 700 "$WORK_DIR"
+  local work
+  work="$(mktemp -d "$WORK_DIR/.optimize.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$work'" EXIT
+  mkdir "$work/in" "$work/out"
+  echo "== $(date -u +%FT%TZ) lighter pictures ($mode)"
+  target_psql -At -c "$OPTIMIZE_OBJECTS_SQL" > "$work/objects.json"
+
+  # Which pictures are too heavy; for apply, their originals go to $work/in.
+  python3 - "$work" "$TARGET_STORAGE_URL" "$OPTIMIZE_MIN_BYTES" "$mode" <<'PYTHON' || rc=$?
+import json, os, shutil, sys, urllib.parse, urllib.request
+
+work, storage, min_bytes, mode = sys.argv[1:5]
+min_bytes = int(min_bytes)
+objects = json.load(open(os.path.join(work, "objects.json"))) or []
+originals = {o["name"] for o in objects if o["bucket"] == "media-originals"}
+TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+SKIP = ("share/", "submissions/")
+
+pictures = [o for o in objects if o["bucket"] == "media" and o.get("type") in TYPES and not o["name"].startswith(SKIP)]
+done = [o for o in pictures if o["name"] in originals]
+light = [o for o in pictures if o["name"] not in originals and 0 <= o["size"] <= min_bytes]
+todo = sorted((o for o in pictures if o["name"] not in originals and o["size"] > min_bytes), key=lambda o: -o["size"])
+
+mb = lambda n: n / 1048576
+print("pictures in the media bucket: %d (%.1f MB)" % (len(pictures), mb(sum(max(o["size"], 0) for o in pictures))))
+print(" light enough as they are: %d" % len(light))
+print(" made lighter before (original kept): %d" % len(done))
+print(" to make lighter now: %d (%.1f MB)" % (len(todo), mb(sum(o["size"] for o in todo))))
+for o in todo[:15]:
+    print("   %s %.1f MB" % (o["name"], mb(o["size"])))
+if len(todo) > 15:
+    print("   ... and %d more" % (len(todo) - 15))
+
+if mode == "plan":
+    print("OPTIMIZE_PLAN_OK. Nothing was changed.")
+    sys.exit(0)
+
+failed = 0
+batch = []
+for index, o in enumerate(todo):
+    target = os.path.join(work, "in", "%04d%s" % (index, TYPES[o["type"]]))
+    quoted = urllib.parse.quote(o["name"], safe="/")
+    try:
+        with urllib.request.urlopen("%s/object/public/media/%s" % (storage, quoted), timeout=300) as response, open(target, "wb") as out:
+            shutil.copyfileobj(response, out)
+        if os.path.getsize(target) != o["size"]:
+            raise RuntimeError("read %d bytes, expected %d" % (os.path.getsize(target), o["size"]))
+        batch.append(["%04d" % index, o])
+    except Exception as error:  # reported, the others go on
+        failed += 1
+        print(" FAILED %s: could not read it (%s)" % (o["name"], str(error)[:120]))
+json.dump(batch, open(os.path.join(work, "todo.json"), "w"))
+sys.exit(1 if failed else 0)
+PYTHON
+  [ "$mode" = "plan" ] && return "$rc"
+
+  if [ -n "$(ls -A "$work/in")" ]; then
+    command -v docker > /dev/null || {
+      echo "docker is needed to convert the pictures" >&2
+      return 1
+    }
+    # One container for the whole batch; it is removed when it ends.
+    docker run --rm -e EDGE="$OPTIMIZE_MAX_EDGE" -v "$work:/w" "$SHARE_TOOL_IMAGE" sh -c '
+      apk add --no-cache imagemagick imagemagick-jpeg imagemagick-webp > /dev/null 2>&1 ||
+        { echo "could not install ImageMagick in the container"; exit 1; }
+      cd /w
+      for f in in/*; do
+        k="${f##*/}"; e="${k##*.}"; k="${k%.*}"
+        common="-auto-orient -resize ${EDGE}x${EDGE}> -strip"
+        if [ "$e" = "webp" ]; then
+          magick "${f}[0]" $common -quality 80 "out/$k.webp" || echo " FAILED $k: could not convert"
+        elif [ "$e" = "png" ] && ! magick identify -format "%[opaque]" "${f}[0]" 2> /dev/null | grep -qi "^true"; then
+          # Transparent (or unreadable as to that): stays a PNG.
+          magick "${f}[0]" $common -define png:compression-level=9 "out/$k.png" || echo " FAILED $k: could not convert"
+        else
+          magick "${f}[0]" $common -colorspace sRGB -background white -alpha remove -alpha off \
+            -interlace JPEG -sampling-factor 4:2:0 -quality 82 "out/$k.jpg" || echo " FAILED $k: could not convert"
+        fi
+      done' || rc=1
+  fi
+
+  # For each picture: original into media-originals, read back, then the lighter
+  # copy at the picture's own address.
+  python3 - "$work" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" <<'PYTHON' || rc=$?
+import hashlib, json, os, sys, urllib.error, urllib.parse, urllib.request
+
+work, storage, env_file = sys.argv[1:4]
+batch = json.load(open(os.path.join(work, "todo.json"))) if os.path.exists(os.path.join(work, "todo.json")) else []
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'\"")
+if batch and not service:
+    sys.exit("this server's service key is missing from its settings")
+auth = {"apikey": service, "Authorization": "Bearer " + service}
+MAGIC = {".jpg": (b"\xff\xd8\xff", "image/jpeg"), ".png": (b"\x89PNG", "image/png"), ".webp": (b"RIFF", "image/webp")}
+
+
+def md5_of(path):
+    digest = hashlib.md5()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def store(bucket, name, path, content_type, cache):
+    headers = dict(auth)
+    headers.update({"Content-Type": content_type, "x-upsert": "true", "cache-control": cache})
+    request = urllib.request.Request("%s/object/%s/%s" % (storage, bucket, urllib.parse.quote(name, safe="/")),
+                                     data=open(path, "rb").read(), method="POST", headers=headers)
+    with urllib.request.urlopen(request, timeout=300) as response:
+        response.read()
+
+
+def read_md5(bucket, name):
+    request = urllib.request.Request("%s/object/authenticated/%s/%s" % (storage, bucket, urllib.parse.quote(name, safe="/")),
+                                     headers=auth)
+    digest = hashlib.md5()
+    with urllib.request.urlopen(request, timeout=300) as response:
+        for chunk in iter(lambda: response.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+lighter = kept = failed = 0
+before_total = after_total = 0
+for key, o in batch:
+    original = [os.path.join(work, "in", f) for f in os.listdir(os.path.join(work, "in")) if f.startswith(key + ".")][0]
+    made = [os.path.join(work, "out", f) for f in os.listdir(os.path.join(work, "out")) if f.startswith(key + ".")]
+    cache = o.get("cache") or "max-age=31536000"
+    try:
+        # 1. The original, byte for byte, in the private bucket, and read back.
+        store("media-originals", o["name"], original, o["type"], cache)
+        if read_md5("media-originals", o["name"]) != md5_of(original):
+            raise RuntimeError("the original did not read back the same from media-originals")
+        # 2. The lighter copy at the picture's own address, if it is one.
+        copy = made[0] if made else None
+        if copy:
+            magic, content_type = MAGIC[os.path.splitext(copy)[1]]
+            with open(copy, "rb") as handle:
+                head = handle.read(12)
+            if not head.startswith(magic) or (content_type == "image/webp" and head[8:12] != b"WEBP"):
+                raise RuntimeError("the converted copy is not a picture")
+        if not copy or os.path.getsize(copy) > 0.9 * o["size"]:
+            kept += 1
+            print(" kept %s as it is (%d KB; no lighter copy)" % (o["name"], o["size"] // 1024))
+            continue
+        store("media", o["name"], copy, content_type, cache)
+        if read_md5("media", o["name"]) != md5_of(copy):
+            raise RuntimeError("the lighter copy did not read back the same")
+        lighter += 1
+        before_total += o["size"]
+        after_total += os.path.getsize(copy)
+        print(" lighter %s: %d KB -> %d KB%s" % (o["name"], o["size"] // 1024, os.path.getsize(copy) // 1024,
+                                                "" if content_type == o["type"] else " (%s)" % content_type))
+    except Exception as error:  # reported, the others go on
+        failed += 1
+        detail = error.read(300).decode("utf-8", "replace") if isinstance(error, urllib.error.HTTPError) else ""
+        print(" FAILED %s: %s %s" % (o["name"], str(error)[:120], detail[:120]))
+
+print("made lighter=%d kept as they are=%d failed=%d; %.1f MB -> %.1f MB" % (
+    lighter, kept, failed, before_total / 1048576, after_total / 1048576))
+print("OPTIMIZE_OK" if not failed else "OPTIMIZE_INCOMPLETE")
+sys.exit(1 if failed else 0)
+PYTHON
+  return "$rc"
+}
+
+# Puts the original of one picture back at its address (it stays marked as
+# done, so it is not made lighter again).
+optimize_restore() {
+  local name="${1:-}"
+  [ -n "$name" ] || {
+    echo "usage: owis-migrate optimize-images restore <name in the media bucket>" >&2
+    exit 2
+  }
+  python3 - "$name" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" <<'PYTHON'
+import json, sys, urllib.parse, urllib.request
+
+name, storage, env_file = sys.argv[1:4]
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'\"")
+auth = {"apikey": service, "Authorization": "Bearer " + service}
+quoted = urllib.parse.quote(name, safe="/")
+request = urllib.request.Request("%s/object/info/authenticated/media-originals/%s" % (storage, quoted), headers=auth)
+with urllib.request.urlopen(request, timeout=60) as response:
+    info = json.load(response)
+meta = info.get("metadata") or {}
+request = urllib.request.Request("%s/object/authenticated/media-originals/%s" % (storage, quoted), headers=auth)
+with urllib.request.urlopen(request, timeout=300) as response:
+    data = response.read()
+headers = dict(auth)
+headers.update({"Content-Type": meta.get("mimetype") or "application/octet-stream", "x-upsert": "true",
+                "cache-control": meta.get("cacheControl") or "max-age=31536000"})
+request = urllib.request.Request("%s/object/media/%s" % (storage, quoted), data=data, method="POST", headers=headers)
+with urllib.request.urlopen(request, timeout=300) as response:
+    response.read()
+print("RESTORED %s (%d KB)" % (name, len(data) // 1024))
+PYTHON
+}
+
+# Runs optimize-images apply every 15 minutes (at 12, 27, 42 and 57 past the
+# hour, away from the other jobs), so a picture uploaded from the dashboard is
+# made lighter shortly after.
+optimize_images_auto() {
+  local unit="owis-optimize-images"
+  case "${1:-status}" in
+    on)
+      cat > "/etc/systemd/system/$unit.service" <<'UNIT'
+[Unit]
+Description=OWIS: lighter copies of heavy pictures in the media bucket
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/owis-migrate optimize-images apply
+# 4: another owis-migrate job holds the lock; the next run catches up.
+SuccessExitStatus=4
+UNIT
+      cat > "/etc/systemd/system/$unit.timer" <<'UNIT'
+[Unit]
+Description=OWIS: look for heavy pictures every 15 minutes
+
+[Timer]
+OnCalendar=*:12/15
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
+UNIT
+      systemctl daemon-reload
+      systemctl enable --now "$unit.timer" > /dev/null 2>&1
+      echo "OPTIMIZE_AUTO_ON: optimize-images apply runs every 15 minutes"
+      ;;
+    off)
+      systemctl disable --now "$unit.timer" > /dev/null 2>&1 || true
+      echo "OPTIMIZE_AUTO_OFF"
+      ;;
+    status)
+      echo "timer: $(systemctl is-active "$unit.timer" 2> /dev/null || true)"
+      grep -E '^(== .* lighter pictures|made lighter=|OPTIMIZE_)' "$LOG_FILE" 2> /dev/null | tail -n 4 || true
+      ;;
+    *)
+      echo "usage: owis-migrate optimize-images auto on|off|status" >&2
+      exit 2
+      ;;
+  esac
+}
+
+# ---- visitor attachments left in the public bucket ---------------------------
+# Before supabase/migrations/0005, the forms stored visitor attachments in the
+# public media bucket under submissions/. Those still there are moved to the
+# private submissions bucket (same name without "submissions/"), read back, the
+# submission rows are pointed at the private copy (the dashboard then opens it
+# with a signed link), and only then is the public copy removed.
+private_attachments() {
+  local mode="${1:-plan}" rc=0
+  case "$mode" in
+    plan | apply) ;;
+    *)
+      echo "usage: owis-migrate private-attachments plan|apply" >&2
+      exit 2
+      ;;
+  esac
+  install -d -m 700 "$WORK_DIR"
+  local work
+  work="$(mktemp -d "$WORK_DIR/.attachments.XXXXXX")"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$work'" EXIT
+  echo "== $(date -u +%FT%TZ) visitor attachments in the public bucket ($mode)"
+  target_psql -At -c "select coalesce(json_agg(json_build_object('name', name, 'size', coalesce((metadata->>'size')::bigint, -1), 'type', metadata->>'mimetype')), '[]'::json) from storage.objects where bucket_id = 'media' and name like 'submissions/%'" > "$work/public.json"
+  target_psql -At -c "select count(*) from public.participate_submissions where files::text like '%/object/public/media/submissions/%'" > "$work/rows.txt"
+
+  python3 - "$work" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" "$mode" <<'PYTHON' || rc=$?
+import hashlib, json, os, sys, urllib.parse, urllib.request
+
+work, storage, env_file, mode = sys.argv[1:5]
+public = json.load(open(os.path.join(work, "public.json"))) or []
+rows = open(os.path.join(work, "rows.txt")).read().strip()
+print("attachments in the public bucket: %d; submissions linking to them: %s" % (len(public), rows))
+for o in public:
+    print("   %s (%d KB)" % (o["name"], max(o["size"], 0) // 1024))
+if mode == "plan":
+    print("ATTACHMENTS_PLAN_OK. Nothing was changed.")
+    sys.exit(0)
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'\"")
+auth = {"apikey": service, "Authorization": "Bearer " + service}
+moved, failed = [], 0
+for o in public:
+    name = o["name"][len("submissions/"):]
+    try:
+        quoted = urllib.parse.quote(o["name"], safe="/")
+        request = urllib.request.Request("%s/object/authenticated/media/%s" % (storage, quoted), headers=auth)
+        with urllib.request.urlopen(request, timeout=120) as response:
+            data = response.read()
+        headers = dict(auth)
+        headers.update({"Content-Type": o.get("type") or "application/octet-stream", "x-upsert": "true"})
+        target = "%s/object/submissions/%s" % (storage, urllib.parse.quote(name, safe="/"))
+        with urllib.request.urlopen(urllib.request.Request(target, data=data, method="POST", headers=headers), timeout=120) as response:
+            response.read()
+        request = urllib.request.Request("%s/object/authenticated/submissions/%s" % (storage, urllib.parse.quote(name, safe="/")), headers=auth)
+        with urllib.request.urlopen(request, timeout=120) as response:
+            if hashlib.md5(response.read()).hexdigest() != hashlib.md5(data).hexdigest():
+                raise RuntimeError("the private copy did not read back the same")
+        moved.append(o["name"])
+        print(" copied %s to the private bucket as %s" % (o["name"], name))
+    except Exception as error:
+        failed += 1
+        print(" FAILED %s: %s" % (o["name"], str(error)[:150]))
+json.dump(moved, open(os.path.join(work, "moved.json"), "w"))
+sys.exit(1 if failed else 0)
+PYTHON
+  [ "$mode" = "plan" ] && return "$rc"
+  [ -s "$work/moved.json" ] || return "$rc"
+
+  # Point the submissions at the private copies (only for files proven there).
+  target_psql -At <<'SQL' || return 1
+update public.participate_submissions s
+set files = (
+  select coalesce(jsonb_agg(
+    case
+      when f ? 'url'
+        and (f->>'url') ~ '/object/public/media/submissions/'
+        and exists (select 1 from storage.objects o where o.bucket_id = 'submissions'
+                    and o.name = regexp_replace(f->>'url', '^.*/object/public/media/submissions/', ''))
+      then (f - 'url') || jsonb_build_object('path', regexp_replace(f->>'url', '^.*/object/public/media/submissions/', ''),
+                                             'bucket', 'submissions')
+      else f
+    end order by ord), '[]'::jsonb)
+  from jsonb_array_elements(s.files) with ordinality as e(f, ord)
+)
+where jsonb_typeof(s.files) = 'array' and s.files::text like '%/object/public/media/submissions/%';
+SQL
+  local still
+  still="$(target_psql -At -c "select count(*) from public.participate_submissions where files::text like '%/object/public/media/submissions/%'")"
+  if [ "$still" != "0" ]; then
+    echo "submissions still linking to the public bucket: $still; the public copies stay until they point elsewhere"
+    echo "ATTACHMENTS_INCOMPLETE"
+    return 1
+  fi
+  echo "every submission now links to the private copy"
+
+  # Then remove the public copies.
+  python3 - "$work" "$TARGET_STORAGE_URL" "$ROOT/$TARGET_ENV.env" <<'PYTHON' || rc=$?
+import json, os, sys, urllib.request
+
+work, storage, env_file = sys.argv[1:4]
+moved = json.load(open(os.path.join(work, "moved.json")))
+service = ""
+for line in open(env_file):
+    if line.startswith("SUPABASE_SERVICE_ROLE_KEY="):
+        service = line.split("=", 1)[1].strip().strip("'\"")
+headers = {"apikey": service, "Authorization": "Bearer " + service, "Content-Type": "application/json"}
+request = urllib.request.Request("%s/object/media" % storage, data=json.dumps({"prefixes": moved}).encode(),
+                                 method="DELETE", headers=headers)
+with urllib.request.urlopen(request, timeout=60) as response:
+    removed = json.load(response)
+print("public copies removed: %d of %d" % (len(removed), len(moved)))
+print("ATTACHMENTS_PRIVATE" if len(removed) == len(moved) else "ATTACHMENTS_INCOMPLETE")
+sys.exit(0 if len(removed) == len(moved) else 1)
+PYTHON
+  return "$rc"
 }
 
 STACK_ENV_FILE="$ROOT/$TARGET_ENV.env"
@@ -2241,8 +2689,18 @@ case "$COMMAND" in
       logged share_images "${2:-plan}"
     fi
     ;;
+  optimize-images)
+    case "${2:-}" in
+      auto) optimize_images_auto "${3:-status}" ;;
+      restore) logged optimize_restore "${3:-}" ;;
+      *) logged optimize_images "${2:-plan}" ;;
+    esac
+    ;;
+  private-attachments)
+    logged private_attachments "${2:-plan}"
+    ;;
   *)
-    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|follow|off|status | share-images plan|apply|force|auto on|off|status" >&2
+    echo "usage: owis-migrate secrets | state | repair | source-test | source-dump | source-changes [baseline] | import plan|apply | urls <from> <to> [apply] | payment-check | payment-adopt | store-key | promote plan|apply [payments-off] | dns | cutover plan|apply | files-test | files-copy [n] | files-recover <dir> [apply] | files-verify | files-auto on|follow|off|status | share-images plan|apply|force|auto on|off|status | optimize-images plan|apply|restore <name>|auto on|off|status | private-attachments plan|apply" >&2
     exit 2
     ;;
 esac
