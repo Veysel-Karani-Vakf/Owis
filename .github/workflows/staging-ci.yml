@@ -277,6 +277,32 @@ jobs:
           contains "the 404 answer is the app's page not found" 'id="root"'
           expect "a page of the app with a final slash" 200 "$base/news/"
           expect "a page of the app in other letter case" 200 "$base/Library/Gallery"
+
+          echo "== Pictures shipped with the site =="
+          picture="$base/media/6-8aafe52f.png"
+          read -r code type size < <(curl -sS -o /dev/null -w '%{http_code} %{content_type} %{size_download}\n' --max-time 20 \
+            -H 'Accept: image/avif,image/webp,image/apng,*/*' "$picture" || echo "000 none 0")
+          if [ "$code" = "200" ] && [ "$type" = "image/webp" ] && [ "$size" -lt 400000 ]; then
+            echo "ok a browser that takes WebP gets the WebP copy (${size} bytes)"
+          else
+            echo "::error::WebP copy of a picture: got ${code} ${type} ${size} bytes"
+            failures=$((failures + 1))
+          fi
+          read -r code type size < <(curl -sS -o /dev/null -w '%{http_code} %{content_type} %{size_download}\n' --max-time 20 \
+            -H 'Accept: */*' "$picture" || echo "000 none 0")
+          if [ "$code" = "200" ] && [ "$type" = "image/png" ]; then
+            echo "ok other browsers get the PNG (${size} bytes)"
+          else
+            echo "::error::PNG for browsers without WebP: got ${code} ${type} ${size} bytes"
+            failures=$((failures + 1))
+          fi
+          picture_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$picture" | tr 'A-Z' 'a-z')"
+          if grep -q 'cache-control: public, max-age=604800' <<< "$picture_headers"; then
+            echo "ok pictures are kept a week by browsers"
+          else
+            echo "::error::pictures are served without a cache lifetime"
+            failures=$((failures + 1))
+          fi
           # Headers are read into a variable first: with pipefail, "curl | grep -q"
           # fails at random when grep stops reading before curl has finished.
           page_headers="$(curl -sS -D - -o /dev/null --max-time 20 "$base/news" | tr 'A-Z' 'a-z')"
@@ -319,6 +345,16 @@ jobs:
           expect "upload to the public bucket" 200 "$base/storage/v1/object/media/ci/pixel.png" -X POST \
             -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
           expect "public file is readable without a key" 200 "$base/storage/v1/object/public/media/ci/pixel.png"
+          got="$(curl -sS -o "$body" -w '%{http_code}' --max-time 30 -X POST -H "apikey: $anon" -H "Authorization: Bearer $anon" \
+            -H 'Content-Type: application/json' -d '{"prefix":"ci","limit":5}' "$base/storage/v1/object/list/media" || true)"
+          if { [ "$got" = "200" ] && [ "$(tr -d ' \n' < "$body")" = "[]" ]; } || [ "$got" = "400" ] || [ "$got" = "401" ] || [ "$got" = "403" ]; then
+            echo "ok visitors cannot list the media bucket (${got})"
+          else
+            echo "::error::the media bucket can be listed without signing in (${got})"
+            failures=$((failures + 1))
+          fi
+          expect "media-originals bucket" 200 "$base/storage/v1/bucket/media-originals" -H "apikey: $service" -H "Authorization: Bearer $service"
+          contains "media-originals is private" '"public":false'
           expect "upload to the private bucket" 200 "$base/storage/v1/object/submissions/ci/pixel.png" -X POST \
             -H "apikey: $service" -H "Authorization: Bearer $service" -H "Content-Type: image/png" --data-binary "@$RUNNER_TEMP/pixel.png"
           expect "private file is not public" "400|404" "$base/storage/v1/object/public/submissions/ci/pixel.png"
@@ -388,6 +424,9 @@ jobs:
             echo "::add-mask::${token}"
             expect "admin reads a protected table" 200 "$base/rest/v1/donation_payments?select=id&limit=1" \
               -H "apikey: $anon" -H "Authorization: Bearer $token"
+            expect "the dashboard lists the media bucket" 200 "$base/storage/v1/object/list/media" -X POST \
+              -H "apikey: $anon" -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"prefix":"ci","limit":5}'
+            contains "the dashboard lists the media bucket" 'pixel.png'
           else
             echo "::error::sign-in returned no access token"
             failures=$((failures + 1))
@@ -551,6 +590,13 @@ jobs:
           expect "SPA deep link" 200 "$LIVE_URL/projects/ci-deep-link"
           expect "donate-now redirect" 301 "$LIVE_URL/donate-now"
           expect "an address the site does not have" 404 "$LIVE_URL/ci-no-such-page"
+          live_type="$(curl -sS -o /dev/null -w '%{content_type}' --max-time 20 -H 'Accept: image/avif,image/webp,*/*' "$LIVE_URL/media/6-8aafe52f.png" || true)"
+          if [ "$live_type" = "image/webp" ]; then
+            echo "ok the live site hands out the WebP copies"
+          else
+            echo "::error::live WebP copy of a picture: ${live_type:-no answer}"
+            failures=$((failures + 1))
+          fi
           got="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$LIVE_URL/volunteer-with-us/" || true)"
           if [ "$got" = "301 $LIVE_URL/participate/volunteer" ]; then
             echo "ok a former address moves to its new page"
