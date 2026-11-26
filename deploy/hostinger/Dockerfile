@@ -34,6 +34,17 @@ ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL} \
 COPY . .
 RUN npm run build
 
+# --- Pictures shipped with the site: lighter files and WebP copies -----------
+# public/ holds hundreds of pictures, many of them over 1 MB. This stage makes
+# lighter files (same names) and WebP copies of them; see lighter-pictures.sh.
+# Only public/ comes into it, so the work is redone only when a picture there
+# changes, not on every deployment.
+FROM alpine:3.22 AS pictures
+RUN apk add --no-cache findutils imagemagick imagemagick-jpeg imagemagick-webp
+COPY deploy/hostinger/lighter-pictures.sh /usr/local/bin/lighter-pictures
+COPY public /in
+RUN sh /usr/local/bin/lighter-pictures /in /out
+
 # --- Runtime: API ------------------------------------------------------------
 FROM node:24-alpine AS api
 ENV NODE_ENV=production
@@ -49,5 +60,7 @@ CMD ["node", "server.cjs"]
 FROM caddy:2-alpine AS web
 COPY deploy/hostinger/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build-web /app/dist /srv
+# The lighter pictures replace the originals Vite copied from public/.
+COPY --from=pictures /out/ /srv/
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:8081/healthz > /dev/null || exit 1

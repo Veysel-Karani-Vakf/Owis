@@ -125,6 +125,21 @@
 			# picked up at once (Vercel does the same). Without this, browsers
 			# may keep an old shell that points at files which no longer exist.
 			header /index.html Cache-Control "no-cache"
+
+			# Pictures: kept a week by browsers, and a browser that takes WebP
+			# gets the WebP copy made at build time (lighter-pictures.sh) at the
+			# same address, when there is one.
+			@picture path_regexp (?i)\.(png|jpe?g|gif|webp|svg|ico|avif)$
+			header @picture {
+				Cache-Control "public, max-age=604800"
+				Vary Accept
+			}
+			@webpCopy {
+				path_regexp (?i)\.(png|jpe?g)$
+				header Accept *image/webp*
+				file {path}.webp
+			}
+			rewrite @webpCopy {path}.webp
 			file_server
 		}
 
